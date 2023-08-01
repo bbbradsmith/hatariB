@@ -1,0 +1,230 @@
+Contents:
+- Active Hatari developers
+- Contributors
+- Code from other projects
+
+
+ Active Hatari developers:
+ -------------------------
+
+- Nicolas Pomarede <npomarede at corp.free.fr> : Project admin,
+  improving CPU, video, sound, blitter, IKBD and floppy emulation.
+
+- Thomas Huth <huth at tuxfamily.org> : Project initiator and
+  admin, currently more or less in hibernation mode.
+
+- Eero Tamminen <oak at helsinkinet fi> : Speedups, small parts of the
+  STE, TT & Falcon emulation, Python CLI & GUI, TOS tester + Hatari
+  window embedding & remote control API, pause & auto frameskip
+  support, statusbar & overlay led, profiling and conditional
+  breakpoint support and other debugger features, GEMDOS HD emulation
+  improvements, PNG saving.
+
+- Laurent Sallafranque: Many fixes and speedups to DSP emulation,
+  DSP debugging support, crossbar emulation, falcon microphone
+  emulation, STE LMC1992/microwire emulation, Videl emulation.
+
+
+ Contributors:
+ -------------
+
+Following people contributed code or patches to this projects (listed in
+random order - and if someone is missing here, please remind us!):
+
+- Jean-Baptiste Berlioz <tobe at freemind-tobe.com> : Cycle accurate
+  Blitter emulation (although most of the code was rewritten since
+  Hatari 2.3)
+
+- David Savinkoff : More accurate printer emulation, LMC1992 emulation
+  patches, IIR/Low Pass filters and many improvements to the YM2149 model
+  to get a close emulation of the circuit used to merge and filter the
+  output of the 3 YM2149 voices.
+  Great work to enhance the sound quality.
+
+- Matthias Arndt <marndt at asmsoftware.de> : Wrote the original version
+  of the Hatari user manual, fixed the printer emulation functions.
+
+- Sébastien Molines <clafou at gmail.com> : Wrote the main part of the
+  macOS GUI of Hatari.
+
+- Marco Herrn <marco at mherrn.de> : Wrote the initial version of the
+  "man" page of Hatari and maintained the Hatari Debian packages until
+  Hatari was included into Debian.
+
+- Sven de Marothy : Screenshot functions, the initial CLI debugger,
+  the ACSI emulation and added support for ZIPed and GZIPed disk images.
+
+- Emmanuel Anne <emanne at absysteme.fr> : Contributed lots of patches,
+  RTC emulation.
+
+- Tuduri Benoît <skweek at users.sourceforge.net> : French man-page,
+  support for Doxygen, MacOS bug reports.
+
+- Markus Oberhumer : fixed a problem with ZIPed disk images, routine for
+  loading the configuration file from the $HOME directory.
+
+- Philippe Gerin : Fixed a bug in the CPU core (bus errors problem).
+
+- Patrice Mandin : Some improvements of the autoconf build system files,
+  original author of the DSP emulation core.
+
+- Martin Doering : Code for compiling the font data into the executable
+  and some other ideas for cleaning up the source code.
+
+- Ventzislav Tzvetkov : Joystick closing patch, Hatari for AmigaOS.
+
+- Stefan Berndtsson <stefan at nocrew.org> : Patches to get Hatari
+  running on big endian machines.
+
+- Anatol Paruntik (?) : Patches for compiling Hatari on QNX.
+
+- Claus Windeler <goodoldgames at beemulated.net> : BeOS adaption.
+
+- James Lampard : Adapted Hatari to Acorn RISC OS machines.
+
+- Mark Keates : Patches for compiling Hatari with MinGW.
+
+- Volker Seebode: Fix to ASCI emulation to get other than AHDI drivers
+  working.
+
+- Cyprian Konador: Found some bugs in the blitter cycles emulation, provided
+  patches for duochrome and samplehold modes for TT video emulation, reported
+  some infos about alt-RAM & DMA ranges and DIP switch register. Also provided
+  some test programs to show cpu/blitter bus sharing and parallel execution.
+
+- Jerome Vernet: Some updates to the macOS Xcode project file and macOS
+  GUI, supplied a french keymapping file for macOS.
+
+- Kenneth Kaufman: MS VC6 & C++ compiler and multiple GEMDOS HD
+  partition support patches.
+
+- Uwe Seimet: IDE and ACSI/SCSI emulation improvements, GEMDOS HD emulation
+  improvement suggestions and NatFeats SCSI Driver code for Linux.
+
+- Markus Fritze: New m68k disassembler with more Motorola like syntax
+  and options for controlling how the output looks.
+
+- Deniz Turkoglu: Patches for the Max macOS GUI.
+
+- Markus Heiden: SCSI class 1 (ICD) command support for drives > 1 GB
+
+- Gilles Fetis: fixes to MMU emulation (from NeXT emulator project
+  using Hatari code).
+
+- Christer Solskogen: Set up an automatic build script on his site,
+  providing up to date Hatari binaries for Linux and Windows in 32
+  and 64 bit mode. Very useful for end users wishing to try the devel
+  versions of Hatari, and lots of interesting build logs too for
+  various cpu architectures. See http://antarctica.no/~hatari/latest
+  He also provided a patch for fixing compilation problems on macOS.
+
+- Max Böhm: host <-> Atari filename encoding conversion routines and
+  related changes needed to gemdos.c.
+
+- Troed Sångberg (Troed of Sync): accurate description of the GLUE state
+  machine for STF/STE in all wakestates (display signal, sync signal, ...)
+  and the resulting lines' length used in overscan / hardscroll. Coder
+  of the '{Closure}' demo which makes huge use of these techniques.
+  He also provided patches for Audio Sculpture's custom IKBD program
+  and MacOS screenshot dir handling.
+
+- Thorsten Otto: improvements to the code that patches the TOS ROMs,
+  Pure-C long symbol names, a.out symbol table & absolute symbols support,
+  few debugger & tracing usability improvements, fixed (sin, mulaw & a-law)
+  DSP ROM tables, fmovem test program, key mapping improvement.
+
+- Andreas Grabher : FPU improvements using the SoftFloat library,
+  most of the 030 MMU implementation and few bug reports & patches
+  for the DSP emulation
+
+- Miguel Saro (Cocoa Pod) : Many updates to the macOS GUI.
+
+- Jari Kleimola : PortMidi support which allows MIDI usage on
+  Windows & OSX + required SDL & OSX GUI changes
+
+- Federico Ulivi : tracked down and provided fixes for the invalid
+  PortMidi data issues, finally making PortMidi support stable. Helped
+  determine remaining Notator sysex issue to be softsynth bug, not
+  Hatari one
+
+- Mark Fechtner : patch to not use tmpfile() directly under Windows
+
+- Miro Kropáček : patch for correct V flag when using BCD instructions
+  on 68020/68030 CPU, running tests on real Falcon
+
+- Steven Noonan : patch to prevent a crash if Halt dialog was called
+  before SDLGui_SetScreen()
+
+- Christophe de Dinechin : patch to improve Spec512_StoreCyclePalette
+  when using 16 or 32 MHz
+
+- Fredrik Noring (Noring of NoCrew) : Tracked down a bug in the
+  blitter emulation and a bug in the PSG shadow register emulation.
+  Patch to improve clearing borders in fullscreen mode. Patch to fix
+  PNG header alignment when recording AVI files.
+
+- Jens Guenther : extra info on Python UI embedding issue and fixes
+  for PyGtk deprecations warnings in Python UI
+
+- Václav Lipert : Ability to change Windows drive in file select dialog
+
+- Chris Jenkins : patch to compile the macOS version when PortMidi is not 
+  available.
+
+See also "thanks.txt" for people who've helped Hatari development in
+other ways than code contributions.
+
+
+ Code from other projects
+ ------------------------
+
+As a true open source project, Hatari also uses some code from other
+projects which we would like to acknowledge here:
+
+- Hatari binary releases include latest version of EmuTOS:
+  https://emutos.sourceforge.io/
+
+- Most of the original ST hardware emulation came from the WinSTon
+  source code which has been written by Paul Bates.
+  (http://www.sourceforge.net/projects/winston/)
+
+- The original CPU core has been taken from UAE which has been written
+  by Bernd Schmidt and others. (http://uae.coresystems.de/)
+
+- The current CPU & FPU cores have been taken from WinUAE which is
+  maintained by Toni Wilen. Huge thanks to Toni for accepting ideas
+  and patches not specific to Amiga emulation, as well as keeping on
+  improving the accuracy of 68000/20/30 CPU and FPUs.
+  (http://www.winuae.net/)
+
+- Parts of the NCR 5380 SCSI emulation are based on code from WinUAE, too.
+
+- Some parts have been taken from the emulator STonX that has been
+  written by Marinos Yannikos and Martin Griffiths.
+  (http://stonx.sourceforge.net/)
+
+- A lot of code (e.g. the scancode keyboard mapping, Videl, NVRAM, SCC
+  and DSP emulation) has been adapted from the sources of the emulator
+  Aranym. (http://aranym.atari.org/)
+
+- The code for decompressing ZIP files (unzip.c) has been taken from
+  Gilles Vollant's miniunzip program.
+  (http://www.winimage.com/zLibDll/unzip.html)
+
+- The routines for saving and loading the ASCII configuration file
+  (cfgopts.c) have originally been written by Jeffry J. Brickley.
+
+- The new sound core uses (or used) some code/ideas from the following GPL
+  projects :
+  * 5 bits volume table and 16*16*16 combinations of all volume are
+    from Sc68 by Benjamin Gerard.
+  * 4 bits to 5 bits volume interpolation from 16*16*16 to 32*32*32
+    are from YM blep synthesis by Antti Lankila.
+  * Since Hatari 1.7, volume table based on measures by Paulo Simoes
+
+- The IDE hard disk emulation is based on code from QEMU.
+  (http://www.qemu.org/)
+
+- The MMU emulation for the 68030 has been taken from the NeXT emulator
+  Previous (thanks to Andreas Grabher!). Since Hatari 1.9, this is now
+  taken from WinUAE which uses the same code base.

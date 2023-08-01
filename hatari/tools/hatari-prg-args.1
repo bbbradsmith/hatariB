@@ -1,0 +1,53 @@
+.TH "hatari-prg-args" "1" "2018-05-01" "Hatari" "Hatari utilities"
+.SH NAME
+hatari\-prg\-args \- autorun Atari programs with arguments
+.SH SYNOPSIS
+.B hatari\-prg\-args
+[\fI\-q\fP] [\fIHatari args\fP]
+\fB--\fP
+<\fIAtari program\fP> <\fIprogram args\fP>
+.SH DESCRIPTION
+Utility for running Hatari so that it autostarts given Atari program
+and inserts given arguments to program (to its basepage, with builtin
+Hatari debugger facilities).
+.PP
+If Atari program arguments have same (host) path prefix as given Atari
+program, those prefixes are replaced with "C:\\". Unix path separators
+(/) are replaced with Atari ones (\\) and whole filename is upper-cased.
+.PP
+If program and its input files are on a disk image, all paths need to
+be given as on with TOS, and won't be translated.
+.PP
+Other program arguments are passed unmodified.
+.SH NOTES
+Maximum Atari program command line length that can be given (in basepage)
+is 126 characters.
+.PP
+On Unix, Atari/DOS path separators (\\) need to be quoted.
+.SH OPTIONS
+.TP
+.B \-q
+Make Hatari quit when the started Atari program terminates.
+If given, this needs to be the first argument.
+.SH EXAMPLES
+.TP
+Start SID player in mono and tell it to play given SID song:
+.B hatari\-prg\-args -m -- atari/sidplay.ttp atari/sids/test.sid
+.TP
+Run it from disk image instead of host directory:
+.B hatari\-prg\-args -m -- 'A:\\\\SIDPLAY.TTP' 'SIDS\\\\TEST.SID'
+.SH SEE ALSO
+.IR hatari (1),
+.IR hconsole (1)
+.SH "AUTHOR"
+Written by Eero Tamminen <oak at helsinkinet fi>.
+.SH "LICENSE"
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or (at
+your option) any later version.
+.SH "NO WARRANTY"
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.

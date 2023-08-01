@@ -1,0 +1,76 @@
+.\" Hey, EMACS: -*- nroff -*-
+.\" First parameter, NAME, should be all caps
+.\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
+.\" other parameters are allowed: see man(7), man(1)
+.TH "GST2ASCII" "1" "2017-11-11" "Hatari" "Hatari utilities"
+.SH "NAME"
+gst2ascii \- Filter and output Atari program symbol table as ASCII
+.SH "SYNOPSIS"
+.B gst2ascii
+.RI  [options]
+.RI  <program>
+.SH "DESCRIPTION"
+\fIgst2ascii\fP reads (GNU-style a.out or traditional DRI/GST) symbol
+table from given Atari program and outputs it in the ASCII format
+understood by Hatari debugger and its profiler data post-processor
+(latter doesn't accept any other format).
+.PP
+All symbol addresses output by the tool are TEXT relative, so
+when loading them in Hatari debugger, one needs to give just TEXT
+as offset for the 'symbols' command.
+.PP
+There are some options for filtering the symbol table content, and
+the resulting ASCII output is easy to edit also by hand, in case other
+symbols (e.g. loop labels) need to be removed from it, or missing
+function symbols need to be added to it.
+.SH "OPTIONS"
+.TP
+\fB-a\fP
+Filter absolute (= value, not address) symbols out from the output.
+.TP
+\fB-b\fP
+Filter BSS symbols out from the output.
+.TP
+\fB-d\fP
+Filter DATA symbols out from the output.
+.TP
+\fB-t\fP
+Filter TEXT symbols out from the output.
+.TP
+\fB-l\fP
+Filter local (.L*) symbols out.  Usually they're useless because
+they don't have names, just numbers.
+.TP
+\fB-o\fP
+Filter symbols for object files (*.o) out.
+.TP
+\fB-n\fP
+Sort symbol output by symbol name, not by their addresses.
+.SH "NOTES"
+If you have problems, try with 'nm -n <program>' instead
+(Atari or cross-compiler version). If \fInm\fP works,
+but \fIgst2ascii\fP doesn't, please report a bug on it.
+.SH "EXAMPLES"
+Save 'program.prg' symbol table in ASCII format with
+local symbols filtered out:
+.br
+	gst2ascii -l program.prg > program.sym
+.PP
+Load generated ASCII symbols file in Hatari debugger:
+.br
+	symbols program.sym TEXT DATA BSS
+.SH "SEE ALSO"
+.IR hatari (1),
+.IR hatari_profile (1)
+.SH "AUTHOR"
+Written by Eero Tamminen <oak at helsinkinet fi>.
+.SH "LICENSE"
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or (at
+your option) any later version.
+.SH "NO WARRANTY"
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.

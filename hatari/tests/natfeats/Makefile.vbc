@@ -1,0 +1,25 @@
+# A VBCC makefile for Native Features tester
+
+NAME = nf_vbcc.tos
+
+# for m68000
+CC ?= vc -v
+CFLAGS ?= -O1 -DTEST
+LDFLAGS ?= -g # leave symbols to binaries
+
+OBS = nf_vbcc.o nf_asmv.o
+
+all: $(NAME)
+
+$(NAME): $(OBS)
+	$(CC) $(LDFLAGS) $(OBS) -o $@
+
+nf_vbcc.o: natfeats.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+nf_asmv.o: nf_asmv.s
+	$(CC) $(CFLAGS) -c $< -o $@
+
+veryclean:
+	$(RM) $(OBS) *~ *.bak
+	$(RM) $(NAME)

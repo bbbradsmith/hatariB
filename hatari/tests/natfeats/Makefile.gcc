@@ -1,0 +1,27 @@
+# A GCC makefile for Native Features tester
+#
+# Building:
+#	make -f Makefile.gcc CC=m68k-atari-mint-gcc
+
+NAME = nf_gcc.tos
+
+CC ?= gcc
+CFLAGS ?= -Wall -O2 -m68000 -mshort -DTEST
+LDFLAGS ?= -s
+
+OBS = nf_gcc.o nf_asmg.o
+
+all: $(NAME)
+
+$(NAME): $(OBS)
+	$(CC) $(LDFLAGS) $(OBS) -o $@
+
+nf_gcc.o: natfeats.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+nf_asmg.o: nf_asmg.s
+	$(CC) $(CFLAGS) -c $< -o $@
+
+veryclean:
+	$(RM) $(OBS) *~ *.bak
+	$(RM) $(NAME)

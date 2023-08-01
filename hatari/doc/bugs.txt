@@ -1,0 +1,101 @@
+
+Hatari bugs
+===========
+
+Below are listed known failures with Hatari.
+
+Contents:
+- Related documents
+- Emulator bugs
+- Known issues with workarounds
+- External bug reports
+
+
+Related documents
+-----------------
+
+Missing features are listed in the "todo.txt" file.
+
+Emulation option compatibility issues with specific games and demos
+are documented in the "compatibility.html" file.
+
+Additional emulation issues specific to running Linux kernel are
+listed in the "m68k-linux.txt" file.
+
+Compatibility issues with EmuTOS (TOS version distributed with Hatari
+binaries), are documented in the "emutos.txt" file.  They're related
+to missing EmuTOS functionality and byte-exactness with old TOS
+versions, not to Hatari.
+
+
+Known issues / workarounds
+--------------------------
+
+* Printing doesn't work in auto-started programs with TOS v1.02 - v2.06:
+
+    Why: program startup is so fast that TOS hasn't had time to start
+    200hz tick used for printing.
+
+    WA: put tests/autostart/4_secs.prg to AUTO/-folder to slow down
+    program startup enough for printing to work
+
+* PortMidi device disconnects:
+
+    Playback of Notator 3.x "DEMO8.SON" song (which has very large
+    amounts of sysex data) can trigger "Operation not permitted"
+    PortMidi "host error" around 7:00 mark, resulting in MIDI output
+    being disabled (until MIDI device is changed or Hatari restarted).
+
+    This is triggered completely randomly, but seems to be issue on
+    the receiving end as it happens only when connected to Qsynth /
+    FluidSynth, not when using just MIDI through as output.
+
+    WA: Avoid non-working MIDI data / softsynth combinations.
+
+* Mac GUI support only PortMidi devices, not raw MIDI devices:
+
+    Direct file access is required to use MIDI for debugging output or
+    networking (up to 16 machines) over MIDI.  Mac users have not yet
+    contributed a support for that to Mac GUI.
+
+    WA: configure that with SDL GUI for now
+
+* Neither RS-232 nor raw MIDI device file input is supported on Windows:
+
+    Input for both RS-232 and raw MIDI device files is checked with
+    File_InputAvailable() function which uses select() POSIX
+    functionality to do it.  Windows users have not yet contributed
+    corresponding Windows functionality to it.
+
+    WA: Use Linux version of Hatari under Windows:
+    https://docs.microsoft.com/en-us/windows/wsl/tutorials/gui-apps
+
+
+External bug reports
+--------------------
+
+* Problem: On real Falcon there is a minor feature in VIDEL. You can simply
+  fade whole screen to black, if you just clear the Horizontal Border End
+  ($ffff8286) and start fading colors from 0 to 255 to $ffff9800 or vice
+  versa:
+	test <put picture to screen>
+	move.w #255-1,d7
+	moveq #0,d6
+	.loop <vsync, stop#$2300>
+	clr.w $ffff8286.w
+	move.l d6,$ffff9800.w
+	addq.l #1,d6
+	dbf d7,.loop
+  Now it does this exactly opposite direction, it fades bgcolor from 0 to 255.
+
+* To compare my real Falcon with Hatari on my Windows 7 PC, I make some short
+  benchmarks with Kronos. The disk benchmark in Kronos runs in 1-2 minutes on
+  my real Falcon. The same disk benchmark in Kronos under Hatari 1.5 runs
+  longer than 20 minutes with GEMDOS emulation.  Only when I use the AltGr + X
+  option, before the benchmark runs, then the disk benchmark in kronos is
+  comparable fast as my 16MHz Falcon.
+
+  -> Hatari GEMDOS emulation needs to do a lot of extra kernel file & directory
+     accesses which with current code seem unavoidable.  They're a problem only
+     with test programs like Kronos, for those one should consider using
+     harddisk image files instead.

@@ -1,0 +1,62 @@
+.TH "atari-hd-image" "1" "2015-04-26" "Hatari" "Hatari utilities"
+.SH NAME
+atari\-hd\-image \- tool for creating a harddisk image for use with Hatari
+.SH SYNOPSIS
+.B atari\-hd\-image
+.RI size
+.RI [filename]
+.RI "[partition name]"
+.RI [directory]
+.SH DESCRIPTION
+Create an ACSI/IDE harddisk image for Hatari with a single Atari
+compatible DOS FAT partition (using sfdisk, mkdosfs, atari\-convert\-dir,
+mcopy, dd and python).
+.SH OPTIONS
+.TP
+.B size
+Harddisk image size in megabytes, 8-512.  512MB is largest partition
+size supported by TOS versions before v4.x and by mkdosfs (for Atari
+compatible partition formatting).
+.TP
+.B filename
+Name for the harddisk image (default: hd.img)
+.TP
+.B partition name
+Name for the single partition (default: DOS)
+.TP
+.B directory
+directory for initial content copied to the image.
+\fIatari\-convert\-dir\fP tool is used to clip long file names
+to 8+3 size required by FAT and Atari TOS.  If resulting file names
+aren't unique, you get warning(s), but script continues
+.SH EXAMPLES
+.TP
+16MB 'hd.img' HD image:
+.B atari\-hd\-image 16
+.TP
+8MB image with partition named 'TEST', and files from content/:
+.B atari\-hd\-image 8 8mb-disk.img TEST content/
+.SH SEE ALSO
+.IR atari\-convert\-dir (1),
+.IR hmsa (1),
+.IR zip2st (1),
+.IR hatari (1),
+.IR mkdosfs (1),
+.IR sfdisk (1),
+.IR dd (1)
+.SH "AUTHOR"
+Written by Eero Tamminen <oak at helsinkinet fi>.
+.PP
+This manual page was written by Teemu Hukkanen <tjhukkan@iki.fi>
+for the Debian project and later updated by Eero Tamminen for
+the newer versions of Hatari.
+.SH "LICENSE"
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or (at
+your option) any later version.
+.SH "NO WARRANTY"
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.

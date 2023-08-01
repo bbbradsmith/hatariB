@@ -1,0 +1,8 @@
+; AHCC project file for GEMDOS tester
+gmdostst.tos
+.C
+=
+../startup.s
+gmdostst.c
+get_sr.s
+ahccstdi.lib

@@ -1,0 +1,2298 @@
+
+                                    Hatari
+                                   --------
+                                Release Notes
+
+Following features are deprecated and will be removed in a future release:
+- SDL 2.x "bUseSdlRenderer" config and "GPU scaling" GUI options
+  (after HW support for SDL2 is available widely enough)
+- The "external" disassembler (i.e. use "--disasm uae" instead)
+- Hatari XBios(255) API enabled with the "--bios-intercept" option
+  (i.e. use "--natfeats" & "--cmd-fifo" options and "hconsole" instead)
+- The old ~/.hatari configuration file location (use ~/.config/hatari instead)
+- The rendering functions for 16 bits-per-pixel host screens (almost all
+  recent hardware should have 32 bpp nowadays)
+
+
+ Version 2.4.1 (2022-08-03)
+ --------------------------
+
+Emulation improvements:
+- Sound:
+  - Much more precise function to convert CPU clocks to YM2149 clocks
+    in the case where YM2149 doesn't use the same source clock as the CPU
+    (fixes e.g. some STE sound glitches in BLSPLAY.TTP)
+- Video:
+  - Fix regression in TT mode: Update video counter again on each HBL
+    (fixes e.g. Hextracker when run in TT mode)
+
+Emulator improvements:
+- DSP:
+  - Avoid small extra overhead on non-Falcon machines when DSP config
+    option is set
+- Misc:
+  - Fix memory leaks on PNG save and GEMDOS HD program load
+  - All Hatari output (outside of debugger) uses now appropriate
+    logging and trace functions so that they can be controlled
+- VDI mode:
+  - Fix: VDI width needs to be aligned to (at least) 16-pixels
+  - Fix: a possible crash with (default) SMALL_MEM build config
+    (when ST program sets a bad video base address)
+- Statusbar:
+  - Show "Linux" when running Linux directly with --lilo
+- Debugger:
+  - Fix: to duplicate symbol name removal
+  - Fix: all IDE trace output did not go to trace file
+  - Like with rest of debugger, profiler responses go
+    now to stderr (not stdout)
+
+Documentation:
+- Document Hatari outputs and their controls in debugger manual
+
+
+ Version 2.4.0 (2022-07-09)
+ --------------------------
+
+Removed features (that were marked as deprecated in earlier releases):
+- Support for the SDL 1.2 library (i.e. SDL 2.x should be used instead)
+- Support for building Hatari for Windows CE has been removed, too, since
+  this was relying on version 1.2 of the SDL library.
+- The old UAE CPU core (i.e. the new WinUAE CPU core is now always used)
+- Python v2 support in Python scripts (Python 2 was end of life in 2020)
+
+Emulation improvements:
+- Internal timers:
+  - Rewrite the internal timers used to emulate delays/events/mfp timers
+    (gain ~10% on average, up to 60% in very specific cases)
+- CPU:
+  - Improve FPU emulation (exceptions, unimplemeted instructions, fsincos)
+  - Improve FPU emulation in softfloat mode
+  - Improve IPL timing update in various opcodes
+  - Faster emulation of 68000 in cycle exact mode (gain ~7%)
+- MFP:
+  - Use the new internal timers for MFP timers
+  - Improve accuracy when reading MFP's Timer Data Register
+  - More accurate emulation by processing all internal timers first before
+    reading/writing any MFP register (was previously delayed after processing
+    the current CPU instruction, which was too late in some cases)
+- Video:
+ - Fix position for detecting when VBLANK should be disabled in 50 Hz and 60 Hz
+- DSP:
+  - Improved interrupts handling and SSI (from Previous NeXT emulator)
+- Sound:
+  - Improve accuracy of YM2149's sample generation by using the main
+    CPU clock as a reference for all timings (syncsquare effect as used
+    in recent maxYMiser v1.53)
+  - Use specific memory functions when doing DMA for STE and Falcon sound
+    (don't generate bus error when pointed memory is not present)
+  - Improve value of MFP GPIP bit 7 for DMA sound in the case of STE/TT
+    (video mono XOR dma sound xsint)
+  - Use 2 different signals SOUNDINT and SNDINT for Falcon (connected to
+    MFP GPIP7 and MFP Timer A input)
+- FDC:
+  - Stall the CPU during 32 cycles when DMA FIFO is filled/transferred
+- SCSI:
+  - Improve MODE SENSE, add REPORT LUNS support
+- IKBD:
+  - support deltax/deltay in command $A (set mouse keycode mode)
+    and threshold x/y in command $B (set mouse threshold)
+
+
+Emulator improvements:
+- TOS support:
+  - Support 1024k EmuTOS images also on TT & Falcon
+  - Add country code option to select EmuTOS language, keyboard
+    layout and screen refresh rate on Mega/ST/STe machines (ones
+    lacking NVRAM)
+- MIDI support:
+  - Fix: PortMidi rejects Hatari MIDI events
+  - Fix: MIDI IRQ needs to be re-enabled on MIDI device change
+    even when there's no reset
+  - Support for matching PortMidi device name by prefix when
+    there's no exact full match
+- RS232:
+  - The RS232 receiver code has been rewritten to use polling instead
+    of using a thread. This should avoid deadlocks on BSD/macOS systems
+    when shutting down or reconfiguring the RS232 settings.
+- TT/Falcon:
+  - Increase max TT-RAM amount to 1024 MiB
+  - Separate config + CLI options to override NVRAM language and
+    keyboard layout settings
+  - NVRAM language default is taken from the LANG env variable
+- Falcon:
+  - Fix: restore zoom mode correctly when loading snapshots
+  - Correct also smaller specified memory amounts to valid ones
+  - Microphone emulation now uses SDL2 instead of PortAudio
+- MegaSTE/TT:
+  - Add VME/SCU registers "--vme <none|dummy>" access option
+    (Linux needs "none" option and TOS v2 / v3 need "dummy" one
+    until Hatari implements real VME/SCU register emulation)
+- VDI mode:
+  - Relax VDI mode width alignment from 128/planes to
+    16/planes, and height alignment from 16 to 8 pixels
+- SDL GUI:
+  - Fix: ignore unrecognized events in file selector
+    (buttons could be incorrectly shown as selected)
+  - Fix: avoid key release event from SDL GUI closing leaking to emulation
+  - Do VDI mode size changes in (faster) 16 pix increments,
+    and prevent user seeing invalid VDI mode sizes
+  - Fine-tune CPU dialog texts and keyboard shortcuts
+- GEMDOS HD:
+  - Fix: clear GEMDOS Fread / Fwrite errors
+  - Fix: Allow GEMDOS tasks to use other tasks' file handles
+- Command line:
+  - Support "off" as alias for "none" when disabling DSP, FPU,
+    Joysticks and VME, for consistency with HW on/off options
+- NatFeats:
+  - Fix: freeze with NF_STDERR when string is empty or unterminated
+- Debugger:
+  - Fix: profile header so that profile data post-processor knows how
+    to parse built-in WinAUE CPU core ("uae") disassembly output, not
+    just "ext" disassembler output
+  - Repeat CPU & DSP "step" and "next" commands on Enter
+  - Output PC location in CPU & DSP disassembly
+  - More readable "variables" command output
+  - Add "PConSymbol" variable for breaking on symbol addresses
+  - Add "mmu" and "vme" options for "info" command
+  - Add "scc" and "vme" (VME/SCU reg access) tracing support
+  - Setting trace to "none" disables also xconout console output
+    enabled by "os_base" trace option
+  - "next subreturn" will run until current function returns,
+    even if function calls other functions before that
+  - Symbol loadind code is now shared between debugger "symbols"
+    command & "gst2ascii" tool, and it can now read also long
+    symbol names from Pure-C debug information
+  - Auto-detection for whether section offsets should be used
+    when loading symbol information
+  - MIDI trace options are split to "midi" (device & MIDI events)
+    and "midi_raw" (IRQ and register read/write access).  Trace
+    logging added also for MIDI byte writes, not just reads
+  - Trace options are listed in alphabetical order
+- Windows:
+  - Next/prev drive change buttons added to SDL GUI file select dialog
+
+Build/configure:
+- SMALL_MEM option is enabled by default
+
+Tools:
+- Add (SDL2 specific) "listkeys" key mapping helper back
+- TOS boot tester: support 1024k EmuTOS images, misc fixes
+
+Documentation:
+- Compatibility updates, especially for 060 programs that need
+  FPSP060.PRG for missing instructions emulation
+
+Fixed demos:
+- Hackabonds Demo (wrong vblank detection)
+- We Were @ HD version under GEMDOS HD (file handle access)
+
+Fixed programs:
+- maxYMiser FM v1.53 by gwEn (support for syncsquare effect)
+
+Fixed games:
+- Chambers of Shaolin : DMA sound was wrong in STE mode with 1 MB RAM
+  (mfp gpip bit 7)
+- Super Hang On : fix flickering raster colors (bclr #0,$fffffa0f sometimes
+  happened at the same time timer C expired)
+
+
+ Version 2.3.1 (2020-12-27)
+ --------------------------
+
+Emulation:
+- CPU:
+  - Fix: unneeded extra prefetch for movem in 68020/30 cpu
+    (regression in v2.3)
+- DSP:
+  - Fix: master clock use for crossbar/DSP Handshake mode
+    (partial regression in v1.6)
+  - Fix: hostport PORTB interrupt handling
+
+Emulator:
+- ACSI/IDE/SCSI handling:
+  - Fix: IDE crash when switching to Falcon mode at run-time
+    (regression in v2.3)
+  - Fix: No error dialog on IDE image mount errors
+  - Fix: Duplicate disk image mount failure handling
+- TOS support:
+  - Fix: TOS 2.07 (Sparrow TOS) support
+    (regression in v2.3)
+- Hatari window handling:
+  - Fix: Hatari window disappearing from Python UI
+    when Hatari changes its framebuffer size
+    (SDL2 specific)
+- macOS GUI:
+  - Fix: FPU setting doesn't work when GUI runs in French
+
+Python UI:
+- Several fixes (see its own release-notes.txt)
+- Requires now Gtk v3.22 or newer
+
+Tools:
+- Fix: assert in hatari_profile (profile post-processor)
+  with relative symbols
+
+Documentation:
+- Add PortMidi info to devices dialog section in manual
+- Updated compatibility documentation
+
+Fixed Falcon programs:
+- Music missing in H2O game, in Running game main screen,
+  Stocasto demo and Epidemic music disk
+  (crossbar/DSP handshake mode)
+- Lockup demo freezing at startup
+  (DSP hostport PORTB interrupt handling)
+- Several demos (Cruor 96k, Hmmm..., Keff, Payback 2015) and games
+  (Beats of Rage, Capy, Confusion preview 2, Men at War preview,
+  Moonspeeder preview 2, Neurobot, Pacmania X68000, Slippery Sam
+  and Sokoban by Fun) not starting with TOS4 or EmuTOS unless MMU
+  was enabled (unneeded extra prefetch in movem)
+- Built-in Obsolescence demo, Delmpaint app and Sidetracked GFA
+  musicdisk had other issues also with MMU under TOS4 or EmuTOS
+  (unneeded extra prefetch in movem)
+
+
+ Version 2.3.0 (2020-11-28)
+ --------------------------
+
+Emulation:
+- FDC / Disk :
+  - Support for MegaSTE DIP switch register $FF9200
+    (set floppy drive to HD by default on MegaSTE/TT/Falcon)
+  - support for DD/HD mode on MegaSTE at $FF860E
+    (when FDC is set to HD mode, reading DD floppies will fail)
+  - Support for the 'Disk Change' (DC) signal on TT machines on TT's MFP GPIP4
+  - Fix: IDE disks with sector size > 512 bytes
+  - Fix: IDE controller is now always available in Falcon mode, even if
+    no hard disks have been configured.
+- CPU:
+  - Update CPU core to latest WinUAE 4.4.0 beta : full support for
+    undocumented fields in 68000 bus/address error stack frames, as well as
+    CCR flags for most of the 680x0 instructions (using a cpu tester program
+    on the real hardware that checks all possible opcodes' combinations)
+  - 68030 MMU hardware bus error support + various fixes
+  - FPU fixes
+- Video:
+  - Improved timing when setting Vsync signal
+    (same place where video counter is reloaded)
+  - Handle screen where vertical DE signal is completely disabled
+  - Better start/end position for the VBlank signal at 50Hz and 60Hz
+- Sound:
+  - Add a better filter for downsampling the internal 250 kHz signal, should
+    give better results when the YM2149 outputs high frequency sounds
+  - Fix microwire mask shifting when CPU runs > 8 MHz
+- MFP :
+  - Rewrite MFP code to handle several MFP objects and add support
+    for the TT's 2nd MFP (not all TT's MFP signals are emulated yet)
+  - Improved Falcon's DMA sound interrupt on GPIP7 and AER
+- Blitter:
+  - Large rewrite of the blitter's core, improving cycle accuracy and
+    handling the complex cases where xcount=1 and nfsr=1. Code is slightly
+    smaller and closer to the logic of the real hardware
+  - Handle restart in non HOG mode when the CPU uses a RMW instruction
+    (eg TAS)
+  - Improve access to memory regions that would generate a bus error
+    for the CPU
+- Emulate additional RTC/NVRAM registers
+- megaSTE should start at 8 MHz, not 16 MHz
+
+Emulator:
+- Miscellaneous:
+  - Fix: freeze at Hatari exit and RS-232 device file changes,
+    when device file(s) are FIFO(s)
+  - Fix: when autostarting programs without pre-existing INF file,
+    enable blitter also with EmuTOS
+  - Use floppy track's size in bytes to detect DD/HD/ED
+    (instead of counting sectors)
+  - Add --lilo debug option for more convenient m68k Linux loading
+- Config file handling:
+  - Support config file values with '=' in them
+  - Skip reading global config file if HATARI_TEST environment
+    variable is set
+- Memory handling:
+  - Memory snapshot version increase due to FDC changes
+    (i.e. old snapshots won't work with new version)
+  - Accept 10MB as valid ST-RAM amount (max on real MegaSTE/TT machines)
+    and correct invalid Falcon ST-RAM amounts
+  - Fix: 24-bit address mode change while emulation is running
+    (triggered e.g. when TT-RAM is enabled for TT)
+- HD images:
+  - Fix: run-time IDE byte swap change requires IDE re-init
+  - Fix: TOS booting from A: although SCSI drive was enabled
+  - Support read-only HD image files, and show error dialogs
+    for image file open/lock issues
+- GEMDOS HD emulation:
+  - Support FASTLOAD program flag with GEMDOS HD
+  - GEMDOS HD emulation cartridge assembly functionality is moved almost
+    completely to emulator side. Fixes Atari side error handling when program
+    file is not readable, and TOS stack overflows in some rare cases
+  - Detect DTA re-use to reduce DTA cache usage, grow cache on
+    demand and give warning if its entries need to be re-cycled
+    (= cache max size is reached)
+  - Invalid DTA in Fsnext() return -ENMFIL, like TOS does
+  - Fix: skip non-existing host files on FSnext() instead
+    of returning an error (latter broke directory listings)
+  - Fix: Dsetpath/Dgetpath empty path handling
+- Hatari graphics support:
+  - Low/med-rez line doubling uses less CPU and doubled lines in
+    "TV" display mode are now drawn at half intensity, not as black
+    (fixes TV mode being too dark)
+  - SDL2: "--zoom" option accepts any values between 1.0 - 8.0
+  - SDL2: "--zoom" option is changed to always enable low resolution
+    doubling before SDL framebuffer is scaled up (or down) by the zoom
+    factor. This way Hatari output window is approximately same sized
+    regardless of emulated Atari resolution, like on a real CRT monitor
+  - SDL2: scale quality is selected automatically; nearest pixel for sharp
+    output with integer scaling factors, and linear scaling to smooth out
+    issues with non-integer scaling and window resizes
+  - SDL2: Now redundant "nRenderScaleQuality" config option is
+    removed and "Linear scaling" option in GUI is replaced with
+    the "GPU scaling" option (=bUseSdlRenderer config option)
+  - Added new "--screenshot-dir" option to select the folder for screenshots
+  - Fix: [ffmpeg/video] Invalid PNG signature 0x89504E470D0A1A
+  - Fix: garbage graphics (by clearing the whole render area)
+  - Fix: Spec512_StoreCyclePalette when using 16 or 32 MHz
+- Input handling:
+  - Support SDL "Hat" events in addition to "Axes" events
+    (= support 80's game controllers, also in SDL GUI)
+  - Map a turbofire button independent of the fire button if the game
+    controller is capable
+  - Show mouse grab toggle shortcut key in startup statusbar message
+  - Center host mouse to Hatari window on Atari resets and resolution
+    changes only when window is focused and mouse pointer is within it
+  - Fix: keypad emulation with SDL2
+  - Fix: simulated (socket API) key input with SDL2
+- Profiler:
+  - Profiler backtrace shows now real caller addresses
+    and their offsets from the function entry points
+    (slows profiling of addresses with symbols)
+  - All profiler outputs have now reasonable limits
+    (so that they don't flood console)
+  - Fix: exception in profile post-processor script
+    (with symbol address aliases)
+- Tracing:
+  - Fix: CPU disassembly trace output doesn't go to specified trace file
+  - Trace flags can be added and removed instead of needing to
+    always specify all the relevant ones, both with "--trace"
+    command line option and debugger "trace" command:
+    --trace os_base,aes, trace +xbios,bios, trace -bios,-aes
+  - VDI trace shows names also for NVDI/Speedo/GDOS functions
+  - VDI & AES trace function numbers are shown in hexadecimals
+    with 0x prefix like rest of the OS calls
+- Debugger:
+  - New "screenshot" command for saving screen dump to a PNG/BMP file
+  - "symbols resident" option replaced with "symbols autoload"
+    option which can be used to completely disable automatic symbol
+    loading and unloading for programs run through the GEMDOS HD
+    (helps debugging resident programs started from GEMDOS HD)
+  - Improvements to UAE and external disassembler disassembly
+  - UAE disassembler is now default instead of external one
+    (latter doesn't decode all instructions correctly)
+  - New "info" subcommands:
+    "acia", "dmasnd", "ikbd", "mfp", "nvram", "rtc" and "scc"
+  - Also UAE disassembler can now show the profile info
+  - "info" command can show AES & VDI information on on their
+    respective traps without VDI mode/tracing being enabled
+  - Breakpoint ":info" option to call specified info function
+    on tracing breakpoint hits (one can now use e.g. ":info vdi"
+    on VdiOpcode breakpoints)
+  - Improved symbols info output
+- Native features:
+  - Support for missing NF_SHUTDOWN (reset) sub commands
+  - Test code for rest of features (except for NF_SCSIDRV)
+  - When Hatari resets or exits due to emulated program
+    NF_SHUTDOWN / NF_EXIT call, output user a note about that
+
+Tools and Hatari Python/Gtk UI:
+- Python scripts use now "python3" because most current distros don't
+  anymore install Python v2 by default.  To use a script with v2,
+  change "python3" in its first line to "python2"
+
+Building and unit tests:
+- Source repository moved from Mercurial to Git
+- Fix: issue with multilib capable cross-compilers
+- Only Caps library v5.1 is supported (support for old v4.2 is dropped)
+- Obsolete Mudflap option replaced with AddressSanitizer support
+- Add tests for GEMDOS HD, fullscreen/overscan display, blitter and Hatari
+  command FIFO + improve CPU/MMU variant coverage in earlier tests
+
+Documentation:
+- Up to date documentation provided at: https://hatari.tuxfamily.org/doc/
+- New m68k-linux.txt and m68k-netbsd.txt documents on how to
+  test m68k Linux and NetBSD under Hatari
+- Debugging and profiling information is split from manual.html to
+  a separate debugger.html file
+- Minor improvements
+
+Fixed demos:
+- Pacemaker STE demo (end part), when it's run from GEMDOS HD
+- Multi scrolls part in Closure by Sync
+  (regression since Hatari 2.2, vsync in bottom border)
+- Fullscreen part in Hard As Ice STE demo by I.C.E.
+  (screen with no vertical DE signal)
+- Fullast Vinner by Troed/Sync
+  (improved vblank position, partial fix for now)
+- Electric Night Falcon demo by Dune
+  (MFP DMA sound interrupt on timer A using AER)
+- Oompa by No Extra (after greetings part)
+  (blitter access to bus error regions)
+- E.K.O System (music should now play in the racing scene)
+
+Fixed programs:
+- MS Write (crash), when it's run from GEMDOS HD
+- Akaisex program reading AKAI S1000 HD floppies converted to STX
+- EmuTos drawing vertical lines with blitter and leaving some trails
+  (blitter in non HOG mode using TAS instruction to restart)
+- Cecile v2.22, now also works if no IDE drive has been configured
+- Trans D-Bug Express by PHF (lock when running in megaSTE mode at 16 MHz)
+
+
+ Version 2.2.1 (2019-02-08)
+ ---------------------------
+
+Emulation:
+- CPU:
+  - Fix a bug/regression from Hatari 2.1.0 in the UNPK instruction
+
+
+ Version 2.2.0 (2019-01-31)
+ ---------------------------
+
+Emulation:
+- CPU:
+  - CPU core updated to WinUAE 4.1.0
+  - Fix 68030 MMU PTEST/FSAVE/FRESTORE
+  - Improve 68030 bus error handling and retrying faulty instruction
+  - Fix: only enable cache emulation when relevant
+  - Improve softfloat FPU emulation
+  - FPU emulation mode (softfloat or not) can be changed on the fly
+  - Ensure HW registers region is not cacheable for 68030 without MMU
+    when write allocate mode is enabled
+- DSP:
+  - Fix DSP ROM tables (sin, mulaw & a-law)
+  - Some  waitstate cycles were not correctly counted when accessing
+    DSP IO regs in CE mode
+- Blitter:
+  - Fix: a rare case in cycle exact mode when bus is shared between CPU
+    and blitter : the last word of a transfer could be wrong if bus was
+    owned by CPU just before processing this last word and a read-modify-write
+    is made
+  - State of current blitter operation was sometimes not correctly restored
+    when CPU temporarily stopped the blitter and resumed it later
+  - DSP emulation was not updated in parallel when blitter was running
+- Video:
+  - Handle VBlank signal and mask the 2 last lines when bottom border
+    is removed
+- Hard disks:
+  - Experimental support for the NCR5380 SCSI chip in Falcon and TT mode
+- Serial ports:
+  - Very experimental support for the SCC chip of the Mega-STE, TT and Falcon
+    (only channel B for now, and output only, use the "--scc-b-out" command
+    line switch)
+- Misc:
+  - Correctly emulate bus error handling for STE lightpen registers
+  - Experimental support for TOS 2.07 (the "Sparrow" TOS)
+
+Emulator:
+- Misc:
+  - "patch TOS timer-D" speedup option is now disabled by default
+  - Allow up to 512MB of TT-RAM (increased from 256 MB)
+  - Additional ROM patches applied to TOS v4.x for 040 & 060
+  - Improved info and warning output for Hatari constraints and issues
+- Memory snapshot save/restore:
+  - Fix: Include GEMDOS HD file handles so apps with open files work
+  - Improve memory snapshot save/restore reliability
+    (e.g. for pending interrupts)
+  - Save/restore TT RAM content into memory snapshots
+- SDL GUI:
+  - Show warning dialog when cartridge file is disabled due to conflict
+    with other features
+  - Fix halt dialog crash on double bus error before SDL init
+  - Add FPU softfloat option
+  - Move joystick info to second statusbar line
+  - Few additional special keys can be remapped
+  - Fix: broken CPU dialog with old UAE CPU core
+  - Display 'SF' in status bar if FPU emulation is using softfloat library
+  - Display 'CE' or 'PF' in status if using 'cycle exact' or 'prefetch' modes
+  - It is now possible to configure more than one ACSI hard disk images
+- MacOS / GUI:
+  - Minor GUI updates for v2.1 changes
+  - Fix: "reset" and "don't reset" UI buttons inverted
+  - Update MIDI panel for French version
+  - Save screenshots in user defined location or ~/Desktop
+- Windows:
+  - Fix: buffer overflow in relative Hatari datapath handling
+- Disk handling:
+  - IDE byte-swap option added to config file & GUI
+  - Fix: NF SCSI driver didn't invalidate cache for changed memory area
+  - Fix: *.INF file in disk image being overridden even when neither
+    VDI mode or autostart program wasn't specified (v2.1 regression)
+  - Fix: GEMDOS HD Fwrite() can be done from ROM area (for ROM saving)
+- Media handling:
+  - Fix: AVI recording with PNG codec could be wrongly limited to 4GB
+    with some OSes
+- Screen handling:
+  - Fix: TOS <= v2.x crashes when mouse is moved in 16x16 area at
+    the bottom right corner in VDI mode (Hatari v1.0 regression)
+  - Fix: "--tos-res high" setting
+- Debugging:
+  - Fix: DSP/CPU profile "addresses" commands output line count when
+    paging.  Tell also when it wraps to start
+  - Each log message has a log level prefix
+  - (Almost) all Hatari output goes now through logging framework so
+    that Hatari verbosity can be controlled
+  - Output at default log level is reduced significantly
+  - Add support for ISP & USP and 020+ special registers like VBR
+  - Add "OsCallParam" variable which gives first (word sized) parameter
+    for OS calls, for use with OS call "*Opcode" breakpoints
+  - Add virtual V0..V7 registers to "register" command for calculations
+  - "memdump" and "memwrite" commands output & input can now be also
+    word or long sized instead of bytes
+  - Show arguments in DSP XBios call traces
+  - FPU and PMMU opcodes are now also disassembled in 68040/060 mode
+- Options:
+  - Fix: "--memsize 0" legacy option
+  - Disable "--timer-d" option by default.  Increases CPU usage
+    (noticeably for ST/e emulation), but some rare (badly written)
+    programs need it for correct color raster & sample handling
+  - The "--bios-intercept" option requires now a boolean parameter
+    to determine whether the option should be enabled or disabled
+  - Add "--cmd-fifo" option to control Hatari at run-time just by
+    echoing commands to a FIFO file (created by Hatari)
+  - Add "--tos none" option to run test programs without any TOS.
+    Real Atari programs cannot be run with this, as it doesn't
+    implement the necessary Atari OS calls
+  - Halt dialog is skipped if --run-vbls is used (for automation)
+  - Support hex values for --disasm, increase --slowdown max value to 30
+
+Building:
+- Fix: Large File Support detection (64 bits off_t)
+- Fix: new compile warnings with GCC v8 (+ code cleanup)
+- Fix: building when DSP or tracing is disabled
+- Improve CMake library finding for recent macOS
+- Change Hatari compilation C standard to gnu99
+- Add gitlab continuous integration Yaml file
+- Many -fsanitize fixes
+
+Tools:
+- Hatari Python UI migrated from PyGtk v2 to Gtk v3
+- Add Python v3 support to rest of the scripts
+  (required by Arch Linux & Clear Linux)
+- hatari-prg-args script:
+  - Installed by default
+  - Fix program argument setting for recent EmuTOS versions
+  - Support argument setting also for programs that are run
+    from disk images
+- zip2st: handle also directories with spaces in their names
+- Fixes to hatari_profiler Callgrind output symbol handling
+- Fix TOS bootup tester test output verification
+- Few additional tests for validating Hatari functionality.
+  Almost all tests are now integrated with CTest framework.
+  Use e.g. "ctest -j4" command to run them
+
+Documentation:
+- Tag commits for Hatari releases before v1 in Mercurial repo
+- Add notes about (new default) PortMidi support to MIDI usage
+- More details on GEMDOS HD and VDI mode emulation limits
+- Large updates to compatibility documents and to performance
+  section in the manual
+- Add release checklist document
+
+Fixed demos:
+- B.I.G. Demo screen 2 (regression in Hatari 2.1, vblank in bottom border)
+
+Fixed falcon demos:
+- 4musiK by Dune & Sector One (don't cache HW register regions in write
+  allocate mode)
+
+Fixed games:
+- Lethal Xcess in STE mode (stopping/resuming blitter and saving/restoring
+  memory snapshots)
+- Lethal Xcess in STF mode (add jitter to MFP, temporary fix)
+
+Fixed programs:
+- Many TT/Falcon programs relying on 68030 MMU / bus error retrying are now
+  working correctly (eg 'memwatch' by Uwe Seimet)
+
+
+ Version 2.1.0 (2018-02-07)
+ ---------------------------
+
+Emulation:
+- Video:
+  - Fix correct number of displayed lines when removing bottom border
+  - Improve bottom border removal on 60 Hz screen
+  - More accurate position for reloading video counter on line 310/260
+  - Fix STE video counter regression at start of VBL (off by 4 cycles)
+  - Fix Timer B counting when screen is in Mono mode and video resolution
+    is set to low/medium
+  - Fix bug preventing screen to be drawn when video address = 0x0
+  - Add (dumb) Videl address and vertical frequency counters emulation
+  - Videl unused bits at $FF820E are read as zero
+- Sound:
+  - New cycle exact emulation of the YM2149, all counters are
+    incremented using a simulated freq of 250 kHz, giving a 250 kHz audio
+    stream which is downsampled to the desired output frequency.
+    Some undocumented cases were also measured on real STF
+    Result should be much more accurate, clearer and emulate complex effects
+    (phase cancelling on 2 voices for example)
+  - Fix bad sound during YM sample playing on Falcon/TT
+- CPU:
+  - Support undocumented behaviour for STOP on 68000 when new SR has bit S=0
+  - Fix some cases where bus/address error stack had a wrong PC
+  - Correctly store the 32-bit address in the stack in case of a bus error
+  - Better memory timings for RAM accesses in 68030 mode (for Falcon)
+  - Accurate DIV overflow undocumented flags
+  - Correct V flag for BCD instructions for 68020/30
+  - 68030 instr cache was not correctly disabled when writing EI=0 in CACR
+  - Improve caches for 68020/30, add cache support when using MMU
+  - Add 68040/60 data cache emulation, with optional MMU support
+- FPU:
+  - Large improvements in FPU emulation and related instructions/exceptions
+  - Support for undocumented 68882/68881 FPU constants
+  - Support for softfloat FPU emulation (slower but more accurate)
+- Memory / MMU / MCU:
+  - Add full support for STF/STE MMU/MCU at $FF8001 and address translation
+    (emulate the RAS/CAS signal depending on the size of the memory banks,
+    TOS memory routines don't need to be patched anymore)
+  - Better results when reading "void" region between end of RAM and 4MB
+    (return latest data seen on the bus on STF/STE)
+  - Add support for more RAM combinations (256 KB and 2.5 MB)
+- Blitter:
+  - Add cycle exact bus handling for the blitter (correct bus count for CPU
+    and blitter, suspend/resume blitter after any memory access, run part
+    of next CPU instruction in parallel when starting the blitter)
+  - When writing busy bit=0, update interrupt line and don't clear hog bit
+- Floppy:
+  - Emulate ripple carry adder "bug" for STF DMA address at $FF8609/0B/0D
+  - For STX images, add support for the verify bit in Type I commands
+  - Fix a rare case when looking for the next sector header of an STX image
+- IKBD:
+  - Support for Audio Sculpture's custom IKBD program
+
+
+Emulator:
+- MIDI support for Windows and macOS (with PortMidi library)
+- Add support for AVI files > 4GB (up to 256 GB)
+- Miscellaneous:
+  - Initial patching for ST-Book ROM
+  - Add keyboard shortcut for toggling borders
+  - Fix: rate-limit DSP illegal instruction warnings output
+- Disk handling:
+  - Add "--gemdos-time <atari/host>" option so that user can specify
+    whether emulation or host timestamps are used with GEMDOS HD files
+  - Fix: off-by-one error in ACSI image file name handling
+- Memory handling:
+  - Support memory check skipping also on TOS v3 & v4
+  - Allow RAM size values in KiB instead of MiB
+- SDL UI:
+  - Add a 'blitter-meter' to the status bar, depending on the blitter's usage
+  - Add refresh rate in the status bar (50, 60 or 71 Hz)
+  - Disable alt+F4 under Windows so that it doesn't close Hatari
+    (in case alt+F4 is also used in the emulated program)
+- Display handling:
+  - Add --resizable option to control whether Hatari SDL2 window
+    can be resized (= turn it off to prevent accidental resizes)
+  - Support scaling AVI recording (PNG/BMP) frames
+  - Extended VDI mode font selected based on VDI height
+  - Fix: Handle window expose events with SDL 2.0
+  - Fix: don't switch bitdepth when recording AVI
+  - Fix: X11 window embedding (to Python GUI) with SDL2
+  - Fix: TOS v2 & v3 Atari logo display in extended VDI resolutions
+  - Fix: Limit Videl widths for GLES2 SDL2 backends
+- Virtual INF file handling:
+  - Add "--auto" option to autostart programs also from somewhere
+    else than C: root, and to enable required GEMDOS interception
+    without full GEMDOS HD emulation
+  - Add --tos-res option to specify TOS ST/STE/TT resolution
+    for color monitors, with or without autostart.  Also enables
+    blitter for machines & TOS versions supporting it
+  - Uses existing INF file as base, if one exists
+  - If not, specifies open window for boot drive
+  - Fix: Use separate INF files for TOS v1 and v2+ autostarting
+  - Fix: Normal users cannot use tmpfile() directly under Windows
+- Debugger improvements:
+  - Fix: '>>' bit-shift parsing
+  - Fix: CPU prefetch when changing PC address
+  - Add "CycleCounter" variable
+  - Add "info dta [addr]" command
+  - Add "cpu_regs" trace option to show register values after
+    each executed instruction
+  - Add support for reading GNU-style a.out symbol table format
+    (which is GCC default) in addition to DRI/GST symbols
+  - Add absolute symbols support in addition to BSS/DATA/TEXT ones
+  - Use terminal size for paging (disassembly, memdump, symbols)
+    commands. NOTE: remove old dDisasmLines & nMemdumpLines options
+    from Hatari config file, or set them to -1, to enable this!
+  - Add 'nSymbolLines' configuration option to specify how many
+    lines 'symbols' command pages
+  - 'symbols resident' command and 'bSymbolsResident' config option
+    toggle whether program symbols are removed when program
+    terminates, or only when the next program starts
+  - 'symbols match" command and 'bMatchAllSymbols' config option
+    toggle whether TAB completes all symbols or just symbol types
+    relevant for given command
+  - 'symbols addr' is split into 'symbols code' & 'symbols data'
+  - TEXTEnd value is now TEXT+TextSize, instead of TEXT+TextSize-1
+  - Add "-f" option to 'cd' so that setup scripts can specify
+    what directory is used after currently invoked script(s)
+    have finished
+  - Move exception mask setting from config file "Log" section
+    to "Debugger" section where it belongs
+- Compilation:
+  - Fix compilation when using ARM 64 target
+  - Allow compilation on untested host architectures (e.g. MIPS & s390x)
+  - Search for local headers first, then system's one (eg zip.h)
+  - Don't redefine bswap_16/_32 macros if they already exist
+
+Other changes:
+- Add French keyboard mapping that works also with SDL2
+- All symbols output by gst2ascii are now TEXT relative
+  and it supports also a.out format symbol tables
+- Fix: Python GUI updated for Hatari v2.0
+- Fix: Python GUI explicitly uses Python v2 (Arch Linux)
+- Fix: Python tools made compatible both to Python v2 & v3 (Arch Linux)
+- Fix: icon symlink generation (rpmbuild chroot)
+- Fix: DESTDIR support for RPM packaging
+
+Fixed Falcon games:
+- Ishar 1, 2 & 3, Lasers and Hommes, Moonspeeder preview 2
+  (Videl video counter)
+- Boom preview, Lasers and Hommes, Tank Blaster
+  (68030 instr-cache)
+- Aazohm Krypth, Men at War, Push It, Running, Sky Fall, Sworm
+  (autostarting)
+
+Fixed Falcon demos:
+- Bound 2, E.K.O system (memory access timings)
+- Bound 3 (Videl video counter)
+- Agony & Chaos A.D. don't freeze anymore (vertical frequency counter)
+- Mahabharata (Videl widths with SDL2)
+- 2x1287, A Rh positive, Are you experienced, Autowaschen Verboten,
+  Bound, Bound 42, Codein, Cycedelic knockout, Dan's Lustiges
+  Kinderfest, Derealization, Dream Dimension, Echos, E.X. Illusion,
+  Geranium, Hex Pistols, Hmmm, Oergs, Polygon Discount, Terrorize your
+  soul, Warum, Virtual City (68030 instr-cache)
+- Terrorize your soul (DSP warnings 100x slowdown)
+- Firestarter, Virtual City, Whirlpool
+  (autostarting with packed demos)
+
+Fixed TT versions of demos:
+- 4getful, Beams (68030 instr-cache, undocumented FPU constants)
+
+Fixed programs for Falcon:
+- Hextracker (Videl video counter, when not auto-started)
+
+Fixed games:
+- Le Necromancien' STX image (verify bit in type I commands)
+
+Fixed ST/STE demos:
+- Sprite32 by Leonard (RESTART_VIDEO_COUNTER on line 310/260)
+- Jam-Cols by ICE (STE video counter timings broken in v2.0)
+
+Fixed ST/STE programs:
+- Protracker 2.1 and Neochrome Master 2.8 (shifter, bottom border at 60 Hz)
+- Audio Sculpture 1.3 and 1.5 beta (timer B in mono mode, bit S=0 in STOP, IKBD)
+- True RAM's size detection under TOS/EmuTOS (memory config at $FF8001)
+
+
+ Version 2.0.0 (2016-11-04)
+ ---------------------------
+
+Emulation:
+- Machine:
+  - Support for MegaST & MegaSTE machines added
+    (this also replaces the Real Time Clock / RTC option, since this chip
+    is only available on the Mega machines)
+  - The general purpose registers of the TT SCU are now correctly emulated
+    (this fixes the problem with AHDI not finding any partitions during boot)
+- HD:
+  - Fix: Disable GEMDOS opcodes after GEMDOS drive is disabled
+  - Fix: GEMDOS HD can now be initialized multiple times,
+    e.g. when running EmuTOS RAM image from a normal TOS
+  - Fix: WORD access to IDE data register at 0xf00002
+  - Fix: '*.*' pattern with GEMDOS HD should match also files
+    without extension
+- Video:
+  - Full rewrite of the GLUE state machine, including support for the
+    4 wakeup states in STF mode, as well as more accurate video timings
+    (hbl, timer b, top/bottom and left/right removal, mixing 50/60/71 Hz
+    lines)
+  - Correctly shows the last 8 pixels for STE 224 byte overscan
+  - Fix: reading video counter $FF8205/07/09 after modifying it
+    while display is ON
+  - Fix: location of the video counter's restart when screen runs at 60 Hz
+  - TT: sync ST & TT color registers immediately on write, handle
+    palette bank setting correctly, fix duochrome colors
+  - Falcon: handle byte access special case for ST color registers
+  - Falcon: border color support also in HiColor
+  - better hbl/timer b interrupts when CPU runs at 16/32 MHz
+- Sound:
+  - Special cases for STE DMA sound when start address = end address
+  - Increase STE DMA volume when compared to the YM2149 volume
+  - Greatly improve Falcon DMA sound
+- CPU:
+  - use WinUAE CPU for STF/STE mode too, not just Falcon (old CPU core
+    is considered deprecated)
+  - improved IACK and simultaneous interrupts
+  - access IO regs on 2 cycle boundaries when possible
+  - More accurate 68060 mode (instructions from previous CPU versions
+    removed in 68060 aren't accepted/emulated anymore)
+  - Misc bus error / IO mem register handling fixes for TT & Falcon
+    (e.g. add TT DIP switch register handler)
+- Blitter:
+  - Better bus arbitration when blitter is started
+  - Don't cause bus error when accessing regions causing CPU bus error
+- Fixes to DSP addressing
+- Floppy:
+  - Fix the value of the WPT bit when inserting/ejecting a write protected
+    floppy
+
+Emulator:
+- Generic fixes:
+  - Autosave to already existing file works first time after v1.4
+    (dialog for file overwrite got automatically canceled on exit)
+- SDL GUI:
+  - MegaST/MegaSTe support
+  - Shortcuts can be configured in the keyboard dialog
+  - User can provide volume label when creating a floppy image
+  - Show dialog on HD image size issues
+- Better SDL2 support:
+  - SDL2 is now enabled by default
+  - Resizable windows, including ST/STE screen scaling
+  - "--desktop" option is used also for ST/STe instead of "--desktop-st"
+- Command line:
+  - Renamed --fpu-type option to --fpu
+- Configuration:
+  - Hatari defaults to ST both with oldUAE & WinUAE CPU core
+  - Preferred private configuration directory is now ~/.config/hatari
+    on Linux/Unix (the legacy location ~/.hatari is still used if
+    the other one does not exist yet)
+  - Windows config location is now: AppData\Local\Hatari
+  - Support SDL key names in keymap files in addition to key codes
+  - Comment characters (#, ;) can also be mapped in keymap file
+- Added NatFeats SCSI (NF_SCSI) driver for Linux version of Hatari
+- Debugger:
+  - Fix: close debugger log file only when explicitly requested,
+         not when continuing emulation from debugger
+  - Fix: direct DSP register, disasm and memdumps to debugger log
+         file, similarly to CPU
+  - Fix: direct CPU and DSP symbol traces to trace file, not stderr
+  - Fix: ':once' option when there's only one breakpoint (v1.9 regression)
+  - Fix: NatFeats NF_DEBUGGER command now actually drops to debugger
+  - 'n' (next) command run until (dbcc backwards branch) loop exits
+    (in addition to running until subroutine and exception calls return)
+  - Support Atari debugger XBios(11) / Dbmsg() API
+  - 'variables' / 'v' command to list Hatari debugger's builtin symbols
+  - Also trace exception can be caught
+- Removed features:
+  - Support for rendering to 8-bit host screens
+  - Support for (buggy) RsConf() interception with --bios-intercept
+
+Other:
+- Allow building without Zlib
+- zip2st tool can convert directories to .st image files,
+  not just .zip files.
+
+Fixed games:
+- Chainz and Jewelz by Paradize (blitter, bus errors)
+
+Fixed demos:
+- spec512 image in the Intro of the Place To Be Again (video, restart counter)
+- Menu screen in the Place To Be Again (video, writing/reading video
+  counter during active display)
+- A Little Bit Insane by Lazer (no DMA sound during the demo)
+- LoSTE and Closure by Sync (video, wakeup states and glue timings)
+- Death of the left border by TNT (video, stabilizer)
+- Gen4 Demo by Ziggy / Overlanders (video)
+- Suretrip 49% by Checkpoint (cpu, exceptions stacking)
+- Tymewarp by YM Rockerz (megaste mode, cpu control at $ff8e21)
+- overscan plasma in Graphics Sound 2 in Relapse by Cybernetic (blitter)
+- RGBeast by Aggression (blitter)
+- Drone by DHS, PhotoChrome Viewer by DML (video, last 8 pixels)
+
+Notes:
+  TOS NF_SCSI driver is available from:
+  https://www.hddriver.net/en/downloads.html
+
+
+ Version 1.9.0 (2015-09-10):
+ ---------------------------
+
+Emulation:
+- STE Joypads:
+  - Fix: Joypad A Option button
+  - Fix: Joypad B extended buttons
+- ACSI / IDE:
+  - Fix: image file attribute check when using device files
+  - Fix: v1.8 ACSI regression with A1=0 case
+- GEMDOS HD:
+  - Fix: matching exactly 8 chars long file names containing '.'
+  - Better mapping of host errors to GEMDOS error codes
+  - Support for mapping file names with 8-bit characters
+    between host and Atari encodings (umlauted chars etc)
+  - Program header (TT-RAM) allocate flags support
+- CPU:
+  - update WinUAE CPU core version from 2.3 -> 2.8.1 -> 3.0 -> 3.1
+    - MMU emulation fixed
+    - instruction/data cache emulation
+    - better 68020/30 prefetch pipeline
+    - cycle accuracy, etc.
+  - in 68000 mode, remove some un-allowed <ea> for CMPI, BTST and TST
+  - check for address error when new PC is set at the end of RTE, RTS and RTR
+  - fix "move.b an,<ea>", it's not allowed and should give illegal instruction
+  - improve stack frame for bus error and address error
+  - allow bus control only for 030
+    (i.e. prevent TOS forcing 16Mhz at boot with higher CPU levels)
+- Memory:
+  - TT-RAM / 32-bit addressing support both for TT & Falcon emulation
+    (when using EmuTOS, this requires version 0.9.4 or later)
+- FDC changes:
+  - for STX disks, fix type I commands with verify bit on tracks with no sector
+  - for ST/MSA, check read address and read track are not beyond max track
+- MFP:
+  - better emulation of GPIP, AER and DDR
+- MIDI:
+  - some RX/TX interrupt conditions were not correctly handled
+  - TDRE bit is status register more accurately handled
+- Video:
+  - fix value when reading video counter $FF8205/07/09 in high res
+- Blitter:
+  - when transfer ends, hog bit should be cleared in control register
+- DSP:
+  - better emulation of the HREQ signal
+
+Emulator:
+- Support for compiling with libSDL2 (experimental)
+  - SDL2 supports other than 2x scaling factors for ST/e emulation
+- Misc fixes:
+  - Fix: WinUAE CPU core (FPU) memory state restore
+  - Fix: crash with VDI extended resolution emulation when
+         C: isn't GEMDOS HD emulated drive
+  - Fix: invalid defaults for real joysticks
+  - Fix: compilation when zlib is missing
+  - Fix: bugs from Debian bug tracker:
+	 https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=716536
+	 https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=716084
+	 https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=688594
+- Additional TOS run-time patching:
+  - Support fast boot also with TOS v3 & v4
+  - Support 32-bit addressing also with TOS v4
+  - Replace TOS v4 instructions unsupported on 060
+  - HW specific phystop value in VDI mode
+- Options:
+  - Fast boot (warm boot / memory check bypass) is disabled by default
+  - 68060 CPU level and --ttram support with new WinUAE CPU core
+  - New --png-level option to decrease AVI compression CPU load
+  - Mouse warping on reset & resolution change can be controlled
+    with new --mousewarp option
+- Hard drive emulation:
+  - BUS ID for ACSI drive can be specified with --acsi
+  - GUI and command line options to enable 8-bit file name
+    Atari <-> host charset conversion for GEMDOS HD
+  - GUI and command line options to specify GEMDOS HD emulation drive
+    (default = C:), or to skip recognized drives used by partitions
+    on ACSI & IDE images
+    - Partition count parsed by Hatari might not match count used by
+      Atari HD driver due to driver differences in interpreting disk MBR
+  - Refuse to mount same HD image from multiple Hatari instances
+    (on platforms supporting BSD flock()), to avoid corrupting them
+- SDL GUI:
+  - joystick navigation in options GUI
+  - keyboard navigation & shortcuts in options GUI
+  - sort file selector items case-insensitively with folders first
+  - Partial support for showing Latin1 chars from UTF-8 file names
+  - AltGr+F<1-4> keyboard shortcuts to switch mode/type for emulated
+    joysticks and joypads
+  - User can reset or quit emulation from CPU halt dialog
+  - Fix: sync joystick changes with statusbar
+  - Fix: update default max window size for 2-line statusbar
+         NOTE: size would need to be updated in Hatari config files too!
+  - Fix: statusbar assert when FPU/MMU/TT-RAM are enabled in WinUAE CPU core
+  - When cpu enters 'halt' state in case of double bus/address errors,
+    show a dialog window to reset or call the debugger
+  - Fix bug in the filesector dialog that could create bug in other
+    dialogs used in Hatari
+- Debugger:
+  - Fix: crash when GEMDOS tracing is used without GEMDOS HD emulation
+  - Fix: update external disassembler's CPU mask when CPU type is changed
+         (it wasn't restricted to opcodes valid for given CPU type)
+  - Fix: breakpoint addition/removal within chained breakpoints
+  - Fix: Atari program detection on Windows for "symbols" command
+  - Profiler support for TT-RAM (uses *ton* of memory)
+  - Profiler support for (030) data cache and new "profile caches"
+    command to show i/d-cache hit/miss histograms
+  - Add trace support for IDE, MIDI and keymaps.  ACSI (SCSI) and IDE
+    trace output shows primary partition tables for ACSI & IDE images
+    (both Atari and DOS MBRs are supported)
+  - Add "os_base" trace option to trace Fopen/Fclose/Pexec/Pterm*.
+    That and "os_all" will now enable also xconout console redirection
+  - Output from --conout goes now to stdout instead of stderr
+  - Add "reset <hard|soft>" command
+  - Add "save" subcommand to "history" command
+  - Add "basepage" address variable
+
+Other changes:
+- Add script to convert long host file names to Atari file names,
+  use that in atari-hd-image script
+- Add hatari-prg-args script for providing arguments to autostarted programs
+- Fix Atari program detection on Windows in "gst2ascii" tool
+- Hatari & disk image icons in SVG & PNG formats (multiple sizes)
+- Remaining Hatari OSX UI changes for Hatari v1.8.0 (localization)
+- Add video-recording.txt doc on video recording/uploading best practices
+
+Fixed demos:
+- Graphix Sound 2 in Relapse by Cybernetics (blitter+cpu, bus arbitration)
+- RGBeast by Aggression (video, writing to video counter during active display)
+- My Socks Are Weapons by Legacy (video, reading video counter in high res)
+
+Fixed games:
+- Superior 65 - Blood Money (cpu, exception stack and bus error)
+  (note that this version is bugged and will crash with TOS 1.04 or 1.62)
+- Obitus (STX version) (fdc, seek+verify on a track with no sector)
+- The Teller (STX/CTR version) (cpu, exception stack and address error)
+- War Heli (cpu, exception stack for address error and prefetch)
+
+Fixed programs:
+- Realtime and M by Eric Ameres (midi + mfp, toggle bit 0 of AER)
+- Notator (midi, more precise TDRE bit in status register)
+- Cubase 2 (midi, reported by user)
+
+Known regressions (see compatibility list):
+- Suretrip demo by Checkpoint
+- Golden Island game demo with WinUAE CPU core
+- TT-version of 4getful demo with WinUAE CPU core
+
+
+ Version 1.8.0 (2014-07-30):
+ ---------------------------
+
+Emulation:
+- ST video changes :
+  - Handle 0 byte line by switching freq in STE mode
+  - Use high res when ff8260 is set to 3
+  - Randomly return 0 or 1 when reading unused bits 3,7 and 11 of
+    color registers (except when running from ROM)
+  - Better detection of bottom border removal on a 60 Hz screen
+  - support for color change during only 4 cycles
+  - better bitmap/color alignment for STE med res overscan at 60 Hz
+  - Set default value of nSpec512Threshold to "1" instead of "16"
+  - Update the position of the next VBL when 50Hz and 60Hz lines are mixed
+  - When video address is set into IO region, keep the video pointer on 24 bits
+- Videl changes :
+  - correct masking of the true color palette registers
+- CPU changes :
+  - Fix a case when MFP's interrupt happens during the IACK sequence
+    for HBL/VBL
+  - Many prefetch changes required by some game's protection
+- Sound changes :
+  - Fix STE sound mixing using LMC when mixer=0 (DMA sound only)
+  - Fix some crossbar's sound errors for Falcon
+  - Fix Microwire's decoding of mask/data (based on official LMC1992's doc)
+- FDC changes :
+  - Add configurable RPM speed for each floppy drive, the possibility
+    to turn each drive ON/OFF and the choice between single or double
+    sided drive
+  - Correct timings, behaviour and status register for all commands
+    when a drive is OFF or empty.
+  - Rewrite the index pulse part and all the delays expressed as disk's
+    revolution
+  - Add support for the "Force Int on Index Pulse" command
+  - Rewrite the DMA functions for better accuracy
+  - Add support for IPF/CTR files by using the capsimage library
+  - Add open source support for Pasti STX files, including random/fuzzy bits
+    and variable length bits. Also allow to save writes to a .stx file into
+    an additional .wd1772 file (store 'write sector' and 'write track' data)
+  - Don't force drives A and B at $4c2, keep the values detected by TOS
+  - Many other timing / status register improvements
+- GEMDOS HD emulation:
+  - Fix: clip filenames given through GEMDOS calls to 8+3 length
+    using first '.'
+  - Fix: autostarting programs with GEMDOS-illegal host characters
+    in their names
+- ACSI hard disk changes:
+  - Support multiple ACSI devices
+  - Fixed/improved READ CAPACITY and INQUIRY commands
+  - Unsupported commands are now handled correctly
+  - Now using fseeko() instead of fseek() for supporting large images
+- Other changes:
+  - Don't enable MegaST's real time clock by default, it can cause some
+    crashes in STF/STE mode
+  - Improve ACIA's wait state with E clock
+  - Add support for IKBD commands 0x11 and 0x13 (resume/pause output)
+    and 0x17 (joystick monitoring)
+
+Emulator:
+- SDL GUI:
+  - Update clock speed in the status bar when changing bus speed
+    in Falcon mode
+  - In the floppy dialog, use a checkbox to enable/disable drives A and B
+    and another checkbox to choose single/double sided drive
+  - In the screen dialog, add checkbox for --desktop-st option
+  - Add a 2nd line in the status bar, with infos on FDC, joysticks, monitor
+  - Fix OSX performance issue caused by statusbar and overlay LED
+    doing their own SDL_UpdateRects() calls
+- New command line options:
+  - Options --drive-a and --drive-b to enable/disable drives A and B
+  - Options --drive-a-heads and --drive-b-heads to select single or
+    double sided drives A and B
+  - --slowdown option to increase (multiply) VBL wait times
+- New Native Features commands:
+  - NF_EXIT exits emulator with given exit code
+  - NF_DEBUGGER invokes Hatari debugger from native program
+  - NF_FASTFORWARD sets fast forward on/off
+- Tracing improvements:
+  - Add option for tracing NatFeats calls
+  - Fix: Xbios(255) modified the given argument string
+  - Allow BIOS, XBIOS, GEMDOS, VDI and AES tracing to be enabled without
+    enabling also X/BIOS interception, GEMDOS HD emulation or extended
+    VDI mode
+  - Show PC value for traced Bios/XBios/GemDOS calls
+- Debugger:
+  - Fix: release mouse in all cases where debugger can be invoked
+  - Fix: DSP disassembler didn't in all cases show illegal opcodes correctly
+  - Fix: "symbols" command crash when it was used during TOS bootup
+  - Fix: TOS and cartridge addresses weren't (with all TOS versions)
+    in address order which asserted in profile data post-processor
+  - Fix: "next" command didn't work correctly in "hex" number base
+  - Fix: depending on compiler/linker/assembler, DATA/BSS debug symbol
+    offsets can in programs be either relative to their own, or to TEXT
+    section start.  If former fails, try latter when loading symbols.
+  - New "ym" info subcommand to show YM register values
+  - "quit" command by-passes exit confirmation dialog and takes
+    an optional Hatari exit code value
+  - removed limits on breakpoints and their conditions
+  - when entering debugger, current program's DRI/GST format debug
+    symbols are automatically read from it, if such are available
+  - new --debug-except option to specify which exceptions invoke
+    the debugger, and WinUAE CPU core support for -D toggle option
+  - "next"/"dspnext" commands work like in other debuggers, they
+    skip subroutine/exception calls, for all other instructions
+    they works like "step" command (earlier they always moved to
+    next instruction in memory)
+  - "next" and "dspnext" commands support optional "instruction type"
+    argument, which can be used (for example) to continue emulation
+    until subroutine returns
+  - "history" command takes optional parameter specifying how many
+    instructions of history will be tracked
+  - CPU & DSP profile commands have now subcommand for profiling loops
+  - "CpuInstr" and "DspInstr" variables for count of instructions
+    executed since emulation was last continued from debugger
+  - In addition to "!" condition, also "<" and ">" conditions can store
+    the checked value (when both sides of conditions are identical).
+    With above change, this can be e.g. used to detect and profile
+    what are worst frames in games and why
+  - New "rename" command to rename files.  Useful for scripted
+    worst frame and spinloop profiling
+  - Address space in 'dm' command can be given like in DSP disassembly,
+    "dm x:$100", in addition to earlier "dm x $100" syntax
+  - Fix out of bounds memory access that could result in bad disassembly
+    output when using the external disassembler (only "dc.w" were printed)
+
+Tools:
+- Increased max partition size in atari-hd-image script to 512MB.
+- New hatari_spinloop.py script for post-processing loop profile data.
+  It can tell how many times loops were executed, how many times they
+  spinned at minimum and maximum, at which VBL those happened, and what
+  was the standard deviation of that.
+- gst2ascii supports now both section relative and TEXT section relative
+  DATA/BSS symbol offsets
+- hconsole.Main() takes now Hatari command line options as argument
+- AHCC/GCC/VBCC examples on using (all) Native Features APIs
+- Improved mingw cross-compilation support
+
+Fixed demos :
+- 4-pixel plasma screen by TOS Crew (video, color change during only 4 cycles)
+- HighResMode by Paradox (video, color changes in overscan med res at 60 Hz)
+- It's A Girl 2 by Paradox (video, bottom border removal on a 60 Hz screen)
+- Pacemaker by Paradox (microwire, YM sound was muted)
+- Panic by Paulo Simoes (video, was broken since Hatari 1.7)
+- Shforstv.exe by Paulo Simoes (video, did not work in STE mode)
+- Sommarhack 2011 Invitro by DHS (CPU/MFP, top border not removed)
+- Stax Compilation #65 (conflict with Mega ST's RTC)
+- The Union Demo (cpu, memory access, ikbd, protection)
+- The World Is My Oyster - Convention Report Part by Aura (video, res=3)
+- Tymewarp (cpu, bus error)
+- UMD 8730 by PHF (video, unused bits in STF color registers)
+- IKBD no jitter by Nyh (acia/video, use a VBL of 160240 cycles)
+
+Fixed games :
+- Batman The Movie (cpu, exception stack)
+- Chart Attack Compilation (cpu, prefetch)
+- Darkman (cpu, prefetch)
+- Dragon Flight (cpu, illegal instruction)
+- International 3D Tennis (cpu, prefetch)
+- Leavin' Teramis loader text (video address at $ffe100)
+- Lethal Xcess Beta (cpu, bus error, code running at $ff8800)
+- Lethal Xcess (mfp, top border not removed sometimes)
+- Maze (by Martin Dennett & John Parker)
+- Parasol Stars (cpu, prefetch)
+- Reeking Rubber (by Nature), Falcon game
+- Titan (cpu, prefetch)
+- To Be On Top (cpu, memory access, ikbd, protection)
+- Warp (ikbd, interrupt used for decoding sectors)
+- Xenon 2 (cpu, prefetch)
+
+
+ Version 1.7.0 (2013-06-24):
+ ---------------------------
+
+Emulation:
+- TT video emulation :
+  - Extend the ST palette registers from 9bit to 12bit for ST modes
+  - Duochrome mode instead of monochrome for ST High
+  - Implementation of SampleHold in TT Hypermono video mode
+- Sound changes :
+  - Better model of the YM2149 noise generation (no noticeable audible impact)
+  - Slightly better volume table (measured by Paulo Simoes on a real ST)
+- CPU changes :
+  - Added experimental MMU emulation for the 68030 mode
+  - Handle the IACK cycles during an exception for HBL/VBL
+- ACIA/IKBD changes :
+  - Full implementation of the MC6850 ACIA, giving much more robust
+    IKBD emulation
+  - Better timings for all IKBD commands (measured on a real STF)
+  - Clock is handled internally in IKBD, host date/time is used
+    only to initialize RTC at boot.  I.e. pausing emulation doesn't
+    cause time skips when unpausing
+  - Fix slow mouse when absolute mode is used with scale values
+- MFP changes :
+  - Fixed priority errors when simultaneous interrupts happened
+  - MFP's IRQ should be delayed by 4 cycles before reaching the CPU
+  - MFP's IRQ signal was not correctly updated in some cases
+  - Handle the IACK cycles between CPU and MFP during an exception
+- FDC changes :
+  - Better delays for all the GAPs inside a track
+  - Emulate the disk's rotation and its angular position to get
+    accurate delays when accessing a sector header
+  - Internal timer for FDC was wrong and sometimes slower than expected
+  - Correct delay for type I commands with "verify" bit=1
+- GEMDOS HD emulation changes :
+  - Support Fforce() for GEMDOS HD emulated files and close at Pterm*()
+    all internal handles to emulated files program had left open
+  - Fix: cut file and dir names to 8+3 chars like all TOS versions do
+  - Fix: GEMDOS HD emulation overwrote last 28 bytes of basepage space
+    for the started process command line (with the program header)
+  - Fix: Fwrite() content wasn't flushed to disk on each write, so later
+    Fopen() + Fread()s calls on such files (if they were not closed
+    in the meanwhile) could get data that was out of date.
+  - Fix: Dfree() return value
+
+Emulator:
+- Fix: problems with run-time CPU type changing
+- Fix: MIDI IRQs were not enabled if MIDI was enabled at run-time.
+  MIDI toggling will now imply reset
+- Much improved console redirection functionality and a separate --conout
+  option for it (--bios-intercept doesn't anymore imply console redirection)
+- Fixed a bug with the axes' mapping in the joystick's detection
+- Display handling:
+  - Fix: max resolution limit wasn't handled properly for ST mode.
+  - Don't change TOS-calculated font size for VDI mode.
+  - Setup NVRAM video mode based on VDI mode, when in VDI mode.
+    This makes VDI mode work with EmuTOS also under Falcon emulation
+    which is useful as EmuTOS doesn't support native VIDEL expanders
+  - Limit VDI screen memory usage to 300kB, this allows up to 2048x1200
+    monochrome and 1024x600/800x768 16-color VDI screens
+- GEMDOS HD emulation:
+  - Fix: to DTA host filename cutting to 8+3 chars when whole filename
+    was < 12 chars (caused EmuTOS crash)
+  - Give warning if GEMDOS dir/file path exceeds 8+3 characters
+    (as those won't work with real TOS)
+  - New --gemdos-case option to specify whether new dir/filenames
+    are forced to be created in upper (default) or lower case
+  - Giving empty string as GEMDOS HD dir disables GEMDOS HD emulation
+- SDL GUI:
+  - Fileselector has "CWD" button for changing to Hatari's work directory
+  - Fileselector remembers previous position which is nicer with
+    large directories
+  - Make the drive leds blink with a brighter green when the FDC is executing
+    a command
+- Profiler:
+  - Fix: profiler assert on invalid PC register values
+  - Fix: profiler usage in debugger files invoked by breakpoints
+  - Fix: profiler CPU & DSP cycles information is for previous instruction
+  - Fix: WinUAE CPU requires cycles counter usage for getting current
+    CPU instruction cycles
+  - Profiler provides timing information, based on used cycles
+  - Profiler provides CPU instruction cache misses information when using
+    cycle-exact WinUAE CPU core (which is Falcon emu default)
+  - Profiler top instruction count/cycles/misses lists show
+    the related instructions
+  - For DSP, profiler adds min/max cycle difference info to disassembly
+  - New "addresses" subcommand can be used to see addresses through which
+    code passed during profiling (e.g. while program seems frozen, this
+    gives much better overview of code that is being run, than cpu trace)
+  - New "callers" subcommand lists all addresses from which loaded
+    symbols' addresses were "called" from.  This way one can e.g. find
+    in which contexts interrupt handlers were called and it can be
+    used to construction program execution callgraph
+  - New "save" subcommand saves profile address and caller information
+    to given file, with extra information needed for post-processing
+  - New "stack" subcommand that can be used to get backtraces during
+    profiling with symbols, for ':noinit' backtraces
+- Debugger:
+  - New ':noinit' and ':quiet' breakpoint options.  Quiet option
+    removes most of breakpoint matching "noise" and ':noinit' breakpoints
+    can be used with "profile stack" command, to prevent profile data and
+    related callstack information from being reset on breakpoint match
+  - "blitter" and "dsp" subcommand added to "info" command, to show
+    blitter register values and DSP state (e.g. stack content)
+  - "prg" subcommand added to "symbols" command, for loading debug
+    symbols from DRI/GST symbol table in last started program
+  - "step" and "next" commands added for single stepping CPU and DSP code
+    -> 's' shortcut is now for "step", not "save"
+  - "--disasm" option for selecting between UAE core and external CPU
+    code disassembler and setting output option flags for latter
+  - When -D option is used, also undefined/illegal DSP instructions and
+    DSP stack under/overflows invoke debugger, not just CPU issues
+  - Fix: when several breakpoints should have triggered
+         on the same address, only first was handled
+  - Fix: after breakpoint, 'c <n>' continues one instruction too little
+  - Fix: tracking breakpoint values were updated only when all conditions
+    matched, now they can be also used together with other conditions
+  - Fix: info command crash (triggered on NetBSD)
+  - Fix: disassember output bug on NetBSD (usigned char < -1 test)
+  - Fix: info osheader and basebase subcommands under MiNT
+  - Fix: debugger history duplicates removal
+  - Fix: expression expanding CPU "pc" for DSP shortcut commands
+  - Fix: expression expansion messing lines in command line history
+  - Remote API debugger commands can also use expression expansion
+  - Both single and double quotes can be used to mark expressions
+  - In addition to text section offset, data and bss section offsets
+    can be given when loading symbols (useful for Devpac symbols)
+  - Output what value was set by options if it's not otherwise shown by UI
+  - New 'cpu' and 'dsp' options to 'history' command for tracing just
+    one of these processors on Falcon
+  - Function arguments are shown in traces for all non-MiNT GEMDOS calls
+    and subset of arguments are now shown also for AES calls (values in
+    intin array and strings in addrin array)
+  - Add NVRAM read & write tracing
+  - Support for the basic Native Features and --natfeats option to control it:
+    http://wiki.aranym.org/natfeats/proposal
+
+Windows specific changes:
+- "-W" option added for opening a console window.  Like on all other platforms,
+  "-D" will now just toggle CPU exception handling
+- Fix: console stderr redirection (used invalid "wr" mode)
+- Fix Windows localtime() not supporting dates before 1970:
+  - TOS not being able to access files with such dates, or further files
+  - causing IKBD emulation crashes (wasn't problem with Cygwin,
+    just with Mingw builds)
+
+Tool updates:
+- New hatari-profiler.py script for post-processing output from
+  profiler's CPU and DSP profiling "save" commands:
+	profile save <filename>
+	dspprofile save <filename>
+  - With symbol address information it can provide function level
+    instruction, processor cycle & i-cache miss statistics
+  - With callers information it can create function call callgraphs
+    and create callgrind format files for Kcachegrind GUI
+- New gst2ascii tool to extract DRI/GST symbol table from Atari program,
+  for use with the profile data post-processor
+- Added scripts for converting symbol tables in Devpac 3 listings and DSP LOD
+  files to a format understood by Hatari debugger 'symbols' command,
+  and to clean 'nm' output of GCC & VBCC built a.out binaries for it
+
+Other changes:
+- HTML documentation indices generated dynamically with JS
+- Debugger tests building fixed
+
+Fixed Games:
+  Atomix (MFP, flickering bottom of the screen during samples)
+  BBC 52 Menu (Video/CPU, top border not removed)
+  Bolo (MFP, couldn't start a game)
+  Captain Blood (IKBD, fixed problem when setting the clock)
+  Fokker and Downfall (ACIA/IKBD, had regressed in Hatari v1.6.x)
+  Fuzion CD 77/78/84 Menu (MFP, random crash with digidrums in STF mode)
+  James Pond (Fuzion CD 25) (FDC, game stuck during the intro)
+  Microprose Golf (FDC, crash during the intro)
+  Spidertronic (Zuul CD 84) (crashed before 50/60 Hz screen)
+  Super Hang On and Super Monaco GP (MFP, flickering rasters)
+  The Final Conflict (MFP, locked during the sampled intro music)
+  The Sentinel (IKBD, mouse much too slow)
+  Zuul 100/101 Menu (MFP, flickering top border)
+
+Fixed demos :
+  Anomaly Demo Main Menu by MJJ Prod (MFP, flickering top/bottom borders)
+  Audio Artistic Demo by Big Alec (MFP, bad sample speed at start)
+  Decade Demo - Reset (MFP, flickering bottom border)
+  High Fidelity Dreams by Aura (MFP, flickering left rasters)
+  ST-NICCC 2000 Demo by Oxygene (FDC, demo ran slower than expected)
+
+Fixed apps :
+  Monst v1.x
+  Spectrum 512 (IKBD, mouse too slow)
+  Cubase (when MIDI was enabled after Hatari startup)
+
+
+ Version 1.6.2 (2012-06-24):
+ ---------------------------
+
+Emulation:
+- ST video changes :
+  - Fixes a rare potential crash when running in color mode and switching
+    to monochrome mode for more than one VBL (eg : protection code used
+    in The European Demos and The Transbeauce II Demo)
+  - add more timings for the 224 bytes overscan detection on STE
+  - Correct write timing for BCHG/BCLR/BSET when removing borders
+  - Fix to top/bottom border removal in a rare case
+- IKBD/ACIA changes :
+  - Handle commands 0x12 and 0x14 sent during the IKBD reset
+    (enable both mouse and joystick reporting at the same time)
+  - Handle the TX IRQ in the ACIA (bits CR6+CR5=0x01)
+  - Implemented IKBD set-clock function
+- Sound changes :
+  - Improve YM2149 sound filtering to be closer to a real STF
+  - Increase output volume for STE DMA sound (compared to the YM2149's volume)
+- DSP changes :
+  - Fix to DSP stack overflow handling
+  - Fix DSP to be reset on emulation reset
+- Old UAE core specific changes :
+  - Changes in the prefetch code for some instructions
+  - Correct PC in stack when JMP generates an illegal address exception
+- WinUAE core specific changes :
+  - 68040 MMU emulation fixes
+  - Fix GEMDOS/VDI emulation (illegal opcode) handling
+  - Fix WinUAE core to work with ST emulation (boot TOS 1.x)
+  - Fix FPU to be enabled when switching to TT emulation
+  - Fixes to FPU register value conversion
+- Falcon changes :
+  - Support for Falcon/Videl screen borders
+  - Fixes to few Falcon IO registers
+  - Changed behavior of the Microwire registers in Falcon mode
+- Misc changes :
+  - IO registers can only be read in supervisor mode
+  - Ignore FDC commands when no drive is selected
+  - Fix TT SCSI register reads to return all bits zero instead of set
+  - Fix for GEMDOS HD emu to direct special CON:/AUX:/PRN: device files
+    to TOS instead of trying to handle them as normal files
+  - printer output is single, not double buffered
+
+Emulator:
+- RS232 input&output and printer output can be disabled from command
+  line by specifying an empty path
+- Fix loading of memory snapshot from SDL GUI not to leave host cursor
+  enabled
+- Video changes:
+  - Increase max allowed VDI resolution from 1280x960 to 1920x1200
+  - Revert preferred Videl resolution max zooming size setting from
+    host desktop resolution back to 832x576 it was in Hatari v1.4,
+    so that Falcon/TT emulation window sizes by default are closer
+    to ST/STE ones on larger resolution monitors
+  - Fix statusbar assert
+  - Add --sound-sync option to keep video synchronized with the audio
+    in case the OS audio's driver has some latency issues
+- WinUAE core specific changes:
+  - Default to Falcon with WinUAE core (old CPU core still defaults to ST)
+  - Support run-time changing of CPU level, FPU type and machine type
+    from the GUI (also) with WinUAE CPU core
+- Debugging improvements:
+  - Fix to debugger CPU cycle profiling modifying CPU state
+  - Profiling info is shown at end of disassembly lines
+  - Support for tracing all symbols loaded to the debugger,
+    this can be used to get function traces for both CPU and DSP
+  - Show args for all Bios and most XBios & Gemdos calls when tracing
+  - "info" command can output opcode tables for BIOS & XBIOS too
+  - More info to FDC, IKBD, Videl and Crossbar traces
+
+Other changes:
+- Hatari OSX UI updated for Hatari v1.6.1 changes
+- Hatari Python UI supports file paths with spaces in them and spaces in
+  Hatari options given through its control socket can be quoted with '\'.
+- Support for alphanumeric characters in Hconsole "text" command
+- Fixes to Hatari UI and hconsole error handling and examples
+- Fixed hatari-local-midi-ring.sh & hatari-local-rs232.sh arg handling
+- zip2st removes intermediate directories from created floppy
+- Fixed hmsa to handle files with multiple "." characters in their names
+- TOS tester testing covers more GEMDOS functionality, works with
+  all Hatari supported TOS versions and HW configurations and it's
+  fully automated
+
+Fixed Games :
+  Hammerfist (fire button),
+  Automation 168 - Operation Clean Streets (prefetch in the CPU emulation)
+  Impossible Mission II (some versions had the same prefetch issue in the CPU)
+  Hades Nebula (fire button)
+  Zombi (IKBD set-clock was missing)
+
+Fixed demos :
+  Built-in Obsolescence (DSP stack overflow)
+  Japtro and Rising Force by Holocaust (FDC, buggy loader)
+  Delirious Demos IV (video, STE detection)
+  Antiques by Dune/Sector One (224 bytes STE overscan)
+  The Wave Of the Future by ICE (STE flickering top border)
+  Electrocution I by Sphere on Stax Menu 66 (STE flickering bottom border)
+  Musical Wonders 1990 by Offbeat (video, bottom border not removed)
+
+
+ Version 1.6.1 (2012-01-13):
+ ---------------------------
+
+This version is mainly a bugfix for 1.6.0, where monochrome mode
+gave a black screen and was not usable.
+
+Emulation:
+- Fixes to bootup issues in monochrome mode
+- Better left border removal timings
+- DSP external memory access cycles taken into account
+
+Other changes:
+- Fix to allow build with Xcode 3.1.3/OS X 10.5.8 PPC
+- Several fixes & updates needed to Hatari UI & hconsole
+  for them to work correctly with Hatari v1.6.x
+- Test programs added for testing TOS booting with different
+  HW configurations and for finding out values needed in
+  Hatari keymaps
+
+Fixed Demos :
+  Vodka Demo - Kill The Beast 2 (left border removal)
+
+
+ Version 1.6.0 (2012-01-01):
+ ---------------------------
+
+The Hatari project has been moved from hatari.berlios.de to
+http://hatari.tuxfamily.org/. Please update all bookmarks!
+
+Emulation:
+- More accurate FDC emulation (correct status bits and commands' timings,
+  DMA transfer by blocks of 16 bytes, floppy change detection). This should
+  fix a lot of non working games
+- More accurate microwire clock emulation
+- SCSI class 1 (ICD) command support for drives > 1 GB
+- Improved color conversion table so that colors are a little bit brighter
+- Improve shifter (add another method to do 4 pixel hardware scrolling,
+    better emulation for 0 byte blank line)
+- Some fixes to the IKBD emulation
+- Better filters and model for sound emulation
+- Correct VBL timings in TT monochrome (double clicking works now)
+- More cycle accurate Falcon DSP <-> CPU emulation.  All the demos that
+  needed 32Mhz CPU with the old CPU core in Hatari v1.5, work now at
+  correct 16Mhz with the WinUAE CPU core
+- 030 MMU emulation with the WinUAE CPU core
+
+
+Emulator:
+- Switch to ST mode when using TOS <= 1.04
+- Replace "--slowfdc" with "--fastfdc" option and default to fast FDC being OFF
+- "--fast-boot" option to initialize "memvalid" system variables to
+  by-pass the memory test of TOS, so that the system boots faster
+- "--force-max" option to force Hatari use specified maximum resolution
+  to avoid window size changes messing up Hatari video recording
+- "--desktop-st" option to keep desktop resolution also for ST/STE modes
+  (unfortunately without scaling besides the low-res doubling)
+- GEMDOS HD emulation:
+  - Allow drives up to Z: (not Y:)
+  - Unique name for each partition
+  - Warn user when using too old TOS version
+  - Dfree() reports host disk total and free size if they're below
+    value understood by TOS and unlike earlier, it forwards Dfree()
+    requests  for other (IDE/ACSI image) partitions to TOS
+- Debugger improvements:
+  - "history" command to list instructions executed before entering
+    debugger
+  - each trace output line is flushed to avoid it being buffered
+- Fixed behavior of the Caps Lock key
+
+Other changes:
+- Fixes to Hatari UI Hatari window embedding
+- Latest Linux sfdisk is borked so atari-hd-image script creates
+  HD image partition table now itself (experimental)
+- Windows needs also HOMEDRIVE for full home path in case Hatari
+  isn't installed on C:, bug 18297
+- Minor fixes
+
+
+Fixed Demos :
+  Overscan Demos and Shforstv.exe by Paulo Simoes (black line at top),
+  ACF - Just Bugging (FDC), Delirious Demo IV (FDC, shifter),
+  Overdrive Demos - Snirkel Screen (IKBD), Oxygene - Stniccc2000 (FDC),
+  Cream - Madness (FDC)
+
+Fixed Games :
+  Superior 65 - Super Monaco GP, DBug 24 - Knightmare, Pompey Pirates 27 - X-Out,
+  Fuzion 32 - Pang, Fuzion 108 - The Simpson, Fuzion 40 - Super Grand Prix,
+  Fuzion 46 - Warlock, Fuzion 51 - Navy Seals, Fuzion 61 - Gods, Fuzion 78 -
+  Carmen Sandiego, Fuzion 82 - Flight Of The Intruder, Fuzion 83 - RBI Baseball 2,
+  Fuzion 102 - Exile, PP46 - Yolanda, Medway Boys 15 - Murders In Venice,
+  Medway Boys 83 - Yogi Bear, BBC 2 - Platoon, BBC 39 - The Deep, Superior 71 - The
+  Running Man, Adrenaline 24 - Demon Blue, Superior 93 - Alien Storm
+
+Fixed Misc Programs :
+  Procopy 1.50, Terminators Copy 1.68, maxYMizer (caps lock key)
+
+
+ Version 1.5.0 (2011-07-19):
+ ---------------------------
+
+Emulation:
+- Alternative CPU core based on WinUAE for more accurate future
+  HW interaction emulation (see readme.txt on how to enable it)
+- Use precise clocks values (as described in Atari's official schematics)
+  for better video/dma audio synchronisation (e.g. More Or Less Zero by DHS)
+- DSP:
+  - Some DSP-timing sensitive Falcon demos that by luck happened to work
+    with Hatari v1.4, don't work anymore in v1.5 with the default UAE CPU
+    core.  This is because while DSP cycle accuracy has been improved,
+    the default UAE CPU core isn't fully cycle accurate.  The experimental
+    WinUAE core is needed to run them
+  - Undocumented 2 bit shift special case for DSP SSI <-> crossbar exchanges
+    in handshake mode with 32 Mhz clock (fixes DSP MP2 player used in many
+    demos & programs, but that requires also using WinUAE core)
+- Sound improvements:
+  - Major rewrite and accuracy improvements in STE DMA sound, including
+    emulation of the 8 bytes FIFO, giving results nearly identical to
+    a real STE (e.g. HexTracker by Paulo Simoes)
+  - Improved precision in sound emulation, with nearly no rounding errors
+    over successive VBL (correct sound latency on US TOS running at 60 Hz)
+  - By default mix 3 YM voices using a lookup table of values
+    measured on real STF to improve digisound (e.g. Flashback demo sound)
+  - Remove old ST Sound's code used for tone and noise step compute
+    (some low period values were not correctly emulated)
+- Video emulation on STF/STE:
+  - On STE, correctly shift display 8 pixels to the left when using
+    224 bytes overscan
+  - Add support for spec512 mode in med res (fixes 'Best Part Of The
+    Creation' in 'Punish Your Machine', 'HighRes Mode' demo by Paradox)
+  - Correctly shift the screen 4 pixels to the left when left border is removed
+    in med res overscan (Hatari 1.4 handled only low res, fixes 'No Cooper'
+    by 1984, 'Best Part Of The Creation' by Delta Force)
+  - Precisely emulate the number of frames per sec (eg 50.053 fps in PAL
+    instead of the usual 50 Hz)
+
+Emulator:
+- Atari program given as argument to Hatari will be automatically
+  started after TOS boots. GEMDOS hard disk directory can now be
+  give also as an argument, not just as a (-d) option
+- TOS4 or --machine falcon option use enables DSP emulation now
+  (follow them with --dsp none to disable DSP emulation)
+- Memory state saving and restoring fixes, especially for Falcon
+  - Crossbar state is included -> state file ABI break
+- AVI recording options can be set in the new [Video] config file section
+- AVI recording supports non integer frame rates.
+- Falcon/TT Videl/hostscreen improvements:
+  - New setting/option for using Desktop resolution & scaling
+    in fullscreen instead of changing the resolution. On by default
+  - User's desktop size is used as max limit for Videl zooming.
+    Requires SDL >= 1.2.10
+  - Videl resolution change is done immediately, not 3 VBLs late
+  - Fix issues in switching between same sized VDI & TT resolutions
+- SDL GUI improvements:
+  - DSP can be disabled from the GUI without needing to restart Hatari
+  - Disk access LED and desktop-resolution options
+  - AVI video length (mins:secs) is shown in titlebar during recording
+  - Option for cropping statusbar from videos & screenshots
+  - Fileselector scrollbar can be used with mouse
+  - YM mixing method selection
+- Debugging improvements:
+  - New disassembler with more Motorola like syntax
+  - CPU & DSP "disasm" and "memdump" commands accept register & symbol
+    names in addition to numeric addresses / address ranges
+  - Option to disable Falcon mic
+    ("--mic off" is needed for Mudflap debugging)
+  - "--run-vbls" can be set also at run-time
+  - "--bios-intercept" can be toggled from debugger (not just enabled)
+  - BIOS CON: output is converted to ASCII and redirected to host console
+    with the --bios-intercept option
+  - Support for tracing DSP, Videl and Crossbar
+  - Support for tracing AES calls.  VDI calls can now be traced
+    also without using an extended VDI resolution
+  - BIOS/XBIOS/GEMDOS/VDI/AES/Line-A/Line-F opcode breakpoint support
+  - TEXT, DATA and BSS variables for addresses of corresponding segments
+    in currently loaded program
+  - "aes", "vdi" and "gemdos" subcommands for "info".  Without arguments
+    they will output information about corresponding OS part state,
+    with (a non-zero) argument, opcode/call name table is shown.
+    "video" subcommand for showing video related information.
+    "cookiejar" subcommand for showing cookiejar contents.
+  - "file" subcommand to "lock" that executes debugger commands from
+    given file when debugger is entered (or ":lock" breakpoint is hit)
+  - ":lock" option to breakpoints that will show (without stopping the
+    emulation) the same output as what's shown on entering the debugger
+  - ":file" option to breakpoints that executes the commands from
+    given file when the breakpoint is hit. This can be used to chain
+    debugger actions
+  - multiple breakpoints options can be specified per breakpoint
+  - parenthesis in "evaluate" command are used to indicate memory
+    accesses (instead of operator precedence like earlier)
+  - DSP and CPU code profiling functionality.  Provides statistics about
+    profiled code (executed code address ranges, max and total counts
+    and cycles), lists addresses/instructions taking most cyles and if
+    symbols are loaded, what were the most used symbol addresses.
+  - Profiling information is also shown in disassembly output
+
+Other changes:
+- hmsa tool can create empty disk images in addition to converting
+  disks between ST & MSA formats
+- Minimal hatari-tos-register.sh Linux init script (example)
+  to register Hatari as binfmt_misc handler/runner for TOS programs
+- hatari-console.py renamed to hconsole.py, documented and made extensible
+  (hconsole is command line Python interface for Hatari remote API)
+- Support for plain Makefiles removed (except for internal tests),
+  only CMake is used for configuring and building Hatari
+- CMake doesn't require anymore working C++, C-compiler is enough
+
+
+ Version 1.4.0 (2010-06-12):
+ ---------------------------
+
+Emulation:
+- IDE improvements:
+  - Support for second drive (IDE slave)
+  - WIN_FORMAT command (allows HD Driver to format IDE drives)
+- GEMDOS HDD emulation:
+  - Minor fixes to Fseek(), Fopen(), Fdatime() (e.g. Pure debugger works)
+  - On TOS v4 Fread() size arg is unsigned, on earlier TOS its signed
+    (bad code can use -1L to read whole file instead getting fail on TOS4)
+  - Prevent DTA and read/write functions accessing invalid memory areas
+  - Programs can now change read-only files to be writable
+- Falcon sound emulation:
+  - Microphone (jack) emulation in Falcon mode (requires portaudio library)
+  - SSI direct sound entrance ("Audio Fun Machine" and winrec are working)
+  - DMA sound recording
+  - Crossbar handshake mode transfers
+- Max VDI rez increased to TT-hi size (1280x960)
+- 68020+FPU changed to 68EC030+FPU (no MMU 030) for Falcon and TT modes
+  (Some Falcon programs didn't work with 020)
+- Video emulation on STF/STE:
+  - correctly shift the screen 4 pixels to the left when left border is removed
+  - add support for STE's 224 bytes overscan line without stabilizer
+  - when reading $ff8205/07/09 on STE, take into account the value
+    of horizontal scrolling/prefetch and linewidth
+  - when writing to $ff8205/07/09 on STE, correctly handle the case
+    where the write is made while display in ON
+- LMC1992 emulation / STE sound filtering
+
+Emulator:
+- Host mouse is centered to Hatari window on Falcon resolution changes
+  (helps in synchronizing host and emulated mouse positions)
+- Toggling fullscreen doesn't unpause paused emulation
+- Falcon/TT resolution zooming is now controlled by separate options for
+  monitor aspect ratio correction and maximum zoomed Hatari window size.
+  This can reduce Hatari window resolution size changes significantly and
+  makes e.g. FUN's Alive demo viewable in fullscreen mode.  Limits for
+  window size are also checked to see whether ST/STE low rez should be
+  zoomed and how much of borders can be shown (when borders enabled)
+- Split the Screen dialog into two separate dialogs, one for Atari
+  monitor emulation setup and one for Hatari window setup
+- GEMDOS drive emulation:
+  - support long host directory names and much improved long filename support
+  - convert host filename chars invalid in TOS to valid ones ('@')
+  - use TOS filename matching instead of glob() (can match names with [])
+- Options for preventing floppy image (--protect-floppy) and GEMDOS
+  emulated drive directory (--protect-hd) modifications
+- AVI file recording:
+  - video can be stored as BMP or as PNG images
+  - audio is stored as 16 bits stereo PCM
+- Statusbar shows CPU type & speed
+- Can create blank 2.88MB (ED) and 1.44MB (HD) floppy images
+  from the GUI in addition to DD & SD images.  After creating
+  new floppy image, one can directly insert it to A: or B:.
+- Tracing for BIOS, XBIOS, GEMDOS and VDI traps gives in addition
+  to the opcode, also the name of the corresponding OS function
+- Major debugger improvements:
+  - TAB-completion for debugger commands, command arguments and
+    symbol names. Requires readline library
+  - "parse" command and --parse Hatari command line option to
+    execute debugger commands from a file
+  - "stateload" and "statesave" commands for memory snapshots
+  - "trace" command for tracing what the emulated code does
+  - "symbols" command for loading and listing CPU & DSP code & data
+    symbols/addresses.  Code symbols are shown on CPU & DSP disassembly
+    and code & data symbols can be used in breakpoints
+  - "evaluate" command for doing calculations. Register and symbol
+    names in expressions are replaced by their values. '$' will be
+    TAB-completed to last 'evaluate' command result
+  - "cd" command to change Hatari work directory
+  - "exec" command to execute shell commands (ENABLE_SYSTEM_DEBUG_CALL)
+  - "info" command for showing Atari HW and OS information
+  - "lock" command for setting what information is shown every time on
+    entering the debugger, e.g. disassembly or memdump from given address.
+    "regaddr" argument does that from address pointed by given register
+  - improved register name handling + fixed DSP reg name matching
+  - if both sides of conditional breakpoint condition are identical, replace
+    right side with current value of given expression (e.g. if it's "d0",
+    use current D0 value).  If the comparison is for inequality ("!"),
+    output the value & break only when the value changes from the previous
+    value (not original like with other comparisons).  Symbols support
+  - ":trace" option to trace/output breakpoint hits without breaking
+  - breakpoints count hits and can be optionally removed after first hit
+    (":once" option) or triggered only on every Nth hit (":<count>" option)
+  - dsp/address command is a shortcut for conditional breakpoints and its
+    argument can be an expression (see "evaluate" above)
+  - Display DSP instructions cycle timings in disasm mode (in cycles)
+  - Configuration options for how many lines to disasm & memdump
+- Fix VBLs/s counting to work also when --run-vbls isn't used
+
+Other changes:
+- Considerably expanded debugging and hard disk sections in manual
+- CMake build support, this fixes OSX building and adds support
+  for building Hatari in different directory from the sources
+- Removed autotools usage/support, added CMake "configure" script
+- Hatari remote control programs updates (see their own release notes
+  for details)
+
+
+ Version 1.3.1 (2009-09-05):
+ ---------------------------
+
+This is only a bug fix release:
+- GEMDOS HD emulation works together with ACSI HD image again
+- Fix incorrect use of DESTDIR in python-ui installation
+- Fix memdump/disasm in python-ui
+
+
+ Version 1.3.0 (2009-08-16):
+ ---------------------------
+
+Emulation:
+- Hugely improved DSP emulation:
+  - Many more DSP using games/demos/apps work now
+  - Preliminary sound support (e.g. most DSP based .MOD-playback works)
+  - Better cycle counting / accuracy
+  - Many speed improvements
+- Major rewrite of the internal work/structures of video.c :
+  - Allow to mix 50/60 Hz lines of 508/512 cycles and to keep correct
+    video/cpu sync (fixes TCB in SNY, DI in MindBomb, TEX in Syntax Terror).
+    This also adds support for dynamic calculation of HBL/Timer B positions
+    when freq/res are changed (fixes SHFORSTV by Paulo Simoes)
+  - Improved Timer B accuracy when starting it in a rare case
+  - Handle end of line as well as start of line for Timer B
+    in event count mode (using MFP's AER) (fixes Seven Gates Of Jambala)
+  - Add another 'O byte' line method (fixes No Buddies Land)
+  - Some more color alignment with the shifter when using movem.w/movem.l
+    (for spectrum512 like images)
+- Improved Blitter timings / cycles counting
+- GEMDOS emulation can emulate appropriately named host subdirectories
+  as separate partitions
+- Bug fixes for GEMDOS HD emulation Fopen and Fseek calls
+
+Emulator:
+- DSP changes:
+  - DSP state saved to memory snapshots
+  - Threading support removed from DSP emulation (for better synchronization)
+- "keyDebug" configuration file setting was renamed to "keyPause"
+- Major debugger improvements:
+  - Invoked with AltGR+Pause. New "keyDebugger" configuration file setting can
+    be used to change this
+  - Show PC/HBL/VBL/cycles when entering debugger
+  - Support multiple number bases. By default values are expected in
+    decimals; $-prefix is needed for hexadecimal and %-prefix for binary
+    values.  Default number base can be changed
+  - Internal debugger can be used to debug also DSP code
+  - Support for (PC) address breakpoints and conditional breakpoints
+    (watchpoints), both on CPU and DSP. Watchpoints support multiple
+    conditions, register & memory values and some internal Hatari
+    variables like VBL, HBL, LineCycles, FrameCycles
+  - Support for stepping CPU and DSP code
+- Emulated programs can now change Hatari options like --fast-forward,
+  --trace etc. by giving a suitable Hatari command line string to
+  XBios call 255.  This is enabled when Hatari is started with
+  the --bios-intercept enabled
+- Support Videl horizontal fine scrolling for 16 bpp and 32 bpp host screens
+- Process successive motion events before returning from event handler
+  (to fix analog joystick jitter slowing Hatari input processing)
+- FPS measurement shown when emulation is paused & --run-vbls option
+- Mouse grab option (--grab)
+- Some fixes for building Hatari with MS-VC6 and for the Wii
+- Statusbar assert (bug #15512) fixed
+- Reworked the main dialog of the GUI and split the disk dialog into two
+  separate dialogs, one for floppy setup and one for hard disk setup
+
+Utilities:
+- New atari-hd-image.sh script for creating HD image files
+- External Python GUI and CLI interfaces for Hatari in main repo
+
+Documentation:
+- Debugging and performance sections added to manual
+
+
+ Version 1.2.0 (2009-01-24):
+ ---------------------------
+
+- The Hatari project has been moved from hatari.sourceforge.net to
+  http://hatari.berlios.de. Please update all bookmarks!
+- New zip2st.sh shell script for converting .ZIP files into .ST disk images
+- Fixed a bug that could write data to the wrong disk image (resulting
+  in data loss)
+
+Emulation:
+- MIDI input supported in addition to output; --midi option is now
+  replaced with separate --midi-in and --midi-out options
+- Support for STE hardware horizontal scrolling in medium res
+- Make the FDC Read Address command always return success, even if
+  we don't really return the correct bytes for now (fixes a few game loaders)
+- Improved shadow register when writing to the YM2149 (fixes X-Out music)
+- Cleaner blitter code with improved timings
+- Emulation of interrupts jitter for HBL and VBL + improved timing accuracy
+- Improve color alignment with the shifter (for spectrum512 like images)
+- Fix to the fire button detection reported in some games
+- Added IDE hard disk emulation
+
+Emulator:
+- Pause/unpause shortcut
+
+
+ Version 1.1.0 (2008-11-29):
+ ---------------------------
+
+Emulation:
+- Falcon DSP emulation good enough to improve some few games/demos, e.g.
+  Virtual City. (most still work better with emulation disabled, though)
+- New sound engine that fixes all problems with the old one
+- 16-bit stereo sound (instead of 8-bit mono)
+- Improved blitter emulation (blitter cycles emulation, blitter interrupt)
+- Improved STE support for some video registers (hscroll, linewidth, ...)
+- Improved printer emulation
+- Improved STE microwire emulation
+- Improved support for games & demos which are accessing IKBD directly
+  (including a fake 6301 emulation for the known IKBD programs)
+- ACSI emulation fix to get HDDriver working
+- Some other minor bugfixes to ST/STe emulation (FDC, MFP, PSG, RS-232)
+- Improved MFP emulation
+- Improved 68k emulation (move.b Ax,(Ay) and extb.l)
+- Fixed bugs in the GEMDOS HD emulation (Pexec() etc.)
+
+Emulator:
+- Statusbar and overlay led features
+- Screenshots work also in VDI/TT/Falcon mode and are saved as PNGs
+- Support for automatic frameskip and pausing emulation
+- Support for embedding Hatari window (on X11) and control socket
+- Improved memory snapshot function
+- Improved the "trace" debug function
+
+
+ Version 1.0.1 (2008-03-30):
+ ---------------------------
+
+- This is just a bug-fix release, without new features.
+- Fixed some compile problems on non-unix-like systems (like MingW).
+- Fixed crashes in Spec512 emulation code ("Dan Dare 3" and little endian ARM).
+- Blitter source address is not incremented anymore in operation mode 0 and 15.
+- STE small overscan video effect is now displayed on the left side instead
+  of the right side (fixes "Just Musix 2" menu for example).
+- Hatari now works on 256 color displays right again.
+- Fixed PSG mirror register emulation (fixes e.g. sample sound in "Ooh Crikey
+  Wot A Scorcher" demo).
+
+
+ Version 1.0.0 (2008-03-17):
+ ---------------------------
+
+- The user's configuration files are now located in the directory ~/.hatari/
+  instead of the $HOME directory itself.
+- Improved VDI resolution mode (resolution can now be change in small steps).
+- The 'Frame Skip 8' option can now be correctly selected, too.
+- Fixed some bugs/problems in the GEMDOS HD emulation (with Fopen & Fcreate).
+- Keyboard shortcuts for saving and restoring memory snapshots.
+- Hatari can now be compiled with CeGCC, too.
+- Fixed some problems with the FPU emulation. NeoN Grafix renders now right.
+- Writing to floppy disk images works now also with TOS 4.0x.
+- A lot of source code clean-up and beautification.
+- Monochrome mode now runs in 71 Hz, and 60 Hz color mode now also really runs
+  with 60 Hz refresh rate.
+- Fixed memory snapshot files (some important data has not been saved before).
+- It is now possible to automatically load/save memory snapshots at start/exit.
+- Fixed some bugs in the file selection dialog.
+- Some minor improvements in the GUI: Improved text edit fields, "Cancel"
+  buttons can now be activated by pressing the ESC key, and Hatari asks the
+  user before resetting and quitting the emulator.
+- The Hatari executable is now relocatable (so the RPM can be relocated, too).
+- It's now possible to enable special trace output with the "--trace" option.
+- The size of the borders can now be specified in the hatari.cfg file.
+- Fixed Spec512 screen plotting on big endian machines.
+- Native screen conversion functions for 32 bpp host display mode.
+- Reworked the command line options.
+- Added missing read for "clr" in 68000 CPU mode.
+- Cycle correct MULU/MULS/DIVU/DIVS in 68000 CPU mode.
+- Support for 68000 instructions pairing
+- Better emulation of exception stack frame (bus/address error), used in some
+  protections.
+- Don't change illegal 68000 opcodes $8, $a and $c if no cartridge is inserted.
+- Ensure ACIA has consistent values when reset.
+- More precise interrupt handling, allowing to mix CPU cycles and MFP cycles
+  with greater precision.
+- Various improvements in MFP emulation (stop/start timer without writing to
+  data register, reading data register, handle pending cycles when timer
+  "wraps" (i.e. data register reaches 0), ...). Supports programs using some
+  very "fast" timers (Overscan Demos, ULM Demos) and requiring nearly cycle
+  exact synchronisation with the 68000.
+- Mostly correct wait states when accessing sound registers (add wait state for
+  $ff8801/ff8803 when needed).
+- Correct values of cycle counters read & write accesses for the most common
+  cases used for fullscreen/hardscroll.
+- Correct values for Video_CalculateAddress, taking into account frequency and
+  left/right borders' state, needed for correct synchronisation between video
+  and cpu.
+- Improve top/bottom border removal, including 60 Hz bottom border, as well as
+  "short" 50 Hz screen (171 lines)
+- Support for all left/right border removal, including 0 byte lines.
+- Support for hardscroll on STF, including the most recent ones using 4/5 lines.
+- Support for 4 pixels horizontal hardscroll on STF (ST Connexion in Punish
+  Your Machine)
+- Small adjustments in cycle precise color handling (spec512.c)
+
+
+ Version 0.95 (2007-05-12):
+ --------------------------
+
+- This release brings you basic Atari TT and Falcon emulation!
+  Please note that both new emulation modes are still highly experiemental,
+  some few games and demos work, but most still have more or less big
+  problems.
+- Basic emulation of Falcon video shifter (Videl), NVRAM and DMA sound is in
+  place. The biggest drawback: There is no working Falcon DSP emulation yet.
+- Screen/Shifter emulation timings have slightly been changed. Some things
+  now work better, some others work worse...
+- Some patches for compiling on RiscOS and AmigaOS have been included.
+- Compiling Hatari for Windows now works better.
+- Added Hatari icon (hatari-icon.bmp).
+- Fixed "movec" bug in 68020 CPU mode.
+- Keyboard shortcuts for loading & saving memory snapshots (AltGr+k & AltGr+l).
+- The built-in debugger has been slightly improved to be more user-friendly.
+- Added "hmsa" tool - a little program for converting .MSA files to .ST and
+  vice versa.
+
+
+ Version 0.90 (2006-08-22):
+ --------------------------
+
+- Better Spectrum 512 support (60Hz support, improved I/O memory waitstates).
+- STE right border opening support (used in Obsession, Pacemaker).
+- Blitter Smudge mode support (used in Pacemaker demo).
+- Wheel-mouse simulates cursor up and down.
+- Work-around to FDC handling, --slow-fdc option is not anymore needed.
+- Bugfix to MFP, sound works now in more YMRockerz releases.
+- Bugfix to GEMDOS path handling (Hatari SIGSEGV).
+- Bugfix to emulated memory initialization (4MB was cleared earlier, now
+  exactly the amount set up for Hatari.  Saves memory on embedded systems
+  if less than 4MB is specified.)
+- Re-written command-line option handling.
+- (Again) lots of code const/static, type usage and indentation cleanup.
+- Preliminary support for TOS 3.0x and 030 TT software that runs in ST
+  resolutions and doesn't need PMMU.
+- Native GUI for Mac OSX.
+- ACSI emulation fixes to get HD formatting to work with AHDI 5. HD emulation
+  now works quite fine with AHDI 5 (but other HD drivers are currently not
+  supported).
+- Joystick shortcut changed to toggle cursor emulation between ports 0 and 1.
+- Keys for all Hatari shortcuts can now be configured from hatari.cfg.
+- Added command line option for setting ST keyboard mapping.
+- Joystick command line option requires now parameter for a port for which
+  the joystick cursor emu is enabled.
+- Fixed relative mouse event handling in zoomed low-rez.
+- Hatari shows now more of the bottom borden (screen size is now 384x276
+  instead of 384x267).
+- Fixed sync delay timings - sound should now be better (e.g. on Mac OS X).
+- Added basic support for compiling Hatari with MinGW.
+
+
+ Version 0.80 (2005-10-12):
+ --------------------------
+
+- Support for STE hardware emulation: STE palette, STE shifter (horizontal fine
+  scrolling, split screen effects), DMA sound and STE joypads.
+  See the manual for a list of working STE applications/games/demos.
+- Hatari can now emulate up to 14 MiB ST RAM instead of only 4 MiB.
+- Support for parallel port joysticks.
+- Improved GEMDOS HD emulation (added Fattrib() call).
+- Adding and removing a GEMDOS or ACSI hard disk should now work correctly.
+- Re-factoring of the screen conversion functions.
+- Improved manual: Now with screenshots of the options dialogs.
+
+
+ Version 0.70 (2005-06-05):
+ --------------------------
+
+- As always: Code cleanup and bug fixes.
+- No more crashes when a program tries to access illegal sector numbers.
+- Improved built-in ROM cartridge.
+- Rewrote the IO memory emulation code -> Better compatibility.
+- Support for TOS 1.06 and TOS 1.62
+- Emulated CPU can now also be run at 16 MHz or 32 MHz.
+- File selection dialog scrollable with mouse wheel or cursor keys, too.
+- Hatari now works on 64-bit host CPUs, too.
+- Floppy disk images can now be set writable/write-protected in the GUI.
+- Hatari can now also load a global configuration file (e.g. /etc/hatari.cfg).
+- Configurable logging functions.
+
+
+ Version 0.60 (2004-12-19):
+ --------------------------
+
+- Again some code cleanup and bug fixes.
+- Window/fullscreen mode is now correctly initialized from the configuration
+  file.
+- Added --window command line option to force a start in window mode.
+- Added alert boxes to show warnings, errors and information messages.
+- PC mouse pointer is now better in sync with the ST mouse pointer.
+- It's now possible to load an alternative cartridge image file.
+
+
+ Version 0.50 (2004-07-26):
+ --------------------------
+
+- A lot of internal code cleanup and bug fixes.
+- Added a dialog for creating new blank floppy disk images.
+- The source code has been optimized for better emulation speed.
+- Added RS232 emulation (still very experimental and not very well tested! It
+  seems not to work reliable yet. Help for debugging is very appreciated!).
+- Some bugs in the 68000 emulation have been fixed.
+- The emulator now checks for double bus errors and stops the emulation if
+  necessary (instead of crashing the emulator).
+- Timer-D is now patched correctly again.
+- The old font has been replaced by two new fonts so that the GUI now looks
+  better in high resolutions.
+- The fonts are now linked into the executable.
+- Added support for DIM floppy disk images.
+
+
+ Version 0.45 (2003-10-30):
+ --------------------------
+
+- This is just a minor release on the way to version 0.50. It is not very
+  well tested, so be warned!
+- New build system (with a "configure" shell script).
+- A disk image destroying bug in the MSA compression function has been fixed.
+- It is now possible to redirect the printer output into a file.
+- Experimental MIDI output support.
+- Added the possibility to save memory snap shots.
+- Pending HBL and VBL interrupts are now emulated correctly (I hope).
+- Some speed improvements.
+- GEMDOS HD emulation now also works with EmuTOS.
+
+
+ Version 0.40 (2003-07-11):
+ --------------------------
+
+- Support for ZIP and GZIP compressed disk images!
+- Configuration file support for loading and saving the emulator settings.
+- Hatari now works on machines with Sparc CPUs, too.
+- Fixed a problem that slowed down the emulator in monochrome mode when using
+  TOS 2.06.
+- Inverted monochrome mode is now supported, too (some games like Maniac
+  Mansion use this).
+- Added Mega-ST compatible real time clock (RTC) emulation.
+- The GEMDOS HD emulation has been improved (it now also works with lower-case
+  file names) and many bugs have been fixed there.
+- Improved keyboard mapping (added mapping via PC keyboard scancode and via
+  reloadable mapping files).
+- The screen rendering routines have been generalized (less differences between
+  windowed and fullscreen mode).
+- Hatari can now be cross-compiled, too. You can even compile it for MiNT now.
+  However, it does not run very well there yet.
+- Support for RAM TOS images.
+- Improved memory mapping (the different memory regions should now behave much
+  more like on a real ST).
+- Improved M68k exceptions (bus errors and exception cycle timings).
+- Fixed some bugs in the extended VDI resolution mode (now it is working with
+  EmuTOS, too).
+- Some games that poll the write-protection signal of the FDC to check for
+  disk changes should now be working, too.
+
+
+ Version 0.30 (2003-03-12):
+ --------------------------
+
+- Some parts of the code accessed the SR directly to read the IPL -
+  however the UAE CPU core only updates the SR when doing a MakeSR() first.
+  So this is done in the affected code parts now, too.
+- The IPL wasn't raised when a MFP interrupt occurred - fixed now.
+- Full screen resolution for ST-Low can now be selected from the screen setup
+  dialog.
+- The IKBD emulation does not longer duplicate joystick fire buttons when
+  a game tries to use both, joystick and mouse
+- Improved audio timer function - the code should now be a little bit faster.
+- Resynced Hatari's UAE CPU core with UAE 0.8.22 - this fixes some bugs in 68k
+  instructions like ABCD and SBCD.
+- Added patches for TOS 2.05 so that this TOS version should now work, too.
+- Rewrote TOS patching routine. It is much more flexible now.
+- Removed 0xa0ff opcode for VDI resolutions; using GEMDOS_OPCODE now instead.
+- Fixed MMU RAM size configuration bug.
+- Rewrote some more screen conversion functions in C.
+- When a bus or address error occurred, the PC was often not set to the
+  right exception handler routine. This has been fixed now.
+
+
+ Version 0.25 (2002-12-30):
+ --------------------------
+
+- Patches for big endian systems (Spectrum 512 pictures are now working there).
+- Hatari now also compiles and runs under Mac OS X.
+- Blitter emulation has been added.
+- There is now the possibility to save YM or WAV sounds.
+- Big VDI resolutions (e.g. 800x600) are now supported, too.
+- Mouse grab shortcut (AltGr+M).
+- Fixed TOS v1.00 patching.
+
+
+ Version 0.20 (2002-02-18):
+ --------------------------
+
+- Added graphical user interface for configuration of the emulator settings.
+- Real joysticks can now also be used to simulate the ST joysticks.
+- Yet another bugfix for BeOS (lseek again...)
+- Support for hard disk images.
+
+
+ Version 0.11 (2001-10-10):
+ --------------------------
+
+- High level (GEMDOS) harddisk emulation.
+- ST-Med/ST-Low mixed mode now works.
+- Add --compatible CPU mode option.
+
+
+ Version 0.10 (2001-08-16):
+ --------------------------
+
+- Improved CPU cycles emulation.
+- Added Spec512 support.
+- Some keyboard shortcuts.
+- Added the possibility to switch between fullscreen and window mode.
+- ST Medium resolution conversion routine.
+- Built-in debugger.
+- Added possibility to grab screenshots.
+- Sound support (not working very well yet).
+
+
+ Version 0.05 (2001-06-01):
+ --------------------------
+
+- Joystick emulation via cursor keys.
+- ST-LOW resolution conversion routine is now working on big-endian machines.
+
+
+ Version 0.04 (2001-05-27):
+ --------------------------
+
+- Added Stefan Berndtsson's patch for big-endian machines.
+  Hatari now runs also with non-x86 Linux machines! Thanks Stefan!
+- Rewrote the ST-LOW resolution conversion routines in C ==> ST-LOW now works!
+- Added some of the WinSTon patches Paul Bates recently published
+  at the WinSTon BBS (Thanks to Ladislav Adamec for the hint).
+- Cleaned up the source tree a little bit.
+
+
+ Version 0.03 (2001-04-03):
+ --------------------------
+
+- Rewrote some more assembler functions. FDC emulation now works!
+- SDL Keyboard code finished and included a SDL-Key -> ST-Scancode table.
+- Added mouse support.
+
+
+ Version 0.02 (2001-03-28):
+ --------------------------
+
+- Added very simple SDL support.
+- Rewrote a lot of assembler functions in C (e.g. intercept.c).
+- Adapted the UAE CPU. Now Hatari is able to boot a TOS 1.0x ROM, the
+  Desktop shows up, but no mouse and keyboard interaction yet.
+
+
+ Version 0.01 (2001-03-21):
+ --------------------------
+- Made the WinSTon source code compilable with GNU-C.
+- Added the UAE CPU sources.

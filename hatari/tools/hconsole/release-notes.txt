@@ -1,0 +1,22 @@
+User visible changes in Hatari (Python) console
+-----------------------------------------------
+
+2021-01:
+- Python v2 support removed
+
+2011-02:
+- Support both Python v2 & v3
+
+2010-10:
+- Split hatari-console.py from hatari UI and renamed it hconsole.py
+  (no '-') so that it can be included from other Python scripts
+- Added manual page and hconsole example input file & extension program
+- Added "text", "script" & "verbose" commands
+- renamed some earlier commands (see 'usage' command)
+
+2010-03:
+- New debugger and command line options commands support to hatari-console
+- hatari-console commands can be scripted (see its help)
+
+2009-12:
+- Support new Hatari command line options in hatari-console

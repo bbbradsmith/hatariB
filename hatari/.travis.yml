@@ -1,0 +1,33 @@
+dist: focal
+language: c
+compiler:
+  - gcc
+addons:
+  apt:
+    packages:
+      - libpng-dev
+      - libsdl2-dev
+      - portaudio19-dev
+      - imagemagick
+
+before_script:
+  - ./configure ${CONFIG}
+script:
+  - make -j3 && ctest -j2
+
+matrix:
+  include:
+
+    - env:
+        - CONFIG="--enable-werror --enable-debug"
+      arch: arm64
+
+    - env:
+        - CONFIG="--enable-werror --enable-debug"
+      arch: ppc64le
+      script:
+        - make -j4 && ctest -j$(nproc)
+
+    - env:
+        - CONFIG="--enable-werror --enable-debug"
+      arch: s390x

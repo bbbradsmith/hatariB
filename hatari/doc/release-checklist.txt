@@ -1,0 +1,110 @@
+Things for Hatari dev team to check before new release...
+
+When first thinking about new release
+-------------------------------------
+
+* Get list of things we want to push in before the release
+  - Make sure that any other larger changes are postponed
+    after release
+
+* Ask about compatibility / bug fixes & features that people would
+  like to see in next release
+
+* Check whether any of the (new) changes distro packages apply to
+  Hatari sources should be in Hatari itself:
+  - https://sources.debian.org/patches/hatari/
+  - https://src.fedoraproject.org/rpms/hatari/tree/main
+  - https://packages.gentoo.org/packages/games-emulation/hatari
+  - https://svnweb.mageia.org/packages/cauldron/hatari/current/
+  - https://build.opensuse.org/search?search_text=hatari
+
+
+One or two weeks before release
+-------------------------------
+
+After changes deemed necessary have been implemented, check that
+everything that should work, does still work:
+
+* Ask people on hatari-devel to build latest Hatari and do some
+  preliminary testing with their favorite use-cases
+
+* Run TOS boot tester for all supported TOS versions
+
+* Verify that:
+  - Building different Hatari build configurations works:
+    - all optional dependencies being present, and none
+    - all optional features enabled, and disabled
+    - Mac GUI
+  - All above Hatari builds pass "make test"
+  - Run Hatari with valgrind
+  - Check a build with "cmake -D ENABLE_ASAN:BOOL=1".
+    Use this if ASAN prints weird stack traces for leaks:
+    export ASAN_OPTIONS="fast_unwind_on_malloc=0"
+  - Check that everything built fine on Travis and Cirrus-CI:
+      https://travis-ci.com/github/hatari/hatari
+      https://cirrus-ci.com/github/hatari/hatari
+
+* Check that all programs/demos listed in compatibility.html as fixed
+  during early development still work, and make sure they're listed
+  also in release-notes.txt
+
+* Check that (Python/Gtk) hatariui still works with latest changes,
+  including starting with no existing Hatari config, saving changed
+  config, and running under X11 & Wayland
+
+
+Release candidate
+-----------------
+
+After found issues have been fixed, prepare for release candidate:
+
+* Check that Hatari documentation and WWW-site repository are up to date
+
+* Fix remaining x.x-dev versions in compatibility.html to new release:
+  sed -i 's/x.x-dev/x.x/'
+
+* Validate HTML documentation with https://validator.w3.org/
+
+* Go through commit log / ask others to make sure relevant changes are
+  listed in release-notes.txt, and updated in todo.txt
+
+* Get latest etos1024.img version for binary packages and document
+  that in emutos.txt
+
+* Build binary packages for OSes that aren't covered by the daily builds
+
+* Announce release candidate on mailing lists & Atari forum and ask
+  people to test it on all platforms.  Remember to tell which
+  platforms should work, and which are still completely untested
+
+
+Final release
+-------------
+
+If no release-critical issues were reported, do actual release:
+
+* Update release version & date in:
+  + Sources:
+    - src/includes/version.h
+    - src/memorySnapShot.c (if needed)
+    - Mac GUI plist files :
+        src/gui-osx/Info-Hatari.plist
+        src/gui-osx/Info-Hatari Winuae.plist
+        src/gui-osx/en.lproj/InfoPlist.strings
+        src/gui-osx/fr.lproj/InfoPlist.strings
+  + Documentation:
+    - readme.txt
+    - doc/compatibility.html
+    - doc/doxygen/Doxyfile
+    - doc/debugger.html
+    - doc/emutos.txt (based on latest EmuTOS release)
+    - doc/manual.html
+    - doc/release-notes.txt
+  + Packaging:
+    - hatari.spec
+
+* Build final binary packages
+
+* Announce new release "everywhere"
+
+* Party!
