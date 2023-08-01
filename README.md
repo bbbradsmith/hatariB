@@ -27,4 +27,4 @@ This project also incorporates libraries from [Libretro](https://github.com/libr
 This Libretro core was begun by [Brad Smith](https://github.com/bbbradsmith).
 
 Authors of incorporated works:
-* [Hatari](http://hatari.tuxfamily.org/doc/authors.txt)
+* [Hatari](hatari/doc/authors.txt)
