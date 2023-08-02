@@ -204,7 +204,8 @@ else()
 	endif(TOS_IMG_FILE)
 endif(ENABLE_OSX_BUNDLE)
 
-# hatariB - disable exectuable build, add core library target
+# hatariB - disable exectuable build, add core library target, add __LIBRETRO__ define
 set_target_properties(hatari PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
 add_library(core ${SOURCES})
 target_compile_definitions(core PUBLIC __LIBRETRO__)
+target_compile_definitions(Floppy PUBLIC __LIBRETRO__)

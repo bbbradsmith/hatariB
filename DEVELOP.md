@@ -20,13 +20,20 @@ This has been built and tested with MSYS2 UCRT64. The following tools are requir
 
 ## Changes to Hatari
 
-Changes to 
+Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherwise there are minor changes to the CMake build files, marked with a comment that beings with: `# hatariB`
 
 * **hatari/src/CMakeLists.txt**
   * Disabled `hatari` exectuable build target, added `core` library target with `__LIBRETRO__` define.
   * `set_target_properties(hatari PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)`
   * `add_library(core ${SOURCES})`
   * `target_compile_definitions(core PUBLIC __LIBRETRO__)`
+* **hatari/src/cpu/CMakeLists.txt**
+* **hatari/src/debug/CMakeLists.txt**
+* **hatari/src/falcon/CMakeLists.txt**
+* **hatari/src/gui-sdl/CMakeLists.txt**
+  * Define `__LIBRETRO__`for all internal hatari libraries.
+  * target_compile_definitions(xxx PUBLIC __LIBRETRO__)`
+
 * **hatari/src/includes/main.h**
   * Added common include `../../core/core.h` to give quick common access to hatariB core.
 * **hatari/src/main.c**

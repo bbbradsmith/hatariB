@@ -11,3 +11,6 @@ add_library(GuiSdl
 	dlgMemory.c dlgNewDisk.c dlgRom.c dlgScreen.c dlgSound.c dlgSystem.c
 	sdlgui.c
 	)
+
+# hatariB - add __LIBRETRO__ define
+target_compile_definitions(GuiSdl PUBLIC __LIBRETRO__)

@@ -5,3 +5,6 @@ endif(ENABLE_DSP_EMU)
 
 add_library(Falcon
 	    crossbar.c microphone.c nvram.c videl.c dsp.c ${DSP_SOURCES})
+
+# hatariB - add __LIBRETRO__ define
+target_compile_definitions(Falcon PUBLIC __LIBRETRO__)

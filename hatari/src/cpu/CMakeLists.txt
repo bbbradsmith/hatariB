@@ -88,3 +88,6 @@ endif()
 
 add_library(UaeCpu ${CPUEMU_SRCS} ${WINUAE_SRCS} custom.c events.c memory.c
 		   hatari-glue.c)
+
+# hatariB - add __LIBRETRO__ define
+target_compile_definitions(UaeCpu PUBLIC __LIBRETRO__)
