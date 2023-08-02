@@ -41,9 +41,9 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Skip `Win_OpenCon` and `setenv`.
 * **hatari/src/video.c**
   * Increment `core_frame_advance` in `Video_InterruptHandler_VBL` to track beginning of frame.
+  * Use `SPCFLAG_BRK` to exit the CPU run loop.
 * **hatari/src/cpu/newcpu.c**
   * Split `m68k_go` into `m68k_go`, `m68k_go_frame` and `m68k_go_quit`.
-  * Add an exit for `core_frame_advance` to every m68k run loop.
 * **hatari/src/screen.c**
   * Support all 3 pixel formats allowed by Libretro.
   * Send rendered framebuffer to core in `Screen_Unlock`.

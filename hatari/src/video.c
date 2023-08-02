@@ -4642,6 +4642,7 @@ void Video_InterruptHandler_VBL ( void )
 
 #if __LIBRETRO__
 	++core_frame_advance;
+	M68000_SetSpecial(SPCFLAG_BRK); // exit the run loop
 #endif
 
 	Main_WaitOnVbl();

@@ -65,17 +65,6 @@
 #endif
 
 
-#ifdef __LIBRETRO__
-#define __LIBRETRO__EXIT_IF_CORE_FRAME_ADVANCE() { if(core_frame_advance) exit=1; }
-#define __LIBRETRO__RETURN_IF_CORE_FRAME_ADVANCE() { if(core_frame_advance) { return; } }
-#define __LIBRETRO__STOPTRY_IF_CORE_FRAME_ADVANCE() { if(core_frame_advance) { STOPTRY; return; } }
-#else
-#define __LIBRETRO__EXIT_IF_CORE_FRAME_ADVANCE() {}
-#define __LIBRETRO__RETURN_IF_CORE_FRAME_ADVANCE() {}
-#define __LIBRETRO__STOPTRY_IF_CORE_FRAME_ADVANCE() {}
-#endif
-
-
 #ifdef JIT
 #include "jit/compemu.h"
 #include <signal.h>
@@ -5292,7 +5281,6 @@ static void m68k_run_1 (void)
 					save_state ( NULL , NULL );
 #endif
 
-				__LIBRETRO__EXIT_IF_CORE_FRAME_ADVANCE();
 				if (!currprefs.cpu_compatible || (currprefs.cpu_cycle_exact && currprefs.cpu_model <= 68010))
 					exit = true;
 			}
@@ -5303,7 +5291,6 @@ static void m68k_run_1 (void)
 					exit = true;
 			}
 			regs.ipl = regs.ipl_pin;
-			__LIBRETRO__EXIT_IF_CORE_FRAME_ADVANCE();
 		} ENDTRY
 	}
 }
@@ -5468,7 +5455,6 @@ cont:
 					save_state ( NULL , NULL );
 #endif
 
-				__LIBRETRO__EXIT_IF_CORE_FRAME_ADVANCE();
 				if (!currprefs.cpu_cycle_exact || currprefs.cpu_model > 68010)
 					exit = true;
 			}
@@ -5478,7 +5464,6 @@ cont:
 				if (do_specialties(0))
 					exit = true;
 			}
-			__LIBRETRO__EXIT_IF_CORE_FRAME_ADVANCE();
 		} ENDTRY
 	}
 }
@@ -5999,11 +5984,9 @@ static void m68k_run_jit(void)
 							if (do_specialties(cpu_cycles))
 								exit = true;
 						}
-						__LIBRETRO__EXIT_IF_CORE_FRAME_ADVANCE();
 					}
 					unset_special(SPCFLAG_END_COMPILE);
 				}
-				__LIBRETRO__STOPTRY_IF_CORE_FRAME_ADVANCE();
 			}
 
 #ifdef USE_STRUCTURED_EXCEPTION_HANDLING
@@ -6172,7 +6155,6 @@ static void m68k_run_mmu060 (void)
 				if ( savestate_state == STATE_SAVE )
 					save_state ( NULL , NULL );
 #endif
-				__LIBRETRO__STOPTRY_IF_CORE_FRAME_ADVANCE();
 			}
 		} CATCH (prb) {
 
@@ -6271,7 +6253,6 @@ static void m68k_run_mmu040 (void)
 				if ( savestate_state == STATE_SAVE )
 					save_state ( NULL , NULL );
 #endif
-				__LIBRETRO__STOPTRY_IF_CORE_FRAME_ADVANCE();
 			}
 		} CATCH (prb) {
 
@@ -6480,7 +6461,6 @@ insretry:
 				if ( savestate_state == STATE_SAVE )
 					save_state ( NULL , NULL );
 #endif
-				__LIBRETRO__STOPTRY_IF_CORE_FRAME_ADVANCE();
 			}
 
 		} CATCH (prb) {
@@ -6600,7 +6580,6 @@ static void m68k_run_3ce (void)
 				if ( savestate_state == STATE_SAVE )
 					save_state ( NULL , NULL );
 #endif
-				__LIBRETRO__EXIT_IF_CORE_FRAME_ADVANCE();
 			}
 		} CATCH(prb) {
 			bus_error();
@@ -6608,7 +6587,6 @@ static void m68k_run_3ce (void)
 				if (do_specialties(0))
 					exit = true;
 			}
-			__LIBRETRO__EXIT_IF_CORE_FRAME_ADVANCE();
 		} ENDTRY
 	}
 }
@@ -6697,7 +6675,6 @@ static void m68k_run_3p(void)
 				if ( savestate_state == STATE_SAVE )
 					save_state ( NULL , NULL );
 #endif
-				__LIBRETRO__EXIT_IF_CORE_FRAME_ADVANCE();
 			}
 		} CATCH(prb) {
 			bus_error();
@@ -6705,7 +6682,6 @@ static void m68k_run_3p(void)
 				if (do_specialties(0))
 					exit = true;
 			}
-			__LIBRETRO__EXIT_IF_CORE_FRAME_ADVANCE();
 		} ENDTRY
 	}
 }
@@ -6902,7 +6878,6 @@ fprintf ( stderr , "cache valid %d tag1 %x lws1 %x ctag %x data %x mem=%x\n" , c
 					save_state ( NULL , NULL );
 #endif
 
-				__LIBRETRO__EXIT_IF_CORE_FRAME_ADVANCE();
 			}
 		} CATCH(prb) {
 			bus_error();
@@ -6911,7 +6886,6 @@ fprintf ( stderr , "cache valid %d tag1 %x lws1 %x ctag %x data %x mem=%x\n" , c
 				if (do_specialties(0))
 					exit = true;
 			}
-			__LIBRETRO__EXIT_IF_CORE_FRAME_ADVANCE();
 		} ENDTRY
 	}
 }
@@ -7102,7 +7076,6 @@ cont:
 				if ( savestate_state == STATE_SAVE )
 					save_state ( NULL , NULL );
 #endif
-				__LIBRETRO__EXIT_IF_CORE_FRAME_ADVANCE();
 			}
 		} CATCH(prb) {
 			bus_error();
@@ -7111,7 +7084,6 @@ cont:
 					exit = true;
 			}
 			ipl_fetch();
-			__LIBRETRO__EXIT_IF_CORE_FRAME_ADVANCE();
 		} ENDTRY
 	}
 }
@@ -7232,7 +7204,6 @@ static void m68k_run_2_000(void)
 				if ( savestate_state == STATE_SAVE )
 					save_state ( NULL , NULL );
 #endif
-				__LIBRETRO__EXIT_IF_CORE_FRAME_ADVANCE();
 			}
 		} CATCH(prb) {
 			bus_error();
@@ -7240,7 +7211,6 @@ static void m68k_run_2_000(void)
 				if (do_specialties(cpu_cycles))
 					exit = true;
 			}
-			__LIBRETRO__EXIT_IF_CORE_FRAME_ADVANCE();
 		} ENDTRY
 	}
 }
@@ -7325,7 +7295,6 @@ static void m68k_run_2_020(void)
 				if ( savestate_state == STATE_SAVE )
 					save_state ( NULL , NULL );
 #endif
-				__LIBRETRO__EXIT_IF_CORE_FRAME_ADVANCE();
 			}
 		} CATCH(prb) {
 			bus_error();
@@ -7333,7 +7302,6 @@ static void m68k_run_2_020(void)
 				if (do_specialties(cpu_cycles))
 					exit = true;
 			}
-			__LIBRETRO__EXIT_IF_CORE_FRAME_ADVANCE();
 		} ENDTRY
 	}
 }
@@ -7365,7 +7333,6 @@ static void m68k_run_mmu (void)
 			if (do_specialties (cpu_cycles))
 				return;
 		}
-		__LIBRETRO__RETURN_IF_CORE_FRAME_ADVANCE();
 	}
 }
 #endif
