@@ -59,7 +59,6 @@ static struct retro_core_option_definition CORE_OPTIONS[] = {
 // Available to Hatari
 //
 
-int core_frame_advance = 0;
 int core_pixel_format = 0;
 
 unsigned char core_video_buffer[VIDEO_MAX_H*VIDEO_MAX_PITCH];
@@ -187,7 +186,6 @@ RETRO_API void retro_init(void)
 		retro_log(RETRO_LOG_INFO,"Pixel format: %s\n",PIXEL_FORMAT_NAMES[core_pixel_format]);
 	}
 
-	core_frame_advance = 0;
 	main_init(1,(char**)argv); // TODO how are paths affected?
 
 	// TODO fetch initial core_video_w, core_video_h, fps, samplerate so that the first retro_get_system_av_info will be accurate
@@ -244,7 +242,6 @@ RETRO_API void retro_run(void)
 	input_poll_cb();
 	
 	// run one frame
-	core_frame_advance = 0;
 	m68k_go_frame();
 
 	// TODO Libretro video output can't handle variable framerate,

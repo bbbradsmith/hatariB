@@ -4640,11 +4640,6 @@ void Video_InterruptHandler_VBL ( void )
 	if ( quit_program == 0 )
 		M68000_Exception(EXCEPTION_NR_VBLANK, M68000_EXC_SRC_AUTOVEC);	/* Vertical blank interrupt, level 4 */
 
-#if __LIBRETRO__
-	++core_frame_advance;
-	M68000_SetSpecial(SPCFLAG_BRK); // exit the run loop
-#endif
-
 	Main_WaitOnVbl();
 }
 

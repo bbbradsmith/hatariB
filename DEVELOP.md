@@ -39,9 +39,8 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
 * **hatari/src/main.c**
   * Split `main` into `main_init`, and `main_deinit`.
   * Skip `Win_OpenCon` and `setenv`.
-* **hatari/src/video.c**
-  * Increment `core_frame_advance` in `Video_InterruptHandler_VBL` to track beginning of frame.
-  * Use `SPCFLAG_BRK` to exit the CPU run loop.
+  * `Main_WaitOnVbl` now sets `SPCFLAG_BRK` to exit the CPU run loop on each simulated vblank.
+  * Always assume perfect frame timing rather than measuring system time and manually delaying.
 * **hatari/src/cpu/newcpu.c**
   * Split `m68k_go` into `m68k_go`, `m68k_go_frame` and `m68k_go_quit`.
 * **hatari/src/screen.c**

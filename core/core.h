@@ -1,8 +1,5 @@
 #pragma once
 
-// incremented by the hatari VBL handler, used to exit the CPU emulation loop after 1 frame
-extern int core_frame_advance;
-
 // 0=0RGB1555, 1=XRGB8888, 2=RGB565
 extern int core_pixel_format;
 
@@ -20,4 +17,3 @@ extern int main_init(int argc, char *argv[]);
 extern int main_deinit(void);
 extern void m68k_go_frame(void);
 extern void m68k_go_quit(void);
-

@@ -334,7 +334,11 @@ void Main_WaitOnVbl(void)
 //	FrameDuration_micro = (Sint64) ( 1000000.0 / nScreenRefreshRate + 0.5 );	/* round to closest integer */
 	FrameDuration_micro = ClocksTimings_GetVBLDuration_micro ( ConfigureParams.System.nMachineType , nScreenRefreshRate );
 	FrameDuration_micro *= nVBLSlowdown;
+#ifndef __LIBRETRO__
 	CurrentTicks = Time_GetTicks();
+#else
+	CurrentTicks = DestTicks;
+#endif
 
 	if (DestTicks == 0)			/* on first call, init DestTicks */
 	{
@@ -342,6 +346,11 @@ void Main_WaitOnVbl(void)
 	}
 
 	DestTicks += pulse_swallowing_count;	/* audio.c - Audio_CallBack() */
+
+#ifdef __LIBRETRO__
+	// Don't measure time, always assume Libretro has provided an exact frame delay.
+	CurrentTicks = DestTicks;
+#endif
 
 	nDelay = DestTicks - CurrentTicks;
 
@@ -406,6 +415,11 @@ void Main_WaitOnVbl(void)
 //printf ( "tick %lld\n" , CurrentTicks );
 	/* Update DestTicks for next VBL */
 	DestTicks += FrameDuration_micro;
+
+#if __LIBRETRO__
+	// Use special break flag to exit the CPU run loop
+	M68000_SetSpecial(SPCFLAG_BRK);
+#endif
 }
 
 
