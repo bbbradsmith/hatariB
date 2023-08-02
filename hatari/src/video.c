@@ -4225,9 +4225,6 @@ static void Video_RestartVideoCounter(void)
  */
 static void Video_ClearOnVBL(void)
 {
-#if __LIBRETRO__
-	++core_frame_advance;
-#endif
 	/* New screen, so first HBL */
 	nHBL = 0;
 	VerticalOverscan = V_OVERSCAN_NONE;
@@ -4642,6 +4639,10 @@ void Video_InterruptHandler_VBL ( void )
 	/* try to access it to process the VBL interrupt and read the vector's address (especially when using MMU)) */
 	if ( quit_program == 0 )
 		M68000_Exception(EXCEPTION_NR_VBLANK, M68000_EXC_SRC_AUTOVEC);	/* Vertical blank interrupt, level 4 */
+
+#if __LIBRETRO__
+	++core_frame_advance;
+#endif
 
 	Main_WaitOnVbl();
 }

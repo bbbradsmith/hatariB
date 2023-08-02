@@ -1,5 +1,10 @@
 #include "../libretro/libretro.h"
 #include "core.h"
+#include <string.h>
+
+const int VIDEO_MAX_W = 2048;
+const int VIDEO_MAX_H = 1024;
+const int VIDEO_MAX_PITCH = VIDEO_MAX_W * 4;
 
 //
 // Libretro
@@ -16,6 +21,9 @@ retro_input_state_t input_state_cb;
 retro_log_printf_t retro_log = null_log;
 
 static bool BOOL_TRUE = true;
+static enum retro_pixel_format RPF_0RGB1555 = RETRO_PIXEL_FORMAT_0RGB1555;
+static enum retro_pixel_format RPF_XRGB8888 = RETRO_PIXEL_FORMAT_XRGB8888;
+static enum retro_pixel_format RPF_RGB565   = RETRO_PIXEL_FORMAT_RGB565;
 
 static struct retro_core_option_definition CORE_OPTIONS[] = {
 	// TODO
@@ -48,11 +56,39 @@ static struct retro_core_option_definition CORE_OPTIONS[] = {
 // Available to Hatari
 //
 
-int core_frame_advance;
+int core_frame_advance = 0;
+int core_pixel_format = 0;
+unsigned char core_video_buffer[1024*1024*4];
+int core_video_w = 640;
+int core_video_h = 400;
+int core_video_pitch = 640*2;
+bool core_video_changed = false;
+bool core_fps_changed = false;
 
-void core_debug_log(const char* msg)
+void core_debug_msg(const char* msg)
 {
-	retro_log(RETRO_LOG_DEBUG,msg);
+	retro_log(RETRO_LOG_DEBUG,"%s\n",msg);
+}
+
+void core_debug_int(const char* msg, int num)
+{
+	retro_log(RETRO_LOG_DEBUG,"%s%d\n",msg,num);
+}
+
+void core_debug_hex(const char* msg, unsigned int num)
+{
+	retro_log(RETRO_LOG_DEBUG,"%s%08X\n",msg,num);
+}
+
+void core_video_update(const void* data, int w, int h, int pitch)
+{
+	if (w > VIDEO_MAX_W) w = VIDEO_MAX_W;
+	if (h > VIDEO_MAX_H) w = VIDEO_MAX_H;
+	if (pitch > VIDEO_MAX_PITCH) w = VIDEO_MAX_PITCH;
+	memcpy(core_video_buffer, data, h*pitch);
+	if (w != core_video_w) { core_video_w = w; core_video_changed = true; }
+	if (h != core_video_h) { core_video_h = h; core_video_changed = true; }
+	core_video_pitch = pitch;
 }
 
 //
@@ -75,7 +111,6 @@ RETRO_API void retro_set_environment(retro_environment_t cb)
 	//RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE
 	//RETRO_ENVIRONMENT_GET_MIDI_INTERFACE
 	// TODO
-	
 }
 
 RETRO_API void retro_set_video_refresh(retro_video_refresh_t cb)
@@ -117,8 +152,21 @@ RETRO_API void retro_init(void)
 		retro_log(RETRO_LOG_INFO,"retro_init()\n");
 	}
 
+	// try to get the best pixel format we can
+	{
+		const char* PIXEL_FORMAT_NAMES[3] = { "0RGB1555", "XRGB8888", "RGB565" };
+		core_pixel_format = 0;
+		if      (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &RPF_XRGB8888)) core_pixel_format = 1;
+		else if (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &RPF_RGB565  )) core_pixel_format = 2;
+		else if (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &RPF_0RGB1555)) core_pixel_format = 0;
+		// TODO allow configuration to override choice here?
+		retro_log(RETRO_LOG_INFO,"Pixel format: %s\n",PIXEL_FORMAT_NAMES[core_pixel_format]);
+	}
+
 	core_frame_advance = 0;
 	main_init(1,(char**)argv); // TODO how are paths affected?
+
+	// TODO fetch initial core_video_w, core_video_h so that the first retro_get_system_av_info will be accurate
 }
 
 RETRO_API void retro_deinit(void)
@@ -145,13 +193,15 @@ RETRO_API void retro_get_system_info(struct retro_system_info *info)
 
 RETRO_API void retro_get_system_av_info(struct retro_system_av_info *info)
 {
-	// TODO
-	info->geometry.base_width = 640; // TODO 320, overscan
-	info->geometry.base_height = 400; // TODO 200, overscan
-	info->geometry.max_width = 640; // TODO overscan
-	info->geometry.max_height = 400; // TODO overscan
+	retro_log(RETRO_LOG_INFO,"retro_get_system_av_info()\n");
+
+	// TODO should set these to the current configuration values
+	info->geometry.base_width = core_video_w;
+	info->geometry.base_height = core_video_h;
+	info->geometry.max_width = VIDEO_MAX_W;
+	info->geometry.max_height = VIDEO_MAX_H;
 	info->geometry.aspect_ratio = 0; // TODO PAR (with NTSC, PAL options, hires is 1:1?)
-	info->timing.fps = 60; // TODO NTSC/PAL/hires
+	info->timing.fps = 50; // TODO NTSC/PAL/hires
 	info->timing.sample_rate = 48000; // TODO
 }
 
@@ -165,38 +215,38 @@ RETRO_API void retro_reset(void)
 	// TODO reset emulator (reset button?)
 }
 
-void test_vid(uint16_t* vid, int x, int y, int o)
-{
-	unsigned char r, g, b;
-	int i = ((y*640)+x);
-	x += o; // scroll horizontally
-	r = (unsigned char)(x << 4); // red ramp 16 pixels horizontal
-	g = (unsigned char)(y << 4); // green ramp 16 pixels vertical
-	b = (unsigned char)(x & 0xF0); // blue ramp across 256 pixels horizontal
-	vid[i] = 0x8000
-		| ((r & 0xF8) << 7)
-		| ((g & 0xF8) << 2)
-		| ((b & 0xF8) >> 3);
-}
-
 RETRO_API void retro_run(void)
 {
+	// poll input
+	input_poll_cb();
+	
 	// run one frame
 	core_frame_advance = 0;
 	m68k_go_frame();
 
-	// poll input
-	input_poll_cb();
-	
-	// test video
-	static uint16_t vid[640*400*4];
-	static int vidanim = 0; ++vidanim;
-	for (int y=0;y<400;++y)
-		for (int x=0;x<640;++x)
-			test_vid(vid,x,y,vidanim);
-	video_cb(vid,640,400,640*2);
+	// TODO Libretro video output can't handle variable framerate,
+	// so the wrong framerate has to be converted.
+	// We could use retro_get_system_av_info to set it at game load time, if known?
 
-	// saw wave audio
+	// send video
+	if (core_fps_changed)
+	{
+		struct retro_system_av_info info;
+		retro_get_system_av_info(&info);
+		environ_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info);
+		core_fps_changed = false;
+		core_video_changed = false;
+	}
+	else if (core_video_changed)
+	{
+		struct retro_system_av_info info;
+		retro_get_system_av_info(&info);
+		environ_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &info);
+		core_video_changed = false;
+	}
+	video_cb(core_video_buffer,core_video_w,core_video_h,core_video_pitch);
+
+	// test saw wave audio
 	const int SPF = 48000/60;
 	const int WAVELEN = 48000 / 200;
 	const int WAVEAMP = 100;

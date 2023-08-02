@@ -500,6 +500,10 @@ static bool Screen_SetSDLVideoSize(int width, int height, int bitdepth, bool bFo
 	if (bUseSdlRenderer)
 	{
 		int rm, bm, gm;
+	#ifdef __LIBRETRO__
+		int am;
+	#endif
+
 		SDL_RendererInfo sRenderInfo = { 0 };
 
 		sdlRenderer = SDL_CreateRenderer(sdlWindow, -1, 0);
@@ -523,6 +527,7 @@ static bool Screen_SetSDLVideoSize(int width, int height, int bitdepth, bool bFo
 		SDL_GetRendererInfo(sdlRenderer, &sRenderInfo);
 		bIsSoftwareRenderer = sRenderInfo.flags & SDL_RENDERER_SOFTWARE;
 
+	#ifndef __LIBRETRO__
 		if (bitdepth == 16)
 		{
 			rm = 0xF800;
@@ -537,6 +542,35 @@ static bool Screen_SetSDLVideoSize(int width, int height, int bitdepth, bool bFo
 		}
 		sdlscrn = SDL_CreateRGBSurface(0, width, height, bitdepth,
 		                               rm, gm, bm, 0);
+	#else
+		switch (core_pixel_format)
+		{
+		default:
+		case 0: // 0RGB1555
+			bitdepth = 16;
+			rm = 0x7C00;
+			gm = 0x03E0;
+			bm = 0x001F;
+			am = 0x8000;
+			break;
+		case 1: // XRGB8888
+			bitdepth = 32;
+			rm = 0x00FF0000;
+			gm = 0x0000FF00;
+			bm = 0x000000FF;
+			am = 0xFF000000;
+			break;
+		case 2: // RGB565
+			bitdepth = 16;
+			rm = 0xF800;
+			gm = 0x07E0;
+			bm = 0x001F;
+			am = 0x0000;
+			break;
+		}
+		sdlscrn = SDL_CreateRGBSurface(0, width, height, bitdepth,
+		                               rm, gm, bm, am);
+	#endif
 
 		Screen_SetTextureScale(width, height, win_width, win_height, true);
 	}
@@ -1196,6 +1230,10 @@ bool Screen_Lock(void)
  */
 void Screen_UnLock(void)
 {
+#if __LIBRETRO__
+	core_video_update(sdlscrn->pixels, sdlscrn->w, sdlscrn->h, sdlscrn->pitch);
+#endif
+
 	if ( SDL_MUSTLOCK(sdlscrn) )
 		SDL_UnlockSurface(sdlscrn);
 }
