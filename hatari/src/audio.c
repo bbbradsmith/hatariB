@@ -115,6 +115,7 @@ static void Audio_CallBack(void *userdata, Uint8 *stream, int len)
  */
 void Audio_Init(void)
 {
+#ifndef __LIBRETRO__
 	SDL_AudioSpec desiredAudioSpec;    /* We fill in the desired SDL audio options here */
 
 	/* Is enabled? */
@@ -178,6 +179,7 @@ void Audio_Init(void)
 		Log_Printf(LOG_WARN, "Soundbuffer size is too big (%d > %d)!\n",
 			   SoundBufferSize, AUDIOMIXBUFFER_SIZE/2);
 	}
+#endif
 
 	/* All OK */
 	bSoundWorking = true;

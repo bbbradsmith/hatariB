@@ -1797,6 +1797,22 @@ void Sound_Update( Uint64 CPU_Clock)
 	/* Save to WAV file, if open */
 	if (bRecordingWav)
 		WAVFormat_Update(AudioMixBuffer, pos_write_prev, Samples_Nbr);
+
+#ifdef __LIBRETRO__
+	{
+		int remain = Samples_Nbr;
+		int pos = pos_write_prev;
+		while (remain > 0) { // split if wrapping over the end
+			int len = remain;
+			if ((pos + len) > AUDIOMIXBUFFER_SIZE) len = AUDIOMIXBUFFER_SIZE - pos;
+			core_audio_update(AudioMixBuffer, pos, len);
+			remain -= len;
+			pos = (pos + len) & AUDIOMIXBUFFER_SIZE_MASK;
+		}
+		nGeneratedSamples = 0;
+	}
+#endif
+
 }
 
 

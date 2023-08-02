@@ -47,3 +47,7 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
 * **hatari/src/screen.c**
   * Support all 3 pixel formats allowed by Libretro.
   * Send rendered framebuffer to core in `Screen_Unlock`.
+* **hatari/src/audio.c**
+  * Disable SDL audio initialization, but report Audio_Init as successful to enable audio generation.
+* **hatari/src/sound.c**
+  * Send generated audio to core in `Sound_Update`.

@@ -2,9 +2,12 @@
 #include "core.h"
 #include <string.h>
 
-const int VIDEO_MAX_W = 2048;
-const int VIDEO_MAX_H = 1024;
-const int VIDEO_MAX_PITCH = VIDEO_MAX_W * 4;
+// large enough for TT high resolution 1280x960 at 32bpp
+#define VIDEO_MAX_W   2048
+#define VIDEO_MAX_H   1024
+#define VIDEO_MAX_PITCH   (VIDEO_MAX_W*4)
+// 4 frames of buffer at slowest framerate
+#define AUDIO_BUFFER_LEN   (4*2*96000/50)
 
 //
 // Libretro
@@ -58,10 +61,15 @@ static struct retro_core_option_definition CORE_OPTIONS[] = {
 
 int core_frame_advance = 0;
 int core_pixel_format = 0;
-unsigned char core_video_buffer[1024*1024*4];
+
+unsigned char core_video_buffer[VIDEO_MAX_H*VIDEO_MAX_PITCH];
+int16_t core_audio_buffer[AUDIO_BUFFER_LEN];
 int core_video_w = 640;
 int core_video_h = 400;
-int core_video_pitch = 640*2;
+int core_video_pitch = 640*4;
+int core_video_fps = 50;
+int core_audio_samplerate = 48000;
+int core_audio_samples_pending = 0;
 bool core_video_changed = false;
 bool core_fps_changed = false;
 
@@ -89,6 +97,22 @@ void core_video_update(const void* data, int w, int h, int pitch)
 	if (w != core_video_w) { core_video_w = w; core_video_changed = true; }
 	if (h != core_video_h) { core_video_h = h; core_video_changed = true; }
 	core_video_pitch = pitch;
+}
+
+void core_audio_update(const int16_t data[][2], int index, int length)
+{
+	int pos = core_audio_samples_pending;
+	int len = length * 2;
+	int max = AUDIO_BUFFER_LEN - pos;
+	if (len > max) len = max;
+	core_audio_samples_pending += len;
+	int l2 = len / 2;
+	for (int i=0; i<l2; ++i)
+	{
+		core_audio_buffer[pos+0] = data[index+i][0];
+		core_audio_buffer[pos+1] = data[index+i][1];
+		pos += 2;
+	}
 }
 
 //
@@ -166,7 +190,7 @@ RETRO_API void retro_init(void)
 	core_frame_advance = 0;
 	main_init(1,(char**)argv); // TODO how are paths affected?
 
-	// TODO fetch initial core_video_w, core_video_h so that the first retro_get_system_av_info will be accurate
+	// TODO fetch initial core_video_w, core_video_h, fps, samplerate so that the first retro_get_system_av_info will be accurate
 }
 
 RETRO_API void retro_deinit(void)
@@ -195,14 +219,13 @@ RETRO_API void retro_get_system_av_info(struct retro_system_av_info *info)
 {
 	retro_log(RETRO_LOG_INFO,"retro_get_system_av_info()\n");
 
-	// TODO should set these to the current configuration values
 	info->geometry.base_width = core_video_w;
 	info->geometry.base_height = core_video_h;
 	info->geometry.max_width = VIDEO_MAX_W;
 	info->geometry.max_height = VIDEO_MAX_H;
 	info->geometry.aspect_ratio = 0; // TODO PAR (with NTSC, PAL options, hires is 1:1?)
-	info->timing.fps = 50; // TODO NTSC/PAL/hires
-	info->timing.sample_rate = 48000; // TODO
+	info->timing.fps = core_video_fps;
+	info->timing.sample_rate = core_audio_samplerate;
 }
 
 RETRO_API void retro_set_controller_port_device(unsigned port, unsigned device)
@@ -246,14 +269,14 @@ RETRO_API void retro_run(void)
 	}
 	video_cb(core_video_buffer,core_video_w,core_video_h,core_video_pitch);
 
-	// test saw wave audio
-	const int SPF = 48000/60;
-	const int WAVELEN = 48000 / 200;
-	const int WAVEAMP = 100;
-	int16_t aud[SPF*2];
-	static int wavepos = 0;
-	for (int i=0;i<SPF;++i) { aud[(i*2)+0] = aud[(i*2)+1] = ((wavepos*WAVEAMP)/WAVELEN); ++wavepos; if(wavepos>WAVELEN) wavepos=0; }
-	audio_batch_cb(aud,SPF);
+	// send audio
+	if (core_audio_samples_pending > 0)
+	{
+		unsigned int len = core_audio_samples_pending;
+		if (len > AUDIO_BUFFER_LEN) len = AUDIO_BUFFER_LEN;
+		audio_batch_cb(core_audio_buffer, len/2);
+		core_audio_samples_pending = 0;
+	}
 }
 
 RETRO_API size_t retro_serialize_size(void)
