@@ -905,7 +905,11 @@ static void Main_StatusbarSetup(void)
  * 
  * Note: 'argv' cannot be declared const, MinGW would then fail to link.
  */
+ #ifndef __LIBRETRO__
 int main(int argc, char *argv[])
+#else
+int main_init(int argc, char *argv[])
+#endif
 {
 	/* Generate random seed */
 	srand(time(NULL));
@@ -934,6 +938,7 @@ int main(int argc, char *argv[])
 	/* monitor type option might require "reset" -> true */
 	Configuration_Apply(true);
 
+#ifndef __LIBRETRO__
 #ifdef WIN32
 	Win_OpenCon();
 #endif
@@ -946,13 +951,14 @@ int main(int argc, char *argv[])
 	/* Needed for proper behavior of Caps Lock on some systems */
 	setenv("SDL_DISABLE_LOCK_KEYS", "1", 1);
 #endif
+#endif // __LIBRETRO__
 
 	/* Init emulator system */
 	Main_Init();
 
 	/* Set initial Statusbar information */
 	Main_StatusbarSetup();
-	
+
 	/* Check if SDL_Delay is accurate */
 	Main_CheckForAccurateDelays();
 
@@ -966,7 +972,14 @@ int main(int argc, char *argv[])
 
 	/* Run emulation */
 	Main_UnPauseEmulation();
+#ifndef __LIBRETRO__
 	M68000_Start();                 /* Start emulation */
+#else
+	return 0;
+}
+int main_deinit(void)
+{
+#endif
 
 	Control_RemoveFifo();
 	if (bRecordingAvi)

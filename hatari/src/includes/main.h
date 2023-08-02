@@ -68,4 +68,8 @@ extern void Main_WarpMouse(int x, int y, bool restore);
 extern void Main_EventHandler(void);
 extern void Main_SetTitle(const char *title);
 
+#ifdef __LIBRETRO__
+#include "../../core/core.h"
+#endif
+
 #endif /* ifndef HATARI_MAIN_H */

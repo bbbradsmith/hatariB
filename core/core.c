@@ -1,4 +1,9 @@
 #include "../libretro/libretro.h"
+#include "core.h"
+
+//
+// Libretro
+//
 
 static void null_log(enum retro_log_level, const char*, ...) {}
 
@@ -11,7 +16,6 @@ retro_input_state_t input_state_cb;
 retro_log_printf_t retro_log = null_log;
 
 static bool BOOL_TRUE = true;
-static bool BOOL_FALSE = false;
 
 static struct retro_core_option_definition CORE_OPTIONS[] = {
 	// TODO
@@ -39,6 +43,15 @@ static struct retro_core_option_definition CORE_OPTIONS[] = {
 	},
 	{ NULL, NULL, NULL, {{0}}, NULL },
 };
+
+//
+// Available to Hatari
+//
+
+void core_debug_log(const char* msg)
+{
+	retro_log(RETRO_LOG_DEBUG,msg);
+}
 
 //
 // Libretro Exports
@@ -90,6 +103,8 @@ RETRO_API void retro_set_input_state(retro_input_state_t cb)
 
 RETRO_API void retro_init(void)
 {
+	const char* argv[1] = {""};
+
 	// connect log interface
 	{
 		struct retro_log_callback log_cb;
@@ -100,14 +115,14 @@ RETRO_API void retro_init(void)
 		retro_log(RETRO_LOG_INFO,"retro_init()\n");
 	}
 
-	// TODO start up emulator
+	main_init(1,(char**)argv); // TODO how are paths affected?
 }
 
 RETRO_API void retro_deinit(void)
 {
 	retro_log(RETRO_LOG_INFO,"retro_deinit()\n");
 
-	// TODO shut down emulator
+	main_deinit();
 }
 
 RETRO_API unsigned retro_api_version(void)
@@ -216,11 +231,13 @@ RETRO_API void retro_cheat_set(unsigned index, bool enabled, const char *code)
 RETRO_API bool retro_load_game(const struct retro_game_info *game)
 {
 	// TODO
+	return true;
 }
 
 RETRO_API bool retro_load_game_special(unsigned game_type, const struct retro_game_info *info, size_t num_info)
 {
 	// TODO
+	return false;
 }
 
 RETRO_API void retro_unload_game(void)
@@ -234,9 +251,10 @@ RETRO_API unsigned retro_get_region(void)
 	return 0;
 }
 
-RETRO_API void *retro_get_memory_data(unsigned id)
+RETRO_API void* retro_get_memory_data(unsigned id)
 {
 	// TODO
+	return NULL;
 }
 
 RETRO_API size_t retro_get_memory_size(unsigned id)

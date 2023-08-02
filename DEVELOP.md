@@ -16,11 +16,19 @@ This has been built and tested with MSYS2 UCRT64. The following tools are requir
 * make
 * cmake
 * SDL2
+* zlib
 
 ## Changes to Hatari
+
+Changes to 
 
 * **hatari/src/CMakeLists.txt**
   * Disabled `hatari` exectuable build target, added `core` library target with `__LIBRETRO__` define.
   * `set_target_properties(hatari PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)`
   * `add_library(core ${SOURCES})`
   * `target_compile_definitions(core PUBLIC __LIBRETRO__)`
+* **hatari/src/includes/main.h**
+  * Added common include `../../core/core.h` to give quick common access to hatariB core.
+* **hatari/src/main.c**
+  * Split `main` into `main_init`, and `main_deinit`.
+  * Skip `Win_OpenCon` and `setenv`.

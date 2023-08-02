@@ -1,13 +1,22 @@
 CC=gcc
-CFLAGS=-O2
-LDFLAGS=-shared
+CFLAGS=-O2 -Wall -Werror
+LDFLAGS=-shared -Wall -Werror
 
 BD=build/
 CORE=$(BD)hatarib.dll
 SOURCES = \
 	core/core.c
 OBJECTS = $(SOURCES:%.c=$(BD)%.o)
-HATARILIBS=hatari/build/src/libcore.a
+HATARILIBS= \
+	hatari/build/src/libcore.a \
+	hatari/build/src/falcon/libFalcon.a \
+	hatari/build/src/cpu/libUaeCpu.a \
+	hatari/build/src/gui-sdl/libGuiSdl.a \
+	hatari/build/src/libFloppy.a \
+	hatari/build/src/debug/libDebug.a \
+	hatari/build/src/libcore.a \
+	-lSDL2 \
+	-lz
 
 default: $(CORE)
 
