@@ -61,7 +61,7 @@ static struct retro_core_option_definition CORE_OPTIONS[] = {
 
 int core_pixel_format = 0;
 
-unsigned char core_video_buffer[VIDEO_MAX_H*VIDEO_MAX_PITCH];
+void* core_video_buffer = NULL;
 int16_t core_audio_buffer[AUDIO_BUFFER_LEN];
 int core_video_w = 640;
 int core_video_h = 400;
@@ -87,12 +87,17 @@ void core_debug_hex(const char* msg, unsigned int num)
 	retro_log(RETRO_LOG_DEBUG,"%s%08X\n",msg,num);
 }
 
-void core_video_update(const void* data, int w, int h, int pitch)
+void core_error_msg(const char* msg)
+{
+	retro_log(RETRO_LOG_ERROR,"%s\n",msg);
+}
+
+void core_video_update(void* data, int w, int h, int pitch)
 {
 	if (w > VIDEO_MAX_W) w = VIDEO_MAX_W;
 	if (h > VIDEO_MAX_H) w = VIDEO_MAX_H;
 	if (pitch > VIDEO_MAX_PITCH) w = VIDEO_MAX_PITCH;
-	memcpy(core_video_buffer, data, h*pitch);
+	core_video_buffer = data;
 	if (w != core_video_w) { core_video_w = w; core_video_changed = true; }
 	if (h != core_video_h) { core_video_h = h; core_video_changed = true; }
 	core_video_pitch = pitch;
@@ -188,7 +193,9 @@ RETRO_API void retro_init(void)
 
 	main_init(1,(char**)argv); // TODO how are paths affected?
 
-	// TODO fetch initial core_video_w, core_video_h, fps, samplerate so that the first retro_get_system_av_info will be accurate
+	// this will be fetched and applied via retro_get_system_av_info before the first frame begins
+	core_video_changed = false;
+	core_fps_changed = false;
 }
 
 RETRO_API void retro_deinit(void)

@@ -179,6 +179,8 @@ void Audio_Init(void)
 		Log_Printf(LOG_WARN, "Soundbuffer size is too big (%d > %d)!\n",
 			   SoundBufferSize, AUDIOMIXBUFFER_SIZE/2);
 	}
+#else
+	(void)Audio_CallBack;
 #endif
 
 	/* All OK */

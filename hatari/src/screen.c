@@ -102,9 +102,16 @@ static int genconv_width_req, genconv_height_req, genconv_bpp;
 
 static bool Screen_DrawFrame(bool bForceFlip);
 
+#ifdef __LIBRETRO__
+// these should be initialized
+SDL_Window *sdlWindow = NULL;
+static SDL_Renderer *sdlRenderer = NULL;
+static SDL_Texture *sdlTexture = NULL;
+#else
 SDL_Window *sdlWindow;
 static SDL_Renderer *sdlRenderer;
 static SDL_Texture *sdlTexture;
+#endif
 static bool bUseSdlRenderer;            /* true when using SDL2 renderer */
 static bool bIsSoftwareRenderer;
 
@@ -112,12 +119,17 @@ void SDL_UpdateRects(SDL_Surface *screen, int numrects, SDL_Rect *rects)
 {
 	if (bUseSdlRenderer)
 	{
+#ifndef __LIBRETRO__
 		SDL_UpdateTexture(sdlTexture, NULL, screen->pixels, screen->pitch);
 		/* Need to clear the renderer context for certain accelerated cards */
 		if (!bIsSoftwareRenderer)
 			SDL_RenderClear(sdlRenderer);
 		SDL_RenderCopy(sdlRenderer, sdlTexture, NULL, NULL);
 		SDL_RenderPresent(sdlRenderer);
+#else
+		// screen is always sdlscrn
+		core_video_update(sdlscrn->pixels, sdlscrn->w, sdlscrn->h, sdlscrn->pitch);
+#endif
 	}
 	else
 	{
@@ -480,6 +492,7 @@ static bool Screen_SetSDLVideoSize(int width, int height, int bitdepth, bool bFo
 	DEBUGPRINT(("SDL screen request: %d x %d @ %d (%s) -> window: %d x %d\n", width, height,
 	        bitdepth, (bInFullScreen ? "fullscreen" : "windowed"), win_width, win_height));
 
+#ifndef __LIBRETRO__
 	if (sdlWindow)
 	{
 		if ((SDL_GetWindowFlags(sdlWindow) & SDL_WINDOW_MAXIMIZED) == 0)
@@ -497,12 +510,12 @@ static bool Screen_SetSDLVideoSize(int width, int height, int bitdepth, bool bFo
 		        win_width, win_height);
 		exit(-1);
 	}
+#endif
 	if (bUseSdlRenderer)
 	{
 		int rm, bm, gm;
-	#ifdef __LIBRETRO__
-		int am;
-	#endif
+
+	#ifndef __LIBRETRO__
 
 		SDL_RendererInfo sRenderInfo = { 0 };
 
@@ -527,7 +540,6 @@ static bool Screen_SetSDLVideoSize(int width, int height, int bitdepth, bool bFo
 		SDL_GetRendererInfo(sdlRenderer, &sRenderInfo);
 		bIsSoftwareRenderer = sRenderInfo.flags & SDL_RENDERER_SOFTWARE;
 
-	#ifndef __LIBRETRO__
 		if (bitdepth == 16)
 		{
 			rm = 0xF800;
@@ -542,7 +554,11 @@ static bool Screen_SetSDLVideoSize(int width, int height, int bitdepth, bool bFo
 		}
 		sdlscrn = SDL_CreateRGBSurface(0, width, height, bitdepth,
 		                               rm, gm, bm, 0);
+
 	#else
+		// no renderer, no window, just a SWSURFACE buffer
+		int am;
+
 		switch (core_pixel_format)
 		{
 		default:
@@ -568,8 +584,13 @@ static bool Screen_SetSDLVideoSize(int width, int height, int bitdepth, bool bFo
 			am = 0x0000;
 			break;
 		}
-		sdlscrn = SDL_CreateRGBSurface(0, width, height, bitdepth,
+		sdlscrn = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, bitdepth,
 		                               rm, gm, bm, am);
+		// make sure core has valid pointer to screen data (even if not yet initialized)
+		core_video_update(sdlscrn->pixels, sdlscrn->w, sdlscrn->h, sdlscrn->pitch);
+		if (SDL_MUSTLOCK(sdlscrn))
+			core_error_msg("Screen display may fail: sdlscrn SWSURFACE has MUSTLOCK");
+
 	#endif
 
 		Screen_SetTextureScale(width, height, win_width, win_height, true);
@@ -783,6 +804,7 @@ void Screen_Init(void)
 
 	Video_SetScreenRasters();                       /* Set rasters ready for first screen */
 
+#ifndef __LIBRETRO__
 	/* Load and set icon */
 	File_MakePathBuf(sIconFileName, sizeof(sIconFileName), Paths_GetDataDir(),
 	                 "hatari-icon", "bmp");
@@ -793,6 +815,10 @@ void Screen_Init(void)
 		SDL_SetWindowIcon(sdlWindow, pIconSurf);
 		SDL_FreeSurface(pIconSurf);
 	}
+#else
+	(void)sIconFileName;
+	(void)pIconSurf;
+#endif
 
 	/* Configure some SDL stuff: */
 	SDL_ShowCursor(SDL_DISABLE);
@@ -1230,10 +1256,6 @@ bool Screen_Lock(void)
  */
 void Screen_UnLock(void)
 {
-#if __LIBRETRO__
-	core_video_update(sdlscrn->pixels, sdlscrn->w, sdlscrn->h, sdlscrn->pitch);
-#endif
-
 	if ( SDL_MUSTLOCK(sdlscrn) )
 		SDL_UnlockSurface(sdlscrn);
 }

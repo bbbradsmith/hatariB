@@ -44,8 +44,9 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
 * **hatari/src/cpu/newcpu.c**
   * Split `m68k_go` into `m68k_go`, `m68k_go_frame` and `m68k_go_quit`.
 * **hatari/src/screen.c**
-  * Support all 3 pixel formats allowed by Libretro.
-  * Send rendered framebuffer to core in `Screen_Unlock`.
+  * Don't create or use window or SDL renderer.
+  * Use existing SDL software surface, but send its data to the core (`core_video_update`) instead of using a renderer present.
+  * Use SDL software rendering to support all 3 pixel formats allowed by Libretro.
 * **hatari/src/audio.c**
   * Disable SDL audio initialization, but report Audio_Init as successful to enable audio generation.
 * **hatari/src/sound.c**
