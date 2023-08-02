@@ -39,3 +39,8 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
 * **hatari/src/main.c**
   * Split `main` into `main_init`, and `main_deinit`.
   * Skip `Win_OpenCon` and `setenv`.
+* **hatari/src/video.c**
+  * Increment `core_frame_advance` in `Video_ClearOnVBL` to track beginning of frame.
+* **hatar/src/cpu/newcpu.c**
+  * Split `m68k_go` into `m68k_go`, `m68k_go_frame` and `m68k_go_quit`.
+  * Add an exit for `core_frame_advance` to every m68k run loop.

@@ -4225,6 +4225,9 @@ static void Video_RestartVideoCounter(void)
  */
 static void Video_ClearOnVBL(void)
 {
+#if __LIBRETRO__
+	++core_frame_advance;
+#endif
 	/* New screen, so first HBL */
 	nHBL = 0;
 	VerticalOverscan = V_OVERSCAN_NONE;

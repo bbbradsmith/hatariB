@@ -48,6 +48,8 @@ static struct retro_core_option_definition CORE_OPTIONS[] = {
 // Available to Hatari
 //
 
+int core_frame_advance;
+
 void core_debug_log(const char* msg)
 {
 	retro_log(RETRO_LOG_DEBUG,msg);
@@ -115,6 +117,7 @@ RETRO_API void retro_init(void)
 		retro_log(RETRO_LOG_INFO,"retro_init()\n");
 	}
 
+	core_frame_advance = 0;
 	main_init(1,(char**)argv); // TODO how are paths affected?
 }
 
@@ -122,6 +125,7 @@ RETRO_API void retro_deinit(void)
 {
 	retro_log(RETRO_LOG_INFO,"retro_deinit()\n");
 
+	m68k_go_quit();
 	main_deinit();
 }
 
@@ -177,7 +181,9 @@ void test_vid(uint16_t* vid, int x, int y, int o)
 
 RETRO_API void retro_run(void)
 {
-	// TODO run one frame
+	// run one frame
+	core_frame_advance = 0;
+	m68k_go_frame();
 
 	// poll input
 	input_poll_cb();
@@ -193,7 +199,7 @@ RETRO_API void retro_run(void)
 	// saw wave audio
 	const int SPF = 48000/60;
 	const int WAVELEN = 48000 / 200;
-	const int WAVEAMP = 1000;
+	const int WAVEAMP = 100;
 	int16_t aud[SPF*2];
 	static int wavepos = 0;
 	for (int i=0;i<SPF;++i) { aud[(i*2)+0] = aud[(i*2)+1] = ((wavepos*WAVEAMP)/WAVELEN); ++wavepos; if(wavepos>WAVELEN) wavepos=0; }

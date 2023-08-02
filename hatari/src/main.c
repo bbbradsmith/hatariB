@@ -972,9 +972,8 @@ int main_init(int argc, char *argv[])
 
 	/* Run emulation */
 	Main_UnPauseEmulation();
-#ifndef __LIBRETRO__
 	M68000_Start();                 /* Start emulation */
-#else
+#ifdef __LIBRETRO__
 	return 0;
 }
 int main_deinit(void)
