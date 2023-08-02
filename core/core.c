@@ -1,13 +1,18 @@
 #include "../libretro/libretro.h"
 
+static void null_log(enum retro_log_level, const char*, ...) {}
+
 retro_environment_t environ_cb;
 retro_video_refresh_t video_cb;
 retro_audio_sample_t audio_sample_cb;
 retro_audio_sample_batch_t audio_batch_cb;
 retro_input_poll_t input_poll_cb;
 retro_input_state_t input_state_cb;
+retro_log_printf_t retro_log = null_log;
 
 static bool BOOL_TRUE = true;
+static bool BOOL_FALSE = false;
+
 static struct retro_core_option_definition CORE_OPTIONS[] = {
 	// TODO
 	{
@@ -85,11 +90,23 @@ RETRO_API void retro_set_input_state(retro_input_state_t cb)
 
 RETRO_API void retro_init(void)
 {
+	// connect log interface
+	{
+		struct retro_log_callback log_cb;
+		if (environ_cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log_cb))
+			retro_log = log_cb.log;
+		else
+			retro_log = null_log;
+		retro_log(RETRO_LOG_INFO,"retro_init()\n");
+	}
+
 	// TODO start up emulator
 }
 
 RETRO_API void retro_deinit(void)
 {
+	retro_log(RETRO_LOG_INFO,"retro_deinit()\n");
+
 	// TODO shut down emulator
 }
 
