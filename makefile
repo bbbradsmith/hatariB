@@ -17,6 +17,7 @@ HATARILIBS= \
 	hatari/build/src/libcore.a \
 	-lSDL2 \
 	-lz
+# note: libcore is linked twice to allow other hatari internal libraries to resolve references within it.
 
 default: $(CORE)
 
