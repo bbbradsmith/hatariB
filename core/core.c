@@ -59,8 +59,10 @@ static struct retro_core_option_definition CORE_OPTIONS[] = {
 // Available to Hatari
 //
 
+// external
 int core_pixel_format = 0;
 
+// internal
 void* core_video_buffer = NULL;
 int16_t core_audio_buffer[AUDIO_BUFFER_LEN];
 int core_video_w = 640;
@@ -70,7 +72,7 @@ int core_video_fps = 50;
 int core_audio_samplerate = 48000;
 int core_audio_samples_pending = 0;
 bool core_video_changed = false;
-bool core_fps_changed = false;
+bool core_rate_changed = false;
 
 void core_debug_msg(const char* msg)
 {
@@ -117,6 +119,18 @@ void core_audio_update(const int16_t data[][2], int index, int length)
 		core_audio_buffer[pos+1] = data[index+i][1];
 		pos += 2;
 	}
+}
+
+void core_set_fps(int rate)
+{
+	if (rate != core_video_fps) core_rate_changed = true;
+	core_video_fps = rate;
+}
+
+void core_set_samplerate(int rate)
+{
+	if (rate != core_audio_samplerate) core_rate_changed = true;
+	core_audio_samplerate = rate;
 }
 
 //
@@ -195,7 +209,7 @@ RETRO_API void retro_init(void)
 
 	// this will be fetched and applied via retro_get_system_av_info before the first frame begins
 	core_video_changed = false;
-	core_fps_changed = false;
+	core_rate_changed = false;
 }
 
 RETRO_API void retro_deinit(void)
@@ -228,9 +242,15 @@ RETRO_API void retro_get_system_av_info(struct retro_system_av_info *info)
 	info->geometry.base_height = core_video_h;
 	info->geometry.max_width = VIDEO_MAX_W;
 	info->geometry.max_height = VIDEO_MAX_H;
-	info->geometry.aspect_ratio = 0; // TODO PAR (with NTSC, PAL options, hires is 1:1?)
+	info->geometry.aspect_ratio = 0; // TODO computed from user PAR setting? (Color Monitor, Monochrome Monitor, NTSC TV, PAL TV, 1:1)
 	info->timing.fps = core_video_fps;
 	info->timing.sample_rate = core_audio_samplerate;
+
+	retro_log(RETRO_LOG_INFO," geometry.base_width = %d\n",info->geometry.base_width);
+	retro_log(RETRO_LOG_INFO," geometry.base_height = %d\n",info->geometry.base_height);
+	retro_log(RETRO_LOG_INFO," geometry.aspect_radio = %f\n",info->geometry.aspect_ratio);
+	retro_log(RETRO_LOG_INFO," timing.fps = %f\n",info->timing.fps);
+	retro_log(RETRO_LOG_INFO," timing.sample_rate = %f\n",info->timing.sample_rate);
 }
 
 RETRO_API void retro_set_controller_port_device(unsigned port, unsigned device)
@@ -256,12 +276,12 @@ RETRO_API void retro_run(void)
 	// We could use retro_get_system_av_info to set it at game load time, if known?
 
 	// send video
-	if (core_fps_changed)
+	if (core_rate_changed)
 	{
 		struct retro_system_av_info info;
 		retro_get_system_av_info(&info);
 		environ_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info);
-		core_fps_changed = false;
+		core_rate_changed = false;
 		core_video_changed = false;
 	}
 	else if (core_video_changed)

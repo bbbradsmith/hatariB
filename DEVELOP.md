@@ -47,7 +47,10 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Don't create or use window or SDL renderer.
   * Use existing SDL software surface, but send its data to the core (`core_video_update`) instead of using a renderer present.
   * Use SDL software rendering to support all 3 pixel formats allowed by Libretro.
+* **hatari/src/video.c**
+  * Notify core of video framerate changes.
 * **hatari/src/audio.c**
   * Disable SDL audio initialization, but report Audio_Init as successful to enable audio generation.
+  * Notify core of audio samplerate changes.
 * **hatari/src/sound.c**
   * Send generated audio to core in `Sound_Update`.

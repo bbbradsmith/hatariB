@@ -234,6 +234,9 @@ void Audio_Unlock(void)
  */
 void Audio_SetOutputAudioFreq(int nNewFrequency)
 {
+#ifdef __LIBRETRO__
+	core_set_samplerate(nNewFrequency);
+#endif
 	/* Do not reset sound system if nothing has changed! */
 	if (nNewFrequency != nAudioFrequency)
 	{

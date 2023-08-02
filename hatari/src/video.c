@@ -4154,6 +4154,9 @@ static void Video_ResetShifterTimings(void)
 		ShifterFrame.VBLank_On_60_CheckFreq = VIDEO_60HZ;
 		ShifterFrame.VBLank_On_50_CheckFreq = VIDEO_60HZ;
 	}
+#ifdef __LIBRETRO__
+	core_set_fps(nScreenRefreshRate);
+#endif
 
 	nCyclesPerLine <<= nCpuFreqShift;
 

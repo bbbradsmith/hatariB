@@ -12,6 +12,8 @@ extern void core_error_msg(const char* msg);
 // send video/audio frame update to core
 extern void core_video_update(void* data, int width, int height, int pitch);
 extern void core_audio_update(const int16_t data[][2], int index, int length);
+extern void core_set_fps(int rate);
+extern void core_set_samplerate(int rate);
 
 // hatari exports
 extern int main_init(int argc, char *argv[]);
