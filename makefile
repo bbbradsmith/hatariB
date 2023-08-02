@@ -7,23 +7,24 @@ CORE=$(BD)hatarib.dll
 SOURCES = \
 	core/core.c
 OBJECTS = $(SOURCES:%.c=$(BD)%.o)
+HATARILIBS=hatari/build/src/libcore.a
 
-default: directories $(CORE) hatarilib
+default: $(CORE)
 
 directories:
 	mkdir -p $(BD)
 	mkdir -p $(BD)core
 	mkdir -p hatari/build
 
-$(CORE): $(OBJECTS)
-	$(CC) -o $(CORE) $(OBJECTS) $(LDFLAGS)
+$(CORE): directories hatarilib $(OBJECTS)
+	$(CC) -o $(CORE) $(LDFLAGS) $(OBJECTS) $(HATARILIBS)
 
 $(BD)core/%.o: core/%.c
-	$(CC) $(CFLAGS) -o $@ -c $< 
+	$(CC) -o $@ $(CFLAGS) -c $< 
 
 hatarilib: directories
 	(cd hatari/build && cmake ..)
-	(cd hatari/build && cmake --build . -j 4)
+	(cd hatari/build && cmake --build . -j)
 
 clean:
 	rm -f -r $(BD)
