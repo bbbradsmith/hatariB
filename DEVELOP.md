@@ -20,6 +20,7 @@ This has been built and tested with MSYS2 UCRT64. The following tools are requir
 ## Changes to Hatari
 
 * **hatari/src/CMakeLists.txt**
-  * Disabled `hatari` exectuable build target, added `core` library target.
+  * Disabled `hatari` exectuable build target, added `core` library target with `__LIBRETRO__` define.
   * `set_target_properties(hatari PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)`
   * `add_library(core ${SOURCES})`
+  * `target_compile_definitions(core PUBLIC __LIBRETRO__)`
