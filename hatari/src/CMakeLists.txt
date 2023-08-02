@@ -203,3 +203,7 @@ else()
 		install(FILES tos.img DESTINATION ${DATADIR})
 	endif(TOS_IMG_FILE)
 endif(ENABLE_OSX_BUNDLE)
+
+# hatariB - disable exectuable build, add core library target
+set_target_properties(hatari PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
+add_library(core ${SOURCES})
