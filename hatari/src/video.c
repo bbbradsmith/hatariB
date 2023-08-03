@@ -4835,6 +4835,9 @@ void Video_ScreenCounter_WriteByte(void)
 				" video_cyc_w=%d line_cyc_w=%d @ nHBL=%d/video_hbl_w=%d pc=%x instr_cyc=%d\n" ,
 				IoAccessCurrentAddress, AddrByte, addr_cur , addr_new , VideoCounterDelayedOffset , Delayed ? "yes" : "no" ,
 				FrameCycles, LineCycles, nHBL, HblCounterVideo, M68000_GetPC(), CurrentInstrCycles );
+	#ifndef ENABLE_TRACING
+		(void)Delayed;
+	#endif
 }
 
 /*-----------------------------------------------------------------------*/
@@ -4940,6 +4943,9 @@ void Video_LineWidth_WriteByte(void)
 	LOG_TRACE(TRACE_VIDEO_STE , "write ste linewidth=0x%x delayed=%s video_cyc_w=%d line_cyc_w=%d @ nHBL=%d/video_hbl_w=%d pc=%x instr_cyc=%d\n",
 					NewWidth, Delayed ? "yes" : "no" ,
 					FrameCycles, LineCycles, nHBL, HblCounterVideo, M68000_GetPC(), CurrentInstrCycles );
+	#ifndef ENABLE_TRACING
+		(void)Delayed;
+	#endif
 }
 
 /*-----------------------------------------------------------------------*/
@@ -5447,6 +5453,9 @@ void Video_HorScroll_Write(void)
 	LOG_TRACE(TRACE_VIDEO_STE , "write ste %x hwscroll=%x delayed=%s video_cyc_w=%d line_cyc_w=%d @ nHBL=%d/video_hbl_w=%d pc=%x instr_cyc=%d\n" ,
 		RegAddr , ScrollCount, Delayed ? "yes" : "no" ,
 		FrameCycles, LineCycles, nHBL, HblCounterVideo, M68000_GetPC(), CurrentInstrCycles );
+	#ifndef ENABLE_TRACING
+		(void)Delayed;
+	#endif
 }
 
 

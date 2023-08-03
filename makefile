@@ -34,7 +34,7 @@ $(BD)core/%.o: core/%.c
 	$(CC) -o $@ $(CFLAGS) -c $< 
 
 hatarilib: directories
-	(cd hatari/build && cmake ..)
+	(cd hatari/build && cmake .. -DENABLE_SMALL_MEM=0 -DENABLE_TRACING=0)
 	(cd hatari/build && cmake --build . -j)
 
 clean:

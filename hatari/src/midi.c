@@ -364,6 +364,9 @@ static bool Midi_Host_Open(void)
 			 ConfigureParams.Midi.sMidiInFileName,
 			  ok == 0 ? "unbuffered" : "buffered");
 	}
+	#ifndef ENABLE_TRACING
+		(void)ok;
+	#endif
 #else
 	int i, ports;
 	if (Pm_Initialize() != pmNoError)

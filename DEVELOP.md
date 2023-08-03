@@ -35,6 +35,8 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
 * **hatari/src/gui-sdl/CMakeLists.txt**
   * Define `__LIBRETRO__`for all internal hatari libraries.
   * target_compile_definitions(xxx PUBLIC __LIBRETRO__)`
+* Use `-DENABLE_SMALL_MEM=0` and `-DENABLE_TRACING=0` to slightly improve performance.
+  * Note that ENABLE_SMALL_MEM can save ~14-15MB of RAM, so it might be worthwhile for platforms with smaller memory.
 
 * **hatari/src/includes/main.h**
   * Added common include `../../core/core.h` to give quick common access to hatariB core.
@@ -54,6 +56,7 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Use SDL software rendering to support all 3 pixel formats allowed by Libretro.
 * **hatari/src/video.c**
   * Notify core of video framerate changes.
+  * Suppress unused-variable warnings due to `ENABLE_TRACING`.
 * **hatari/src/audio.c**
   * Disable SDL audio initialization, but report Audio_Init as successful to enable audio generation.
   * Notify core of audio samplerate changes.
@@ -63,3 +66,5 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Disable SDL josyick initialization.
   * Disable using keys as joystick, since Libretro can do this already.
   * Use core-provided joystick state instead.
+* **hatari/src/midi.c**
+  * Suppress unused-variable warning due to `ENABLE_TRACING`.
