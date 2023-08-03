@@ -463,6 +463,10 @@ void Main_WarpMouse(int x, int y, bool restore)
 {
 	if (!(restore || ConfigureParams.Screen.bMouseWarp))
 		return;
+#ifdef __LIBRETRO__
+	// libretro has its own way of capturing the mouse
+	bAllowMouseWarp = false;
+#endif
 	if (!bAllowMouseWarp)
 		return;
 
@@ -536,7 +540,11 @@ void Main_EventHandler(void)
 
 		if ( bEmulationActive || remotepause )
 		{
+		#if __LIBRETRO__
+			events = core_poll_event(&event);
+		#else
 			events = SDL_PollEvent(&event);
+		#endif
 		}
 		else
 		{
@@ -544,7 +552,12 @@ void Main_EventHandler(void)
 			/* last (shortcut) event activated emulation? */
 			if ( bEmulationActive )
 				break;
+		#if __LIBRETRO__
+			events = 0;
+			break; // don't allow "modal" shortcuts to wait here forever
+		#else
 			events = SDL_WaitEvent(&event);
+		#endif
 		}
 		if (!events)
 		{
@@ -899,9 +912,13 @@ static void Main_StatusbarSetup(void)
 	if (named)
 	{
 		char message[60];
+#if __LIBRETRO__
+		snprintf(message, sizeof(message), "Press Scroll-Lock for Keyboard and Mouse focus.");
+#else
 		snprintf(message, sizeof(message), "Press %s%s for Options, %s%s for mouse grab toggle",
 			 keys[0].mod ? "AltGr+": "", keys[0].name,
 			 keys[1].mod ? "AltGr+": "", keys[1].name);
+#endif
 		for (i = 0; i < ARRAY_SIZE(keys); i++)
 		{
 			if (keys[i].name)

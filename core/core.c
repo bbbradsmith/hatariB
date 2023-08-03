@@ -56,6 +56,14 @@ static struct retro_core_option_definition CORE_OPTIONS[] = {
 };
 
 //
+// Core implementation in other files
+//
+
+// core_input.c
+extern void core_input_init(); // call in retro_init
+extern void core_input_update(); // call in retro_run, polls Libretro inputs and translates to events for hatari
+
+//
 // Available to Hatari
 //
 
@@ -205,6 +213,9 @@ RETRO_API void retro_init(void)
 		retro_log(RETRO_LOG_INFO,"Pixel format: %s\n",PIXEL_FORMAT_NAMES[core_pixel_format]);
 	}
 
+	// initialize input translation
+	core_input_init();
+
 	main_init(1,(char**)argv); // TODO how are paths affected?
 
 	// this will be fetched and applied via retro_get_system_av_info before the first frame begins
@@ -265,8 +276,8 @@ RETRO_API void retro_reset(void)
 
 RETRO_API void retro_run(void)
 {
-	// poll input
-	input_poll_cb();
+	// poll input, generate event queue for hatari
+	core_input_update();
 	
 	// run one frame
 	m68k_go_frame();

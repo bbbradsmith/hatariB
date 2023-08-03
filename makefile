@@ -5,7 +5,8 @@ LDFLAGS=-shared -Wall -Werror
 BD=build/
 CORE=$(BD)hatarib.dll
 SOURCES = \
-	core/core.c
+	core/core.c \
+	core/core_input.c
 OBJECTS = $(SOURCES:%.c=$(BD)%.o)
 HATARILIBS= \
 	hatari/build/src/libcore.a \

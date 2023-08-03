@@ -15,6 +15,10 @@ extern void core_audio_update(const int16_t data[][2], int index, int length);
 extern void core_set_fps(int rate);
 extern void core_set_samplerate(int rate);
 
+// input translation
+typedef union SDL_Event* core_event_t;
+extern int core_poll_event(core_event_t event);
+
 // hatari exports
 extern int main_init(int argc, char *argv[]);
 extern int main_deinit(void);

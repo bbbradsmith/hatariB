@@ -4,9 +4,11 @@ This document will contain build setup instructions, notes on the development of
 
 This is intended as reference documentation for future maintenance of this project.
 
+Incorporated sources:
 
 * [hatari/](https://git.tuxfamily.org/hatari/hatari.git/tag/?id=v2.4.1) 2.4.1 2022-08-03
 * [libretro/libretro.h](https://github.com/libretro/libretro-common/blob/7edbfaf17baffa1b8a00231762aa7ead809711b5/include/libretro.h) 24a9210 2023-07-16
+* [libretro/libretro_sdl_keymap.h](https://github.com/libretro/RetroArch/blob/b4143882245edd737c7e7c522b25e32f8d1f64ad/input/input_keymaps.c#L607) 9ca5c5e 2023-07-08
 
 ## Prerequisites
 
@@ -41,6 +43,9 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Skip `Win_OpenCon` and `setenv`.
   * `Main_WaitOnVbl` now sets `SPCFLAG_BRK` to exit the CPU run loop on each simulated vblank.
   * Always assume perfect frame timing rather than measuring system time and manually delaying.
+  * Replace SDL event queue polling with a simulated input event queue from the Libretro core.
+  * Disable `Main_WarpMouse` because Libretro will capture the mouse with its focus mode.
+  * Replace default status bar help message with a note to press Scroll-Lock for focus mode.
 * **hatari/src/cpu/newcpu.c**
   * Split `m68k_go` into `m68k_go`, `m68k_go_frame` and `m68k_go_quit`.
 * **hatari/src/screen.c**
