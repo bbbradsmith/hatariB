@@ -109,6 +109,7 @@ bool Joy_ValidateJoyId(int i)
  */
 void Joy_Init(void)
 {
+#ifndef __LIBRETRO__
 	/* Joystick axis mapping table				*/
 	/* Matthias Arndt <marndt@asmsoftware.de>		*/
 	/* Somehow, not all SDL joysticks are created equal.	*/
@@ -167,6 +168,9 @@ void Joy_Init(void)
 		Joy_ValidateJoyId(i);
 
 	JoystickSpaceBar = false;
+#else
+	(void)sdlJoystickMapping;
+#endif
 }
 
 
@@ -176,6 +180,7 @@ void Joy_Init(void)
  */
 void Joy_UnInit(void)
 {
+#ifndef __LIBRETRO__
 	int i, nPadsConnected;
 
 	nPadsConnected = SDL_NumJoysticks();
@@ -187,6 +192,7 @@ void Joy_UnInit(void)
 			SDL_JoystickClose(sdlJoystick[i]);
 		}
 	}
+#endif
 }
 
 
@@ -233,6 +239,7 @@ static bool Joy_ReadJoystick(int nSdlJoyID, JOYREADING *pJoyReading)
  */
 Uint8 Joy_GetStickData(int nStJoyId)
 {
+#ifndef __LIBRETRO__
 	Uint8 nData = 0;
 	JOYREADING JoyReading;
 
@@ -325,6 +332,10 @@ Uint8 Joy_GetStickData(int nStJoyId)
 		if ((nVBLs&0x7)<4)
 			nData &= ~ATARIJOY_BITMASK_FIRE;          /* Remove top bit! */
 	}
+#else
+	(void)Joy_ReadJoystick;
+	Uint8 nData = (Uint8)core_poll_joy_stick(nStJoyId);
+#endif
 
 	return nData;
 }
@@ -338,6 +349,7 @@ Uint8 Joy_GetStickData(int nStJoyId)
  */
 static int Joy_GetFireButtons(int nStJoyId)
 {
+#ifndef __LIBRETRO__
 	int nButtons = 0;
 	int nSdlJoyId;
 	int i, nMaxButtons;
@@ -367,6 +379,10 @@ static int Joy_GetFireButtons(int nStJoyId)
 			}
 		}
 	}
+#else
+	(void)nJoyKeyEmu;
+	int nButtons = core_poll_joy_fire(nStJoyId);
+#endif
 
 	return nButtons;
 }
@@ -447,6 +463,7 @@ bool Joy_SwitchMode(int port)
  */
 bool Joy_KeyDown(int symkey, int modkey)
 {
+#ifndef __LIBRETRO__
 	int i;
 
 	for (i = 0; i < JOYSTICK_COUNT; i++)
@@ -485,6 +502,10 @@ bool Joy_KeyDown(int symkey, int modkey)
 			}
 		}
 	}
+#else
+	(void)symkey;
+	(void)modkey;
+#endif
 
 	return false;
 }
@@ -497,6 +518,7 @@ bool Joy_KeyDown(int symkey, int modkey)
  */
 bool Joy_KeyUp(int symkey, int modkey)
 {
+#ifndef __LIBRETRO__
 	int i;
 
 	for (i = 0; i < JOYSTICK_COUNT; i++)
@@ -531,6 +553,10 @@ bool Joy_KeyUp(int symkey, int modkey)
 			}
 		}
 	}
+#else
+	(void)symkey;
+	(void)modkey;
+#endif
 
 	return false;
 }

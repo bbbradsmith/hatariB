@@ -71,9 +71,25 @@ void retrok_to_sdl_init()
 // libretro input
 //
 
+#define JOY_PORTS   6
+// 1-button joysticks
+#define JOY_STICK_U    0x01
+#define JOY_STICK_D    0x02
+#define JOY_STICK_L    0x04
+#define JOY_STICK_R    0x08
+#define JOY_STICK_F    0x80
+// STE Atari Jaguar pads have 5 buttons implemented in Hatari
+#define JOY_FIRE_A     0x01
+#define JOY_FIRE_B     0x02
+#define JOY_FIRE_C     0x04
+#define JOY_FIRE_OPT   0x08
+#define JOY_FIRE_PAUSE 0x10
+
 static bool retrok_down[RETROK_LAST] = {0}; // for repeat tracking
 static int vmouse_x, vmouse_y; // virtual mouse state
 static bool vmouse_l, vmouse_r;
+static int joy_fire[JOY_PORTS];
+static int joy_stick[JOY_PORTS];
 
 void core_input_keyboard_event(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers)
 {
@@ -100,6 +116,7 @@ void core_input_keyboard_event(bool down, unsigned keycode, uint32_t character, 
 	if (retrok_down[RETROK_MODE  ]) event.key.keysym.mod |= KMOD_MODE;
 	retrok_down[keycode] = down;
 	event_queue_add(&event);
+	// TODO configure to block this stuff and only allow virtual keyboard inputs
 }
 
 void core_input_init()
@@ -114,6 +131,11 @@ void core_input_init()
 	memset(&retrok_down,0,sizeof(retrok_down));
 	vmouse_x = vmouse_y = 0;
 	vmouse_l = vmouse_r = false;
+	for (int i=0; i<JOY_PORTS; ++i)
+	{
+		joy_fire[i] = 0;
+		joy_stick[i] = 0;
+	}
 
 	// keyboard events require focus
 	environ_cb(RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK, &keyboard_callback);
@@ -121,6 +143,7 @@ void core_input_init()
 
 const bool vmouse_enabled = true; // TODO option
 const bool pmouse_enabled = true; // TODO option
+const int joy_port_map[4] = {1,0,2,3}; // TODO port mapping options (0,1=ST,2-3=STE,4-5=parallel)
 
 void core_input_update()
 {
@@ -132,9 +155,46 @@ void core_input_update()
 
 	input_poll_cb();
 
-	// TODO process gamepads
-	// depending on configuration, may update mouse vm
-	// may also update joystick
+	// clear all joystick ports
+	for (int i=0; i<JOY_PORTS; ++i)
+	{
+		joy_fire[i] = 0;
+		joy_stick[i] = 0;
+	}
+	// have each joystick update its mapped controls
+	for (int i=0; i<4; ++i)
+	{
+		int j = joy_port_map[i];
+		// TODO mapped inputs, these are just hardcoded for now (d-pad + B fire)
+		if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT )) joy_stick[j] |= JOY_STICK_L;
+		if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT)) joy_stick[j] |= JOY_STICK_R;
+		if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP   )) joy_stick[j] |= JOY_STICK_U;
+		if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN )) joy_stick[j] |= JOY_STICK_D;
+		if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B))
+		{
+			joy_stick[j] |= JOY_STICK_F;
+			joy_fire[j] |= JOY_FIRE_A;
+		}
+		// mouse can be mapped to all gamepads (Y/X click, left stick move)
+		if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y)) vm_l = true;
+		if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_X)) vm_r = true;
+		{
+			int ax = input_state_cb(i, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X);
+			int ay = input_state_cb(i, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y);
+			// TODO configurable deadzone, circular, reduction of magnitude in circular way
+			// for now just using a dead box
+			const int DEADZONE = 0x8000 / 12;
+			const float MOUSE_SPEED = 0.001;
+			if (ax < DEADZONE && ax > -DEADZONE) ax = 0;
+			else if (ax < 0) ax += DEADZONE;
+			else if (ax > 0) ax -= DEADZONE;
+			if (ay < DEADZONE && ay > -DEADZONE) ay = 0;
+			else if (ay < 0) ay += DEADZONE;
+			else if (ay > 0) ay -= DEADZONE;
+			vm_x += (int)(ax * MOUSE_SPEED);
+			vm_y += (int)(ay * MOUSE_SPEED);
+		}
+	}
 
 	if (vmouse_enabled)
 	{
@@ -205,4 +265,16 @@ int core_poll_event(SDL_Event* event)
 		--event_queue_len;
 	}
 	return 1;
+}
+
+int core_poll_joy_fire(int port)
+{
+	if (port >= JOY_PORTS) return 0;
+	return joy_fire[port];
+}
+
+int core_poll_joy_stick(int port)
+{
+	if (port >= JOY_PORTS) return 0;
+	return joy_stick[port];
 }

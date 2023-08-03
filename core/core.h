@@ -18,6 +18,8 @@ extern void core_set_samplerate(int rate);
 // input translation
 typedef union SDL_Event* core_event_t;
 extern int core_poll_event(core_event_t event);
+extern int core_poll_joy_fire(int port);
+extern int core_poll_joy_stick(int port);
 
 // hatari exports
 extern int main_init(int argc, char *argv[]);
