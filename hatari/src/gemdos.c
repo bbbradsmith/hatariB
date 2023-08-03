@@ -2188,6 +2188,9 @@ static bool GemDOS_Open(Uint32 Params)
 			  Regs[REG_D0], Modes[Mode], RealMode);
 		return true;
 	}
+	#ifndef ENABLE_TRACING
+		(void)RealMode;
+	#endif
 
 	if (errno == EACCES || errno == EROFS ||
 	    errno == EPERM || errno == EISDIR)

@@ -67,4 +67,6 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Disable using keys as joystick, since Libretro can do this already.
   * Use core-provided joystick state instead.
 * **hatari/src/midi.c**
-  * Suppress unused-variable warning due to `ENABLE_TRACING`.
+* **hatari/src/gemdos.c**
+* **hatari/src/hdc.c**
+  * Suppress unused-variable warnings due to `ENABLE_TRACING`.

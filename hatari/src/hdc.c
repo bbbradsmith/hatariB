@@ -783,6 +783,10 @@ int HDC_PartitionCount(FILE *fp, const Uint64 tracelevel, int *pIsByteSwapped)
 			total += sectors;
 			LOG_TRACE(tracelevel, "- Partition %d: type=0x%02x, start=0x%08x, size=%.1f MB %s%s\n",
 				  i, ptype, start, sectors/2048.0, boot ? "(boot)" : "", sectors ? "" : "(invalid)");
+			#ifndef ENABLE_TRACING
+				(void)boot;
+				(void)start;
+			#endif
 			if (ptype)
 				parts++;
 		}
@@ -821,6 +825,9 @@ int HDC_PartitionCount(FILE *fp, const Uint64 tracelevel, int *pIsByteSwapped)
 				  i, pid, start, sectors/2048.0, flags,
 				  (flags & 0x80) ? "(boot)": "",
 				  extended ? "(extended)" : "");
+			#ifndef ENABLE_TRACING
+				(void)extended;
+			#endif
 			if (flags & 0x1)
 				parts++;
 		}
