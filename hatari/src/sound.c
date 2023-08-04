@@ -285,7 +285,11 @@ Uint8		SoundRegs[ 14 ];
 
 int		YmVolumeMixing = YM_TABLE_MIXING;
 
+#ifndef __LIBRETRO__
 int		YM2149_LPF_Filter = YM2149_LPF_FILTER_PWM;
+#else
+int     YM2149_LPF_Filter = YM2149_LPF_FILTER_IIR;
+#endif
 // int		YM2149_LPF_Filter = YM2149_LPF_FILTER_NONE;	/* For debug */
 int		YM2149_HPF_Filter = YM2149_HPF_FILTER_IIR;
 // int		YM2149_HPF_Filter = YM2149_HPF_FILTER_NONE;	/* For debug */
@@ -338,6 +342,9 @@ static CLOCKS_CYCLES_STRUCT	YM2149_ConvertCycles_250;
 
 static ymsample	LowPassFilter		(ymsample x0);
 static ymsample	PWMaliasFilter		(ymsample x0);
+#ifdef __LIBRETRO__
+static ymsample IIRLowPassFilter	(ymsample x0);
+#endif
 
 static void	interpolate_volumetable	(ymu16 volumetable[32][32][32]);
 
@@ -486,7 +493,17 @@ static ymsample	PWMaliasFilter(ymsample x0)
 	return y0;
 }
 
-
+#ifdef __LIBRETRO__
+// A simpler IIR LPF filter which doesn't have the asymmterical
+// push-pull distortion of the filters above.
+static ymsample	IIRLowPassFilter(ymsample x0)
+{
+	static	yms32 y0 = 0, x1 = 0;
+	y0 = (3*(x0 + x1) + (y0<<1)) >> 3;
+	x1 = x0;
+	return y0;
+}
+#endif
 
 /*--------------------------------------------------------------*/
 /* Build the volume conversion table used to simulate the	*/
@@ -1106,12 +1123,21 @@ static void	YM2149_DoSamples_250 ( int SamplesToGenerate_250 )
 
 		sample = ymout5[ Tone3Voices ];			/* 16 bits signed value */
 
+	#ifdef __LIBRETRO__
+		// HACK forcing it on for now until I have a proper configuration setup.
+		YM2149_LPF_Filter = YM2149_LPF_FILTER_IIR;
+	#endif
+
 		/* Apply low pass filter ? */
 		if ( YM2149_LPF_Filter == YM2149_LPF_FILTER_LPF_STF )
 			sample = LowPassFilter ( sample );
 		else if ( YM2149_LPF_Filter == YM2149_LPF_FILTER_PWM )
 			sample = PWMaliasFilter ( sample );
-
+	#ifdef __LIBRETRO__
+		else if ( YM2149_LPF_Filter == YM2149_LPF_FILTER_IIR )
+			sample = IIRLowPassFilter ( sample );
+	#endif
+	
 		/* Store sample */
 		YM_Buffer_250[ pos ] = sample;
 		pos = ( pos + 1 ) & YM_BUFFER_250_SIZE_MASK;
@@ -1621,6 +1647,7 @@ void Sound_MemorySnapShot_Capture(bool bSave)
 
 	MemorySnapShot_Store(&YmVolumeMixing, sizeof(YmVolumeMixing));
 
+#ifndef __LIBRETRO__
 	if ( !bSave )
 	{
 		/* Clear internal YM audio buffer at 250 kHz */
@@ -1628,6 +1655,12 @@ void Sound_MemorySnapShot_Capture(bool bSave)
 		YM_Buffer_250_pos_write = 0;
 		YM_Buffer_250_pos_read = 0;
 	}
+#else
+	// this needs to be saved for seamless audio
+	MemorySnapShot_Store(&YM_Buffer_250, sizeof(YM_Buffer_250));
+	MemorySnapShot_Store(&YM_Buffer_250_pos_write, sizeof(YM_Buffer_250_pos_write));
+	MemorySnapShot_Store(&YM_Buffer_250_pos_read, sizeof(YM_Buffer_250_pos_read));
+#endif
 }
 
 

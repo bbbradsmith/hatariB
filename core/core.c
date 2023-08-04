@@ -22,7 +22,7 @@
 
 // Transmit Hatari log message to the Libretro debug log
 // 0 = none, 1 = errors, 2 = all
-#define DEBUG_HATARI_LOG   2
+#define DEBUG_HATARI_LOG   0
 
 //
 // Libretro
