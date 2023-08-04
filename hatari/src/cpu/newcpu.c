@@ -7567,6 +7567,10 @@ void m68k_go_frame(void)
 		if (restored) {
 			restored = 0;
 			savestate_restore_final();
+		#ifdef __LIBRETRO__
+			// savestate restored, stop here so we can resume from this point in the next retro_run()
+			break;
+		#endif
 		}
 #endif
 
@@ -7627,6 +7631,10 @@ void m68k_go_frame(void)
 #if 0
 		}
 #endif
+#ifdef __LIBRETRO__
+		if (core_init_return) break;
+#endif
+
 		run_func();
 		Log_Printf(LOG_DEBUG, "exit m68k_run\n");
 	}

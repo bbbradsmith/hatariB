@@ -62,8 +62,11 @@ const char MemorySnapShot_fileid[] = "Hatari memorySnapShot.c";
 #define VERSION_STRING      "2.4.0"   /* Version number of compatible memory snapshots - Always 6 bytes (inc' NULL) */
 #define SNAPSHOT_MAGIC      0xDeadBeef
 
+#ifndef __LIBRETRO__
+// Libretro savestates must be a fixed size
 #if HAVE_LIBZ
 #define COMPRESS_MEMORYSNAPSHOT       /* Compress snapshots to reduce disk space used */
+#endif
 #endif
 
 #ifdef COMPRESS_MEMORYSNAPSHOT
@@ -72,6 +75,9 @@ const char MemorySnapShot_fileid[] = "Hatari memorySnapShot.c";
 #undef mkdir
 #include <zlib.h>
 typedef gzFile MSS_File;
+
+#elifdef __LIBRETRO__
+typedef void* MSS_File;
 
 #else
 
@@ -96,6 +102,11 @@ static MSS_File MemorySnapShot_fopen(const char *pszFileName, const char *pszMod
 {
 #ifdef COMPRESS_MEMORYSNAPSHOT
 	return gzopen(pszFileName, pszMode);
+#elifdef __LIBRETRO__
+	core_snapshot_open();
+	(void)pszFileName;
+	(void)pszMode;
+	return (void*)-1;
 #else
 	return fopen(pszFileName, pszMode);
 #endif
@@ -110,6 +121,9 @@ static void MemorySnapShot_fclose(MSS_File fhndl)
 {
 #ifdef COMPRESS_MEMORYSNAPSHOT
 	gzclose(fhndl);
+#elifdef __LIBRETRO__
+	core_snapshot_close();
+	(void)fhndl;
 #else
 	fclose(fhndl);
 #endif
@@ -124,6 +138,10 @@ static int MemorySnapShot_fread(MSS_File fhndl, char *buf, int len)
 {
 #ifdef COMPRESS_MEMORYSNAPSHOT
 	return gzread(fhndl, buf, len);
+#elifdef __LIBRETRO__
+	core_snapshot_read(buf, len);
+	(void)fhndl;
+	return len;
 #else
 	return fread(buf, 1, len, fhndl);
 #endif
@@ -138,6 +156,10 @@ static int MemorySnapShot_fwrite(MSS_File fhndl, const char *buf, int len)
 {
 #ifdef COMPRESS_MEMORYSNAPSHOT
 	return gzwrite(fhndl, buf, len);
+#elifdef __LIBRETRO__
+	core_snapshot_write(buf, len);
+	(void)fhndl;
+	return len;
 #else
 	return fwrite(buf, 1, len, fhndl);
 #endif
@@ -152,6 +174,10 @@ static int MemorySnapShot_fseek(MSS_File fhndl, int pos)
 {
 #ifdef COMPRESS_MEMORYSNAPSHOT
 	return (int)gzseek(fhndl, pos, SEEK_CUR);	/* return -1 if error, new position >=0 if OK */
+#elifdef __LIBRETRO__
+	core_snapshot_seek(pos);
+	(void)fhndl;
+	return 0;
 #else
 	return fseek(fhndl, pos, SEEK_CUR);		/* return -1 if error, 0 if OK */
 #endif
@@ -172,6 +198,10 @@ static bool MemorySnapShot_OpenFile(const char *pszFileName, bool bSave, bool bC
 
 	/* Set error */
 	bCaptureError = false;
+
+#ifdef __LIBRETRO__
+	bConfirm = false;
+#endif
 
 	/* after opening file, set bCaptureSave to indicate whether
 	 * 'MemorySnapShot_Store' should load from or save to a file

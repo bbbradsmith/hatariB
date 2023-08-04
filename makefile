@@ -1,6 +1,6 @@
 CC=gcc
-CFLAGS=-O2 -Wall -Werror
-LDFLAGS=-shared -Wall -Werror
+CFLAGS=-g -O2 -Wall -Werror
+LDFLAGS=-shared -g -Wall -Werror
 
 BD=build/
 CORE=$(BD)hatarib.dll

@@ -10,6 +10,12 @@ extern retro_input_state_t input_state_cb;
 extern retro_log_printf_t retro_log;
 
 //
+// From Hatari
+//
+
+extern void Main_EventHandler(void);
+
+//
 // translated SDL event queue
 //
 
@@ -20,14 +26,14 @@ static int event_queue_len = 0;
 static SDL_Event event_queue[EVENT_QUEUE_SIZE];
 static int event_queue_overflows = 0;
 
-static void event_queue_init()
+static void event_queue_init(void)
 {
 	event_queue_pos = 0;
 	event_queue_len = 0;
 	event_queue_overflows = 0;
 }
 
-static void event_queue_add(const SDL_Event* event)
+static void event_queue_push(const SDL_Event* event)
 {
 	int next = (event_queue_pos + event_queue_len) % EVENT_QUEUE_SIZE;
 	if (event_queue_len >= EVENT_QUEUE_SIZE)
@@ -43,7 +49,34 @@ static void event_queue_add(const SDL_Event* event)
 	}
 	event_queue[next] = *event;
 	++event_queue_len;
-	//retro_log(RETRO_LOG_DEBUG,"event_queue_add: %d (%d)\n",next,event->type);
+	//retro_log(RETRO_LOG_DEBUG,"event_queue_push: %d (%d)\n",next,event->type);
+}
+
+static int event_queue_pop(SDL_Event* event)
+{
+	if (event_queue_len == 0) return 0;
+	if (event)
+	{
+		*event = event_queue[event_queue_pos];
+		//retro_log(RETRO_LOG_DEBUG,"event_queue_pop: %d (%d)\n",event_queue_pos,event->type);
+		event_queue_pos = (event_queue_pos + 1) % EVENT_QUEUE_SIZE;
+		--event_queue_len;
+	}
+	return 1;
+}
+
+static void event_queue_force_feed()
+{
+	// Hatari polls the keyboard via INTERRUPT_IKBD_AUTOSEND,
+	// which it tries to call once per vblank.
+	// We want to force it to process immediately at the start of each frame.
+	while (event_queue_len) Main_EventHandler();
+}
+
+static void event_queue_check()
+{
+	if (event_queue_len != 0)
+		retro_log(RETRO_LOG_WARN,"core event_queue not empty at end of retro_run? %d",event_queue_len);
 }
 
 //
@@ -55,7 +88,7 @@ static void event_queue_add(const SDL_Event* event)
 
 static unsigned retrok_to_sdl[RETROK_LAST] = {0};
 
-void retrok_to_sdl_init()
+void retrok_to_sdl_init(void)
 {
 	for (int i=0; i<RETROK_LAST; ++i)
 		retrok_to_sdl[i] = SDLK_UNKNOWN;
@@ -85,16 +118,18 @@ void retrok_to_sdl_init()
 #define JOY_FIRE_OPT   0x08
 #define JOY_FIRE_PAUSE 0x10
 
-static bool retrok_down[RETROK_LAST] = {0}; // for repeat tracking
-static int vmouse_x, vmouse_y; // virtual mouse state
-static bool vmouse_l, vmouse_r;
-static int joy_fire[JOY_PORTS];
-static int joy_stick[JOY_PORTS];
+static uint8_t retrok_down[RETROK_LAST] = {0}; // for repeat tracking
+static int32_t vmouse_x, vmouse_y; // virtual mouse state
+static uint8_t vmouse_l, vmouse_r;
+static int32_t joy_fire[JOY_PORTS];
+static int32_t joy_stick[JOY_PORTS];
 
 void core_input_keyboard_event(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers)
 {
-	// assuming we don't need to mutex the event queue because the retro_keyboard_callback will only be called
-	// out of its own internal queue in between retro_run frames.
+	//retro_log(RETRO_LOG_DEBUG,"core_input_keyboard_event(%d,%d,%d,%04X)\n",down,keycode,character,key_modifiers);
+	// assuming we don't need to mutex the event queue,
+	// because it doesn't make sense for retro_keyboard_callback to operate during retro_run,
+	// (run-ahead, netplay, etc. would need to depend on this?)
 	SDL_Event event; memset(&event,0,sizeof(event));
 	event.key.type = down ? SDL_KEYDOWN : SDL_KEYUP;
 	event.key.state = down ? SDL_PRESSED : SDL_RELEASED;
@@ -115,11 +150,21 @@ void core_input_keyboard_event(bool down, unsigned keycode, uint32_t character, 
 	if (retrok_down[RETROK_RSUPER]) event.key.keysym.mod |= KMOD_RGUI;
 	if (retrok_down[RETROK_MODE  ]) event.key.keysym.mod |= KMOD_MODE;
 	retrok_down[keycode] = down;
-	event_queue_add(&event);
+	event_queue_push(&event);
 	// TODO configure to block this stuff and only allow virtual keyboard inputs
 }
 
-void core_input_init()
+void core_input_serialize(void)
+{
+	// note: doesn't include event queue, and shouldn't need to.
+	for (int i=0; i<RETROK_LAST; ++i) core_serialize_uint8(&retrok_down[i]);
+	core_serialize_int32(&vmouse_x);
+	core_serialize_int32(&vmouse_y);
+	core_serialize_uint8(&vmouse_l);
+	core_serialize_uint8(&vmouse_r);
+}
+
+void core_input_init(void)
 {
 	static struct retro_keyboard_callback keyboard_callback = { core_input_keyboard_event };
 
@@ -145,7 +190,7 @@ const bool vmouse_enabled = true; // TODO option
 const bool pmouse_enabled = true; // TODO option
 const int joy_port_map[4] = {1,0,2,3}; // TODO port mapping options (0,1=ST,2-3=STE,4-5=parallel)
 
-void core_input_update()
+void core_input_update(void)
 {
 	// virtual mouse state
 	bool vm_l = false;
@@ -219,7 +264,7 @@ void core_input_update()
 			event.button.clicks = 1;
 			event.button.x = vm_x;
 			event.button.y = vm_y;
-			event_queue_add(&event);
+			event_queue_push(&event);
 			vmouse_l = vm_l;
 		}
 
@@ -232,7 +277,7 @@ void core_input_update()
 			event.button.clicks = 1;
 			event.button.x = vm_x;
 			event.button.y = vm_y;
-			event_queue_add(&event);
+			event_queue_push(&event);
 			vmouse_r = vm_r;
 		}
 
@@ -247,24 +292,26 @@ void core_input_update()
 			event.motion.y = vm_y;
 			event.motion.xrel = vm_x - vmouse_x;
 			event.motion.yrel = vm_y - vmouse_y;
-			event_queue_add(&event);
+			event_queue_push(&event);
 			vmouse_x = vm_x;
 			vmouse_y = vm_y;
 		}
 	}
 }
 
+void core_input_post(void)
+{
+	event_queue_force_feed();
+}
+
+void core_input_check(void)
+{
+	event_queue_check();
+}
+
 int core_poll_event(SDL_Event* event)
 {
-	if (event_queue_len == 0) return 0;
-	if (event)
-	{
-		*event = event_queue[event_queue_pos];
-		//retro_log(RETRO_LOG_DEBUG,"core_poll_event: %d (%d)\n",event_queue_pos,event->type);
-		event_queue_pos = (event_queue_pos + 1) % EVENT_QUEUE_SIZE;
-		--event_queue_len;
-	}
-	return 1;
+	return event_queue_pop(event);
 }
 
 int core_poll_joy_fire(int port)

@@ -535,16 +535,16 @@ void Main_EventHandler(void)
 	{
 		bContinueProcessing = false;
 
+	#ifdef __LIBRETRO__
+		events = core_poll_event(&event);
+		(void)remotepause;
+	#else
 		/* check remote process control */
 		remotepause = Control_CheckUpdates();
 
 		if ( bEmulationActive || remotepause )
 		{
-		#if __LIBRETRO__
-			events = core_poll_event(&event);
-		#else
 			events = SDL_PollEvent(&event);
-		#endif
 		}
 		else
 		{
@@ -552,13 +552,9 @@ void Main_EventHandler(void)
 			/* last (shortcut) event activated emulation? */
 			if ( bEmulationActive )
 				break;
-		#if __LIBRETRO__
-			events = 0;
-			break; // don't allow "modal" shortcuts to wait here forever
-		#else
 			events = SDL_WaitEvent(&event);
-		#endif
 		}
+	#endif
 		if (!events)
 		{
 			/* no events -> if emulation is active or
@@ -568,9 +564,11 @@ void Main_EventHandler(void)
 		}
 		switch (event.type)
 		{
+	#ifndef __LIBRETRO__
 		 case SDL_QUIT:
 			Main_RequestQuit(0);
 			break;
+	#endif
 
 		 case SDL_KEYDOWN:
 			if (event.key.repeat) {
@@ -617,6 +615,7 @@ void Main_EventHandler(void)
 			}
 			break;
 
+	#ifndef __LIBRETRO__
 		 case SDL_MOUSEWHEEL:
 			/* Simulate cursor keys on mouse wheel events */
 			if (event.wheel.x > 0)
@@ -679,6 +678,7 @@ void Main_EventHandler(void)
 			}
 			bContinueProcessing = true;
 			break;
+	#endif
 
 		 default:
 			/* don't let unknown events delay event processing */
@@ -912,7 +912,7 @@ static void Main_StatusbarSetup(void)
 	if (named)
 	{
 		char message[60];
-#if __LIBRETRO__
+#ifdef __LIBRETRO__
 		snprintf(message, sizeof(message), "Press Scroll-Lock for Keyboard and Mouse focus.");
 #else
 		snprintf(message, sizeof(message), "Press %s%s for Options, %s%s for mouse grab toggle",

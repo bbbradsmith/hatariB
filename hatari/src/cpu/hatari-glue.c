@@ -153,6 +153,28 @@ bool savestate_restore_finish (void)
 }
 
 
+#ifdef __LIBRETRO__
+extern int hatari_libretro_save_state(void);
+extern void hatari_libretro_restore_state(void);
+int hatari_libretro_save_state(void)
+{
+	// when m68k_go_frame exits we are at approximately the same place save_state would be called normally
+	// calling save_state directly instead of using MemorySnapshot_Capture
+	return save_state(NULL, NULL);
+}
+void hatari_libretro_restore_state(void)
+{
+	// set a flag to restore at the next loop and quit the loop
+	MemorySnapShot_Restore("",false);
+	// restart the m68k loop
+	m68k_go_frame(); // will exit
+	m68k_go_quit(); // quit the loop
+	m68k_go(true); // restart the loop
+	m68k_go_frame(); // will exit after restore
+}
+#endif
+
+
 /**
  * Initialize 680x0 emulation
  */

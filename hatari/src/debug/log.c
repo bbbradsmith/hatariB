@@ -300,7 +300,12 @@ void Log_AlertDlg(LOGTYPE nType, const char *psFormat, ...)
 		va_start(argptr, psFormat);
 		vsnprintf(psTmpBuf, 2048, psFormat, argptr);
 		va_end(argptr);
+#ifndef __LIBRETRO__
 		DlgAlert_Notice(psTmpBuf);
+#else
+		// report to error log instead of blocking dialog
+		core_error_msg(psTmpBuf);
+#endif
 		free(psTmpBuf);
 	}
 }

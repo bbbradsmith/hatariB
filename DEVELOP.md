@@ -45,11 +45,13 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Skip `Win_OpenCon` and `setenv`.
   * `Main_WaitOnVbl` now sets `SPCFLAG_BRK` to exit the CPU run loop on each simulated vblank.
   * Always assume perfect frame timing rather than measuring system time and manually delaying.
-  * Replace SDL event queue polling with a simulated input event queue from the Libretro core.
+  * Replace SDL event queue polling with a simulated input event queue from the Libretro core. Limit only to key/mouse input events.
   * Disable `Main_WarpMouse` because Libretro will capture the mouse with its focus mode.
   * Replace default status bar help message with a note to press Scroll-Lock for focus mode.
 * **hatari/src/cpu/newcpu.c**
   * Split `m68k_go` into `m68k_go`, `m68k_go_frame` and `m68k_go_quit`.
+  * Add `core_init_return` to exit after CPU initialization but before first cycles run.
+  * Exit the run loop just after `savestate_restore_final` to allow resume from restored point at next `retro_run`.
 * **hatari/src/screen.c**
   * Don't create or use window or SDL renderer.
   * Use existing SDL software surface, but send its data to the core (`core_video_update`) instead of using a renderer present.
@@ -66,6 +68,13 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Disable SDL josyick initialization.
   * Disable using keys as joystick, since Libretro can do this already.
   * Use core-provided joystick state instead.
+* **hatari/src/memorySnapShot.c**
+  * Replaced snapshot file access with a core-provided in-memory buffer.
+  * Disable snapshot compression because Libretro needs it uncompressed.
+* **hatari/src/hatari-glue.c**
+  * Add `hatari_libretro_save_state` and `hatari_libretro_restore_state` to execute savestates between `retro_run` calls.
+* **hatari/src/debug/log.c**
+  * Disable blocking `DlgAlert_Notice`, replaced with Libretro error log.
 * **hatari/src/midi.c**
 * **hatari/src/gemdos.c**
 * **hatari/src/hdc.c**
