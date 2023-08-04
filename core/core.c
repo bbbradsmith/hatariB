@@ -22,7 +22,7 @@
 
 // Transmit Hatari log message to the Libretro debug log
 // 0 = none, 1 = errors, 2 = all
-#define DEBUG_HATARI_LOG   0
+#define DEBUG_HATARI_LOG   2
 
 //
 // Libretro
@@ -246,6 +246,21 @@ void core_signal_halt(void)
 		msg.progress = -1;
 		environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg);
 	}
+	core_runflags |= CORE_RUNFLAG_HALT;
+}
+
+void core_signal_tos_fail(void)
+{
+	retro_log(RETRO_LOG_ERROR,"Could not load TOS.\n");
+	struct retro_message_ext msg;
+	msg.msg = "TOS not found. Add TOS image to system/hatarib/.";
+	msg.duration = 10 * 1000;
+	msg.priority = 3;
+	msg.level = RETRO_LOG_ERROR;
+	msg.target = RETRO_MESSAGE_TARGET_ALL;
+	msg.type = RETRO_MESSAGE_TYPE_NOTIFICATION_ALT;
+	msg.progress = -1;
+	environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg);
 	core_runflags |= CORE_RUNFLAG_HALT;
 }
 
@@ -652,6 +667,7 @@ RETRO_API void retro_cheat_set(unsigned index, bool enabled, const char *code)
 
 RETRO_API bool retro_load_game(const struct retro_game_info *game)
 {
+	//retro_log(RETRO_LOG_DEBUG,"retro_load_game()\n");
 	// TODO load the game?
 
 	// finish initialization of the CPU

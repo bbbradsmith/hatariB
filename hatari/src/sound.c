@@ -285,11 +285,7 @@ Uint8		SoundRegs[ 14 ];
 
 int		YmVolumeMixing = YM_TABLE_MIXING;
 
-#ifndef __LIBRETRO__
 int		YM2149_LPF_Filter = YM2149_LPF_FILTER_PWM;
-#else
-int     YM2149_LPF_Filter = YM2149_LPF_FILTER_IIR;
-#endif
 // int		YM2149_LPF_Filter = YM2149_LPF_FILTER_NONE;	/* For debug */
 int		YM2149_HPF_Filter = YM2149_HPF_FILTER_IIR;
 // int		YM2149_HPF_Filter = YM2149_HPF_FILTER_NONE;	/* For debug */
@@ -1123,11 +1119,6 @@ static void	YM2149_DoSamples_250 ( int SamplesToGenerate_250 )
 
 		sample = ymout5[ Tone3Voices ];			/* 16 bits signed value */
 
-	#ifdef __LIBRETRO__
-		// HACK forcing it on for now until I have a proper configuration setup.
-		YM2149_LPF_Filter = YM2149_LPF_FILTER_IIR;
-	#endif
-
 		/* Apply low pass filter ? */
 		if ( YM2149_LPF_Filter == YM2149_LPF_FILTER_LPF_STF )
 			sample = LowPassFilter ( sample );
@@ -1656,6 +1647,8 @@ void Sound_MemorySnapShot_Capture(bool bSave)
 		YM_Buffer_250_pos_read = 0;
 	}
 #else
+	MemorySnapShot_Store(&YM2149_LPF_Filter, sizeof(YM2149_LPF_Filter));
+	MemorySnapShot_Store(&YM2149_HPF_Filter, sizeof(YM2149_HPF_Filter));
 	// this needs to be saved for seamless audio
 	MemorySnapShot_Store(&YM_Buffer_250, sizeof(YM_Buffer_250));
 	MemorySnapShot_Store(&YM_Buffer_250_pos_write, sizeof(YM_Buffer_250_pos_write));

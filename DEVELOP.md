@@ -48,6 +48,8 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Replace SDL event queue polling with a simulated input event queue from the Libretro core. Limit only to key/mouse input events.
   * Disable `Main_WarpMouse` because Libretro will capture the mouse with its focus mode.
   * Replace default status bar help message with a note to press Scroll-Lock for focus mode.
+  * Disable loading config from file.
+  * Allow missing TOS file to pass through initialization so we can halt the CPU and report the error to the user later.
 * **hatari/src/cpu/newcpu.c**
   * Split `m68k_go` into `m68k_go`, `m68k_go_frame` and `m68k_go_quit`.
   * Add `core_init_return` to exit after CPU initialization but before first cycles run.
@@ -65,7 +67,7 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Notify core of audio samplerate changes.
 * **hatari/src/sound.c**
   * Send generated audio to core in `Sound_Update`.
-  * Save `YM_Buffer` to savestates for seamless audio across savestates.
+  * Save `YM_Buffer` to savestates for seamless audio across savestates/runahead.
   * Added IIR lowpass filter option for lower audio distortion.
 * **hatari/src/joy.c**
   * Disable SDL josyick initialization.
@@ -80,6 +82,7 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Add `hatari_libretro_flush_audio` to reset audio queue when needed.
 * **hatari/src/tos.c**
   * Keep a cached copy of last used TOS to prevent reloading the file on restore.
+  * Allow missing TOS to proceed, signal failure to core to be reported there later.
 * **hatari/src/debug/log.h**
 * **hatari/src/debug/log.c**
   * Redirect `Log_Printf` to libretro debug log (optional define for debug).
@@ -89,6 +92,10 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Signal the core when a reset happens so it can be handled properly.
 * **hatari/src/gui-sdl/dlgHalt.c**
   * Disable blocking `Dialog_HaltDlg`, replace with a signal to the core to halt its own emulation.
+* **hatari/src/configuration.c**
+* **hatari/src/includes/configuration.h**
+  * Add options for YM filter configuration.
+  * Override some of the default options.
 * **hatari/src/midi.c**
 * **hatari/src/gemdos.c**
 * **hatari/src/hdc.c**

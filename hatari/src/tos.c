@@ -986,6 +986,9 @@ static uint8_t *TOS_LoadImage(void)
 	{
 		Log_AlertDlg(LOG_FATAL, "Can not load TOS file:\n'%s'", ConfigureParams.Rom.szTosImageFileName);
 		free(pTosFile);
+	#ifdef __LIBRETRO__
+		core_signal_tos_fail();
+	#endif
 		return NULL;
 	}
 
@@ -1148,14 +1151,19 @@ int TOS_InitImage(void)
 	if (bUseTos)
 	{
 		pTosFile = TOS_LoadImage();
+#ifndef __LIBRETRO__
+		// we want to keep going and just halt the CPU instead of cancelling setup
 		if (!pTosFile)
 			return -1;
+#endif
 	}
 	else
 	{
+#ifndef __LIBRETRO__
 		pTosFile = TOS_FakeRomForTesting();
 		if (!pTosFile)
 			return -1;
+#endif
 	}
 
 	/* After TOS is loaded, and machine configuration adapted
@@ -1172,12 +1180,18 @@ int TOS_InitImage(void)
 	memset(&RomMem[0xe00000], 0, 0x200000);
 
 	/* Copy loaded image into memory */
+#ifdef __LIBRETRO__
+	if (pTosFile) {
+#endif
 	if (bRamTosImage)
 		memcpy(&STRam[TosAddress], pTosFile, TosSize);
 	else
 		memcpy(&RomMem[TosAddress], pTosFile, TosSize);
 	free(pTosFile);
 	pTosFile = NULL;
+#ifdef __LIBRETRO__
+	}
+#endif
 
 	Log_Printf(LOG_DEBUG, "Loaded TOS version %i.%c%c, starting at $%x, "
 	           "country code = %i, %s\n", TosVersion>>8, '0'+((TosVersion>>4)&0x0f),

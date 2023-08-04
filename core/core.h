@@ -28,9 +28,10 @@ extern void core_audio_update(const int16_t data[][2], int index, int length);
 extern void core_set_fps(int rate);
 extern void core_set_samplerate(int rate);
 
-// indicate the core has halted or reset
+// indicate the core has halted or reset or some error cases
 extern void core_signal_halt(void);
 extern void core_signal_reset(bool cold);
+extern void core_signal_tos_fail(void);
 
 // input translation
 typedef union SDL_Event* core_event_t;

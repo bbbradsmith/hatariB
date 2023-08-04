@@ -783,6 +783,9 @@ static void Main_Init(void)
 
 	if (Reset_Cold())             /* Reset all systems, load TOS image */
 	{
+#ifndef __LIBRETRO__
+	// Libretro should just continue with setup and halt the CPU to report the error.
+	// Dialog_DoProperty is blocking, we can't use that.
 		/* If loading of the TOS failed, we bring up the GUI to let the
 		 * user choose another TOS ROM file. */
 		Dialog_DoProperty();
@@ -793,6 +796,7 @@ static void Main_Init(void)
 			fprintf(stderr, "ERROR: failed to load TOS image!\n");
 		SDL_Quit();
 		exit(-2);
+#endif
 	}
 
 	IoMem_Init();
@@ -851,6 +855,7 @@ static void Main_UnInit(void)
  */
 static void Main_LoadInitialConfig(void)
 {
+#ifndef __LIBRETRO__
 	char *psGlobalConfig;
 
 	if (getenv("HATARI_TEST"))
@@ -871,6 +876,11 @@ static void Main_LoadInitialConfig(void)
 	Configuration_Load(NULL);
 	if (ConfigureParams.Keyboard.nLanguage == TOS_LANG_UNKNOWN)
 		ConfigureParams.Keyboard.nLanguage = TOS_DefaultLanguage();
+#else
+	// TODO load from retroarch
+	// note that we probably want to delay all this until after load game?
+	// when does retroarch provide the game-specific over-rides?
+#endif
 }
 
 /*-----------------------------------------------------------------------*/

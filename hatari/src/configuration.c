@@ -273,6 +273,10 @@ static const struct Config_Tag configs_Sound[] =
 	{ "nSdlAudioBufferSize", Int_Tag, &ConfigureParams.Sound.SdlAudioBufferSize },
 	{ "szYMCaptureFileName", String_Tag, ConfigureParams.Sound.szYMCaptureFileName },
 	{ "YmVolumeMixing", Int_Tag, &ConfigureParams.Sound.YmVolumeMixing },
+#ifndef __LIBRETRO__
+	{ "YmLpf", Int_Tag, &ConfigureParams.Sound.YmLpf },
+	{ "YmHpf", Int_Tag, &ConfigureParams.Sound.YmHpf },
+#endif
 	{ NULL , Error_Tag, NULL }
 };
 
@@ -791,6 +795,18 @@ void Configuration_SetDefault(void)
 	{
 		strcpy(sConfigFileName, "hatari.cfg");
 	}
+
+#ifdef __LIBRETRO__
+	ConfigureParams.Sound.YmLpf = YM2149_LPF_FILTER_IIR;
+	ConfigureParams.Sound.YmHpf = YM2149_HPF_FILTER_IIR;
+	// override some of the defaults
+	ConfigureParams.Screen.nFrameSkips = 0;
+	ConfigureParams.Screen.bMouseWarp = true;
+	ConfigureParams.Sound.nPlaybackFreq = 48000;
+	ConfigureParams.DiskImage.FastFloppy = true;
+	ConfigureParams.System.bFastBoot = true;
+	ConfigureParams.System.bCycleExactCpu = false;
+#endif
 }
 
 
@@ -867,6 +883,10 @@ void Configuration_Apply(bool bReset)
 		ConfigureParams.Sound.YmVolumeMixing = YM_TABLE_MIXING;
 
 	YmVolumeMixing = ConfigureParams.Sound.YmVolumeMixing;
+#ifdef __LIBRETRO__
+	YM2149_LPF_Filter = ConfigureParams.Sound.YmLpf;
+	YM2149_HPF_Filter = ConfigureParams.Sound.YmHpf;
+#endif
 	Sound_SetYmVolumeMixing();
 
 	/* Falcon : update clocks values if sound freq changed  */
