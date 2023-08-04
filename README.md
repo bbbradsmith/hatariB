@@ -20,7 +20,9 @@ This project is licensed under the [GNU General Public License Version 2](LICENS
 
 The GPL v2 license was inherited from the Hatari project. The Hatari source code is incorporated here, in the [hatari/](hatari/) folder with minimal modifications, outlined in the [development notes](DEVELOP.md).
 
-This project also incorporates libraries from [Libretro](https://github.com/libretro/), unmodified, under a compatible permissive license.
+This project also incorporates header files from [Libretro](https://github.com/libretro/), under a compatible permissive license.
+
+This project includes [EmuTOS](https://emutos.sourceforge.io/) as built-in available TOS BIOS images, under the GPL v2 license.
 
 ## Authors
 

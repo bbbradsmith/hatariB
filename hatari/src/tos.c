@@ -43,6 +43,25 @@ const char TOS_fileid[] = "Hatari tos.c";
 
 #include "faketosData.c"
 
+#ifdef __LIBRETRO__
+// default TOS if none provided
+#include "../../emutos/etos1024k.h"
+#include "../../emutos/etos192uk.h"
+#include "../../emutos/etos192us.h"
+const uint8_t* const BUILTIN_TOS_ROM[] = {
+	NULL,
+	etos1024k,
+	etos192uk,
+	etos192us,
+};
+const int BUILTIN_TOS_LEN[] = {
+	0,
+	etos1024k_len,
+	etos192uk_len,
+	etos192us_len,
+};
+#endif
+
 #define TEST_PRG_BASEPAGE 0x1000
 #define TEST_PRG_START (TEST_PRG_BASEPAGE + 0x100)
 
@@ -953,9 +972,19 @@ static uint8_t *TOS_LoadImage(void)
 	TosVersion = 0;
 
 #ifdef __LIBRETRO__
-	// keep a cached copy of TOS so that it doesn't need to be re-read on savestate etc.
-	if (TOSCache_Data != NULL && TOSCache_Size > 0 && !strcmp(TOSCache_Filename,ConfigureParams.Rom.szTosImageFileName))
+	if (ConfigureParams.Rom.nBuiltinTos != 0)
 	{
+		const uint8_t* builtin_tos = BUILTIN_TOS_ROM[ConfigureParams.Rom.nBuiltinTos];
+		nFileSize = BUILTIN_TOS_LEN[ConfigureParams.Rom.nBuiltinTos];
+		pTosFile = malloc(nFileSize);
+		if (pTosFile)
+		{
+			memcpy(pTosFile,builtin_tos,nFileSize);
+		}
+	}
+	else if (TOSCache_Data != NULL && TOSCache_Size > 0 && !strcmp(TOSCache_Filename,ConfigureParams.Rom.szTosImageFileName))
+	{
+		// keep a cached copy of TOS so that it doesn't need to be re-read on savestate etc.
 		pTosFile = malloc(TOSCache_Size);
 		if (pTosFile)
 		{
@@ -1159,8 +1188,8 @@ int TOS_InitImage(void)
 	}
 	else
 	{
-#ifndef __LIBRETRO__
 		pTosFile = TOS_FakeRomForTesting();
+#ifndef __LIBRETRO__
 		if (!pTosFile)
 			return -1;
 #endif

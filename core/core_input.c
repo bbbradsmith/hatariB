@@ -10,6 +10,37 @@ extern retro_input_state_t input_state_cb;
 extern retro_log_printf_t retro_log;
 
 //
+// Internal input state
+//
+
+#define JOY_PORTS   6
+// 1-button joysticks
+#define JOY_STICK_U    0x01
+#define JOY_STICK_D    0x02
+#define JOY_STICK_L    0x04
+#define JOY_STICK_R    0x08
+#define JOY_STICK_F    0x80
+// STE Atari Jaguar pads have 5 buttons implemented in Hatari
+#define JOY_FIRE_A     0x01
+#define JOY_FIRE_B     0x02
+#define JOY_FIRE_C     0x04
+#define JOY_FIRE_OPT   0x08
+#define JOY_FIRE_PAUSE 0x10
+
+static uint8_t retrok_down[RETROK_LAST] = {0}; // for repeat tracking
+static int32_t vmouse_x, vmouse_y; // virtual mouse state
+static uint8_t vmouse_l, vmouse_r;
+static int32_t joy_fire[JOY_PORTS];
+static int32_t joy_stick[JOY_PORTS];
+static int32_t mod_state;
+
+// TODO configurations
+const bool vmouse_enabled = true; // TODO option
+const bool pmouse_enabled = true; // TODO option
+const int joy_port_map[4] = {1,0,2,3}; // TODO port mapping options (0,1=ST,2-3=STE,4-5=parallel)
+const bool keyboard_enabled = true; // TODO can this also check for game focus mode?
+
+//
 // From Hatari
 //
 
@@ -61,6 +92,11 @@ static int event_queue_pop(SDL_Event* event)
 		//retro_log(RETRO_LOG_DEBUG,"event_queue_pop: %d (%d)\n",event_queue_pos,event->type);
 		event_queue_pos = (event_queue_pos + 1) % EVENT_QUEUE_SIZE;
 		--event_queue_len;
+		if (event->type == SDL_KEYDOWN || event->type == SDL_KEYUP)
+		{
+			// update mod-state only when key events are fetched
+			mod_state = event->key.keysym.mod;
+		}
 	}
 	return 1;
 }
@@ -105,32 +141,14 @@ void retrok_to_sdl_init(void)
 // libretro input
 //
 
-#define JOY_PORTS   6
-// 1-button joysticks
-#define JOY_STICK_U    0x01
-#define JOY_STICK_D    0x02
-#define JOY_STICK_L    0x04
-#define JOY_STICK_R    0x08
-#define JOY_STICK_F    0x80
-// STE Atari Jaguar pads have 5 buttons implemented in Hatari
-#define JOY_FIRE_A     0x01
-#define JOY_FIRE_B     0x02
-#define JOY_FIRE_C     0x04
-#define JOY_FIRE_OPT   0x08
-#define JOY_FIRE_PAUSE 0x10
-
-static uint8_t retrok_down[RETROK_LAST] = {0}; // for repeat tracking
-static int32_t vmouse_x, vmouse_y; // virtual mouse state
-static uint8_t vmouse_l, vmouse_r;
-static int32_t joy_fire[JOY_PORTS];
-static int32_t joy_stick[JOY_PORTS];
+uint16_t core_input_mod_state(void)
+{
+	return (uint16_t)mod_state;
+}
 
 void core_input_keyboard_event(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers)
 {
 	//retro_log(RETRO_LOG_DEBUG,"core_input_keyboard_event(%d,%d,%d,%04X)\n",down,keycode,character,key_modifiers);
-	// assuming we don't need to mutex the event queue,
-	// because it doesn't make sense for retro_keyboard_callback to operate during retro_run,
-	// (run-ahead, netplay, etc. would need to depend on this?)
 	SDL_Event event; memset(&event,0,sizeof(event));
 	event.key.type = down ? SDL_KEYDOWN : SDL_KEYUP;
 	event.key.state = down ? SDL_PRESSED : SDL_RELEASED;
@@ -138,36 +156,76 @@ void core_input_keyboard_event(bool down, unsigned keycode, uint32_t character, 
 	event.key.keysym.sym = retrok_to_sdl[keycode];
 	event.key.keysym.scancode = SDL_GetScancodeFromKey(event.key.keysym.sym);
 	event.key.keysym.mod = 0;
+	// NUMLOCK is the only mod state that Hatari uses (for: Keymap_GetKeyPadScanCode)
 	if (key_modifiers & RETROKMOD_NUMLOCK  ) event.key.keysym.mod |= KMOD_NUM;
-	if (key_modifiers & RETROKMOD_CAPSLOCK ) event.key.keysym.mod |= KMOD_CAPS;
-	if (key_modifiers & RETROKMOD_SCROLLOCK) event.key.keysym.mod |= KMOD_SCROLL;
-	if (retrok_down[RETROK_LSHIFT]) event.key.keysym.mod |= KMOD_LSHIFT;
-	if (retrok_down[RETROK_RSHIFT]) event.key.keysym.mod |= KMOD_RSHIFT;
-	if (retrok_down[RETROK_LCTRL ]) event.key.keysym.mod |= KMOD_LCTRL;
-	if (retrok_down[RETROK_RCTRL ]) event.key.keysym.mod |= KMOD_RCTRL;
-	if (retrok_down[RETROK_LALT  ]) event.key.keysym.mod |= KMOD_LALT;
-	if (retrok_down[RETROK_RALT  ]) event.key.keysym.mod |= KMOD_RALT;
-	if (retrok_down[RETROK_LSUPER]) event.key.keysym.mod |= KMOD_LGUI;
-	if (retrok_down[RETROK_RSUPER]) event.key.keysym.mod |= KMOD_RGUI;
-	if (retrok_down[RETROK_MODE  ]) event.key.keysym.mod |= KMOD_MODE;
+	//if (key_modifiers & RETROKMOD_CAPSLOCK ) event.key.keysym.mod |= KMOD_CAPS;
+	//if (key_modifiers & RETROKMOD_SCROLLOCK) event.key.keysym.mod |= KMOD_SCROLL;
+	//if (retrok_down[RETROK_LSHIFT]) event.key.keysym.mod |= KMOD_LSHIFT;
+	//if (retrok_down[RETROK_RSHIFT]) event.key.keysym.mod |= KMOD_RSHIFT;
+	//if (retrok_down[RETROK_LCTRL ]) event.key.keysym.mod |= KMOD_LCTRL;
+	//if (retrok_down[RETROK_RCTRL ]) event.key.keysym.mod |= KMOD_RCTRL;
+	//if (retrok_down[RETROK_LALT  ]) event.key.keysym.mod |= KMOD_LALT;
+	//if (retrok_down[RETROK_RALT  ]) event.key.keysym.mod |= KMOD_RALT;
+	//if (retrok_down[RETROK_LSUPER]) event.key.keysym.mod |= KMOD_LGUI;
+	//if (retrok_down[RETROK_RSUPER]) event.key.keysym.mod |= KMOD_RGUI;
+	//if (retrok_down[RETROK_MODE  ]) event.key.keysym.mod |= KMOD_MODE;
 	retrok_down[keycode] = down;
 	event_queue_push(&event);
-	// TODO configure to block this stuff and only allow virtual keyboard inputs
+	(void)character;
+}
+
+void core_input_keyboard_event_callback(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers)
+{
+	//retro_log(RETRO_LOG_DEBUG,"core_input_keyboard_event_callback(%d,%d,%d,%04X)\n",down,keycode,character,key_modifiers);
+	// assuming we don't need to mutex the event queue,
+	// because it doesn't make sense for retro_keyboard_callback to operate during retro_run,
+	// (run-ahead, netplay, etc. would need to depend on this?)
+	if (!keyboard_enabled) return;
+	core_input_keyboard_event(down, keycode, character, key_modifiers);
+}
+
+void core_input_keyboard_unstick() // release any keys that don't currently match state
+{
+	// NUMLOCK is the only mod state that Hatari uses (for: Keymap_GetKeyPadScanCode)
+	uint16_t mod = 0;
+	if (mod_state & KMOD_NUM   ) mod |= RETROKMOD_NUMLOCK;
+	//if (mod_state & KMOD_CAPS  ) mod |= RETROKMOD_CAPSLOCK;
+	//if (mod_state & KMOD_SCROLL) mod |= RETROKMOD_SCROLLOCK;
+
+	for (int i=0; i<RETROK_LAST; ++i)
+	{
+		if (!retrok_down[i]) continue;
+		if (!keyboard_enabled || !input_state_cb(0,RETRO_DEVICE_KEYBOARD,0,i))
+		{
+			core_input_keyboard_event(false,i,0,mod); // release key
+			retro_log(RETRO_LOG_DEBUG,"core_input_keyboard_unstick() released: %d\n",i);
+		}
+	}
+	// TODO we don't want to release anything held by joystick mappings...
+	// have a parallel array to retrok_down which indicates all mapped keys held
+	// (not part of savesate)
+	// 1. input_poll_cb
+	// 2. process joys, set retrok_joy array
+	// 3.   when setting retrok_joy if !retrok_down send an event for it now (also sets retrok_down)
+	// 4. core_input_keyboard_unstick now
+	// 5.   after if !retrok_down continue, if retrok_joy continue as well
+	// 6.   do the input_state_cb keyboard check, or automatic 0 if blocked
 }
 
 void core_input_serialize(void)
 {
-	// note: doesn't include event queue, and shouldn't need to.
+	// note: doesn't include event queue, and shouldn't need to (should be empty, but even if not the pending events haven't effected emulation yet)
 	for (int i=0; i<RETROK_LAST; ++i) core_serialize_uint8(&retrok_down[i]);
 	core_serialize_int32(&vmouse_x);
 	core_serialize_int32(&vmouse_y);
 	core_serialize_uint8(&vmouse_l);
 	core_serialize_uint8(&vmouse_r);
+	core_serialize_int32(&mod_state);
 }
 
 void core_input_init(void)
 {
-	static struct retro_keyboard_callback keyboard_callback = { core_input_keyboard_event };
+	static struct retro_keyboard_callback keyboard_callback = { core_input_keyboard_event_callback };
 
 	// generate mappings
 	retrok_to_sdl_init();
@@ -187,10 +245,6 @@ void core_input_init(void)
 	environ_cb(RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK, &keyboard_callback);
 }
 
-const bool vmouse_enabled = true; // TODO option
-const bool pmouse_enabled = true; // TODO option
-const int joy_port_map[4] = {1,0,2,3}; // TODO port mapping options (0,1=ST,2-3=STE,4-5=parallel)
-
 void core_input_update(void)
 {
 	// virtual mouse state
@@ -200,6 +254,7 @@ void core_input_update(void)
 	int vm_y = vmouse_y;
 
 	input_poll_cb();
+	core_input_keyboard_unstick();
 
 	// clear all joystick ports
 	for (int i=0; i<JOY_PORTS; ++i)

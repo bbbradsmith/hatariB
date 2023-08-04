@@ -9,6 +9,7 @@ Incorporated sources:
 * [hatari/](https://git.tuxfamily.org/hatari/hatari.git/tag/?id=v2.4.1) 2.4.1 2022-08-03
 * [libretro/libretro.h](https://github.com/libretro/libretro-common/blob/7edbfaf17baffa1b8a00231762aa7ead809711b5/include/libretro.h) 24a9210 2023-07-16
 * [libretro/libretro_sdl_keymap.h](https://github.com/libretro/RetroArch/blob/b4143882245edd737c7e7c522b25e32f8d1f64ad/input/input_keymaps.c#L607) 9ca5c5e 2023-07-08
+* [emutos/](https://emutos.sourceforge.io/) 1.2.1 2022-08-16
 
 ## Prerequisites
 
@@ -71,7 +72,6 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Added IIR lowpass filter option for lower audio distortion.
 * **hatari/src/joy.c**
   * Disable SDL josyick initialization.
-  * Disable using keys as joystick, since Libretro can do this already.
   * Use core-provided joystick state instead.
 * **hatari/src/memorySnapShot.c**
   * Replaced snapshot file access with a core-provided in-memory buffer.
@@ -81,6 +81,7 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Add `hatari_libretro_save_state` and `hatari_libretro_restore_state` to execute savestates between `retro_run` calls.
   * Add `hatari_libretro_flush_audio` to reset audio queue when needed.
 * **hatari/src/tos.c**
+  * Allow built-in TOS bios (EmuTOS).
   * Keep a cached copy of last used TOS to prevent reloading the file on restore.
   * Allow missing TOS to proceed, signal failure to core to be reported there later.
 * **hatari/src/debug/log.h**
@@ -94,8 +95,14 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Disable blocking `Dialog_HaltDlg`, replace with a signal to the core to halt its own emulation.
 * **hatari/src/configuration.c**
 * **hatari/src/includes/configuration.h**
+  * Add option for built-in TOS bios (EmuTOS).
   * Add options for YM filter configuration.
   * Override some of the default options.
+* **hatari/src/keymap.c**
+  * Block Scroll Lock, F11, F12, F13 from generating keypresses.
+  * Disable all Hatari shortcut keys.
+  * Disable Hatari key to joystick mappings.
+  * Provide modifier key state instead of `SDL_GetModState`.
 * **hatari/src/midi.c**
 * **hatari/src/gemdos.c**
 * **hatari/src/hdc.c**

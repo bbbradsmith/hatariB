@@ -463,7 +463,6 @@ bool Joy_SwitchMode(int port)
  */
 bool Joy_KeyDown(int symkey, int modkey)
 {
-#ifndef __LIBRETRO__
 	int i;
 
 	for (i = 0; i < JOYSTICK_COUNT; i++)
@@ -502,10 +501,6 @@ bool Joy_KeyDown(int symkey, int modkey)
 			}
 		}
 	}
-#else
-	(void)symkey;
-	(void)modkey;
-#endif
 
 	return false;
 }
@@ -518,7 +513,6 @@ bool Joy_KeyDown(int symkey, int modkey)
  */
 bool Joy_KeyUp(int symkey, int modkey)
 {
-#ifndef __LIBRETRO__
 	int i;
 
 	for (i = 0; i < JOYSTICK_COUNT; i++)
@@ -553,10 +547,6 @@ bool Joy_KeyUp(int symkey, int modkey)
 			}
 		}
 	}
-#else
-	(void)symkey;
-	(void)modkey;
-#endif
 
 	return false;
 }

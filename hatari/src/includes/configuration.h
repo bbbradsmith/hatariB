@@ -48,6 +48,9 @@ typedef struct
   char szTosImageFileName[FILENAME_MAX];
   bool bPatchTos;
   char szCartridgeImageFileName[FILENAME_MAX];
+#ifdef __LIBRETRO__
+  int nBuiltinTos;
+#endif  
 } CNF_ROM;
 
 

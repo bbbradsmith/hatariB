@@ -350,7 +350,11 @@ static uint8_t Keymap_PcToStScanCode(const SDL_Keysym* pKeySym)
  */
 static uint8_t Keymap_GetKeyPadScanCode(const SDL_Keysym* pKeySym)
 {
+#ifndef __LIBRETRO__
 	if (SDL_GetModState() & KMOD_NUM)
+#else
+	if (core_input_mod_state() & KMOD_NUM)
+#endif
 	{
 		switch (pKeySym->sym)
 		{
@@ -590,6 +594,12 @@ static bool IsKeyTranslatable(SDL_Keycode symkey)
 	case SDLK_RGUI:
 	case SDLK_MODE:
 	case SDLK_NUMLOCKCLEAR:
+#ifdef __LIBRETRO__
+	case SDLK_SCROLLLOCK:
+	case SDLK_F11:
+	case SDLK_F12:
+	case SDLK_F13:
+#endif
 		return false;
 	}
 	return true;
@@ -609,6 +619,7 @@ void Keymap_KeyDown(const SDL_Keysym *sdlkey)
 	LOG_TRACE(TRACE_KEYMAP, "key down: sym=%i scan=%i mod=0x%x name='%s'\n",
 	          symkey, sdlkey->scancode, modkey, Keymap_GetKeyName(symkey));
 
+#ifndef __LIBRETRO__
 	if (ShortCut_CheckKeys(modkey, symkey, true))
 		return;
 
@@ -616,6 +627,9 @@ void Keymap_KeyDown(const SDL_Keysym *sdlkey)
 	 * Some games use keyboard as pause! */
 	if (Joy_KeyDown(symkey, modkey))
 		return;
+#else
+	(void)modkey;
+#endif
 
 	/* Ignore modifier keys that are not passed to the ST */
 	if (!IsKeyTranslatable(symkey))
@@ -648,6 +662,7 @@ void Keymap_KeyUp(const SDL_Keysym *sdlkey)
 	LOG_TRACE(TRACE_KEYMAP, "key up: sym=%i scan=%i mod=0x%x name='%s'\n",
 	          symkey, sdlkey->scancode, modkey, Keymap_GetKeyName(symkey));
 
+#ifndef __LIBRETRO__
 	/* Ignore short-cut keys here */
 	if (ShortCut_CheckKeys(modkey, symkey, false))
 		return;
@@ -656,6 +671,9 @@ void Keymap_KeyUp(const SDL_Keysym *sdlkey)
 	 * Some games use keyboard as pause! */
 	if (Joy_KeyUp(symkey, modkey))
 		return;
+#else
+	(void)modkey;
+#endif
 
 	/* Ignore modifier keys that are not passed to the ST */
 	if (!IsKeyTranslatable(symkey))

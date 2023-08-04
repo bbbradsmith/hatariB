@@ -112,10 +112,17 @@ int core_video_w = 640;
 int core_video_h = 400;
 int core_video_pitch = 640*4;
 int core_video_fps = 50;
+int core_video_fps_new = 50;
 int core_audio_samplerate = 48000;
+int core_audio_samplerate_new = 48000;
 int core_audio_samples_pending = 0;
 bool core_video_changed = false;
 bool core_rate_changed = false;
+// fps and samplerate update a "new" variable,
+// which is later transferred to the actual variable.
+// This is because they can sometimes be updated multiple times
+// in a single frame, and onl the last one matters.
+// (Savestate tends to set them once spuriously during its reset phase.)
 
 void core_debug_msg(const char* msg)
 {
@@ -219,14 +226,16 @@ void core_audio_update(const int16_t data[][2], int index, int length)
 
 void core_set_fps(int rate)
 {
-	if (rate != core_video_fps) core_rate_changed = true;
-	core_video_fps = rate;
+	//retro_log(RETRO_LOG_DEBUG,"core_set_fps(%d)\n",rate);
+	if (rate != core_video_fps_new) core_rate_changed = true;
+	core_video_fps_new = rate;
 }
 
 void core_set_samplerate(int rate)
 {
-	if (rate != core_audio_samplerate) core_rate_changed = true;
-	core_audio_samplerate = rate;
+	//retro_log(RETRO_LOG_DEBUG,"core_set_samplerate(%d)\n",rate);
+	if (rate != core_audio_samplerate_new) core_rate_changed = true;
+	core_audio_samplerate_new = rate;
 }
 
 // halting / reset
@@ -484,6 +493,8 @@ RETRO_API void retro_init(void)
 	main_init(1,(char**)argv); // TODO how are paths affected?
 
 	// this will be fetched and applied via retro_get_system_av_info before the first frame begins
+	core_video_fps = core_video_fps_new;
+	core_audio_samplerate = core_audio_samplerate_new;
 	core_video_changed = false;
 	core_rate_changed = false;
 }
@@ -513,6 +524,9 @@ RETRO_API void retro_get_system_info(struct retro_system_info *info)
 RETRO_API void retro_get_system_av_info(struct retro_system_av_info *info)
 {
 	retro_log(RETRO_LOG_INFO,"retro_get_system_av_info()\n");
+
+	core_video_fps = core_video_fps_new;
+	core_audio_samplerate = core_audio_samplerate_new;
 
 	info->geometry.base_width = core_video_w;
 	info->geometry.base_height = core_video_h;
