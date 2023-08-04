@@ -84,7 +84,7 @@ extern void hatari_libretro_restore_state(void);
 extern void core_input_init(void); // call in retro_init
 extern void core_input_update(void); // call in retro_run, polls Libretro inputs and translates to events for hatari
 extern void core_input_post(void); // call to force hatari to process the input queue
-extern void core_input_check(void); // call at end of retro_run
+extern void core_input_finish(void); // call at end of retro_run
 extern void core_input_serialize(void); // savestate save/load
 
 //
@@ -498,8 +498,8 @@ RETRO_API void retro_run(void)
 		core_audio_samples_pending = 0;
 	}
 
-	// event queue warning for diagnostic
-	core_input_check();
+	// event queue end of frame
+	core_input_finish();
 }
 
 RETRO_API size_t retro_serialize_size(void)

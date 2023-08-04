@@ -65,7 +65,7 @@ static int event_queue_pop(SDL_Event* event)
 	return 1;
 }
 
-static void event_queue_force_feed()
+static void event_queue_force_feed(void)
 {
 	// Hatari polls the keyboard via INTERRUPT_IKBD_AUTOSEND,
 	// which it tries to call once per vblank.
@@ -73,8 +73,9 @@ static void event_queue_force_feed()
 	while (event_queue_len) Main_EventHandler();
 }
 
-static void event_queue_check()
+static void event_queue_finish(void)
 {
+	// this shouldn't happen because of the force feed
 	if (event_queue_len != 0)
 		retro_log(RETRO_LOG_WARN,"core event_queue not empty at end of retro_run? %d",event_queue_len);
 }
@@ -304,9 +305,9 @@ void core_input_post(void)
 	event_queue_force_feed();
 }
 
-void core_input_check(void)
+void core_input_finish(void)
 {
-	event_queue_check();
+	event_queue_finish();
 }
 
 int core_poll_event(SDL_Event* event)
