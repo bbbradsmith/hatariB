@@ -52,6 +52,7 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Split `m68k_go` into `m68k_go`, `m68k_go_frame` and `m68k_go_quit`.
   * Add `core_init_return` to exit after CPU initialization but before first cycles run.
   * Exit the run loop just after `savestate_restore_final` to allow resume from restored point at next `retro_run`.
+  * Edited `m68k_disasm_file` hardcoded `TraceFile` to use `LOG_TRACE_PRINT` instead so it can redirect to libretro.
 * **hatari/src/screen.c**
   * Don't create or use window or SDL renderer.
   * Use existing SDL software surface, but send its data to the core (`core_video_update`) instead of using a renderer present.
@@ -71,10 +72,21 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
 * **hatari/src/memorySnapShot.c**
   * Replaced snapshot file access with a core-provided in-memory buffer.
   * Disable snapshot compression because Libretro needs it uncompressed.
+  * Make `bCaptureError` externally accessible to check for errors after restore.
 * **hatari/src/hatari-glue.c**
   * Add `hatari_libretro_save_state` and `hatari_libretro_restore_state` to execute savestates between `retro_run` calls.
+  * Add `hatari_libretro_flush_audio` to reset audio queue when needed.
+* **hatari/src/tos.c**
+  * Keep a cached copy of last used TOS to prevent reloading the file on restore.
+* **hatari/src/debug/log.h**
 * **hatari/src/debug/log.c**
+  * Redirect `Log_Printf` to libretro debug log (optional define for debug).
+  * Redirect `LOG_TRACE` and `LOG_TRACE_PRINT` to libretro debug log.
   * Disable blocking `DlgAlert_Notice`, replaced with Libretro error log.
+* **hatari/src/reset.c**
+  * Signal the core when a reset happens so it can be handled properly.
+* **hatari/src/gui-sdl/dlgHalt.c**
+  * Disable blocking `Dialog_HaltDlg`, replace with a signal to the core to halt its own emulation.
 * **hatari/src/midi.c**
 * **hatari/src/gemdos.c**
 * **hatari/src/hdc.c**

@@ -7687,7 +7687,11 @@ void m68k_disasm_file (FILE *f, uaecptr addr, uaecptr *nextpc, uaecptr lastpc, i
 		return;
 	console_out_FILE = f;
 	m68k_disasm_2(buf, MAX_LINEWIDTH * cnt, addr, NULL, 0, nextpc, cnt, NULL, NULL, lastpc, 0);
+#ifndef __LIBRETRO__
 	f_out (f, _T("%s"), buf);
+#else
+	LOG_TRACE_PRINT("%s",buf);
+#endif
 	xfree (buf);
 	console_out_FILE = NULL;
 }

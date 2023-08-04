@@ -155,22 +155,66 @@ bool savestate_restore_finish (void)
 
 #ifdef __LIBRETRO__
 extern int hatari_libretro_save_state(void);
-extern void hatari_libretro_restore_state(void);
+extern int hatari_libretro_restore_state(void);
+extern void hatari_libretro_flush_audio(void);
+extern int Reset_Cold(void);
+extern void Sound_Update( Uint64 CPU_Clock);
+extern int bCaptureError;
+void hatari_libretro_flush_audio(void)
+{
+	// flush audio up until now
+	Sound_Update ( CyclesGlobalClockCounter );
+}
 int hatari_libretro_save_state(void)
 {
 	// when m68k_go_frame exits we are at approximately the same place save_state would be called normally
 	// calling save_state directly instead of using MemorySnapshot_Capture
 	return save_state(NULL, NULL);
 }
-void hatari_libretro_restore_state(void)
+int hatari_libretro_restore_state(void)
 {
+	int result = 0;
 	// set a flag to restore at the next loop and quit the loop
-	MemorySnapShot_Restore("",false);
+	MemorySnapShot_Restore("[libretro]",false);
+	// sets:
+	//   quit_program = UAE_RESET
+	//   savestate_state = STATE_RESTORE
+	//   SPCFLAG_MODE_CHANGE
 	// restart the m68k loop
-	m68k_go_frame(); // will exit
+	m68k_go_frame();
+	// runs:
+	//   restore_state
+	//     MemorySnapShot_Restore_Do
+	//        ResetCold
+	//        bCaptureError = 1 if error
+	//   savestate_restore_finish
+	//     restore_finish
+	//       savestate_state = 0
+	//       quit_program = 0
+	//       SPCFLAG_STOP
+	//     restored = 1
+	//   restored = 0
+	//   savestate_restore_final
+	//     (does nothing)
+	//   exits
 	m68k_go_quit(); // quit the loop
+	// in_m68k_go--
+	if (bCaptureError) // error: do a hard reset
+	{
+		result = 1;
+		Reset_Cold();
+		UAE_Set_Quit_Reset(true);
+	}
+	core_runflags &= ~CORE_RUNFLAG_RESET;
 	m68k_go(true); // restart the loop
-	m68k_go_frame(); // will exit after restore
+	// in_m68k_go++
+	// hardboot = 1
+	// startup = 1
+	core_init_return = true;
+	m68k_go_frame();
+	core_init_return = false;
+	hatari_libretro_flush_audio();
+	return result;
 }
 #endif
 

@@ -83,6 +83,10 @@ extern void Log_AlertDlg(LOGTYPE nType, const char *psFormat, ...)
 extern LOGTYPE Log_ParseOptions(const char *OptionStr);
 extern const char* Log_SetTraceOptions(const char *OptionsStr);
 extern char *Log_MatchTrace(const char *text, int state);
+#ifdef __LIBRETRO__
+extern void corelog_printf(const char* fmt, ...);
+extern void corelog_trace_printf(const char* fmt, ...);
+#endif
 
 #ifndef __GNUC__
 #undef __attribute__
@@ -299,8 +303,13 @@ extern Uint64 LogTraceFlags;
 
 #if ENABLE_TRACING
 
+#ifndef __LIBRETRO__
 #define	LOG_TRACE(level, ...) \
 	if (unlikely(LogTraceFlags & (level))) { fprintf(TraceFile, __VA_ARGS__); fflush(TraceFile); }
+#else
+#define	LOG_TRACE(level, ...) \
+	if (unlikely(LogTraceFlags & (level))) { corelog_trace_printf(__VA_ARGS__); }
+#endif
 
 #define LOG_TRACE_LEVEL( level )	(unlikely(LogTraceFlags & (level)))
 
@@ -316,7 +325,10 @@ extern Uint64 LogTraceFlags;
  * In code it's used in such a way that it will be optimized away when tracing
  * is disabled.
  */
+#ifndef __LIBRETRO__
 #define LOG_TRACE_PRINT(...)	fprintf(TraceFile , __VA_ARGS__)
-
+#else
+#define LOG_TRACE_PRINT(...)	corelog_trace_printf(__VA_ARGS__)
+#endif
 
 #endif		/* HATARI_LOG_H */

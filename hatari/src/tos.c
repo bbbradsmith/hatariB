@@ -934,6 +934,11 @@ static void TOS_CheckSysConfig(void)
 	}
 }
 
+#ifdef __LIBRETRO__
+static uint8_t* TOSCache_Data = NULL;
+static long TOSCache_Size = 0;
+static char TOSCache_Filename[FILENAME_MAX] = "";
+#endif
 
 /**
  * Load TOS Rom image file and do some basic sanity checks.
@@ -946,7 +951,36 @@ static uint8_t *TOS_LoadImage(void)
 
 	/* Load TOS image into memory so that we can check its version */
 	TosVersion = 0;
+
+#ifdef __LIBRETRO__
+	// keep a cached copy of TOS so that it doesn't need to be re-read on savestate etc.
+	if (TOSCache_Data != NULL && TOSCache_Size > 0 && !strcmp(TOSCache_Filename,ConfigureParams.Rom.szTosImageFileName))
+	{
+		pTosFile = malloc(TOSCache_Size);
+		if (pTosFile)
+		{
+			memcpy(pTosFile,TOSCache_Data,TOSCache_Size);
+			nFileSize = TOSCache_Size;
+		}
+	}
+	else
+	{
+#endif
 	pTosFile = File_Read(ConfigureParams.Rom.szTosImageFileName, &nFileSize, pszTosNameExts);
+#ifdef __LIBRETRO__
+		if (pTosFile)
+		{
+			free(TOSCache_Data);
+			TOSCache_Data = malloc(nFileSize);
+			if (TOSCache_Data)
+			{
+				memcpy(TOSCache_Data,pTosFile,nFileSize);
+				TOSCache_Size = nFileSize;
+				strcpy(TOSCache_Filename,ConfigureParams.Rom.szTosImageFileName);
+			}
+		}
+	}
+#endif
 
 	if (!pTosFile || nFileSize < 0x40)
 	{

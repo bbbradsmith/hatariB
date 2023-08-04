@@ -87,7 +87,12 @@ typedef FILE* MSS_File;
 
 
 static MSS_File CaptureFile;
+#ifndef __LIBRETRO__
 static bool bCaptureSave, bCaptureError;
+#else
+static bool bCaptureSave;
+bool bCaptureError; // external access to check for error
+#endif
 
 
 static char Temp_FileName[FILENAME_MAX];

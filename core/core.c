@@ -13,11 +13,16 @@
 // header size must accomodate core data before the hatari memory snapshot
 // overhead is some safety extra in case hatari wants to increase the snapshot size later
 // (doesn't seem to change size without config changes that might need a restart)
-// round is an even file size to round up to
-#define SNAPSHOT_HEADER_SIZE 1024
-#define SNAPSHOT_OVERHEAD    (64 * 1024)
-#define SNAPSHOT_ROUND       (64 * 1024)
-#define SNAPSHOT_VERSION     1
+// round is an even file size to round up to.
+// Change the version any time the contents of the header change.
+#define SNAPSHOT_HEADER_SIZE   1024
+#define SNAPSHOT_OVERHEAD      (64 * 1024)
+#define SNAPSHOT_ROUND         (64 * 1024)
+#define SNAPSHOT_VERSION       1
+
+// Transmit Hatari log message to the Libretro debug log
+// 0 = none, 1 = errors, 2 = all
+#define DEBUG_HATARI_LOG   2
 
 //
 // Libretro
@@ -73,8 +78,11 @@ extern uint8_t* STRam;
 extern uint32_t STRamEnd;
 extern int TOS_DefaultLanguage(void);
 extern int Reset_Warm(void);
+extern int Reset_Cold(void);
+extern void UAE_Set_Quit_Reset ( bool hard );
+extern void hatari_libretro_flush_audio(void);
 extern int hatari_libretro_save_state(void);
-extern void hatari_libretro_restore_state(void);
+extern int hatari_libretro_restore_state(void);
 
 //
 // Core implementation in other files
@@ -94,6 +102,8 @@ extern void core_input_serialize(void); // savestate save/load
 // external
 int core_pixel_format = 0;
 bool core_init_return = false;
+uint8_t core_runflags = 0;
+int core_trace_countdown = 0;
 
 // internal
 void* core_video_buffer = NULL;
@@ -125,6 +135,29 @@ void core_debug_hex(const char* msg, unsigned int num)
 void core_error_msg(const char* msg)
 {
 	retro_log(RETRO_LOG_ERROR,"%s\n",msg);
+}
+
+void core_debug_hatari(bool error, const char* msg)
+{
+#if (DEBUG_HATARI_LOG < 1)
+	(void)msg;
+#else
+	int len;
+	#if (DEBUG_HATARI_LOG < 2)
+		if (!error) return;
+	#endif
+	len = strlen(msg);
+	retro_log(
+		error ? RETRO_LOG_ERROR : RETRO_LOG_DEBUG,
+		(len == 0 || (msg[len-1] != '\n')) ? "Hatari: %s\n" : "Hatari: %s",
+		msg);
+#endif
+}
+
+void core_trace_next(int count)
+{
+	Log_SetTraceOptions("cpu_all");
+	core_trace_countdown = count;
 }
 
 void core_debug_bin(const char* data, int len, int offset)
@@ -194,6 +227,32 @@ void core_set_samplerate(int rate)
 {
 	if (rate != core_audio_samplerate) core_rate_changed = true;
 	core_audio_samplerate = rate;
+}
+
+// halting / reset
+
+void core_signal_halt(void)
+{
+	retro_log(RETRO_LOG_ERROR,"CPU has halted.\n");
+	if (!(core_runflags & CORE_RUNFLAG_HALT))
+	{
+		struct retro_message_ext msg;
+		msg.msg = "CPU has crashed!";
+		msg.duration = 8 * 1000;
+		msg.priority = 3;
+		msg.level = RETRO_LOG_ERROR;
+		msg.target = RETRO_MESSAGE_TARGET_ALL;
+		msg.type = RETRO_MESSAGE_TYPE_NOTIFICATION_ALT;
+		msg.progress = -1;
+		environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg);
+	}
+	core_runflags |= CORE_RUNFLAG_HALT;
+}
+
+void core_signal_reset(bool cold)
+{
+	//retro_log(RETRO_LOG_DEBUG,"core_signal_reset(%d)\n",cold);
+	core_runflags |= cold ? CORE_RUNFLAG_RESET_COLD : CORE_RUNFLAG_RESET_WARM;
 }
 
 // memory snapshot simulated file
@@ -300,6 +359,7 @@ static bool core_serialize(bool write)
 	core_serialize_write = write;
 	core_snapshot_open_internal();
 
+	// header
 	result = SNAPSHOT_VERSION;
 	core_serialize_int32(&result);
 	if (result != SNAPSHOT_VERSION)
@@ -307,15 +367,15 @@ static bool core_serialize(bool write)
 		retro_log(RETRO_LOG_ERROR,"savestate version does not match SNAPSHOT_VERSION (%d != %d)\n",result,SNAPSHOT_VERSION);
 		return false;
 	}
+	core_serialize_uint8(&core_runflags);
 	core_input_serialize();
-	// TODO comment this out
-	retro_log(RETRO_LOG_DEBUG,"core_serialize header: %d <= %d\n",snapshot_pos,SNAPSHOT_HEADER_SIZE);
+	//retro_log(RETRO_LOG_DEBUG,"core_serialize header: %d <= %d\n",snapshot_pos,SNAPSHOT_HEADER_SIZE);
 	if (snapshot_pos > SNAPSHOT_HEADER_SIZE)
 		retro_log(RETRO_LOG_ERROR,"core_serialize header too large! %d > %d\n",snapshot_pos,SNAPSHOT_HEADER_SIZE);
 
 	result = 0;
 	if (write) result = hatari_libretro_save_state();
-	else                hatari_libretro_restore_state();
+	else       result = hatari_libretro_restore_state();
 
 	//retro_log(RETRO_LOG_DEBUG,"core_serialized: %d of %d used\n",snapshot_max,snapshot_size);
 	if (result != 0)
@@ -401,6 +461,11 @@ RETRO_API void retro_init(void)
 	// initialize input translation
 	core_input_init();
 
+	// for trace debugging (requires -DENABLE_TRACING=1)
+	//Log_SetTraceOptions("cpu_disasm");
+	//Log_SetTraceOptions("video_vbl,video_sync");
+
+	core_runflags = 0;
 	main_init(1,(char**)argv); // TODO how are paths affected?
 
 	// this will be fetched and applied via retro_get_system_av_info before the first frame begins
@@ -442,6 +507,12 @@ RETRO_API void retro_get_system_av_info(struct retro_system_av_info *info)
 	info->timing.fps = core_video_fps;
 	info->timing.sample_rate = core_audio_samplerate;
 
+	if (core_video_fps != 50 && core_video_fps != 60 && core_video_fps != 71)
+	{
+		retro_log(RETRO_LOG_ERROR,"Unexpected fps (%d), assuming 50\n",core_video_fps);
+		info->timing.fps = 50;
+	}
+
 	retro_log(RETRO_LOG_INFO," geometry.base_width = %d\n",info->geometry.base_width);
 	retro_log(RETRO_LOG_INFO," geometry.base_height = %d\n",info->geometry.base_height);
 	retro_log(RETRO_LOG_INFO," geometry.aspect_radio = %f\n",info->geometry.aspect_ratio);
@@ -455,19 +526,45 @@ RETRO_API void retro_set_controller_port_device(unsigned port, unsigned device)
 
 RETRO_API void retro_reset(void)
 {
-	Reset_Warm();
+	// TODO configure to allow cold reset
+	if (core_runflags & CORE_RUNFLAG_HALT)
+	{
+		core_runflags &= ~CORE_RUNFLAG_HALT;
+		Reset_Cold();
+	}
+	else
+	{
+		Reset_Warm();
+	}
 }
 
 RETRO_API void retro_run(void)
 {
+	//retro_log(RETRO_LOG_DEBUG,"retro_run()\n");
 	// poll input, generate event queue for hatari
 	core_input_update();
+
+	// process CPU reset by restarting the loop and UAE
+	if (core_runflags & CORE_RUNFLAG_RESET)
+	{
+		m68k_go_quit();
+		UAE_Set_Quit_Reset(core_runflags & CORE_RUNFLAG_RESET_COLD);
+		core_runflags &= ~CORE_RUNFLAG_RESET;
+		m68k_go(true);
+		core_init_return = true;
+		m68k_go_frame();
+		core_init_return = false;
+	}
 
 	// force hatari to process the input queue before each frame starts
 	core_input_post();
 
 	// run one frame
-	m68k_go_frame();
+	if (!(core_runflags & CORE_RUNFLAG_HALT)) // TODO config option to un-halt after X frames?
+	{
+		m68k_go_frame();
+		hatari_libretro_flush_audio();
+	}
 
 	// send video
 	if (core_rate_changed)
@@ -495,6 +592,7 @@ RETRO_API void retro_run(void)
 		unsigned int len = core_audio_samples_pending;
 		if (len > AUDIO_BUFFER_LEN) len = AUDIO_BUFFER_LEN;
 		audio_batch_cb(core_audio_buffer, len/2);
+		//retro_log(RETRO_LOG_DEBUG,"audio_batch_cb(%p,%d)\n",core_audio_buffer,len/2);
 		core_audio_samples_pending = 0;
 	}
 
@@ -513,8 +611,12 @@ RETRO_API bool retro_serialize(void *data, size_t size)
 	snapshot_buffer_prepare(size);
 	if (core_serialize(true))
 	{
+		// to test a broken savestate, corrupt its version string
+		//++snapshot_buffer[SNAPSHOT_HEADER_SIZE+1];
+
 		memcpy(data,snapshot_buffer,size);
 		//core_debug_bin(data,size,0);
+		//core_trace_next(20); // verify instructions after savestate are the same as after restore
 		return true;
 	}
 	return false;
@@ -528,11 +630,11 @@ RETRO_API bool retro_unserialize(const void *data, size_t size)
 	memcpy(snapshot_buffer,data,size);
 	if (core_serialize(false))
 	{
+		core_audio_samples_pending = 0; // clear all pending audio
+		//core_trace_next(20); // verify instructions after savestate are the same as after restore
 		return true;
 	}
 	return false;
-	// TODO seems to hang after this, do we need an unpause or something? (alert dialog was cancelling things!)
-	// also: should we call the event loop handler at the end run frame just to make sure it's always clear?
 }
 
 RETRO_API void retro_cheat_reset(void)

@@ -51,6 +51,9 @@ const char Reset_fileid[] = "Hatari reset.c";
  */
 static int Reset_ST(bool bCold)
 {
+#ifdef __LIBRETRO__
+	core_signal_reset(bCold);
+#endif	
 	if (bCold)
 	{
 		int ret;

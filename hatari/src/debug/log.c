@@ -232,6 +232,42 @@ void Log_UnInit(void)
 }
 
 
+#ifdef __LIBRETRO__
+// libretro log redirections
+extern int core_trace_countdown;
+static char corelog[2048];
+void corelog_printf(const char* fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(corelog,sizeof(corelog),fmt,args);
+	core_debug_hatari(false,corelog);
+	va_end(args);
+}
+void corelog_trace_printf(const char* fmt, ...)
+{
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(corelog,sizeof(corelog),fmt,args);
+	core_debug_hatari(false,corelog);
+	va_end(args);
+	// if countdown active, disables trace when it counts to 0
+	if (core_trace_countdown > 0)
+	{
+		--core_trace_countdown;
+		if (core_trace_countdown == 0)
+			LogTraceFlags = TRACE_NONE;
+	}
+}
+static void corelog_prefix_va(LOGTYPE t, const char* fmt, va_list args)
+{
+	static const char* prefix[] = LOG_NAMES;
+	int o = snprintf(corelog,sizeof(corelog),"[%s] ",prefix[t]);
+	vsnprintf(corelog+o,sizeof(corelog)-o,fmt,args);
+	core_debug_hatari(t <= LOG_ERROR,corelog);
+}
+#endif
+
 /*-----------------------------------------------------------------------*/
 /**
  * Print log prefix when needed
@@ -263,9 +299,13 @@ void Log_Printf(LOGTYPE nType, const char *psFormat, ...)
 		/* Add a new-line if necessary: */
 		if (psFormat[strlen(psFormat)-1] != '\n')
 			fputs("\n", hLogFile);
+	#ifdef __LIBRETRO__
+		va_start(argptr, psFormat);
+		corelog_prefix_va(nType,psFormat,argptr);
+		va_end(argptr);
+	#endif
 	}
 }
-
 
 /*-----------------------------------------------------------------------*/
 /**
@@ -285,8 +325,14 @@ void Log_AlertDlg(LOGTYPE nType, const char *psFormat, ...)
 		/* Add a new-line if necessary: */
 		if (psFormat[strlen(psFormat)-1] != '\n')
 			fputs("\n", hLogFile);
+	#ifdef __LIBRETRO__
+		va_start(argptr, psFormat);
+		corelog_prefix_va(nType,psFormat,argptr);
+		va_end(argptr);
+	#endif
 	}
 
+#ifndef __LIBRETRO__ // don't allow blocking dialog box
 	/* Show alert dialog box: */
 	if (sdlscrn && nType <= AlertDlgLogLevel)
 	{
@@ -300,14 +346,10 @@ void Log_AlertDlg(LOGTYPE nType, const char *psFormat, ...)
 		va_start(argptr, psFormat);
 		vsnprintf(psTmpBuf, 2048, psFormat, argptr);
 		va_end(argptr);
-#ifndef __LIBRETRO__
 		DlgAlert_Notice(psTmpBuf);
-#else
-		// report to error log instead of blocking dialog
-		core_error_msg(psTmpBuf);
-#endif
 		free(psTmpBuf);
 	}
+#endif
 }
 
 

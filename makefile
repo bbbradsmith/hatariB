@@ -1,6 +1,9 @@
 CC=gcc
 CFLAGS=-g -O2 -Wall -Werror
 LDFLAGS=-shared -g -Wall -Werror
+CMAKEFLAGS=-DENABLE_SMALL_MEM=0 -DENABLE_TRACING=0
+# for tracing debug:
+#CMAKEFLAGS=-DENABLE_SMALL_MEM=0 -DENABLE_TRACING=1
 
 BD=build/
 CORE=$(BD)hatarib.dll
@@ -34,7 +37,7 @@ $(BD)core/%.o: core/%.c
 	$(CC) -o $@ $(CFLAGS) -c $< 
 
 hatarilib: directories
-	(cd hatari/build && cmake .. -DENABLE_SMALL_MEM=0 -DENABLE_TRACING=0)
+	(cd hatari/build && cmake .. $(CMAKEFLAGS))
 	(cd hatari/build && cmake --build . -j)
 
 clean:

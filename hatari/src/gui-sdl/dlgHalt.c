@@ -57,6 +57,7 @@ static void do_quit(int exitval)
  */
 void Dialog_HaltDlg(void)
 {
+#ifndef __LIBRETRO__
 	bool show = SDL_ShowCursor(SDL_QUERY);
 	bool mode = SDL_GetRelativeMouseMode();
 	SDL_SetRelativeMouseMode(SDL_FALSE);
@@ -98,4 +99,11 @@ void Dialog_HaltDlg(void)
 	}
 	SDL_ShowCursor(show);
 	SDL_SetRelativeMouseMode(mode);
+#else
+	// tell the core the CPU has halted and BRK to exit the run loop
+	core_signal_halt();
+	M68000_SetSpecial(SPCFLAG_BRK);
+	(void)do_quit;
+	(void)haltdlg;
+#endif
 }
