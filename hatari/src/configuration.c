@@ -273,7 +273,7 @@ static const struct Config_Tag configs_Sound[] =
 	{ "nSdlAudioBufferSize", Int_Tag, &ConfigureParams.Sound.SdlAudioBufferSize },
 	{ "szYMCaptureFileName", String_Tag, ConfigureParams.Sound.szYMCaptureFileName },
 	{ "YmVolumeMixing", Int_Tag, &ConfigureParams.Sound.YmVolumeMixing },
-#ifndef __LIBRETRO__
+#ifdef __LIBRETRO__
 	{ "YmLpf", Int_Tag, &ConfigureParams.Sound.YmLpf },
 	{ "YmHpf", Int_Tag, &ConfigureParams.Sound.YmHpf },
 #endif
