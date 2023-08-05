@@ -223,10 +223,16 @@ void core_input_serialize(void)
 	core_serialize_int32(&mod_state);
 }
 
+void core_input_set_environment(retro_environment_t cb)
+{
+	static const struct retro_keyboard_callback keyboard_callback = {
+		core_input_keyboard_event_callback
+	};
+	cb(RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK, (void*)&keyboard_callback);
+}
+
 void core_input_init(void)
 {
-	static struct retro_keyboard_callback keyboard_callback = { core_input_keyboard_event_callback };
-
 	// generate mappings
 	retrok_to_sdl_init();
 
@@ -240,9 +246,6 @@ void core_input_init(void)
 		joy_fire[i] = 0;
 		joy_stick[i] = 0;
 	}
-
-	// keyboard events require focus
-	environ_cb(RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK, &keyboard_callback);
 }
 
 void core_input_update(void)

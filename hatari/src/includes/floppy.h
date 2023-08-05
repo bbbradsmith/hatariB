@@ -65,5 +65,8 @@ extern bool Floppy_EjectDiskFromDrive(int Drive);
 extern void Floppy_FindDiskDetails(const Uint8 *pBuffer, int nImageBytes, Uint16 *pnSectorsPerTrack, Uint16 *pnSides);
 extern bool Floppy_ReadSectors(int Drive, Uint8 **pBuffer, Uint16 Sector, Uint16 Track, Uint16 Side, short Count, int *pnSectorsPerTrack, int *pSectorSize);
 extern bool Floppy_WriteSectors(int Drive, Uint8 *pBuffer, Uint16 Sector, Uint16 Track, Uint16 Side, short Count, int *pnSectorsPerTrack, int *pSectorSize);
+#ifdef __LIBRETRO__
+extern Uint8* hatari_libretro_floppy_file_read(const char *pszFileName, long *pFileSize, const char * const ppszExts[]);
+#endif
 
 #endif

@@ -360,6 +360,7 @@ const char* Floppy_SetDiskFileNameNone(int Drive)
  */
 const char* Floppy_SetDiskFileName(int Drive, const char *pszFileName, const char *pszZipPath)
 {
+#ifndef __LIBRETRO__
 	char *filename;
 	int i;
 
@@ -416,6 +417,13 @@ const char* Floppy_SetDiskFileName(int Drive, const char *pszFileName, const cha
 	        sizeof(ConfigureParams.DiskImage.szDiskFileName[Drive]));
 	free(filename);
 	//File_MakeAbsoluteName(ConfigureParams.DiskImage.szDiskFileName[Drive]);
+#else
+	(void)pszDiskImageNameExts;
+	(void)Floppy_CreateDiskBFileName;
+	strlcpy(ConfigureParams.DiskImage.szDiskFileName[Drive], pszFileName,
+	        sizeof(ConfigureParams.DiskImage.szDiskFileName[Drive]));
+	(void)pszZipPath;
+#endif
 	return ConfigureParams.DiskImage.szDiskFileName[Drive];
 }
 
@@ -512,6 +520,45 @@ int	Floppy_DriveTransitionUpdateState ( int Drive )
 }
 
 
+#ifdef __LIBRETRO__
+extern void hatari_libretro_floppy_insert(int drive, const char* filename, void* data, unsigned int size);
+extern void hatari_libretro_floppy_eject(int drive);
+extern Uint8* hatari_libretro_floppy_file_read(const char *pszFileName, long *pFileSize, const char * const ppszExts[]);
+static void* floppy_data[2] = {NULL,NULL};
+static unsigned int floppy_size[2] = {0,0};
+static int floppy_read_drive = 0;
+void hatari_libretro_floppy_insert(int drive, const char* filename, void* data, unsigned int size)
+{
+	floppy_data[drive] = data;
+	floppy_size[drive] = size;
+	Floppy_SetDiskFileName(drive, filename, NULL);
+	Floppy_InsertDiskIntoDrive(drive);
+}
+void hatari_libretro_floppy_eject(int drive)
+{
+	Floppy_EjectDiskFromDrive(drive);
+	Floppy_SetDiskFileNameNone(drive);
+	floppy_data[drive] = NULL;
+	floppy_size[drive] = 0;
+}
+Uint8* hatari_libretro_floppy_file_read(const char *pszFileName, long *pFileSize, const char * const ppszExts[])
+{
+	// replaces File_Read
+	// does not handle gz or zip files
+	const Uint8* data = floppy_data[floppy_read_drive];
+	const unsigned int size = floppy_size[floppy_read_drive];
+	Uint8* data_out;
+	(void)pszFileName;
+	(void)ppszExts;
+	if (data == NULL || size == 0) return NULL;
+	data_out = malloc(size);
+	if (data_out == NULL) return NULL;
+	memcpy(data_out,data,size);
+	if (pFileSize) *pFileSize = (long)size;
+	return data_out;
+}
+#endif
+
 /*-----------------------------------------------------------------------*/
 /**
  * Insert previously set disk file image into floppy drive.
@@ -534,11 +581,15 @@ bool Floppy_InsertDiskIntoDrive(int Drive)
 	{
 		return true; /* only do eject */
 	}
+#ifndef __LIBRETRO__
 	if (!File_Exists(filename))
 	{
 		Log_AlertDlg(LOG_INFO, "Image '%s' not found", filename);
 		return false;
 	}
+#else
+	floppy_read_drive = Drive;
+#endif
 
 	/* Check disk image type and read the file: */
 	if (MSA_FileNameIsMSA(filename, true))
@@ -551,11 +602,14 @@ bool Floppy_InsertDiskIntoDrive(int Drive)
 		EmulationDrives[Drive].pBuffer = IPF_ReadDisk(Drive, filename, &nImageBytes, &ImageType);
 	else if (STX_FileNameIsSTX(filename, true))
 		EmulationDrives[Drive].pBuffer = STX_ReadDisk(Drive, filename, &nImageBytes, &ImageType);
+// TODO report a failed image bac (Log_AlertDlg below?)
+#ifndef __LIBRETRO__
 	else if (ZIP_FileNameIsZIP(filename))
 	{
 		const char *zippath = ConfigureParams.DiskImage.szDiskZipPath[Drive];
 		EmulationDrives[Drive].pBuffer = ZIP_ReadDisk(Drive, filename, zippath, &nImageBytes, &ImageType);
 	}
+#endif
 
 	if ( (EmulationDrives[Drive].pBuffer == NULL) || ( ImageType == FLOPPY_IMAGE_TYPE_NONE ) )
 	{
@@ -634,6 +688,8 @@ bool Floppy_EjectDiskFromDrive(int Drive)
 		/* OK, has contents changed? If so, need to save */
 		if (EmulationDrives[Drive].bContentsChanged)
 		{
+#ifndef __LIBRETRO__
+// TODO saving not yet supported
 			/* Is OK to save image (if boot-sector is bad, don't allow a save) */
 			if (EmulationDrives[Drive].bOKToSave)
 			{
@@ -655,6 +711,9 @@ bool Floppy_EjectDiskFromDrive(int Drive)
 				else
 					Log_Printf(LOG_INFO, "Writing of this format failed or not supported, discarded the contents\n of floppy image '%s'.", psFileName);
 			} else
+#else
+			(void)bSaved;
+#endif
 				Log_Printf(LOG_INFO, "Writing not possible, discarded the contents of floppy image\n '%s'.", psFileName);
 		}
 

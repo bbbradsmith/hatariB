@@ -9,7 +9,8 @@ BD=build/
 CORE=$(BD)hatarib.dll
 SOURCES = \
 	core/core.c \
-	core/core_input.c
+	core/core_input.c \
+	core/core_disk.c
 OBJECTS = $(SOURCES:%.c=$(BD)%.o)
 HATARILIBS= \
 	hatari/build/src/libcore.a \

@@ -36,6 +36,8 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
 * **hatari/src/gui-sdl/CMakeLists.txt**
   * Define `__LIBRETRO__`for all internal hatari libraries.
   * target_compile_definitions(xxx PUBLIC __LIBRETRO__)`
+* **hatari/src/tools/CMakeLists.txt**
+  * Disabled `hmsa` support tool build (not needed, can't like with changes to floppy system).
 * Use `-DENABLE_SMALL_MEM=0` and `-DENABLE_TRACING=0` to slightly improve performance.
   * Note that ENABLE_SMALL_MEM can save ~14-15MB of RAM, so it might be worthwhile for platforms with smaller memory.
 
@@ -103,6 +105,15 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Disable all Hatari shortcut keys.
   * Disable Hatari key to joystick mappings.
   * Provide modifier key state instead of `SDL_GetModState`.
+* **hatari/src/floppy.c**
+* **hatari/src/includes/floppy.h**
+  * Load floppy images from memory instead of from file.
+* **hatari/src/st.c**
+* **hatari/src/dim.c**
+* **hatari/src/msa.c**
+* **hatari/src/floppy_ipf.c**
+* **hatari/src/floppy_stx.c**
+  * Load floppy image from memory instead of from file.
 * **hatari/src/midi.c**
 * **hatari/src/gemdos.c**
 * **hatari/src/hdc.c**

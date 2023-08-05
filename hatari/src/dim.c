@@ -68,7 +68,11 @@ Uint8 *DIM_ReadDisk(int Drive, const char *pszFileName, long *pImageSize, int *p
 	Uint8 *pDiskBuffer = NULL;
 
 	/* Load file into buffer */
+#ifndef __LIBRETRO__
 	pDimFile = File_Read(pszFileName, pImageSize, NULL);
+#else
+	pDimFile = hatari_libretro_floppy_file_read(pszFileName, pImageSize, NULL);
+#endif
 	if (pDimFile)
 	{
 		/* Check header for valid image: */

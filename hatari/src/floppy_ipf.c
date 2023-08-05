@@ -286,7 +286,11 @@ Uint8 *IPF_ReadDisk(int Drive, const char *pszFileName, long *pImageSize, int *p
 	*pImageSize = 0;
 
 	/* Just load directly a buffer, and set ImageSize accordingly */
+#ifndef __LIBRETRO__
 	pIPFFile = File_Read(pszFileName, pImageSize, NULL);
+#else
+	pIPFFile = hatari_libretro_floppy_file_read(pszFileName, pImageSize, NULL);
+#endif
 	if (!pIPFFile)
 	{
 		*pImageSize = 0;

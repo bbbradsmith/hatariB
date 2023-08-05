@@ -24,6 +24,9 @@
 // 0 = none, 1 = errors, 2 = all
 #define DEBUG_HATARI_LOG   2
 
+// make sure this matches ../info/hatarib.info
+static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|ipf|raw|ctr|m3u|zip";
+
 //
 // Libretro
 //
@@ -89,11 +92,19 @@ extern int hatari_libretro_restore_state(void);
 //
 
 // core_input.c
-extern void core_input_init(void); // call in retro_init
+extern void core_input_set_environment(retro_environment_t cb);
+extern void core_input_init(void);
 extern void core_input_update(void); // call in retro_run, polls Libretro inputs and translates to events for hatari
 extern void core_input_post(void); // call to force hatari to process the input queue
 extern void core_input_finish(void); // call at end of retro_run
-extern void core_input_serialize(void); // savestate save/load
+extern void core_input_serialize(void);
+
+// core_disk.c
+extern void core_disk_set_environment(retro_environment_t cb);
+extern void core_disk_init(void);
+extern void core_disk_load_game(const struct retro_game_info *game);
+extern void core_disk_unload_game(void);
+extern void core_disk_serialize(void);
 
 //
 // Available to Hatari
@@ -410,6 +421,20 @@ static bool core_serialize(bool write)
 	return !snapshot_error;
 }
 
+void core_config_update(bool force)
+{
+	// skip update if not forced, or unneeded
+	if (!force)
+	{
+		if (!environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE,&force) || !force) return;
+	}
+	retro_log(RETRO_LOG_INFO,"Applying configuration update.\n");
+	// TODO
+	// call with with force inside hatari main instead of loading configuration from file
+	// figure out if we get game-specific config before retro_init or if we need to defer stuff until game load or what?
+	// void Change_CopyChangedParamsToConfiguration ?
+}
+
 //
 // Libretro Exports
 //
@@ -418,18 +443,33 @@ RETRO_API void retro_set_environment(retro_environment_t cb)
 {
 	environ_cb = cb;
 
+	// allow boot with no disks
+	cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &BOOL_TRUE);
+
+
+	// TODO
+	//GET_SYSTEM_DIRECTORY -> scan for TOS and cartridge lists
+	// - probably do this in disk_set_environment?
+	//SET_INPUT_DESCRIPTORS?
+	//RETRO_ENVIRONMENT_GET_VFS_INTERFACE
+	//RETRO_ENVIRONMENT_GET_MIDI_INTERFACE
+	// think about the posibility of seting this to midi over ip or connecting MIDI maze to my ST??
+
+	// SET_VARIABLES vs CORE_OPTIONS ?? what's the dif? -> options is v1, and options_v2 even better
+	//RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT
+	//RETRO_MEMDESC ???
+
+	core_input_set_environment(cb);
+	core_disk_set_environment(cb);
+
 	// core options
 	{
 		unsigned version = 0;
 		if (cb(RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION, &version) && (version >= 1))
 			cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS, CORE_OPTIONS);
+		// TODO there's a core options V2 that's even better
+		// probably this needs its own file
 	}
-
-	// other capabilities
-	cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &BOOL_TRUE); // allow boot with no disks
-	//RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE
-	//RETRO_ENVIRONMENT_GET_MIDI_INTERFACE
-	// TODO
 }
 
 RETRO_API void retro_set_video_refresh(retro_video_refresh_t cb)
@@ -482,8 +522,9 @@ RETRO_API void retro_init(void)
 		retro_log(RETRO_LOG_INFO,"Pixel format: %s\n",PIXEL_FORMAT_NAMES[core_pixel_format]);
 	}
 
-	// initialize input translation
+	// initialize other modules
 	core_input_init();
+	core_disk_init();
 
 	// for trace debugging (requires -DENABLE_TRACING=1)
 	//Log_SetTraceOptions("cpu_disasm");
@@ -514,10 +555,12 @@ RETRO_API unsigned retro_api_version(void)
 
 RETRO_API void retro_get_system_info(struct retro_system_info *info)
 {
+	retro_log(RETRO_LOG_INFO,"retro_get_system_info()\n");
+	memset(info, 0, sizeof(*info));
 	info->library_name = "hatariB";
-	info->library_version = "v0 experimental prototype"; // TODO
-	info->valid_extensions = "st|msa|img|zip|stx|dim|ipf|m3u"; // TODO
-	info->need_fullpath = true; // TODO we want to save floppy overlays instead of writing back, right? treat them as ROM (fullpath irrelevant)
+	info->library_version = "v0 experimental prototype";
+	info->valid_extensions = CORE_FILE_EXTENSIONS;
+	info->need_fullpath = false;
 	info->block_extract = false;
 }
 
@@ -569,6 +612,9 @@ RETRO_API void retro_reset(void)
 
 RETRO_API void retro_run(void)
 {
+	// handle any pending configuration updates
+	core_config_update(false);
+
 	//retro_log(RETRO_LOG_DEBUG,"retro_run()\n");
 	// poll input, generate event queue for hatari
 	core_input_update();
@@ -681,8 +727,13 @@ RETRO_API void retro_cheat_set(unsigned index, bool enabled, const char *code)
 
 RETRO_API bool retro_load_game(const struct retro_game_info *game)
 {
-	//retro_log(RETRO_LOG_DEBUG,"retro_load_game()\n");
-	// TODO load the game?
+	retro_log(RETRO_LOG_DEBUG,"retro_load_game()\n");
+
+	if (game)
+	{
+		core_disk_load_game(game);
+		// TODO do we need to reset? when does config change
+	}
 
 	// finish initialization of the CPU
 	core_init_return = true;
@@ -695,6 +746,7 @@ RETRO_API bool retro_load_game(const struct retro_game_info *game)
 	snapshot_size = snapshot_max + SNAPSHOT_OVERHEAD;
 	if (snapshot_size % SNAPSHOT_ROUND)
 		snapshot_size += (SNAPSHOT_ROUND - (snapshot_size % SNAPSHOT_ROUND));
+	// TODO will inserted floppies change the savestate size?
 
 	return true;
 }
@@ -706,7 +758,8 @@ RETRO_API bool retro_load_game_special(unsigned game_type, const struct retro_ga
 
 RETRO_API void retro_unload_game(void)
 {
-	// TODO save floppy replacement?
+	retro_log(RETRO_LOG_DEBUG,"retro_unload_game()\n");
+	core_disk_unload_game(); // chance to save
 }
 
 RETRO_API unsigned retro_get_region(void)

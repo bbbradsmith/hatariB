@@ -250,7 +250,11 @@ Uint8 *MSA_ReadDisk(int Drive, const char *pszFileName, long *pImageSize, int *p
 	*pImageSize = 0;
 
 	/* Read in file */
+#ifndef __LIBRETRO__
 	pMsaFile = File_Read(pszFileName, &nFileSize, NULL);
+#else
+	pMsaFile = hatari_libretro_floppy_file_read(pszFileName, &nFileSize, NULL);
+#endif
 	if (pMsaFile)
 	{
 		/* Uncompress into disk buffer */

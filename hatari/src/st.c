@@ -62,7 +62,11 @@ Uint8 *ST_ReadDisk(int Drive, const char *pszFileName, long *pImageSize, int *pI
 	*pImageSize = 0;
 
 	/* Just load directly a buffer, and set ImageSize accordingly */
+#ifndef __LIBRETRO__
 	pStFile = File_Read(pszFileName, pImageSize, NULL);
+#else
+	pStFile = hatari_libretro_floppy_file_read(pszFileName, pImageSize, NULL);
+#endif
 	if (!pStFile)
 	{
 		*pImageSize = 0;
