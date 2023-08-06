@@ -33,12 +33,15 @@ static uint8_t vmouse_l, vmouse_r;
 static int32_t joy_fire[JOY_PORTS];
 static int32_t joy_stick[JOY_PORTS];
 static int32_t mod_state;
+static uint8_t drive_toggle;
 
 // TODO configurations
 const bool vmouse_enabled = true; // TODO option
 const bool pmouse_enabled = true; // TODO option
 const int joy_port_map[4] = {1,0,2,3}; // TODO port mapping options (0,1=ST,2-3=STE,4-5=parallel)
 const bool keyboard_enabled = true; // TODO can this also check for game focus mode?
+
+extern void core_disk_drive_toggle(void);
 
 //
 // From Hatari
@@ -221,6 +224,7 @@ void core_input_serialize(void)
 	core_serialize_uint8(&vmouse_l);
 	core_serialize_uint8(&vmouse_r);
 	core_serialize_int32(&mod_state);
+	core_serialize_uint8(&drive_toggle);
 }
 
 void core_input_set_environment(retro_environment_t cb)
@@ -241,6 +245,7 @@ void core_input_init(void)
 	memset(&retrok_down,0,sizeof(retrok_down));
 	vmouse_x = vmouse_y = 0;
 	vmouse_l = vmouse_r = false;
+	drive_toggle = 0;
 	for (int i=0; i<JOY_PORTS; ++i)
 	{
 		joy_fire[i] = 0;
@@ -255,6 +260,7 @@ void core_input_update(void)
 	bool vm_r = false;
 	int vm_x = vmouse_x;
 	int vm_y = vmouse_y;
+	bool dt = false;
 
 	input_poll_cb();
 	core_input_keyboard_unstick();
@@ -298,7 +304,13 @@ void core_input_update(void)
 			vm_x += (int)(ax * MOUSE_SPEED);
 			vm_y += (int)(ay * MOUSE_SPEED);
 		}
+		// drive toggle
+		if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT)) dt = true;
 	}
+
+	// select drive
+	if (dt && !drive_toggle) core_disk_drive_toggle();
+	drive_toggle = dt ? 1 : 0;
 
 	if (vmouse_enabled)
 	{

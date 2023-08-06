@@ -321,6 +321,10 @@ static bool get_image_label(unsigned index, char* label, size_t len)
 	return true;
 }
 
+//
+// core_disk stuff
+//
+
 void core_disk_set_environment(retro_environment_t cb)
 {
 	static const struct retro_disk_control_callback retro_disk_control =
@@ -395,4 +399,20 @@ void core_disk_unload_game(void)
 void core_disk_serialize(void)
 {
 	// TODO is there anything to serialize? do we want to track disk changes?
+}
+
+void core_disk_drive_toggle(void)
+{
+	drive = drive ^ 1;
+	// TODO if no B drive, drive = 0
+
+	struct retro_message_ext msg;
+	msg.msg = drive ? "Drive B: selected" : "Drive A: selected";
+	msg.duration = 3 * 1000;
+	msg.priority = 1;
+	msg.level = RETRO_LOG_INFO;
+	msg.target = RETRO_MESSAGE_TARGET_ALL;
+	msg.type = RETRO_MESSAGE_TYPE_NOTIFICATION;
+	msg.progress = -1;
+	environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg);
 }
