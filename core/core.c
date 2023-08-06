@@ -230,7 +230,6 @@ void core_video_update(void* data, int w, int h, int pitch, int resolution)
 		core_video_resolution = resolution;
 		double par = PIXEL_ASPECT_RATIO[core_video_aspect_mode][resolution];
 		core_video_aspect = (par * core_video_w) / (double)core_video_h;
-		retro_log(RETRO_LOG_DEBUG,"aspect(%d,%d): %f (%f)\n",core_video_aspect_mode,resolution,core_video_aspect,par);
 	}
 }
 

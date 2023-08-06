@@ -234,7 +234,7 @@ static bool replace_image_index(unsigned index, const struct retro_game_info* ga
 		disks[index].data = malloc(game->size);
 		if (disks[index].data == NULL)
 		{
-			strcpy(disks[index].filename,"[Out Of Memory]");
+			strcpy(disks[index].filename,"<Out Of Memory>");
 			return false;
 		}
 		disks[index].size = game->size;
@@ -261,7 +261,7 @@ static bool replace_image_index(unsigned index, const struct retro_game_info* ga
 
 	if (path == NULL)
 	{
-		sprintf(disks[index].filename,"[Image %d]",index);
+		sprintf(disks[index].filename,"<Image %d>",index);
 	}
 	else
 	{
