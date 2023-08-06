@@ -164,7 +164,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	},
 	{
 		"hardimg", "*Hard Disk", NULL,
-		"ASCI hard drive image, list of files from system/hatarib/.",
+		"Hard drive image, list of files from system/hatarib/.",
 		NULL, "system",
 		{
 			{"<none>","None"},
@@ -181,6 +181,18 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		}, "<none>"
 	},
 	{
+		"hardtype", "*Hard Disk Type", NULL,
+		"Boot from hard disk.",
+		NULL, "system",
+		{
+			{"0","ACSI"},
+			{"1","SCSI"},
+			{"2","IDE (Auto)"},
+			{"3","IDE (Byte Swap Off)"},
+			{"4","IDE (Byte Swap On)"},
+			{NULL,NULL},}, "0"
+	},
+	{
 		"hardboot", "*Hard Disk Boot", NULL,
 		"Boot from hard disk.",
 		NULL, "system",
@@ -189,12 +201,12 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	//
 	// Input
 	//
-	{ "joy1", "Joystick 1", NULL, "Retropad 1 assigned Atari port.", NULL, "input", {{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"1" },
-	{ "joy2", "Joystick 2", NULL, "Retropad 2 assigned Atari port.", NULL, "input", {{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"0" },
-	{ "joy3", "Joystick 3", NULL, "Retropad 3 assigned Atari port.", NULL, "input", {{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"2" },
-	{ "joy4", "Joystick 4", NULL, "Retropad 4 assigned Atari port.", NULL, "input", {{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"3" },
+	{ "joy1_port", "Joystick 1", NULL, "Retropad 1 assigned Atari port.", NULL, "input", {{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"1" },
+	{ "joy2_port", "Joystick 2", NULL, "Retropad 2 assigned Atari port.", NULL, "input", {{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"0" },
+	{ "joy3_port", "Joystick 3", NULL, "Retropad 3 assigned Atari port.", NULL, "input", {{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"2" },
+	{ "joy4_port", "Joystick 4", NULL, "Retropad 4 assigned Atari port.", NULL, "input", {{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"3" },
 	{
-		"mouse_connected", "*Mouse", NULL,
+		"mouse_port", "*Mouse", NULL,
 		"Mouse connected to Joy 0 port."
 		" This can be connected at the same time as a joystick, but their inputs will overlap.",
 		NULL, "input",
@@ -246,11 +258,11 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		"Speed of the mouse when controlled by the analog sticks.",
 		NULL, "input",
 		{
-			{"1","1x"},
-			{"2","2x"},
-			{"3","3x"},
-			{"4","4x"},
-			{"5","5x"},
+			{"1","1"},
+			{"2","2"},
+			{"3","3"},
+			{"4","4"},
+			{"5","5"},
 			{NULL,NULL},
 		}, "3"
 	},
@@ -405,7 +417,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
 	},
 	{
-		"blitterst","*Blitter in ST Mode", NULL,
+		"blitter_st","*Blitter in ST Mode", NULL,
 		"Normally the blitter requires a Mega ST.",
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
@@ -639,8 +651,17 @@ bool cfg_read_str(const char* key, const char** s)
 	return true;
 }
 
+bool cfg_read_int_pad(int pad, const char* key, int* v)
+{
+	static char padkey[64];
+	snprintf(padkey,sizeof(padkey),"pad%d_%s",pad,key);
+	padkey[sizeof(padkey)-1] = 0;
+	return cfg_read_int(padkey,v);
+}
+
 #define CFG_INT(key) if (cfg_read_int((key),&vi))
 #define CFG_STR(key) if (cfg_read_str((key),&vs))
+#define CFG_INT_PAD(pad,key) if (cfg_read_int_pad((pad),(key),&vi))
 
 void core_config_read_newparam()
 {
@@ -649,7 +670,9 @@ void core_config_read_newparam()
 	newparam = defparam; // start with the defaults
 	CFG_STR("tos") {} // TODO
 	CFG_INT("monitor") newparam.Screen.nMonitorType = vi;
-
+	CFG_INT("fast_floppy") {} // TODO
+	CFG_INT("save_floppy") {} // TODO
+	CFG_INT("reset") {} // TODO
 	CFG_INT("machine") {
 		// automatic setup based on OPT_MACHINE in options.c
 		static const int CPULEVEL[] = { 0, 0, 0, 0, 3, 3 };
@@ -667,14 +690,64 @@ void core_config_read_newparam()
 			newparam.System.nDSPType = DSP_TYPE_EMU;
 		}
 	}
-
-
+	CFG_INT("memory") {} // TODO
+	CFG_STR("cartridge") {} // TODO
+	CFG_STR("hardimg") {} // TODO
+	CFG_INT("hardboot") {} // TODO
+	CFG_INT("hardtype") {} // TODO
+	CFG_INT("joy1_port") {} // TODO
+	CFG_INT("joy2_port") {} // TODO
+	CFG_INT("joy3_port") {} // TODO
+	CFG_INT("joy4_port") {} // TODO
+	CFG_INT("mouse_port") {} // TODO
+	CFG_INT("host_mouse") {} // TODO
+	CFG_INT("host_keyboard") {} // TODO
+	CFG_INT("autofire") {} // TODO
+	CFG_INT("mouse_speed") {} // TODO
+	CFG_INT("mouse_deadzone") {} // TODO
 	CFG_INT("lowres2x") newparam.Screen.bLowResolutionDouble = vi;
 	CFG_INT("borders") newparam.Screen.bAllowOverscan = vi;
 	CFG_INT("statusbar") { newparam.Screen.bShowStatusbar = (vi==1); newparam.Screen.bShowDriveLed = (vi==2); }
 	CFG_INT("aspect") { if (core_video_aspect_mode != vi) { core_video_aspect_mode = vi; core_video_changed = true; } }
+	CFG_INT("samplerate") {} // TODO
+	CFG_INT("ymmix") {} // TODO
 	CFG_INT("lpf") newparam.Sound.YmLpf = vi;
 	CFG_INT("hpf") newparam.Sound.YmHpf = vi;
+	CFG_INT("driveb") {} // TODO
+	CFG_INT("drivesingle") {} // TODO
+	CFG_INT("readonly_floppy") {} // TODO
+	CFG_INT("blitterst") {} // TODO
+	CFG_INT("readonly_floppy") {} // TODO
+	CFG_INT("blitter_st") {} // TODO
+	CFG_INT("patchtos") {} // TODO
+	CFG_INT("prefetch") {} // TODO
+	CFG_INT("cycle_exact") {} // TODO
+	CFG_INT("mmu") {} // TODO
+	CFG_INT("wakestate") {} // TODO
+	CFG_INT("timerd") {} // TODO
+	for (int i=0; i<4; ++i)
+	{
+		CFG_INT_PAD(i,"dpad") {} // TODO
+		CFG_INT_PAD(i,"a") {} // TODO
+		CFG_INT_PAD(i,"b") {} // TODO
+		CFG_INT_PAD(i,"x") {} // TODO
+		CFG_INT_PAD(i,"y") {} // TODO
+		CFG_INT_PAD(i,"select") {} // TODO
+		CFG_INT_PAD(i,"start") {} // TODO
+		CFG_INT_PAD(i,"l1") {} // TODO
+		CFG_INT_PAD(i,"r1") {} // TODO
+		CFG_INT_PAD(i,"l2") {} // TODO
+		CFG_INT_PAD(i,"r2") {} // TODO
+		CFG_INT_PAD(i,"l3") {} // TODO
+		CFG_INT_PAD(i,"r3") {} // TODO
+		CFG_INT_PAD(i,"lstick") {} // TODO
+		CFG_INT_PAD(i,"rstick") {} // TODO
+		CFG_INT_PAD(i,"oskey_confirm") {} // TODO
+		CFG_INT_PAD(i,"oskey_cancel") {} // TODO
+		CFG_INT_PAD(i,"oskey_shift") {} // TODO
+		CFG_INT_PAD(i,"oskey_pos") {} // TODO
+		CFG_INT_PAD(i,"oskey_move") {} // TODO
+	}
 }
 
 //
