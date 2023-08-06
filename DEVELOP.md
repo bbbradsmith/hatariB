@@ -74,6 +74,7 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Send generated audio to core in `Sound_Update`.
   * Save `YM_Buffer` to savestates for seamless audio across savestates/runahead.
   * Added IIR lowpass filter option for lower audio distortion.
+  * Fixed broken lowpass filter implementation which was running at 250kHz instead of 44/48kHz.
 * **hatari/src/joy.c**
   * Disable SDL josyick initialization.
   * Use core-provided joystick state instead.
