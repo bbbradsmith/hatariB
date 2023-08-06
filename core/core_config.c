@@ -12,6 +12,9 @@ extern bool core_video_changed;
 static CNF_PARAMS defparam; // TODO copy this during setup
 static CNF_PARAMS newparam; // TODO copy default to this then modify during apply
 
+// system/hatarib/ file scane used to populate arrays in CORE_OPTION_DEF below
+#define MAX_OPTION_FILES   64
+
 static struct retro_core_option_v2_category CORE_OPTION_CAT[] = {
 	{
 		"system", "System",
@@ -67,7 +70,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{"<etos1024k>","EmuTOS 1024k"},
 			{"<etos192uk>","EmuTOS 192uk"},
 			{"<etos192us>","EmuTOS 192us"},
-			// populate up to 64 of these
+			// populated by system/hatarib/ (MAX_OPTION_FILES)
 			{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},
 			{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},
 			{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},
@@ -77,7 +80,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},
 			{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},
 			{NULL,NULL}
-		}, "<etos1024k>" // TODO tos.img should be default but let it fall back to etos1024k
+		}, "<etos1024k>" // replace with <tos.img> if system/tos.img exists
 	},
 	{
 		"monitor", "Monitor", NULL,
@@ -147,7 +150,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		NULL, "system",
 		{
 			{"<none>","None"},
-			// populate up to 64 of these
+			// populated by system/hatarib/ (MAX_OPTION_FILES)
 			{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},
 			{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},
 			{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},
@@ -165,7 +168,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		NULL, "system",
 		{
 			{"<none>","None"},
-			// populate up to 64 of these
+			// populated by system/hatarib/ (MAX_OPTION_FILES)
 			{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},
 			{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},
 			{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},
@@ -186,23 +189,31 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	//
 	// Input
 	//
-	{
-		"mouse_on", "*Mouse Enabled", NULL,
-		"Mouse connected to Joy 0 port.",
-		NULL, "input",
-		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
-	},
-	{
-		"keyboard_on", "*Keyboard Enabled", NULL,
-		"Allow input from your keyboard."
-		" With this disabled you can still use the onscreen keyboard or retropad mapped keys.",
-		NULL, "input",
-		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
-	},
 	{ "joy1", "Joystick 1", NULL, "Retropad 1 assigned Atari port.", NULL, "input", {{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"1" },
 	{ "joy2", "Joystick 2", NULL, "Retropad 2 assigned Atari port.", NULL, "input", {{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"0" },
 	{ "joy3", "Joystick 3", NULL, "Retropad 3 assigned Atari port.", NULL, "input", {{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"2" },
 	{ "joy4", "Joystick 4", NULL, "Retropad 4 assigned Atari port.", NULL, "input", {{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"3" },
+	{
+		"mouse_connected", "*Mouse", NULL,
+		"Mouse connected to Joy 0 port."
+		" This can be connected at the same time as a joystick, but their inputs will overlap.",
+		NULL, "input",
+		{{"0","None"},{"1","Joy 0"},{NULL,NULL},}, "1"
+	},
+	{
+		"host_mouse", "*Host Mouse Enabled", NULL,
+		"Allow input from your own mouse device."
+		" With this disabled you can still use the retropad mouse inputs.",
+		NULL, "input",
+		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
+	},
+	{
+		"host_keyboard", "*Host Keyboard Enabled", NULL,
+		"Allow input from your own keyboard."
+		" With this disabled you can still use the onscreen keyboard or retropad mapped keys.",
+		NULL, "input",
+		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
+	},
 	{
 		"autofire", "*Auto-fire Rate", NULL,
 		"Frames per button press with auto-fire.",
@@ -670,9 +681,42 @@ void core_config_read_newparam()
 // Interface
 //
 
+static struct retro_core_option_v2_definition* get_core_option_def(const char* key)
+{
+	for (struct retro_core_option_v2_definition* d = CORE_OPTION_DEF; d->key != NULL; ++d)
+	{
+		if (!strcmp(d->key,key)) return d;
+	}
+	return NULL;
+}
+
 void core_config_set_environment(retro_environment_t cb)
 {
 	unsigned version = 0;
+	struct retro_core_option_v2_definition* def;
+
+	// TODO fill in TOS / Cartridge / Hard Disk lists from system/hatarib scan
+	if ((def = get_core_option_def("tos")))
+	{
+		// populate up to MAX_OPTION_FILES starting from 4
+		def->values[4].value = "pop.tos";
+		def->values[4].label = "pop.tos (test)";
+		// if tos.img is found we should do this:
+		def->default_value = "<tos.img>";
+		// if tos.img is not found we should do this:
+		def->values[0].label = "system/tos.img (missing)";
+	}
+	if ((def = get_core_option_def("cartridge")))
+	{
+		def->values[1].value = "pop.img";
+		def->values[1].label = "pop.img (test)";
+	}
+	if ((def = get_core_option_def("hardimg")))
+	{
+		def->values[1].value = "pop.img";
+		def->values[1].label = "pop.img (test)";
+	}
+
 	if (!cb(RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION, &version)) version = 0;
 	if (version >= 2)
 	{
