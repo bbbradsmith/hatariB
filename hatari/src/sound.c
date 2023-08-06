@@ -339,7 +339,7 @@ static CLOCKS_CYCLES_STRUCT	YM2149_ConvertCycles_250;
 static ymsample	LowPassFilter		(ymsample x0);
 static ymsample	PWMaliasFilter		(ymsample x0);
 #ifdef __LIBRETRO__
-static ymsample IIRLowPassFilter	(ymsample x0);
+static ymsample	IIRLowPassFilter	(ymsample x0);
 #endif
 
 static void	interpolate_volumetable	(ymu16 volumetable[32][32][32]);
