@@ -211,6 +211,9 @@ void Change_CopyChangedParamsToConfiguration(CNF_PARAMS *current, CNF_PARAMS *ch
 	     || changed->Screen.bUseSdlRenderer != current->Screen.bUseSdlRenderer
 	     || changed->Screen.bResizable != current->Screen.bResizable
 	     || changed->Screen.bUseVsync != current->Screen.bUseVsync
+#ifdef __LIBRETRO__
+	     || changed->Screen.bLowResolutionDouble != current->Screen.bLowResolutionDouble
+#endif
 	    ))
 	{
 		Dprintf("- screenmode>\n");

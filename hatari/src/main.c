@@ -853,6 +853,9 @@ static void Main_UnInit(void)
  * test mode (i.e. if the HATARI_TEST environment variable has been set),
  * so that the test has always full control over the configuration settings.
  */
+#ifdef __LIBRETRO__
+void core_config_init(void);
+#endif
 static void Main_LoadInitialConfig(void)
 {
 #ifndef __LIBRETRO__
@@ -877,9 +880,9 @@ static void Main_LoadInitialConfig(void)
 	if (ConfigureParams.Keyboard.nLanguage == TOS_LANG_UNKNOWN)
 		ConfigureParams.Keyboard.nLanguage = TOS_DefaultLanguage();
 #else
-	// TODO load from retroarch
-	// note that we probably want to delay all this until after load game?
-	// when does retroarch provide the game-specific over-rides?
+	// core will save the default configuration for reference,
+	// then set up the initial configuration values here
+	core_config_init();
 #endif
 }
 

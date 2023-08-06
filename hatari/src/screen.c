@@ -128,7 +128,7 @@ void SDL_UpdateRects(SDL_Surface *screen, int numrects, SDL_Rect *rects)
 		SDL_RenderPresent(sdlRenderer);
 #else
 		// screen is always sdlscrn
-		core_video_update(sdlscrn->pixels, sdlscrn->w, sdlscrn->h, sdlscrn->pitch);
+		core_video_update(sdlscrn->pixels, sdlscrn->w, sdlscrn->h, sdlscrn->pitch, STRes);
 #endif
 	}
 	else
@@ -587,7 +587,7 @@ static bool Screen_SetSDLVideoSize(int width, int height, int bitdepth, bool bFo
 		sdlscrn = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, bitdepth,
 		                               rm, gm, bm, am);
 		// make sure core has valid pointer to screen data (even if not yet initialized)
-		core_video_update(sdlscrn->pixels, sdlscrn->w, sdlscrn->h, sdlscrn->pitch);
+		core_video_update(sdlscrn->pixels, sdlscrn->w, sdlscrn->h, sdlscrn->pitch, STRes);
 		if (SDL_MUSTLOCK(sdlscrn))
 			core_error_msg("Screen display may fail: sdlscrn SWSURFACE has MUSTLOCK");
 
@@ -660,6 +660,19 @@ static void Screen_SetSTResolution(bool bForceChange)
 	SBarHeight = Statusbar_GetHeightForSize(640, 400);
 
 	Resolution_GetLimits(&maxW, &maxH, &BitCount, ConfigureParams.Screen.bKeepResolution);
+
+#ifdef __LIBRETRO__
+	maxW = 2*NUM_VISIBLE_LINE_PIXELS;
+	maxH = 2*NUM_VISIBLE_LINES+STATUSBAR_MAX_HEIGHT;
+	if (!ConfigureParams.Screen.bLowResolutionDouble)
+	{
+		if (STRes == ST_LOW_RES)
+		{
+			maxW /= 2;
+			maxH /= 2;
+		}
+	}
+#endif
 
 	/* Zoom if necessary, factors used for scaling mouse motions */
 	if (STRes == ST_LOW_RES &&

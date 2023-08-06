@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-g -O2 -Wall -Werror
+CFLAGS=-g -O2 -Wall -Werror -D__LIBRETRO__ -Ihatari/build
 LDFLAGS=-shared -g -Wall -Werror
 CMAKEFLAGS=-DENABLE_SMALL_MEM=0 -DENABLE_TRACING=0
 # for tracing debug:
@@ -10,7 +10,8 @@ CORE=$(BD)hatarib.dll
 SOURCES = \
 	core/core.c \
 	core/core_input.c \
-	core/core_disk.c
+	core/core_disk.c \
+	core/core_config.c
 OBJECTS = $(SOURCES:%.c=$(BD)%.o)
 HATARILIBS= \
 	hatari/build/src/libcore.a \

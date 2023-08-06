@@ -320,6 +320,9 @@ typedef struct
   int nMaxWidth;
   int nMaxHeight;
   int nFrameSkips;
+#ifdef __LIBRETRO__
+  bool bLowResolutionDouble;
+#endif
 } CNF_SCREEN;
 
 

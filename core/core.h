@@ -23,7 +23,7 @@ extern void core_debug_hatari(bool error, const char* msg); // log message from 
 extern void core_trace_next(int count); // if ENABLE_TRACING=1 will print the next "count" lines of CPU trace to log
 
 // send video/audio frame update to core
-extern void core_video_update(void* data, int width, int height, int pitch);
+extern void core_video_update(void* data, int width, int height, int pitch, int resolution);
 extern void core_audio_update(const int16_t data[][2], int index, int length);
 extern void core_set_fps(int rate);
 extern void core_set_samplerate(int rate);

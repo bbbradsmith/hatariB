@@ -43,6 +43,7 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
 
 * **hatari/src/includes/main.h**
   * Added common include `../../core/core.h` to give quick common access to hatariB core.
+  * Added `SDL2/` prefix to SDL header include.
 * **hatari/src/main.c**
   * Split `main` into `main_init`, and `main_deinit`.
   * Skip `Win_OpenCon` and `setenv`.
@@ -51,7 +52,7 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Replace SDL event queue polling with a simulated input event queue from the Libretro core. Limit only to key/mouse input events.
   * Disable `Main_WarpMouse` because Libretro will capture the mouse with its focus mode.
   * Replace default status bar help message with a note to press Scroll-Lock for focus mode.
-  * Disable loading config from file.
+  * Replace loading config from file with core configuration.
   * Allow missing TOS file to pass through initialization so we can halt the CPU and report the error to the user later.
 * **hatari/src/cpu/newcpu.c**
   * Split `m68k_go` into `m68k_go`, `m68k_go_frame` and `m68k_go_quit`.
@@ -62,6 +63,7 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Don't create or use window or SDL renderer.
   * Use existing SDL software surface, but send its data to the core (`core_video_update`) instead of using a renderer present.
   * Use SDL software rendering to support all 3 pixel formats allowed by Libretro.
+  * Add option for low resolution pixel doubling.
 * **hatari/src/video.c**
   * Notify core of video framerate changes.
   * Suppress unused-variable warnings due to `ENABLE_TRACING`.
@@ -98,6 +100,7 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
 * **hatari/src/configuration.c**
 * **hatari/src/includes/configuration.h**
   * Add option for built-in TOS bios (EmuTOS).
+  * Add option for low resolution pixel doubling.
   * Add options for YM filter configuration.
   * Override some of the default options.
 * **hatari/src/keymap.c**
@@ -105,6 +108,8 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Disable all Hatari shortcut keys.
   * Disable Hatari key to joystick mappings.
   * Provide modifier key state instead of `SDL_GetModState`.
+* **hatari/src/change.c**
+  * Signal screen change when Low Resolution pixel doubling option changes.
 * **hatari/src/floppy.c**
 * **hatari/src/includes/floppy.h**
   * Load floppy images from memory instead of from file.

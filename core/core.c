@@ -50,33 +50,6 @@ static enum retro_pixel_format RPF_0RGB1555 = RETRO_PIXEL_FORMAT_0RGB1555;
 static enum retro_pixel_format RPF_XRGB8888 = RETRO_PIXEL_FORMAT_XRGB8888;
 static enum retro_pixel_format RPF_RGB565   = RETRO_PIXEL_FORMAT_RGB565;
 
-static struct retro_core_option_definition CORE_OPTIONS[] = {
-	// TODO
-	{
-		"hatarib_option1",
-		"Option 1 test",
-		"A true/false option",
-		{
-			{ "true",  "enabled"  },
-			{ "false", "disabled" },
-			{ NULL, NULL },
-		},    "false"
-	},
-	{
-		"hatarib_option2",
-		"Option 2 test",
-		"A list option",
-		{
-			{ "0", "list 0" },
-			{ "1", NULL },
-			{ "3", NULL },
-			{ "9", "list 9" },
-			{ NULL, NULL },
-		},    "3"
-	},
-	{ NULL, NULL, NULL, {{0}}, NULL },
-};
-
 //
 // From Hatari
 //
@@ -110,6 +83,10 @@ extern void core_disk_load_game(const struct retro_game_info *game);
 extern void core_disk_unload_game(void);
 extern void core_disk_serialize(void);
 
+// core_config.c
+extern void core_config_set_environment(retro_environment_t cb); // call after core_disk_set_environment (which scans system folder for TOS etc)
+extern void core_config_apply(void);
+
 //
 // Available to Hatari
 //
@@ -126,6 +103,9 @@ int16_t core_audio_buffer[AUDIO_BUFFER_LEN];
 int core_video_w = 640;
 int core_video_h = 400;
 int core_video_pitch = 640*4;
+int core_video_resolution = 0;
+float core_video_aspect = 1.0;
+int core_video_aspect_mode = 0;
 int core_video_fps = 50;
 int core_video_fps_new = 50;
 int core_audio_samplerate = 48000;
@@ -212,7 +192,29 @@ void core_debug_bin(const char* data, int len, int offset)
 	}
 }
 
-void core_video_update(void* data, int w, int h, int pitch)
+// resolution values are in hatari/src/includes/screen.h:
+//  0 ST_LOW
+//  1 ST_MEDIUM
+//  2 ST_HIGH
+//  3 ?
+//  4 TT_MEDIUM_RES
+//  5 ?
+//  6 TT_HIGH_RES
+//  7 TT_LOW_RES
+// Currenlty only servicing the first 3 and the rest get a default.
+// TODO threw in some basic numbers I found, but need to double check and calculate for myself.
+//   NTSC/PAL should be computable by their pixel clock timings vs. other known systems.
+//   Is Atari monitor really 5/6, is monochrome really 1/1? Though, they were also adjustable.
+#define RESOLUTION_MAX 2
+static const double PIXEL_ASPECT_RATIO[4][RESOLUTION_MAX+2] = {
+	//  low,   med,  high, default
+	{ 1./1., 1./1., 1./1., 1./1. }, // square pixels
+	{ 5./6., 5./6., 1./1., 5./6. }, // Atari monitor
+	{ 0.846, 0.846, 0.846, 0.846 }, // NTSC TV (monochrome is fiction)
+	{ 1.040, 1.040, 1.040, 1.040 }, // PAL TV (monochrome is fiction)
+};
+
+void core_video_update(void* data, int w, int h, int pitch, int resolution)
 {
 	if (w > VIDEO_MAX_W) w = VIDEO_MAX_W;
 	if (h > VIDEO_MAX_H) w = VIDEO_MAX_H;
@@ -221,6 +223,15 @@ void core_video_update(void* data, int w, int h, int pitch)
 	if (w != core_video_w) { core_video_w = w; core_video_changed = true; }
 	if (h != core_video_h) { core_video_h = h; core_video_changed = true; }
 	core_video_pitch = pitch;
+	if (resolution > RESOLUTION_MAX) resolution = RESOLUTION_MAX;
+	if (core_video_resolution != resolution || core_video_changed)
+	{
+		core_video_changed = true;
+		core_video_resolution = resolution;
+		double par = PIXEL_ASPECT_RATIO[core_video_aspect_mode][resolution];
+		core_video_aspect = (par * core_video_w) / (double)core_video_h;
+		retro_log(RETRO_LOG_DEBUG,"aspect(%d,%d): %f (%f)\n",core_video_aspect_mode,resolution,core_video_aspect,par);
+	}
 }
 
 void core_audio_update(const int16_t data[][2], int index, int length)
@@ -433,10 +444,7 @@ void core_config_update(bool force)
 		if (!environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE,&force) || !force) return;
 	}
 	retro_log(RETRO_LOG_INFO,"Applying configuration update.\n");
-	// TODO
-	// call with with force inside hatari main instead of loading configuration from file
-	// figure out if we get game-specific config before retro_init or if we need to defer stuff until game load or what?
-	// void Change_CopyChangedParamsToConfiguration ?
+	core_config_apply();
 }
 
 //
@@ -465,15 +473,7 @@ RETRO_API void retro_set_environment(retro_environment_t cb)
 
 	core_input_set_environment(cb);
 	core_disk_set_environment(cb);
-
-	// core options
-	{
-		unsigned version = 0;
-		if (cb(RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION, &version) && (version >= 1))
-			cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS, CORE_OPTIONS);
-		// TODO there's a core options V2 that's even better
-		// probably this needs its own file
-	}
+	core_config_set_environment(cb);
 }
 
 RETRO_API void retro_set_video_refresh(retro_video_refresh_t cb)
@@ -579,7 +579,7 @@ RETRO_API void retro_get_system_av_info(struct retro_system_av_info *info)
 	info->geometry.base_height = core_video_h;
 	info->geometry.max_width = VIDEO_MAX_W;
 	info->geometry.max_height = VIDEO_MAX_H;
-	info->geometry.aspect_ratio = 0; // TODO computed from user PAR setting? (Color Monitor, Monochrome Monitor, NTSC TV, PAL TV, 1:1)
+	info->geometry.aspect_ratio = core_video_aspect;
 	info->timing.fps = core_video_fps;
 	info->timing.sample_rate = core_audio_samplerate;
 
