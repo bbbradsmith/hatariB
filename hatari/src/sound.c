@@ -1119,6 +1119,9 @@ static void	YM2149_DoSamples_250 ( int SamplesToGenerate_250 )
 
 		sample = ymout5[ Tone3Voices ];			/* 16 bits signed value */
 
+#ifndef __LIBRETRO__
+// this low pass filter is in the wrong place, these were designed for ~44100-48000 Hz but are being run here at 250000Hz!
+// moved to YM2149_NextSample_250 instead
 		/* Apply low pass filter ? */
 		if ( YM2149_LPF_Filter == YM2149_LPF_FILTER_LPF_STF )
 			sample = LowPassFilter ( sample );
@@ -1128,6 +1131,7 @@ static void	YM2149_DoSamples_250 ( int SamplesToGenerate_250 )
 		else if ( YM2149_LPF_Filter == YM2149_LPF_FILTER_IIR )
 			sample = IIRLowPassFilter ( sample );
 	#endif
+#endif
 	
 		/* Store sample */
 		YM_Buffer_250[ pos ] = sample;
@@ -1402,6 +1406,7 @@ static ymsample	YM2149_Next_Resample_Weighted_Average_2 ( void )
 
 static ymsample	YM2149_NextSample_250 ( void )
 {
+#ifndef __LIBRETRO__
 	if ( YM2149_Resample_Method == YM2149_RESAMPLE_METHOD_WEIGHTED_AVERAGE_2 )
 		return YM2149_Next_Resample_Weighted_Average_2 ();
 
@@ -1413,6 +1418,26 @@ static ymsample	YM2149_NextSample_250 ( void )
 
 	else
 		return 0;
+#else
+	// filters were mistakenly applied at the wrong frequency above
+	ymsample sample = 0;
+	switch (YM2149_Resample_Method)
+	{
+		case YM2149_RESAMPLE_METHOD_NEAREST:            sample = YM2149_Next_Resample_Nearest();            break;
+		case YM2149_RESAMPLE_METHOD_WEIGHTED_AVERAGE_2: sample = YM2149_Next_Resample_Weighted_Average_2(); break;
+		case YM2149_RESAMPLE_METHOD_WEIGHTED_AVERAGE_N: sample = YM2149_Next_Resample_Weighted_Average_N(); break;
+		default: break;
+	}
+	switch (YM2149_LPF_Filter)
+	{
+		default:
+		case YM2149_LPF_FILTER_NONE:                                          break;
+		case YM2149_LPF_FILTER_LPF_STF: sample = LowPassFilter ( sample );    break;
+		case YM2149_LPF_FILTER_PWM:     sample = PWMaliasFilter ( sample );   break;
+		case YM2149_LPF_FILTER_IIR:     sample = IIRLowPassFilter ( sample ); break;
+	}
+	return sample;
+#endif
 }
 
 
