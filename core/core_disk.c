@@ -38,7 +38,7 @@ static int initial_image;
 //
 
 // floppy.c
-void hatari_libretro_floppy_insert(int drive, const char* filename, void* data, unsigned int size);
+bool hatari_libretro_floppy_insert(int drive, const char* filename, void* data, unsigned int size);
 void hatari_libretro_floppy_eject(int drive);
 
 //
@@ -110,11 +110,22 @@ static bool set_eject_state_drive(bool ejected, int d)
 	if (disks[image_index[d]].data == NULL) return false;
 
 	// now ready to insert
+	if (!hatari_libretro_floppy_insert(d, disks[image_index[d]].filename, disks[image_index[d]].data, disks[image_index[d]].size))
+	{
+		static char floppy_error_msg[MAX_FILENAME+256];
+		struct retro_message_ext msg;
+		snprintf(floppy_error_msg, sizeof(floppy_error_msg), "%c: disk failure: %s",d?'B':'A',disks[image_index[d]].filename);
+		msg.msg = floppy_error_msg;
+		msg.duration = 5 * 1000;
+		msg.priority = 3;
+		msg.level = RETRO_LOG_ERROR;
+		msg.target = RETRO_MESSAGE_TARGET_ALL;
+		msg.type = RETRO_MESSAGE_TYPE_NOTIFICATION;
+		msg.progress = -1;
+		environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg);
+		return false;
+	}
 	image_insert[d] = true;
-
-	// hatari insert
-	hatari_libretro_floppy_insert(d, disks[image_index[d]].filename, disks[image_index[d]].data, disks[image_index[d]].size);
-	// TODO report errors back from hatari
 	return true;
 }
 
@@ -126,7 +137,7 @@ static bool set_eject_state(bool ejected)
 
 static bool get_eject_state(void)
 {
-	retro_log(RETRO_LOG_DEBUG,"get_eject_state()\n");
+	//retro_log(RETRO_LOG_DEBUG,"get_eject_state()\n");
 	return !image_insert[drive];
 }
 
@@ -162,15 +173,34 @@ static unsigned get_num_images(void)
 static bool replace_image_index(unsigned index, const struct retro_game_info* game)
 {
 	const char* path = NULL;
+	struct retro_game_info_ext* game_ext = NULL;
+
 	retro_log(RETRO_LOG_DEBUG,"replace_image_index(%d,%p)\n",index,game);
 	if (index >= image_count) return false;
 	if (game == NULL) return false;
+	
 	retro_log(RETRO_LOG_INFO,"retro_game_info:\n");
-	retro_log(RETRO_LOG_INFO," path: %s\n",game->path ? game->path : "(none)");
+	retro_log(RETRO_LOG_INFO," path: %s\n",game->path ? game->path : "(NULL)");
 	retro_log(RETRO_LOG_INFO," data: %p\n",game->data);
 	retro_log(RETRO_LOG_INFO," size: %d\n",(int)game->size);
-	retro_log(RETRO_LOG_INFO," meta: %p\n",game->meta);
-	// TODO RETRO_ENVIRONMENT_GET_GAME_INFO_EXT
+	retro_log(RETRO_LOG_INFO," meta: %s\n",game->meta ? game->meta : "(NULL)");
+	if (environ_cb(RETRO_ENVIRONMENT_GET_GAME_INFO_EXT, &game_ext) && game_ext)
+	{
+		retro_log(RETRO_LOG_INFO,"retro_game_info_ext:\n");
+		retro_log(RETRO_LOG_INFO," full_path: %s\n",game_ext->full_path ? game_ext->full_path : "(NULL)");
+		retro_log(RETRO_LOG_INFO," archive_path: %s\n",game_ext->archive_path ? game_ext->archive_path : "(NULL)");
+		retro_log(RETRO_LOG_INFO," archive_file: %s\n",game_ext->archive_file ? game_ext->archive_file : "(NULL)");
+		retro_log(RETRO_LOG_INFO," dir: %s\n",game_ext->dir ? game_ext->dir : "(NULL)");
+		retro_log(RETRO_LOG_INFO," name: %s\n",game_ext->name ? game_ext->name : "(NULL)");
+		retro_log(RETRO_LOG_INFO," ext: %s\n",game_ext->ext ? game_ext->ext : "(NULL)");
+		retro_log(RETRO_LOG_INFO," meta: %s\n",game_ext->ext ? game_ext->meta : "(NULL)");
+		retro_log(RETRO_LOG_INFO," data: %p\n",game_ext->data);
+		retro_log(RETRO_LOG_INFO," size: %d\n",(int)game_ext->size);
+		retro_log(RETRO_LOG_INFO," file_in_archive: %d\n",(int)game_ext->file_in_archive);
+		retro_log(RETRO_LOG_INFO," persistent_data: %d\n",(int)game_ext->persistent_data);
+	}
+	else game_ext = NULL;
+	
 	path = game->path;
 	// find base filename
 	{
@@ -186,6 +216,8 @@ static bool replace_image_index(unsigned index, const struct retro_game_info* ga
 	if (image_insert[0] && (image_index[0] == index)) set_eject_state_drive(false,0);
 	if (image_insert[1] && (image_index[1] == index)) set_eject_state_drive(false,0);
 
+// TODO load saves instead?
+
 // TODO
 // Load disk file actually bypasses the need_fullpath setting
 // so if we get data=0 here, we might still have a path we can fall back on and use the vfs to read it
@@ -196,14 +228,36 @@ static bool replace_image_index(unsigned index, const struct retro_game_info* ga
 	free(disks[index].data);
 	disks[index].modified = false;
 	disks[index].size = 0;
-	disks[index].data = malloc(game->size);
-	if (disks[index].data == NULL)
+
+	if (game->data)
 	{
-		strcpy(disks[index].filename,"[Out Of Memory]");
-		return false;
+		disks[index].data = malloc(game->size);
+		if (disks[index].data == NULL)
+		{
+			strcpy(disks[index].filename,"[Out Of Memory]");
+			return false;
+		}
+		disks[index].size = game->size;
+		memcpy(disks[index].data,game->data,game->size);
 	}
-	disks[index].size = game->size;
-	memcpy(disks[index].data,game->data,game->size); // TODO load saves instead?
+	else
+	{
+		// Load New Disk does not obey need_fullpath, so we may need to manually load the file
+		FILE* f = fopen(game->path,"rb");
+		if (f != NULL)
+		{
+			fseek(f,0,SEEK_END);
+			unsigned int size = (unsigned int)ftell(f);
+			fseek(f,0,SEEK_SET);
+			disks[index].data = malloc(size);
+			if (disks[index].data != NULL)
+			{
+				fread(disks[index].data,1,size,f);
+				disks[index].size = size;
+			}
+			fclose(f);
+		}
+	}
 
 	if (path == NULL)
 	{
@@ -299,6 +353,8 @@ void core_disk_set_environment(retro_environment_t cb)
 		cb(RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE, (void*)&retro_disk_control_ext);
 	else
 		cb(RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE, (void*)&retro_disk_control);
+
+	//if (cv(RETRO_ENVIRONMENT_GET_VFS_INTERFACE, 
 }
 
 void core_disk_init(void)

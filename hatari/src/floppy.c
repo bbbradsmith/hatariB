@@ -521,18 +521,18 @@ int	Floppy_DriveTransitionUpdateState ( int Drive )
 
 
 #ifdef __LIBRETRO__
-extern void hatari_libretro_floppy_insert(int drive, const char* filename, void* data, unsigned int size);
+extern bool hatari_libretro_floppy_insert(int drive, const char* filename, void* data, unsigned int size);
 extern void hatari_libretro_floppy_eject(int drive);
 extern Uint8* hatari_libretro_floppy_file_read(const char *pszFileName, long *pFileSize, const char * const ppszExts[]);
 static void* floppy_data[2] = {NULL,NULL};
 static unsigned int floppy_size[2] = {0,0};
 static int floppy_read_drive = 0;
-void hatari_libretro_floppy_insert(int drive, const char* filename, void* data, unsigned int size)
+bool hatari_libretro_floppy_insert(int drive, const char* filename, void* data, unsigned int size)
 {
 	floppy_data[drive] = data;
 	floppy_size[drive] = size;
 	Floppy_SetDiskFileName(drive, filename, NULL);
-	Floppy_InsertDiskIntoDrive(drive);
+	return Floppy_InsertDiskIntoDrive(drive);
 }
 void hatari_libretro_floppy_eject(int drive)
 {
@@ -602,7 +602,6 @@ bool Floppy_InsertDiskIntoDrive(int Drive)
 		EmulationDrives[Drive].pBuffer = IPF_ReadDisk(Drive, filename, &nImageBytes, &ImageType);
 	else if (STX_FileNameIsSTX(filename, true))
 		EmulationDrives[Drive].pBuffer = STX_ReadDisk(Drive, filename, &nImageBytes, &ImageType);
-// TODO report a failed image bac (Log_AlertDlg below?)
 #ifndef __LIBRETRO__
 	else if (ZIP_FileNameIsZIP(filename))
 	{

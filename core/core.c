@@ -25,7 +25,11 @@
 #define DEBUG_HATARI_LOG   2
 
 // make sure this matches ../info/hatarib.info
-static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|ipf|raw|ctr|m3u|zip";
+static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|m3u|zip";
+// IPF/RAW/CRT support requires CAPSLIB which has licensing issues for Libretro.
+// See: https://github.com/libretro/hatari/issues/4
+// See also: https://github.com/mamedev/mame/blob/master/src/lib/formats/ipf_dsk.cpp
+//static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|ipf|raw|ctr|m3u|zip";
 
 //
 // Libretro
@@ -262,7 +266,7 @@ void core_signal_halt(void)
 		msg.priority = 3;
 		msg.level = RETRO_LOG_ERROR;
 		msg.target = RETRO_MESSAGE_TARGET_ALL;
-		msg.type = RETRO_MESSAGE_TYPE_NOTIFICATION_ALT;
+		msg.type = RETRO_MESSAGE_TYPE_NOTIFICATION;
 		msg.progress = -1;
 		environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg);
 	}
@@ -278,7 +282,7 @@ void core_signal_tos_fail(void)
 	msg.priority = 3;
 	msg.level = RETRO_LOG_ERROR;
 	msg.target = RETRO_MESSAGE_TARGET_ALL;
-	msg.type = RETRO_MESSAGE_TYPE_NOTIFICATION_ALT;
+	msg.type = RETRO_MESSAGE_TYPE_NOTIFICATION;
 	msg.progress = -1;
 	environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg);
 	core_runflags |= CORE_RUNFLAG_HALT;
