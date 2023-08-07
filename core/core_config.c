@@ -440,7 +440,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		"patchtos","Patch TOS for Fast Boot", NULL,
 		"Boot slightly faster for some known TOS ROMs.",
 		NULL, "advanced",
-		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
+		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
 	},
 	{
 		"prefetch", "Prefetch Emulation", NULL,
@@ -521,18 +521,19 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	}
 #define OPTION_OSKEY_BUTTON() \
 	{ \
-		{"0","A"}, \
-		{"1","B"}, \
-		{"2","X"}, \
-		{"3","Y"}, \
-		{"4","Select"}, \
-		{"5","Start"}, \
-		{"6","L1"}, \
-		{"7","R1"}, \
-		{"8","L2"}, \
-		{"9","R2"}, \
-		{"10","L3"}, \
-		{"11","R3"}, \
+		{"0","None"}, \
+		{"1","A"}, \
+		{"2","B"}, \
+		{"3","X"}, \
+		{"4","Y"}, \
+		{"5","Select"}, \
+		{"6","Start"}, \
+		{"7","L1"}, \
+		{"8","R1"}, \
+		{"9","L2"}, \
+		{"10","R2"}, \
+		{"11","L3"}, \
+		{"12","R3"}, \
 		{NULL,NULL} \
 	}
 #define OPTION_PAD(padnum) \
@@ -567,15 +568,22 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	{ "pad" padnum "_rstick", "Pad " padnum " Right Analog Stick", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_STICK(), "2" }, /* mouse */ \
 	{ "pad" padnum "_oskey_confirm", "Pad " padnum " On-Screen Key Confirm", NULL, NULL, NULL, "pad" padnum, \
-		OPTION_OSKEY_BUTTON(), "1" }, /* b */ \
+		OPTION_OSKEY_BUTTON(), "2" }, /* b */ \
 	{ "pad" padnum "_oskey_cancel", "Pad " padnum " On-Screen Key Cancel", NULL, NULL, NULL, "pad" padnum, \
-		OPTION_OSKEY_BUTTON(), "0" }, /* a */ \
+		OPTION_OSKEY_BUTTON(), "1" }, /* a */ \
 	{ "pad" padnum "_oskey_shift", "Pad " padnum " On-Screen Key Shift-Lock", NULL, NULL, NULL, "pad" padnum, \
-		OPTION_OSKEY_BUTTON(), "3" }, /* y */ \
+		OPTION_OSKEY_BUTTON(), "4" }, /* y */ \
 	{ "pad" padnum "_oskey_pos", "Pad " padnum " On-Screen Key Position", NULL, NULL, NULL, "pad" padnum, \
-		OPTION_OSKEY_BUTTON(), "2" }, /* x */ \
+		OPTION_OSKEY_BUTTON(), "3" }, /* x */ \
 	{ "pad" padnum "_oskey_move", "Pad " padnum " On-Screen Key Cursor", NULL, NULL, NULL, "pad" padnum, \
-		{{"0","D-Pad"},{"1","Left Analog Stick"},{"2","Right Analog Stick"},{NULL,NULL}},"0" }, /* d-pad */ \
+		{ \
+			{"0","None"}, \
+			{"1","D-Pad"}, \
+			{"2","Left Analog Stick"}, \
+			{"3","Right Analog Stick"}, \
+			{NULL,NULL} \
+		},"1" /* d-pad */ \
+	}, \
 	/* end of OPTION_PAD define */
 	OPTION_PAD("1")
 	OPTION_PAD("2")
