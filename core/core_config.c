@@ -584,6 +584,16 @@ static const struct retro_core_options_v2 CORE_OPTIONS_V2 = {
 	CORE_OPTION_DEF,
 };
 
+#define CORE_OPTIONS_COUNT sizeof(CORE_OPTION_DEF)/sizeof(CORE_OPTION_DEF[0])
+
+static struct retro_core_option_definition CORE_OPTIONS_V1[CORE_OPTIONS_COUNT] = {
+	{ NULL, NULL, NULL, {{NULL,NULL}}, NULL }
+};
+
+static struct retro_variable CORE_OPTIONS_V0[CORE_OPTIONS_COUNT] = {
+	{NULL,NULL}
+};
+
 static const struct retro_input_descriptor INPUT_DESCRIPTORS[] = {
 #define PAD_DESCRIPTOR(p) \
 	{ p, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A, "A / Auto-Fire" }, \
@@ -767,6 +777,7 @@ void core_config_set_environment(retro_environment_t cb)
 {
 	unsigned version = 0;
 	struct retro_core_option_v2_definition* def;
+	retro_log(RETRO_LOG_DEBUG,"core_config_set_environment(%p)\n",cb);
 
 	// TODO fill in TOS / Cartridge / Hard Disk lists from system/hatarib scan
 	if ((def = get_core_option_def("tos")))
@@ -791,24 +802,38 @@ void core_config_set_environment(retro_environment_t cb)
 	}
 
 	if (!cb(RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION, &version)) version = 0;
+	//version = 1; // to test version 1
+	//version = 0; // to test version 0
 	if (version >= 2)
 	{
 		cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2, (void*)&CORE_OPTIONS_V2);
 	}
-	else if (version >= 1)
+	else if (version >= 1) // fallback to version 1
 	{
-		// v1
-		// parse into v1? maybe just fall back to v0
-		// TODO
+		struct retro_core_option_definition* dv1 = CORE_OPTIONS_V1;
+		for (def = CORE_OPTION_DEF; def->key != NULL; ++def, ++dv1)
+		{
+			dv1->key = def->key;
+			dv1->desc = def->desc;
+			dv1->info = def->info;
+			for (int i=0; i<RETRO_NUM_CORE_OPTION_VALUES_MAX; ++i)
+				dv1->values[i] = def->values[i];
+			dv1->default_value = def->default_value;
+		}
+		cb(RETRO_ENVIRONMENT_SET_CORE_OPTIONS, (void*)&CORE_OPTIONS_V1);
 	}
-	else
+	else // fallback to version 0
 	{
-		// retro_variable ?
-		// parse into values and send individually?
-		// TODO
+		struct retro_variable* dv0 = CORE_OPTIONS_V0;
+		for (def = CORE_OPTION_DEF; def->key != NULL; ++def, ++dv0)
+		{
+			dv0->key = def->key;
+			dv0->value = def->default_value;
+		}
+		cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)&CORE_OPTIONS_V0);
 	}
 
-	environ_cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, (void*)INPUT_DESCRIPTORS);
+	cb(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS, (void*)INPUT_DESCRIPTORS);
 }
 
 void core_config_init(void) // called from hatari after setting defaults

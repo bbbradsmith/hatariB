@@ -454,9 +454,22 @@ RETRO_API void retro_set_environment(retro_environment_t cb)
 {
 	environ_cb = cb;
 
+	// connect log interface
+	{
+		struct retro_log_callback log_cb;
+		if (cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log_cb))
+			retro_log = log_cb.log;
+		else
+			retro_log = null_log;
+		retro_log(RETRO_LOG_INFO,"retro_set_environment()\n");
+	}
+
+	core_input_set_environment(cb);
+	core_disk_set_environment(cb);
+	core_config_set_environment(cb);
+
 	// allow boot with no disks
 	cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &BOOL_TRUE);
-
 
 	// TODO
 	//GET_SYSTEM_DIRECTORY -> scan for TOS and cartridge lists
@@ -465,14 +478,8 @@ RETRO_API void retro_set_environment(retro_environment_t cb)
 	//RETRO_ENVIRONMENT_GET_VFS_INTERFACE
 	//RETRO_ENVIRONMENT_GET_MIDI_INTERFACE
 	// think about the posibility of seting this to midi over ip or connecting MIDI maze to my ST??
-
-	// SET_VARIABLES vs CORE_OPTIONS ?? what's the dif? -> options is v1, and options_v2 even better
 	//RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT
 	//RETRO_MEMDESC ???
-
-	core_input_set_environment(cb);
-	core_disk_set_environment(cb);
-	core_config_set_environment(cb);
 }
 
 RETRO_API void retro_set_video_refresh(retro_video_refresh_t cb)
@@ -503,16 +510,7 @@ RETRO_API void retro_set_input_state(retro_input_state_t cb)
 RETRO_API void retro_init(void)
 {
 	const char* argv[1] = {""};
-
-	// connect log interface
-	{
-		struct retro_log_callback log_cb;
-		if (environ_cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log_cb))
-			retro_log = log_cb.log;
-		else
-			retro_log = null_log;
-		retro_log(RETRO_LOG_INFO,"retro_init()\n");
-	}
+	retro_log(RETRO_LOG_INFO,"retro_init()\n");
 
 	// try to get the best pixel format we can
 	{
