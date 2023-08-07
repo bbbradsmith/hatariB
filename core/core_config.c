@@ -8,6 +8,15 @@ extern retro_log_printf_t retro_log;
 
 extern int core_video_aspect_mode;
 extern bool core_video_changed;
+extern bool core_option_hard_reset;
+
+extern int core_joy_port_map[4];
+extern bool core_mouse_port;
+extern bool core_host_keyboard;
+extern bool core_host_mouse;
+extern int core_autofire;
+extern int core_mouse_speed;
+extern int core_mouse_dead;
 
 static CNF_PARAMS defparam; // TODO copy this during setup
 static CNF_PARAMS newparam; // TODO copy default to this then modify during apply
@@ -95,7 +104,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		}, "1"
 	},
 	{
-		"fast_floppy", "*Fast Floppy", NULL,
+		"fast_floppy", "Fast Floppy", NULL,
 		"Artifically accelerate floppy disk access, reducing load times.",
 		NULL, "system",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
@@ -108,13 +117,13 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
 	},
 	{
-		"reset", "*Hard Reset", NULL,
+		"hard_reset", "Hard Reset", NULL,
 		"Core reset is a warm boot reset, but this option will force a full cold boot instead.",
 		NULL, "system",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
 	{
-		"machine", "*Machine Type", NULL,
+		"machine", "Machine Type", NULL,
 		"Atari computer type.",
 		NULL, "system",
 		{
@@ -128,7 +137,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		},"0"
 	},
 	{
-		"memory", "*ST Memory Size", NULL,
+		"memory", "ST Memory Size", NULL,
 		"Atari ST memory size.",
 		NULL, "system",
 		{
@@ -193,7 +202,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{NULL,NULL},}, "0"
 	},
 	{
-		"hardboot", "*Hard Disk Boot", NULL,
+		"hardboot", "Hard Disk Boot", NULL,
 		"Boot from hard disk.",
 		NULL, "system",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
@@ -206,28 +215,28 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	{ "joy3_port", "Joystick 3", NULL, "Retropad 3 assigned Atari port.", NULL, "input", {{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"2" },
 	{ "joy4_port", "Joystick 4", NULL, "Retropad 4 assigned Atari port.", NULL, "input", {{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"3" },
 	{
-		"mouse_port", "*Mouse", NULL,
+		"mouse_port", "Mouse", NULL,
 		"Mouse connected to Joy 0 port."
 		" This can be connected at the same time as a joystick, but their inputs will overlap.",
 		NULL, "input",
 		{{"0","None"},{"1","Joy 0"},{NULL,NULL},}, "1"
 	},
 	{
-		"host_mouse", "*Host Mouse Enabled", NULL,
+		"host_mouse", "Host Mouse Enabled", NULL,
 		"Allow input from your own mouse device."
 		" With this disabled you can still use the retropad mouse inputs.",
 		NULL, "input",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
 	},
 	{
-		"host_keyboard", "*Host Keyboard Enabled", NULL,
+		"host_keyboard", "Host Keyboard Enabled", NULL,
 		"Allow input from your own keyboard."
 		" With this disabled you can still use the onscreen keyboard or retropad mapped keys.",
 		NULL, "input",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
 	},
 	{
-		"autofire", "*Auto-fire Rate", NULL,
+		"autofire", "Auto-fire Rate", NULL,
 		"Frames per button press with auto-fire.",
 		NULL, "input",
 		{
@@ -254,7 +263,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		}, "6"
 	},
 	{
-		"mouse_speed", "*Mouse Stick Speed", NULL,
+		"mouse_speed", "Mouse Stick Speed", NULL,
 		"Speed of the mouse when controlled by the analog sticks.",
 		NULL, "input",
 		{
@@ -263,11 +272,16 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{"3","3"},
 			{"4","4"},
 			{"5","5"},
+			{"6","6"},
+			{"7","7"},
+			{"8","8"},
+			{"9","9"},
+			{"10","10"},
 			{NULL,NULL},
-		}, "3"
+		}, "4"
 	},
 	{
-		"mouse_deadzone", "*Mouse Stick Deadzone", NULL,
+		"mouse_deadzone", "Mouse Stick Deadzone", NULL,
 		"Dead zone for mouse analog stick control to prevent movement from controller randomness.",
 		NULL, "input",
 		{
@@ -347,7 +361,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	// Audio
 	//
 	{
-		"samplerate", "*Samplerate", NULL,
+		"samplerate", "Samplerate", NULL,
 		"Audio samplerate.",
 		NULL, "audio",
 		{
@@ -362,7 +376,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		},"48000"
 	},
 	{
-		"ymmix", "*YM Voices Mixing", NULL,
+		"ymmix", "YM Voices Mixing", NULL,
 		"Sound chip volume curves.",
 		NULL, "audio",
 		{
@@ -398,56 +412,56 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	// Advanced
 	//
 	{
-		"driveb","*Drive B Enable", NULL,
+		"driveb","Drive B Enable", NULL,
 		"Turn off to disconnect drive B.",
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
 	},
 	{
-		"drivesingle","*Single-Sided Drives", NULL,
+		"drivesingle","Single-Sided Drives", NULL,
 		"Single-Sided floppy drives instead of Double-Sided.",
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
 	{
-		"readonly_floppy","*Write Protect Floppy Disks", NULL,
+		"readonly_floppy","Write Protect Floppy Disks", NULL,
 		"Write-protect all floppy disks in emulation."
 		" The emulated operating system will know that all writes are failing.",
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
 	},
 	{
-		"blitter_st","*Blitter in ST Mode", NULL,
+		"blitter_st","Blitter in ST Mode", NULL,
 		"Normally the blitter requires a Mega ST.",
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
 	{
-		"patchtos","*Patch TOS for Fast Boot", NULL,
+		"patchtos","Patch TOS for Fast Boot", NULL,
 		"Boot slightly faster for some known TOS ROMs.",
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
 	{
-		"prefetch", "*Prefetch Emulation", NULL,
+		"prefetch", "Prefetch Emulation", NULL,
 		"Uses more CPU power, more accurate.",
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
 	{
-		"cycle_exact", "*Cycle-exact with cache emulation", NULL,
+		"cycle_exact", "Cycle-exact Cache Emulation", NULL,
 		"Uses more CPU power, more accurate.",
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
 	{
-		"mmu", "*MMU Emulation", NULL,
+		"mmu", "MMU Emulation", NULL,
 		"For TT or Falcon. Uses more CPU power.",
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
 	{
-		"wakestate", "*Video Timing", NULL,
+		"wakestate", "Video Timing", NULL,
 		"Specify startup timing for video output.",
 		NULL, "advanced",
 		{
@@ -458,12 +472,6 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{"4","Wakestate 4"},
 			{NULL,NULL}
 		}, "3",
-	},
-	{
-		"timerd","*Patch Timer-D", NULL,
-		"Who knows what this does?",
-		NULL, "advanced",
-		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
 	//
 	// Pads
@@ -680,9 +688,9 @@ void core_config_read_newparam()
 	newparam = defparam; // start with the defaults
 	CFG_STR("tos") {} // TODO
 	CFG_INT("monitor") newparam.Screen.nMonitorType = vi;
-	CFG_INT("fast_floppy") {} // TODO
+	CFG_INT("fast_floppy") newparam.DiskImage.FastFloppy = vi;
 	CFG_INT("save_floppy") {} // TODO
-	CFG_INT("reset") {} // TODO
+	CFG_INT("hard_reset") core_option_hard_reset = vi;
 	CFG_INT("machine") {
 		// automatic setup based on OPT_MACHINE in options.c
 		static const int CPULEVEL[] = { 0, 0, 0, 0, 3, 3 };
@@ -700,41 +708,38 @@ void core_config_read_newparam()
 			newparam.System.nDSPType = DSP_TYPE_EMU;
 		}
 	}
-	CFG_INT("memory") {} // TODO
+	CFG_INT("memory") newparam.Memory.STRamSize_KB = vi;
 	CFG_STR("cartridge") {} // TODO
 	CFG_STR("hardimg") {} // TODO
-	CFG_INT("hardboot") {} // TODO
+	CFG_INT("hardboot") newparam.HardDisk.bBootFromHardDisk = vi;
 	CFG_INT("hardtype") {} // TODO
-	CFG_INT("joy1_port") {} // TODO
-	CFG_INT("joy2_port") {} // TODO
-	CFG_INT("joy3_port") {} // TODO
-	CFG_INT("joy4_port") {} // TODO
-	CFG_INT("mouse_port") {} // TODO
-	CFG_INT("host_mouse") {} // TODO
-	CFG_INT("host_keyboard") {} // TODO
-	CFG_INT("autofire") {} // TODO
-	CFG_INT("mouse_speed") {} // TODO
-	CFG_INT("mouse_deadzone") {} // TODO
+	CFG_INT("joy1_port") core_joy_port_map[0] = vi;
+	CFG_INT("joy2_port") core_joy_port_map[1] = vi;
+	CFG_INT("joy3_port") core_joy_port_map[2] = vi;
+	CFG_INT("joy4_port") core_joy_port_map[3] = vi;
+	CFG_INT("mouse_port") core_mouse_port = vi;
+	CFG_INT("host_mouse") core_host_mouse = vi;
+	CFG_INT("host_keyboard") core_host_keyboard = vi;
+	CFG_INT("autofire") {} core_autofire = vi;
+	CFG_INT("mouse_speed") {} core_mouse_speed = vi;
+	CFG_INT("mouse_deadzone") {} core_mouse_dead = vi;
 	CFG_INT("lowres2x") newparam.Screen.bLowResolutionDouble = vi;
 	CFG_INT("borders") newparam.Screen.bAllowOverscan = vi;
 	CFG_INT("statusbar") { newparam.Screen.bShowStatusbar = (vi==1); newparam.Screen.bShowDriveLed = (vi==2); }
 	CFG_INT("aspect") { if (core_video_aspect_mode != vi) { core_video_aspect_mode = vi; core_video_changed = true; } }
-	CFG_INT("samplerate") {} // TODO
-	CFG_INT("ymmix") {} // TODO
+	CFG_INT("samplerate") newparam.Sound.nPlaybackFreq = vi;
+	CFG_INT("ymmix") newparam.Sound.YmVolumeMixing = vi;
 	CFG_INT("lpf") newparam.Sound.YmLpf = vi;
 	CFG_INT("hpf") newparam.Sound.YmHpf = vi;
-	CFG_INT("driveb") {} // TODO
-	CFG_INT("drivesingle") {} // TODO
-	CFG_INT("readonly_floppy") {} // TODO
-	CFG_INT("blitterst") {} // TODO
-	CFG_INT("readonly_floppy") {} // TODO
-	CFG_INT("blitter_st") {} // TODO
-	CFG_INT("patchtos") {} // TODO
-	CFG_INT("prefetch") {} // TODO
-	CFG_INT("cycle_exact") {} // TODO
-	CFG_INT("mmu") {} // TODO
-	CFG_INT("wakestate") {} // TODO
-	CFG_INT("timerd") {} // TODO
+	CFG_INT("driveb") newparam.DiskImage.EnableDriveB = vi;
+	CFG_INT("drivesingle") { newparam.DiskImage.DriveA_NumberOfHeads = newparam.DiskImage.DriveB_NumberOfHeads = vi; }
+	CFG_INT("readonly_floppy") newparam.DiskImage.nWriteProtection = vi;
+	CFG_INT("blitter_st") newparam.System.bBlitter = vi;
+	CFG_INT("patchtos") newparam.System.bFastBoot = vi;
+	CFG_INT("prefetch") newparam.System.bCompatibleCpu = vi;
+	CFG_INT("cycle_exact") newparam.System.bCycleExactCpu = vi;
+	CFG_INT("mmu") newparam.System.bMMU = vi;
+	CFG_INT("wakestate") newparam.System.VideoTimingMode = vi;
 	for (int i=0; i<4; ++i)
 	{
 		CFG_INT_PAD(i,"dpad") {} // TODO

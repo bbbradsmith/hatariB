@@ -35,11 +35,13 @@ static int32_t joy_stick[JOY_PORTS];
 static int32_t mod_state;
 static uint8_t drive_toggle;
 
-// TODO configurations
-const bool vmouse_enabled = true; // TODO option
-const bool pmouse_enabled = true; // TODO option
-const int joy_port_map[4] = {1,0,2,3}; // TODO port mapping options (0,1=ST,2-3=STE,4-5=parallel)
-const bool keyboard_enabled = true; // TODO can this also check for game focus mode?
+int core_joy_port_map[4] = {1,0,2,3};
+bool core_mouse_port = true;
+bool core_host_keyboard = true;
+bool core_host_mouse = true;
+int core_autofire = 6; // TODO autofire
+int core_mouse_speed = 4; // 1-10 speed factor
+int core_mouse_dead = 10; // percentage of stick deadzone
 
 extern void core_disk_drive_toggle(void);
 
@@ -183,7 +185,7 @@ void core_input_keyboard_event_callback(bool down, unsigned keycode, uint32_t ch
 	// assuming we don't need to mutex the event queue,
 	// because it doesn't make sense for retro_keyboard_callback to operate during retro_run,
 	// (run-ahead, netplay, etc. would need to depend on this?)
-	if (!keyboard_enabled) return;
+	if (!core_host_keyboard) return;
 	core_input_keyboard_event(down, keycode, character, key_modifiers);
 }
 
@@ -198,7 +200,7 @@ void core_input_keyboard_unstick() // release any keys that don't currently matc
 	for (int i=0; i<RETROK_LAST; ++i)
 	{
 		if (!retrok_down[i]) continue;
-		if (!keyboard_enabled || !input_state_cb(0,RETRO_DEVICE_KEYBOARD,0,i))
+		if (!core_host_keyboard || !input_state_cb(0,RETRO_DEVICE_KEYBOARD,0,i))
 		{
 			core_input_keyboard_event(false,i,0,mod); // release key
 			retro_log(RETRO_LOG_DEBUG,"core_input_keyboard_unstick() released: %d\n",i);
@@ -274,7 +276,7 @@ void core_input_update(void)
 	// have each joystick update its mapped controls
 	for (int i=0; i<4; ++i)
 	{
-		int j = joy_port_map[i];
+		int j = core_joy_port_map[i];
 		// TODO mapped inputs, these are just hardcoded for now (d-pad + B fire)
 		if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT )) joy_stick[j] |= JOY_STICK_L;
 		if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT)) joy_stick[j] |= JOY_STICK_R;
@@ -291,18 +293,19 @@ void core_input_update(void)
 		{
 			int ax = input_state_cb(i, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X);
 			int ay = input_state_cb(i, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y);
-			// TODO configurable deadzone, circular, reduction of magnitude in circular way
-			// for now just using a dead box
-			const int DEADZONE = 0x8000 / 12;
-			const float MOUSE_SPEED = 0.001;
-			if (ax < DEADZONE && ax > -DEADZONE) ax = 0;
-			else if (ax < 0) ax += DEADZONE;
-			else if (ax > 0) ax -= DEADZONE;
-			if (ay < DEADZONE && ay > -DEADZONE) ay = 0;
-			else if (ay < 0) ay += DEADZONE;
-			else if (ay > 0) ay -= DEADZONE;
-			vm_x += (int)(ax * MOUSE_SPEED);
-			vm_y += (int)(ay * MOUSE_SPEED);
+			int deadzone = (0x8000 * core_mouse_dead) / 100;
+			const float SPEED_FACTOR = 0.001; // TODO tune this to give a nice range 1-10
+			float speed = (float)core_mouse_speed * SPEED_FACTOR * ((float)0x8000 / (float)(0x8000 - deadzone));
+
+			if (ax < deadzone && ax > -deadzone) ax = 0;
+			else if (ax < 0) ax += deadzone;
+			else if (ax > 0) ax -= deadzone;
+			if (ay < deadzone && ay > -deadzone) ay = 0;
+			else if (ay < 0) ay += deadzone;
+			else if (ay > 0) ay -= deadzone;
+
+			vm_x += (int)(ax * speed);
+			vm_y += (int)(ay * speed);
 		}
 		// drive toggle
 		if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT)) dt = true;
@@ -312,9 +315,9 @@ void core_input_update(void)
 	if (dt && !drive_toggle) core_disk_drive_toggle();
 	drive_toggle = dt ? 1 : 0;
 
-	if (vmouse_enabled)
+	if (core_mouse_port) // mouse is connected to joy 0
 	{
-		if (pmouse_enabled) // physical mouse gives relative x/y
+		if (core_host_mouse) // libretro mouse gives relative x/y
 		{
 			bool pm_l = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT);
 			bool pm_r = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT);
