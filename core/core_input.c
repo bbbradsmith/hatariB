@@ -437,6 +437,7 @@ void core_input_update(void)
 						}
 						break;
 					case 2: // Auto-Fire
+						if (j < JOY_PORTS)
 						{
 							if (joy_autofire[i] == 0)
 							{

@@ -222,8 +222,8 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
 	},
 	{
-		"autofire", "Auto-fire Rate", NULL,
-		"Frames per button press with auto-fire.",
+		"autofire", "Auto-Fire Rate", NULL,
+		"Frames per button press with auto-fire. (Lower number is faster.)",
 		NULL, "input",
 		{
 			{"2","2"},
