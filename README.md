@@ -4,7 +4,7 @@ A [Libretro](https://www.libretro.com/) core integrating the [Hatari](https://ha
 
 This is intended as an alternative or replacement for the older [Libretro Hatari Core](https://github.com/libretro/hatari).
 
-This is a work in progress.
+This is a work in progress. Once it has had some initial testing, I would like to submit it to Libretro.
 
 Emulator: [Hatari 2.4.1](https://git.tuxfamily.org/hatari/hatari.git/tag/?id=v2.4.1) 2022-08-03
 
@@ -35,12 +35,12 @@ Remaining tasks before ready for public testing:
 * Add the rest of the keyboard keys to the button mapping config.
 * Add reset to button mappings.
 * Option to automatically cold-reset after crash with a timer.
+* Test unicode filenames. Does Libretro expect/convert to UTF-8?
 
 Optional tasks:
 * Investigate Libretro MIDI interface. I wonder if I could play MIDI Maze with my real ST?
 * See if I can set up a Mingw32 build.
 * Can savestate restore be more lightweight? What takes so much CPU time?
-
 
 ## History
 
