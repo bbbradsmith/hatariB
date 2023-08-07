@@ -358,17 +358,18 @@ void core_snapshot_write(const char* buf, int len)
 	//retro_log(RETRO_LOG_DEBUG,"core_snapshot_write(%p,%d) @ %X\n",buf,len,snapshot_pos);
 	if (snapshot_buffer)
 	{
+		int write_len = len;
 		if ((snapshot_pos + len) > snapshot_size)
 		{
 			if (!snapshot_error)
 			{
 				retro_log(RETRO_LOG_ERROR,"core_snapshot_write: snapshot_size estimate too small (%d), data loss.\n",snapshot_size);
 			}
-			len = snapshot_size - snapshot_pos;
-			if (len < 0) len = 0;
+			write_len = snapshot_size - snapshot_pos;
+			if (write_len < 0) write_len = 0;
 			snapshot_error = true;
 		}
-		memcpy(snapshot_buffer+snapshot_pos,buf,len);
+		memcpy(snapshot_buffer+snapshot_pos,buf,write_len);
 	}
 	snapshot_pos += len;
 	if (snapshot_pos > snapshot_max) snapshot_max = snapshot_pos;
