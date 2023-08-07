@@ -31,6 +31,9 @@ static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|m3u|zip";
 // See also: https://github.com/mamedev/mame/blob/master/src/lib/formats/ipf_dsk.cpp
 //static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|ipf|raw|ctr|m3u|zip";
 
+// serialization quirks
+const uint64_t QUIRKS = RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT;
+
 //
 // Libretro
 //
@@ -45,10 +48,10 @@ retro_input_poll_t input_poll_cb;
 retro_input_state_t input_state_cb;
 retro_log_printf_t retro_log = null_log;
 
-static bool BOOL_TRUE = true;
-static enum retro_pixel_format RPF_0RGB1555 = RETRO_PIXEL_FORMAT_0RGB1555;
-static enum retro_pixel_format RPF_XRGB8888 = RETRO_PIXEL_FORMAT_XRGB8888;
-static enum retro_pixel_format RPF_RGB565   = RETRO_PIXEL_FORMAT_RGB565;
+static const bool BOOL_TRUE = true;
+static const enum retro_pixel_format RPF_0RGB1555 = RETRO_PIXEL_FORMAT_0RGB1555;
+static const enum retro_pixel_format RPF_XRGB8888 = RETRO_PIXEL_FORMAT_XRGB8888;
+static const enum retro_pixel_format RPF_RGB565   = RETRO_PIXEL_FORMAT_RGB565;
 
 //
 // From Hatari
@@ -120,6 +123,17 @@ bool core_rate_changed = false;
 // (Savestate tends to set them once spuriously during its reset phase.)
 
 bool core_option_hard_reset = false;
+
+
+static void retro_log_init()
+{
+	struct retro_log_callback log_cb;
+	if (environ_cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log_cb))
+		retro_log = log_cb.log;
+	else
+		retro_log = null_log;
+	retro_log(RETRO_LOG_INFO,"retro_set_environment()\n");
+}
 
 void core_debug_msg(const char* msg)
 {
@@ -429,6 +443,20 @@ static bool core_serialize(bool write)
 	if (write) result = hatari_libretro_save_state();
 	else       result = hatari_libretro_restore_state();
 
+	if (write && snapshot_error)
+	{
+		retro_log(RETRO_LOG_ERROR,"core_serialize error: new size > original size? %d > %d\n",snapshot_max,snapshot_size);
+		struct retro_message_ext msg;
+		msg.msg = "Savestate size may have increased. Try ejecting floppy disks?";
+		msg.duration = 5 * 1000;
+		msg.priority = 3;
+		msg.level = RETRO_LOG_ERROR;
+		msg.target = RETRO_MESSAGE_TARGET_ALL;
+		msg.type = RETRO_MESSAGE_TYPE_NOTIFICATION;
+		msg.progress = -1;
+		environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg);		
+	}
+
 	//retro_log(RETRO_LOG_DEBUG,"core_serialized: %d of %d used\n",snapshot_max,snapshot_size);
 	if (result != 0)
 	{
@@ -457,32 +485,28 @@ RETRO_API void retro_set_environment(retro_environment_t cb)
 {
 	environ_cb = cb;
 
-	// connect log interface
-	{
-		struct retro_log_callback log_cb;
-		if (cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log_cb))
-			retro_log = log_cb.log;
-		else
-			retro_log = null_log;
-		retro_log(RETRO_LOG_INFO,"retro_set_environment()\n");
-	}
+	// if we initialize the log now, we can log during retro_set_environment,
+	// but the log will become invalid after retro_init, and become unusable?
+	//retro_log_init();
 
 	core_input_set_environment(cb);
 	core_disk_set_environment(cb);
 	core_config_set_environment(cb);
 
 	// allow boot with no disks
-	cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &BOOL_TRUE);
+	cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, (void*)&BOOL_TRUE);
 
+	// indicate serialization quirks
+	cb(RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS, (void*)&QUIRKS);
+	
 	// TODO
-	//GET_SYSTEM_DIRECTORY -> scan for TOS and cartridge lists
-	// - probably do this in disk_set_environment?
-	//SET_INPUT_DESCRIPTORS?
-	//RETRO_ENVIRONMENT_GET_VFS_INTERFACE
-	//RETRO_ENVIRONMENT_GET_MIDI_INTERFACE
-	// think about the posibility of seting this to midi over ip or connecting MIDI maze to my ST??
-	//RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT
-	//RETRO_MEMDESC ???
+	// probably part of core_disk:
+	//   RETRO_ENVIRONMENT_GET_VFS_INTERFACE
+	//   GET_SYSTEM_DIRECTORY -> scan for TOS and cartridge lists
+	// consider:
+	//   RETRO_ENVIRONMENT_GET_MIDI_INTERFACE
+	//   think about the posibility of seting this to midi over ip or connecting MIDI maze to my ST??
+	// RETRO_MEMDESC ?
 }
 
 RETRO_API void retro_set_video_refresh(retro_video_refresh_t cb)
@@ -513,15 +537,16 @@ RETRO_API void retro_set_input_state(retro_input_state_t cb)
 RETRO_API void retro_init(void)
 {
 	const char* argv[1] = {""};
+	retro_log_init();
 	retro_log(RETRO_LOG_INFO,"retro_init()\n");
 
 	// try to get the best pixel format we can
 	{
 		const char* PIXEL_FORMAT_NAMES[3] = { "0RGB1555", "XRGB8888", "RGB565" };
 		core_pixel_format = 0;
-		if      (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &RPF_XRGB8888)) core_pixel_format = 1;
-		else if (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &RPF_RGB565  )) core_pixel_format = 2;
-		else if (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &RPF_0RGB1555)) core_pixel_format = 0;
+		if      (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, (void*)&RPF_XRGB8888)) core_pixel_format = 1;
+		else if (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, (void*)&RPF_RGB565  )) core_pixel_format = 2;
+		else if (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, (void*)&RPF_0RGB1555)) core_pixel_format = 0;
 		// TODO allow configuration to override choice here?
 		retro_log(RETRO_LOG_INFO,"Pixel format: %s\n",PIXEL_FORMAT_NAMES[core_pixel_format]);
 	}
@@ -736,7 +761,6 @@ RETRO_API bool retro_load_game(const struct retro_game_info *game)
 	if (game)
 	{
 		core_disk_load_game(game);
-		// TODO do we need to reset? when does config change
 	}
 
 	// finish initialization of the CPU
@@ -750,7 +774,6 @@ RETRO_API bool retro_load_game(const struct retro_game_info *game)
 	snapshot_size = snapshot_max + SNAPSHOT_OVERHEAD;
 	if (snapshot_size % SNAPSHOT_ROUND)
 		snapshot_size += (SNAPSHOT_ROUND - (snapshot_size % SNAPSHOT_ROUND));
-	// TODO will inserted floppies change the savestate size?
 
 	return true;
 }
