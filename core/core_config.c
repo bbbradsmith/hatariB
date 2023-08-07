@@ -93,7 +93,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	},
 	{
 		"monitor", "Monitor", NULL,
-		"Causes restart. Monitor type. Colour, monochrome, etc.",
+		"Causes restart!! Monitor type. Colour, monochrome, etc.",
 		NULL, "system",
 		{
 			{"0","Monochrome High-Resolution"},
@@ -118,13 +118,13 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	},
 	{
 		"hard_reset", "Hard Reset", NULL,
-		"Core reset is a warm boot reset, but this option will force a full cold boot instead.",
+		"Core reset is a warm boot (reset button), but this option will force a full cold boot instead (power off, on).",
 		NULL, "system",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
 	{
 		"machine", "Machine Type", NULL,
-		"Atari computer type.",
+		"Causes restart!! Atari computer type.",
 		NULL, "system",
 		{
 			{"0","ST"},
@@ -432,7 +432,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	},
 	{
 		"blitter_st","Blitter in ST Mode", NULL,
-		"Normally the blitter requires a Mega ST.",
+		"Causes restart!! Normally the blitter requires a Mega ST.",
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
@@ -444,19 +444,19 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	},
 	{
 		"prefetch", "Prefetch Emulation", NULL,
-		"Uses more CPU power, more accurate.",
+		"Causes restart!! Uses more CPU power, more accurate.",
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
 	{
 		"cycle_exact", "Cycle-exact Cache Emulation", NULL,
-		"Uses more CPU power, more accurate.",
+		"Causes restart!! Uses more CPU power, more accurate.",
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
 	{
 		"mmu", "MMU Emulation", NULL,
-		"For TT or Falcon. Uses more CPU power.",
+		"Causes restart!! For TT or Falcon. Uses more CPU power.",
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
