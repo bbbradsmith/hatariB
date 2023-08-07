@@ -428,12 +428,6 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		"Write-protect all floppy disks in emulation."
 		" The emulated operating system will know that all writes are failing.",
 		NULL, "advanced",
-		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
-	},
-	{
-		"blitter_st","Blitter in ST Mode", NULL,
-		"Causes restart!! Normally the blitter requires a Mega ST.",
-		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
 	{
@@ -443,20 +437,8 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
 	},
 	{
-		"prefetch", "Prefetch Emulation", NULL,
-		"Causes restart!! Uses more CPU power, more accurate.",
-		NULL, "advanced",
-		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
-	},
-	{
-		"cycle_exact", "Cycle-exact Cache Emulation", NULL,
-		"Causes restart!! Uses more CPU power, more accurate.",
-		NULL, "advanced",
-		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
-	},
-	{
-		"mmu", "MMU Emulation", NULL,
-		"Causes restart!! For TT or Falcon. Uses more CPU power.",
+		"blitter_st","Blitter in ST Mode", NULL,
+		"Causes restart!! Normally the blitter requires a Mega ST.",
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
@@ -472,6 +454,24 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{"4","Wakestate 4"},
 			{NULL,NULL}
 		}, "3",
+	},
+	{
+		"prefetch", "CPU Prefetch Emulation", NULL,
+		"Causes restart!! Uses more CPU power, more accurate.",
+		NULL, "advanced",
+		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
+	},
+	{
+		"cycle_exact", "Cycle-exact Cache Emulation", NULL,
+		"Causes restart!! Uses more CPU power, more accurate.",
+		NULL, "advanced",
+		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
+	},
+	{
+		"mmu", "MMU Emulation", NULL,
+		"Causes restart!! For TT or Falcon. Uses more CPU power.",
+		NULL, "advanced",
+		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
 	//
 	// Pads
@@ -742,12 +742,12 @@ void core_config_read_newparam()
 	CFG_INT("driveb") newparam.DiskImage.EnableDriveB = vi;
 	CFG_INT("drivesingle") { newparam.DiskImage.DriveA_NumberOfHeads = newparam.DiskImage.DriveB_NumberOfHeads = vi; }
 	CFG_INT("readonly_floppy") newparam.DiskImage.nWriteProtection = vi;
-	CFG_INT("blitter_st") newparam.System.bBlitter = vi;
 	CFG_INT("patchtos") newparam.System.bFastBoot = vi;
+	CFG_INT("blitter_st") newparam.System.bBlitter = vi;
+	CFG_INT("wakestate") newparam.System.VideoTimingMode = vi;
 	CFG_INT("prefetch") newparam.System.bCompatibleCpu = vi;
 	CFG_INT("cycle_exact") newparam.System.bCycleExactCpu = vi;
 	CFG_INT("mmu") newparam.System.bMMU = vi;
-	CFG_INT("wakestate") newparam.System.VideoTimingMode = vi;
 	for (int i=0; i<4; ++i)
 	{
 		CFG_INT_PAD(i,"dpad") {} // TODO

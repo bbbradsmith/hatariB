@@ -60,6 +60,7 @@ const int BUILTIN_TOS_LEN[] = {
 	etos192uk_len,
 	etos192us_len,
 };
+extern uint8_t* core_rom_mem_pointer;
 #endif
 
 #define TEST_PRG_BASEPAGE 0x1000
@@ -1210,6 +1211,7 @@ int TOS_InitImage(void)
 
 	/* Copy loaded image into memory */
 #ifdef __LIBRETRO__
+	core_rom_mem_pointer = RomMem; // tell core where the ROM resides
 	if (pTosFile) {
 #endif
 	if (bRamTosImage)

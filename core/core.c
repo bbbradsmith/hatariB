@@ -99,6 +99,7 @@ int core_pixel_format = 0;
 bool core_init_return = false;
 uint8_t core_runflags = 0;
 int core_trace_countdown = 0;
+uint8_t* core_rom_mem_pointer = NULL;
 
 // internal
 void* core_video_buffer = NULL;
@@ -124,7 +125,6 @@ bool core_rate_changed = false;
 
 bool core_option_hard_reset = false;
 
-
 static void retro_log_init()
 {
 	struct retro_log_callback log_cb;
@@ -133,6 +133,27 @@ static void retro_log_init()
 	else
 		retro_log = null_log;
 	retro_log(RETRO_LOG_INFO,"retro_set_environment()\n");
+}
+
+static void retro_memory_maps()
+{
+	// updates memory map information
+	static struct retro_memory_descriptor memory_map[] = {
+		{
+			RETRO_MEMDESC_BIGENDIAN | RETRO_MEMDESC_SYSTEM_RAM | RETRO_MEMDESC_VIDEO_RAM | RETRO_MEMDESC_ALIGN_2 | RETRO_MEMDESC_MINSIZE_2,
+			NULL, 0, 0, 0, 0, 0, "Main RAM"
+		},
+		{
+			RETRO_MEMDESC_BIGENDIAN | RETRO_MEMDESC_CONST | RETRO_MEMDESC_ALIGN_2 | RETRO_MEMDESC_MINSIZE_2,
+			NULL, 0, 0xE00000, 0, 0, 0, "High ROM"
+		},
+	};
+	static struct retro_memory_map memory_maps = { memory_map, sizeof(memory_map)/sizeof(memory_map[0]) };
+	memory_map[0].ptr = STRam;
+	memory_map[0].len = STRamEnd;
+	memory_map[1].ptr = core_rom_mem_pointer + 0xE00000;
+	memory_map[1].len =                        0x200000;
+	environ_cb(RETRO_ENVIRONMENT_SET_MEMORY_MAPS, (void*)&memory_maps);
 }
 
 void core_debug_msg(const char* msg)
@@ -498,7 +519,7 @@ RETRO_API void retro_set_environment(retro_environment_t cb)
 
 	// indicate serialization quirks
 	cb(RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS, (void*)&QUIRKS);
-	
+
 	// TODO
 	// probably part of core_disk:
 	//   RETRO_ENVIRONMENT_GET_VFS_INTERFACE
@@ -506,7 +527,6 @@ RETRO_API void retro_set_environment(retro_environment_t cb)
 	// consider:
 	//   RETRO_ENVIRONMENT_GET_MIDI_INTERFACE
 	//   think about the posibility of seting this to midi over ip or connecting MIDI maze to my ST??
-	// RETRO_MEMDESC ?
 }
 
 RETRO_API void retro_set_video_refresh(retro_video_refresh_t cb)
@@ -658,6 +678,8 @@ RETRO_API void retro_run(void)
 		core_init_return = true;
 		m68k_go_frame();
 		core_init_return = false;
+		// STRam/STRam may hae been updated, send the new memory map
+		retro_memory_maps();
 	}
 
 	// force hatari to process the input queue before each frame starts
@@ -775,6 +797,8 @@ RETRO_API bool retro_load_game(const struct retro_game_info *game)
 	if (snapshot_size % SNAPSHOT_ROUND)
 		snapshot_size += (SNAPSHOT_ROUND - (snapshot_size % SNAPSHOT_ROUND));
 
+	retro_memory_maps();
+
 	return true;
 }
 
@@ -800,12 +824,14 @@ RETRO_API unsigned retro_get_region(void)
 
 RETRO_API void* retro_get_memory_data(unsigned id)
 {
-	if (id == RETRO_MEMORY_SYSTEM_RAM) return STRam;
+	if (id == RETRO_MEMORY_SYSTEM_RAM || id == RETRO_MEMORY_VIDEO_RAM) return STRam;
+	// is there no way to offer the ROM memory here?
 	return NULL;
 }
 
 RETRO_API size_t retro_get_memory_size(unsigned id)
 {
-	if (id == RETRO_MEMORY_SYSTEM_RAM) return STRamEnd;
+	if (id == RETRO_MEMORY_SYSTEM_RAM || id == RETRO_MEMORY_VIDEO_RAM) return STRamEnd;
+	// is there no way to offer the ROM memory here?
 	return 0;
 }
