@@ -2,15 +2,13 @@
 
 #include "../libretro/libretro.h"
 #include "core.h"
+#include "core_internal.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
 #define MAX_DISKS 32
 #define MAX_FILENAME 256
-
-extern retro_environment_t environ_cb;
-extern retro_log_printf_t retro_log;
 
 // TODO the disk interface has only one drive??
 // maybe use SELECT to swap drives

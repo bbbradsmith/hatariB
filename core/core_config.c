@@ -1,22 +1,8 @@
 #include "../libretro/libretro.h"
 #include "core.h"
+#include "core_internal.h"
 #include "../hatari/src/includes/main.h"
 #include "../hatari/src/includes/configuration.h"
-
-extern retro_environment_t environ_cb;
-extern retro_log_printf_t retro_log;
-
-extern int core_video_aspect_mode;
-extern bool core_video_changed;
-extern bool core_option_hard_reset;
-
-extern int core_joy_port_map[4];
-extern bool core_mouse_port;
-extern bool core_host_keyboard;
-extern bool core_host_mouse;
-extern int core_autofire;
-extern int core_mouse_speed;
-extern int core_mouse_dead;
 
 static CNF_PARAMS defparam; // TODO copy this during setup
 static CNF_PARAMS newparam; // TODO copy default to this then modify during apply
@@ -210,10 +196,10 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	//
 	// Input
 	//
-	{ "joy1_port", "Joystick 1", NULL, "Retropad 1 assigned Atari port.", NULL, "input", {{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"1" },
-	{ "joy2_port", "Joystick 2", NULL, "Retropad 2 assigned Atari port.", NULL, "input", {{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"0" },
-	{ "joy3_port", "Joystick 3", NULL, "Retropad 3 assigned Atari port.", NULL, "input", {{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"2" },
-	{ "joy4_port", "Joystick 4", NULL, "Retropad 4 assigned Atari port.", NULL, "input", {{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"3" },
+	{ "joy1_port", "Joystick 1", NULL, "Retropad 1 assigned Atari port.", NULL, "input", {{"6","None"},{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"1" },
+	{ "joy2_port", "Joystick 2", NULL, "Retropad 2 assigned Atari port.", NULL, "input", {{"6","None"},{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"0" },
+	{ "joy3_port", "Joystick 3", NULL, "Retropad 3 assigned Atari port.", NULL, "input", {{"6","None"},{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"2" },
+	{ "joy4_port", "Joystick 4", NULL, "Retropad 4 assigned Atari port.", NULL, "input", {{"6","None"},{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"3" },
 	{
 		"mouse_port", "Mouse", NULL,
 		"Mouse connected to Joy 0 port."
@@ -261,6 +247,26 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{"20","20"},
 			{NULL,NULL},
 		}, "6"
+	},
+	{
+		"stick_threshold", "Analog Stick Threshold", NULL,
+		"How far to tilt in a direction to activate the joystick direction,"
+		" if mapped to an analog stick.",
+		NULL, "input",
+		{
+			{"5", "5%" },
+			{"10","10%"},
+			{"20","20%"},
+			{"30","30%"},
+			{"40","40%"},
+			{"50","50%"},
+			{"60","60%"},
+			{"70","70%"},
+			{"80","80%"},
+			{"90","90%"},
+			{"95","95%"},
+			{NULL,NULL},
+		}, "30"
 	},
 	{
 		"mouse_speed", "Mouse Stick Speed", NULL,
@@ -476,6 +482,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	//
 	// Pads
 	//
+	// the option indices must match their implementation in core_input.c
 #define OPTION_PAD_STICK() \
 	{ \
 		{"0","None"}, \
@@ -500,22 +507,24 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{"11","STE Button C"}, \
 		{"12","STE Button Option"}, \
 		{"13","STE Button Pause"}, \
-		{"14","Key Space"}, \
-		{"15","Key Enter"}, \
-		{"16","Key Up"}, \
-		{"17","Key Down"}, \
-		{"18","Key Left"}, \
-		{"19","Key Right"}, \
-		{"20","Key 1"}, \
-		{"21","Key 2"}, \
-		{"22","Key 3"}, \
-		{"23","Key 4"}, \
-		{"24","Key 5"}, \
-		{"25","Key 6"}, \
-		{"26","Key 7"}, \
-		{"27","Key 8"}, \
-		{"28","Key 9"}, \
-		{"29","Key 0"}, \
+		{"14","Soft Reset"}, \
+		{"15","Hard Reset"}, \
+		{"16","Key Space"}, \
+		{"17","Key Return"}, \
+		{"18","Key Up"}, \
+		{"19","Key Down"}, \
+		{"20","Key Left"}, \
+		{"21","Key Right"}, \
+		{"22","Key 1"}, \
+		{"23","Key 2"}, \
+		{"24","Key 3"}, \
+		{"25","Key 4"}, \
+		{"26","Key 5"}, \
+		{"27","Key 6"}, \
+		{"28","Key 7"}, \
+		{"29","Key 8"}, \
+		{"30","Key 9"}, \
+		{"31","Key 0"}, \
 		/* TODO lots more */ \
 		{NULL,NULL} \
 	}
@@ -560,9 +569,9 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	{ "pad" padnum "_r2", "Pad " padnum " R2", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_BUTTON(), "0" }, /* none */ \
 	{ "pad" padnum "_l3", "Pad " padnum " L3", NULL, NULL, NULL, "pad" padnum, \
-		OPTION_PAD_BUTTON(), "14" }, /* key space */ \
+		OPTION_PAD_BUTTON(), "16" }, /* key space */ \
 	{ "pad" padnum "_r3", "Pad " padnum " R3", NULL, NULL, NULL, "pad" padnum, \
-		OPTION_PAD_BUTTON(), "15" }, /* key enter */ \
+		OPTION_PAD_BUTTON(), "17" }, /* key return */ \
 	{ "pad" padnum "_lstick", "Pad " padnum " Left Analog Stick", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_STICK(), "1" }, /* joystick */ \
 	{ "pad" padnum "_rstick", "Pad " padnum " Right Analog Stick", NULL, NULL, NULL, "pad" padnum, \
@@ -623,7 +632,7 @@ static const struct retro_input_descriptor INPUT_DESCRIPTORS[] = {
 	{ p, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2, "L2" }, \
 	{ p, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2, "R2" }, \
 	{ p, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L3, "L3 / Key Space" }, \
-	{ p, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3, "R3 / Key Enter" }, \
+	{ p, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R3, "R3 / Key Return" }, \
 	{ p, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP, "D-Pad Up / Joystick" }, \
 	{ p, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN, "D-Pad Down / Joystick" }, \
 	{ p, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT, "D-Pad Left / Joystick" }, \
@@ -680,7 +689,7 @@ bool cfg_read_str(const char* key, const char** s)
 bool cfg_read_int_pad(int pad, const char* key, int* v)
 {
 	static char padkey[64];
-	snprintf(padkey,sizeof(padkey),"pad%d_%s",pad,key);
+	snprintf(padkey,sizeof(padkey),"pad%d_%s",pad+1,key);
 	padkey[sizeof(padkey)-1] = 0;
 	return cfg_read_int(padkey,v);
 }
@@ -729,6 +738,7 @@ void core_config_read_newparam()
 	CFG_INT("host_mouse") core_host_mouse = vi;
 	CFG_INT("host_keyboard") core_host_keyboard = vi;
 	CFG_INT("autofire") {} core_autofire = vi;
+	CFG_INT("stick_threshold") {} core_stick_threshold = vi;
 	CFG_INT("mouse_speed") {} core_mouse_speed = vi;
 	CFG_INT("mouse_deadzone") {} core_mouse_dead = vi;
 	CFG_INT("lowres2x") newparam.Screen.bLowResolutionDouble = vi;
@@ -750,26 +760,26 @@ void core_config_read_newparam()
 	CFG_INT("mmu") newparam.System.bMMU = vi;
 	for (int i=0; i<4; ++i)
 	{
-		CFG_INT_PAD(i,"dpad") {} // TODO
-		CFG_INT_PAD(i,"a") {} // TODO
-		CFG_INT_PAD(i,"b") {} // TODO
-		CFG_INT_PAD(i,"x") {} // TODO
-		CFG_INT_PAD(i,"y") {} // TODO
-		CFG_INT_PAD(i,"select") {} // TODO
-		CFG_INT_PAD(i,"start") {} // TODO
-		CFG_INT_PAD(i,"l1") {} // TODO
-		CFG_INT_PAD(i,"r1") {} // TODO
-		CFG_INT_PAD(i,"l2") {} // TODO
-		CFG_INT_PAD(i,"r2") {} // TODO
-		CFG_INT_PAD(i,"l3") {} // TODO
-		CFG_INT_PAD(i,"r3") {} // TODO
-		CFG_INT_PAD(i,"lstick") {} // TODO
-		CFG_INT_PAD(i,"rstick") {} // TODO
-		CFG_INT_PAD(i,"oskey_confirm") {} // TODO
-		CFG_INT_PAD(i,"oskey_cancel") {} // TODO
-		CFG_INT_PAD(i,"oskey_shift") {} // TODO
-		CFG_INT_PAD(i,"oskey_pos") {} // TODO
-		CFG_INT_PAD(i,"oskey_move") {} // TODO
+		CFG_INT_PAD(i,"dpad"  ) core_stick_map[ i][CORE_INPUT_STICK_DPAD   ] = vi;
+		CFG_INT_PAD(i,"a"     ) core_button_map[i][CORE_INPUT_BUTTON_A     ] = vi;
+		CFG_INT_PAD(i,"b"     ) core_button_map[i][CORE_INPUT_BUTTON_B     ] = vi;
+		CFG_INT_PAD(i,"x"     ) core_button_map[i][CORE_INPUT_BUTTON_X     ] = vi;
+		CFG_INT_PAD(i,"y"     ) core_button_map[i][CORE_INPUT_BUTTON_Y     ] = vi;
+		CFG_INT_PAD(i,"select") core_button_map[i][CORE_INPUT_BUTTON_SELECT] = vi;
+		CFG_INT_PAD(i,"start" ) core_button_map[i][CORE_INPUT_BUTTON_START ] = vi;
+		CFG_INT_PAD(i,"l1"    ) core_button_map[i][CORE_INPUT_BUTTON_L1    ] = vi;
+		CFG_INT_PAD(i,"r1"    ) core_button_map[i][CORE_INPUT_BUTTON_R1    ] = vi;
+		CFG_INT_PAD(i,"l2"    ) core_button_map[i][CORE_INPUT_BUTTON_L2    ] = vi;
+		CFG_INT_PAD(i,"r2"    ) core_button_map[i][CORE_INPUT_BUTTON_R2    ] = vi;
+		CFG_INT_PAD(i,"l3"    ) core_button_map[i][CORE_INPUT_BUTTON_L3    ] = vi;
+		CFG_INT_PAD(i,"r3"    ) core_button_map[i][CORE_INPUT_BUTTON_R3    ] = vi;
+		CFG_INT_PAD(i,"lstick") core_stick_map[ i][CORE_INPUT_STICK_L      ] = vi;
+		CFG_INT_PAD(i,"rstick") core_stick_map[ i][CORE_INPUT_STICK_R      ] = vi;
+		CFG_INT_PAD(i,"oskey_confirm") core_oskey_map[i][CORE_INPUT_OSKEY_CONFIRM] = vi; // buttons
+		CFG_INT_PAD(i,"oskey_cancel" ) core_oskey_map[i][CORE_INPUT_OSKEY_CANCEL ] = vi;
+		CFG_INT_PAD(i,"oskey_shift"  ) core_oskey_map[i][CORE_INPUT_OSKEY_SHIFT  ] = vi;
+		CFG_INT_PAD(i,"oskey_pos"    ) core_oskey_map[i][CORE_INPUT_OSKEY_POS    ] = vi;
+		CFG_INT_PAD(i,"oskey_move"   ) core_oskey_map[i][CORE_INPUT_OSKEY_MOVE   ] = vi; // stick
 	}
 }
 

@@ -1,5 +1,6 @@
 #include "../libretro/libretro.h"
 #include "core.h"
+#include "core_internal.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -66,29 +67,6 @@ extern void UAE_Set_Quit_Reset ( bool hard );
 extern void hatari_libretro_flush_audio(void);
 extern int hatari_libretro_save_state(void);
 extern int hatari_libretro_restore_state(void);
-
-//
-// Core implementation in other files
-//
-
-// core_input.c
-extern void core_input_set_environment(retro_environment_t cb);
-extern void core_input_init(void);
-extern void core_input_update(void); // call in retro_run, polls Libretro inputs and translates to events for hatari
-extern void core_input_post(void); // call to force hatari to process the input queue
-extern void core_input_finish(void); // call at end of retro_run
-extern void core_input_serialize(void);
-
-// core_disk.c
-extern void core_disk_set_environment(retro_environment_t cb);
-extern void core_disk_init(void);
-extern void core_disk_load_game(const struct retro_game_info *game);
-extern void core_disk_unload_game(void);
-extern void core_disk_serialize(void);
-
-// core_config.c
-extern void core_config_set_environment(retro_environment_t cb); // call after core_disk_set_environment (which scans system folder for TOS etc)
-extern void core_config_apply(void);
 
 //
 // Available to Hatari
