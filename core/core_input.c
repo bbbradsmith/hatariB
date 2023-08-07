@@ -28,7 +28,7 @@ static uint8_t retrok_down[RETROK_LAST] = {0}; // for repeat tracking
 static int32_t vmouse_x, vmouse_y; // virtual mouse state
 static uint8_t vmouse_l, vmouse_r;
 static int32_t mod_state;
-static uint8_t drive_toggle; // TODO make a bitfield of osk, drive toggle, resets?
+static uint8_t drive_toggle; // TODO make a bitfield of osk, drive toggle, resets? mouse l/r?
 static uint8_t joy_autofire[4];
 
 // input state that is temporary
@@ -46,7 +46,7 @@ int core_oskey_map[4][5];
 bool core_mouse_port = true;
 bool core_host_keyboard = true;
 bool core_host_mouse = true;
-int core_autofire = 6; // TODO autofire
+int core_autofire = 6;
 int core_stick_threshold = 30; // percentage of stick to digital joystick direction threshold
 int core_mouse_speed = 4; // 1-10 speed factor
 int core_mouse_dead = 10; // percentage of stick deadzone
@@ -217,7 +217,6 @@ void core_input_keyboard_unstick() // release any keys that don't currently matc
 
 void core_input_keyboard_joy(int keycode)
 {
-	// TODO maybe want to use special keycodes to dictate numlock since really we want a way to select the ST numpad and retroarch doesn't offer this directly
 	retrok_joy[keycode] = 1;
 	if (!retrok_down[keycode]) core_input_keyboard_event(true, keycode, 0, (mod_state & KMOD_NUM) ? RETROKMOD_NUMLOCK : 0);
 }
@@ -344,7 +343,7 @@ void core_input_update(void)
 			case 2: // Mouse
 				{
 					int deadzone = (0x8000 * core_mouse_dead) / 100;
-					const float SPEED_FACTOR = 0.0001; // TODO tune this to give a nice range 1-10
+					const float SPEED_FACTOR = 0.0001;
 					float speed = (float)core_mouse_speed * SPEED_FACTOR * ((float)0x8000 / (float)(0x8000 - deadzone));
 					if (k == CORE_INPUT_STICK_DPAD) speed *= 0.4; // D-Pad needs a slower speed
 

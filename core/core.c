@@ -545,7 +545,6 @@ RETRO_API void retro_init(void)
 		if      (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, (void*)&RPF_XRGB8888)) core_pixel_format = 1;
 		else if (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, (void*)&RPF_RGB565  )) core_pixel_format = 2;
 		else if (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, (void*)&RPF_0RGB1555)) core_pixel_format = 0;
-		// TODO allow configuration to override choice here?
 		retro_log(RETRO_LOG_INFO,"Pixel format: %s\n",PIXEL_FORMAT_NAMES[core_pixel_format]);
 	}
 
@@ -558,7 +557,7 @@ RETRO_API void retro_init(void)
 	//Log_SetTraceOptions("video_vbl,video_sync");
 
 	core_runflags = 0;
-	main_init(1,(char**)argv); // TODO how are paths affected?
+	main_init(1,(char**)argv);
 
 	// this will be fetched and applied via retro_get_system_av_info before the first frame begins
 	core_video_fps = core_video_fps_new;

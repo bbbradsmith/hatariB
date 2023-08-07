@@ -21,6 +21,8 @@ extern void core_disk_unload_game(void);
 extern void core_disk_serialize(void);
 extern void core_disk_drive_toggle(void);
 
+extern bool core_disk_enable_b;
+
 // core_config.c
 extern void core_config_set_environment(retro_environment_t cb); // call after core_disk_set_environment (which scans system folder for TOS etc)
 extern void core_config_apply(void);

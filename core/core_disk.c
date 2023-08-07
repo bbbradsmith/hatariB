@@ -10,11 +10,6 @@
 #define MAX_DISKS 32
 #define MAX_FILENAME 256
 
-// TODO the disk interface has only one drive??
-// maybe use SELECT to swap drives
-// and then change the reported names and indices
-// put [A] in front of drive A, [B] in fron of drive B
-
 struct disk_image
 {
 	uint8_t* data;
@@ -377,11 +372,21 @@ void core_disk_load_game(const struct retro_game_info *game)
 	disks_clear();
 	if (game == NULL) return;
 	add_image_index(); // add one disk
-	replace_image_index(0,game); // load it there
+	replace_image_index(0,game); // load it there (may load multiple if M3U/Zip)
+	if (initial_image >= image_count) initial_image = 0;
+	set_index_image(initial_image);
 	set_eject_state(false); // insert it
 
-	// TODO initial image
-	// if it's < image count, apply it here before inserting
+	// insert second disk if available
+	if (core_disk_enable_b && image_count > 1)
+	{
+		int second_image = initial_image + 1;
+		if (second_image >= image_count) second_image = 0;
+		drive = 1;
+		set_index_image(second_image);
+		set_eject_state(false);
+		drive = 0;
+	}
 }
 
 void core_disk_unload_game(void)
@@ -397,6 +402,10 @@ void core_disk_unload_game(void)
 void core_disk_serialize(void)
 {
 	// TODO is there anything to serialize? do we want to track disk changes?
+	// I think after a load, we want to update the inserted state to match hatari's,
+	// and match two two indices to our image filenames (set to invalid index if no match).
+	// If there was no match and we eject later a modified disk, there will be an error notification that it could not save?
+	// ...or maybe we can just save using the hatari filename anyway, despite not having it in the disks list. That'd probably be fine.
 }
 
 void core_disk_drive_toggle(void)
