@@ -32,5 +32,5 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: hatarib-${{ env.BUILD_TAG }}.zip
+          name: hatarib-${{ env.BUILD_TAG }}
           path: artifact/

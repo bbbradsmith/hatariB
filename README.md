@@ -13,7 +13,7 @@ Development notes: [DEVELOP.md](DEVELOP.md)
 ## Notes
 
 * Currently only builds for Windows 64-bit. If you'd like to help set up other platforms, please create an issue.
-* The default TOS ROM is `system/tos.img` but EmuTOS is be provided if this file is unavailable.
+* The default TOS ROM is `system/tos.img` but EmuTOS is provided if this file is unavailable.
 * Additional TOS ROMs, as well as Cartridge and Hard Disk images can be supplied in `system/hatarib/`, up to a limit of 100 files.
 * Load New Disk may not play well with savestates.
   * Inserting a new disk may increase the needed savestate size and cause a failure to save, but you can eject the disk and try again.
@@ -63,5 +63,5 @@ This Libretro core was begun by [Brad Smith](https://github.com/bbbradsmith).
 Authors of incorporated works:
 * [Hatari](hatari/doc/authors.txt)
 * [EmuTOS](https://raw.githubusercontent.com/emutos/emutos/master/doc/authors.txt)
-* [libretro/libretro.h](https://github.com/libretro/libretro-common/blob/7edbfaf17baffa1b8a00231762aa7ead809711b5/include/libretro.h) 24a9210 2023-07-16
-* [libretro/libretro_sdl_keymap.h](https://github.com/libretro/RetroArch/blob/b4143882245edd737c7e7c522b25e32f8d1f64ad/input/input_keymaps.c#L607) 9ca5c5e 2023-07-08
+* [libretro.h](https://github.com/libretro/libretro-common/blob/7edbfaf17baffa1b8a00231762aa7ead809711b5/include/libretro.h)
+* [libretro_sdl_keymap.h](https://github.com/libretro/RetroArch/blob/b4143882245edd737c7e7c522b25e32f8d1f64ad/input/input_keymaps.c#L607)

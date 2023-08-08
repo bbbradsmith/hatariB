@@ -408,6 +408,8 @@ void core_disk_serialize(void)
 	// and match two two indices to our image filenames (set to invalid index if no match).
 	// If there was no match and we eject later a modified disk, there will be an error notification that it could not save?
 	// ...or maybe we can just save using the hatari filename anyway, despite not having it in the disks list. That'd probably be fine.
+	// check if any weird insertions are done after a savestate load?
+	// i think padding floppy in savestate to 2mb would cover almost all STX files
 }
 
 void core_disk_drive_toggle(void)
