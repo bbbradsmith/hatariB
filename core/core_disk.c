@@ -18,6 +18,8 @@ struct disk_image
 	bool modified;
 };
 
+bool core_disk_enable_b = true;
+
 static bool first_init = true;
 static struct disk_image disks[MAX_DISKS];
 static int drive;
@@ -374,7 +376,7 @@ void core_disk_load_game(const struct retro_game_info *game)
 	add_image_index(); // add one disk
 	replace_image_index(0,game); // load it there (may load multiple if M3U/Zip)
 	if (initial_image >= image_count) initial_image = 0;
-	set_index_image(initial_image);
+	set_image_index(initial_image);
 	set_eject_state(false); // insert it
 
 	// insert second disk if available
@@ -383,7 +385,7 @@ void core_disk_load_game(const struct retro_game_info *game)
 		int second_image = initial_image + 1;
 		if (second_image >= image_count) second_image = 0;
 		drive = 1;
-		set_index_image(second_image);
+		set_image_index(second_image);
 		set_eject_state(false);
 		drive = 0;
 	}
