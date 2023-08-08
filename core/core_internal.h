@@ -3,6 +3,8 @@
 // internal core stuffs that needs to be shared between core modules,
 // but not with Hatari. Avoids a full rebuild for each change.
 
+#define   CORE_ARRAY_SIZE(a_)   (sizeof(a_)/sizeof(a_[0]))
+
 // core.c
 extern retro_environment_t environ_cb;
 extern retro_input_poll_t input_poll_cb;
@@ -12,6 +14,9 @@ extern int core_video_aspect_mode;
 extern bool core_video_changed;
 extern bool core_option_hard_reset;
 
+// core_disk.c TODO move to core_file
+extern void strcpy_trunc(char* dest, const char* src, unsigned int len);
+extern void strcat_trunc(char* dest, const char* src, unsigned int len);
 
 // core_disk.c
 extern void core_disk_set_environment(retro_environment_t cb);
@@ -20,6 +25,7 @@ extern void core_disk_load_game(const struct retro_game_info *game);
 extern void core_disk_unload_game(void);
 extern void core_disk_serialize(void);
 extern void core_disk_drive_toggle(void);
+extern void core_disk_drive_reinsert(void); // used after cold reboot
 
 extern bool core_disk_enable_b;
 

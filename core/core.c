@@ -126,7 +126,7 @@ static void retro_memory_maps()
 			NULL, 0, 0xE00000, 0, 0, 0, "High ROM"
 		},
 	};
-	static struct retro_memory_map memory_maps = { memory_map, sizeof(memory_map)/sizeof(memory_map[0]) };
+	static struct retro_memory_map memory_maps = { memory_map, CORE_ARRAY_SIZE(memory_map) };
 	memory_map[0].ptr = STRam;
 	memory_map[0].len = STRamEnd;
 	memory_map[1].ptr = core_rom_mem_pointer + 0xE00000;
@@ -302,7 +302,7 @@ void core_signal_tos_fail(void)
 {
 	retro_log(RETRO_LOG_ERROR,"Could not load TOS.\n");
 	struct retro_message_ext msg;
-	msg.msg = "TOS not found. Add TOS image to system/hatarib/.";
+	msg.msg = "TOS not found. See System > TOS ROM in core settings.";
 	msg.duration = 10 * 1000;
 	msg.priority = 3;
 	msg.level = RETRO_LOG_ERROR;
@@ -648,8 +648,9 @@ RETRO_API void retro_run(void)
 	// process CPU reset by restarting the loop and UAE
 	if (core_runflags & CORE_RUNFLAG_RESET)
 	{
+		bool cold = core_runflags & CORE_RUNFLAG_RESET_COLD;
 		m68k_go_quit();
-		UAE_Set_Quit_Reset(core_runflags & CORE_RUNFLAG_RESET_COLD);
+		UAE_Set_Quit_Reset(cold);
 		core_runflags &= ~CORE_RUNFLAG_RESET;
 		m68k_go(true);
 		core_init_return = true;
@@ -657,6 +658,9 @@ RETRO_API void retro_run(void)
 		core_init_return = false;
 		// STRam/STRam may hae been updated, send the new memory map
 		retro_memory_maps();
+		// cold reset ejects the disks
+		if (cold)
+			core_disk_drive_reinsert();
 	}
 
 	// force hatari to process the input queue before each frame starts

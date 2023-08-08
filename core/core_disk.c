@@ -41,12 +41,12 @@ void hatari_libretro_floppy_eject(int drive);
 //
 
 // safe truncating strcpy/strcat
-static void strcpy_trunc(char* dest, const char* src, unsigned int len)
+void strcpy_trunc(char* dest, const char* src, unsigned int len)
 {
 	strncpy(dest,src,len);
 	dest[len-1] = 0;
 }
-static void strcat_trunc(char* dest, const char* src, unsigned int len)
+void strcat_trunc(char* dest, const char* src, unsigned int len)
 {
 	strncat(dest,src,len);
 	dest[len-1] = 0;
@@ -76,6 +76,8 @@ void disks_clear()
 static bool set_eject_state_drive(bool ejected, int d)
 {
 	int o = d ^ 1; // other drive
+	retro_log(RETRO_LOG_DEBUG,"set_eject_state_drive(%d,%d)\n",ejected,drive);
+
 	if (ejected)
 	{
 		// eject if not already ejected
@@ -126,25 +128,25 @@ static bool set_eject_state_drive(bool ejected, int d)
 
 static bool set_eject_state(bool ejected)
 {
-	retro_log(RETRO_LOG_DEBUG,"set_eject_state(%d)\n",ejected);
+	retro_log(RETRO_LOG_DEBUG,"set_eject_state(%d) drive %d\n",ejected,drive);
 	return set_eject_state_drive(ejected, drive);
 }
 
 static bool get_eject_state(void)
 {
-	//retro_log(RETRO_LOG_DEBUG,"get_eject_state()\n");
+	//retro_log(RETRO_LOG_DEBUG,"get_eject_state() drive %d\n",drive);
 	return !image_insert[drive];
 }
 
 static unsigned get_image_index(void)
 {
-	//retro_log(RETRO_LOG_DEBUG,"get_image_index()\n");
+	//retro_log(RETRO_LOG_DEBUG,"get_image_index() drive %d\n",drive);
 	return image_index[drive];
 }
 
 static bool set_image_index(unsigned index)
 {
-	retro_log(RETRO_LOG_DEBUG,"set_image_index(%d)\n",index);
+	retro_log(RETRO_LOG_DEBUG,"set_image_index(%d) drive %d\n",index,drive);
 
 	// no change
 	if (index == image_index[drive]) return true;
@@ -426,4 +428,23 @@ void core_disk_drive_toggle(void)
 	msg.type = RETRO_MESSAGE_TYPE_NOTIFICATION;
 	msg.progress = -1;
 	environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg);
+}
+
+void core_disk_drive_reinsert(void)
+{
+	int restore_drive = drive;
+	bool restore_eject;
+	retro_log(RETRO_LOG_DEBUG,"core_disk_drive_reinsert()\n");
+	drive = 0;
+	restore_eject = get_eject_state();
+	set_eject_state(true);
+	set_eject_state(restore_eject);
+	if (core_disk_enable_b)
+	{
+		drive = 1;
+		restore_eject = get_eject_state();
+		set_eject_state(true);
+		set_eject_state(restore_eject);
+	}
+	drive = restore_drive;
 }

@@ -2,7 +2,9 @@
 
 A [Libretro](https://www.libretro.com/) core integrating the [Hatari](https://hatari.tuxfamily.org/) emulation of Atari ST, STE, TT, and Falcon computers.
 
+Stable Build: not yet available
 Nightly Build: [Windows 64-bit hatariB](https://nightly.link/bbbradsmith/hatariB/workflows/win64/main)
+Recent Builds: [Github Actions](https://github.com/bbbradsmith/hatariB/actions)
 
 This is intended as an alternative or replacement for the older [Libretro Hatari Core](https://github.com/libretro/hatari).
 
@@ -17,6 +19,7 @@ Development notes: [DEVELOP.md](DEVELOP.md)
 * Currently only builds for Windows 64-bit. If you'd like to help set up other platforms, please create an issue.
 * The default TOS ROM is `system/tos.img` but EmuTOS is provided if this file is unavailable.
 * Additional TOS ROMs, as well as Cartridge and Hard Disk images can be supplied in `system/hatarib/`, up to a limit of 100 files.
+* EmuTOS is compatible with most software, but not all. In most incompatibility cases it will show a "Panic" message at boot. The 1024k universal EmuTOS is the default, which has the most features, but the 192uk and 192us EmuTOS images may be slightly more compatible with ST software.
 * Load New Disk may not play well with savestates.
   * Inserting a new disk may increase the needed savestate size and cause a failure to save, but you can eject the disk and try again.
   * RetroArch will change the savestate name to match the new loaded disk, as well, so you may have to Load Content with that disk later to be able to load its savesate, and you may need to manually eject and re-insert the disk after reloading.

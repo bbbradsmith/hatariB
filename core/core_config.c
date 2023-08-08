@@ -55,8 +55,8 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	// System
 	//
 	{
-		"tos", "*TOS ROM", NULL,
-		"BIOS ROM can use built-in EmuTOS, or choose from:\n"
+		"tos", "TOS ROM", NULL,
+		"Causes restart!! BIOS ROM can use built-in EmuTOS, or choose from:\n"
 		" system/tos.img (default)\n"
 		" system/hatarib/* (all .img, .rom, .bin in folder)\n",
 		NULL, "system",
@@ -106,7 +106,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	},
 	{
 		"hard_reset", "Hard Reset", NULL,
-		"Core reset is a warm boot (reset button), but this option will force a full cold boot instead (power off, on).",
+		"Core Restart is a warm boot (reset button), but this option will use full cold boot instead (power off, on).",
 		NULL, "system",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
@@ -615,7 +615,7 @@ static const struct retro_core_options_v2 CORE_OPTIONS_V2 = {
 	CORE_OPTION_DEF,
 };
 
-#define CORE_OPTIONS_COUNT sizeof(CORE_OPTION_DEF)/sizeof(CORE_OPTION_DEF[0])
+#define CORE_OPTIONS_COUNT   CORE_ARRAY_SIZE(CORE_OPTION_DEF)
 
 static struct retro_core_option_definition CORE_OPTIONS_V1[CORE_OPTIONS_COUNT] = {
 	{ NULL, NULL, NULL, {{NULL,NULL}}, NULL }
@@ -709,12 +709,37 @@ void core_config_read_newparam()
 	int vi;
 	const char* vs;
 	newparam = defparam; // start with the defaults
-	CFG_STR("tos") {} // TODO
+	CFG_STR("tos")
+	{
+		static const char* TOS_LIST[] = {
+			"<tos.img>",
+			"<etos1024k>",
+			"<etos192uk>",
+			"<etos192us>",
+		};
+		#define TOS_LIST_COUNT   CORE_ARRAY_SIZE(TOS_LIST)
+		// TOS files will be found in system/hatarib/ (store system/ relative path)
+		strcpy(newparam.Rom.szTosImageFileName,"hatarib/"); // TODO is there a way to get an OS specific path sep? Can I get away with / ?
+		strcat_trunc(newparam.Rom.szTosImageFileName,vs,sizeof(newparam.Rom.szTosImageFileName));
+		newparam.Rom.nBuiltinTos = 0;
+		// if one of the special cases in TOS_LIST, uses system/tos.img or the builtins
+		for (int i=0; i<TOS_LIST_COUNT; ++i)
+		{
+			if (!strcmp(vs,TOS_LIST[i]))
+			{
+				if (i == 0) // <tos.img> is system/tos.img
+					strcpy_trunc(newparam.Rom.szTosImageFileName,"tos.img",sizeof(newparam.Rom.szTosImageFileName));
+				newparam.Rom.nBuiltinTos = i;
+				break;
+			}
+		}
+	}
 	CFG_INT("monitor") newparam.Screen.nMonitorType = vi;
 	CFG_INT("fast_floppy") newparam.DiskImage.FastFloppy = vi;
 	CFG_INT("save_floppy") {} // TODO
 	CFG_INT("hard_reset") core_option_hard_reset = vi;
-	CFG_INT("machine") {
+	CFG_INT("machine")
+	{
 		// automatic setup based on OPT_MACHINE in options.c
 		static const int CPULEVEL[] = { 0, 0, 0, 0, 3, 3 };
 		static const int CPUFREQ[]  = { 8, 8, 8, 8,32,16 };
@@ -815,8 +840,8 @@ void core_config_set_environment(retro_environment_t cb)
 		def->values[4].value = "pop.tos";
 		def->values[4].label = "pop.tos (test)";
 		// if tos.img is found we should do this:
-		def->default_value = "<tos.img>";
-		// if tos.img is not found we should do this:
+		//def->default_value = "<tos.img>";
+		// else if tos.img is not found we should do this:
 		def->values[0].label = "system/tos.img (missing)";
 	}
 	if ((def = get_core_option_def("cartridge")))
