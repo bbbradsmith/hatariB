@@ -60,7 +60,7 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Exit the run loop just after `savestate_restore_final` to allow resume from restored point at next `retro_run`.
   * Edited `m68k_disasm_file` hardcoded `TraceFile` to use `LOG_TRACE_PRINT` instead so it can redirect to libretro.
 * **hatari/src/screen.c**
-  * Don't create or use window or SDL renderer.
+  * Don't create or use window or SDL renderer, avoid sending renderer hints.
   * Use existing SDL software surface, but send its data to the core (`core_video_update`) instead of using a renderer present.
   * Use SDL software rendering to support all 3 pixel formats allowed by Libretro.
   * Add option for low resolution pixel doubling.

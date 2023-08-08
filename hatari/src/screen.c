@@ -416,6 +416,7 @@ static bool Screen_SetSDLVideoSize(int width, int height, int bitdepth, bool bFo
 	    && sdlscrn->format->BitsPerPixel == bitdepth && !bForceChange)
 		return false;
 
+#ifndef __LIBRETRO__
 	psSdlVideoDriver = SDL_getenv("SDL_VIDEODRIVER");
 	bUseDummyMode = psSdlVideoDriver && !strcmp(psSdlVideoDriver, "dummy");
 
@@ -426,6 +427,13 @@ static bool Screen_SetSDLVideoSize(int width, int height, int bitdepth, bool bFo
 	}
 
 	bUseSdlRenderer = ConfigureParams.Screen.bUseSdlRenderer && !bUseDummyMode;
+#else
+	psSdlVideoDriver = NULL;
+	bUseSdlRenderer = true;
+	bUseDummyMode = false;
+	(void)psSdlVideoDriver;
+	(void)bUseDummyMode;
+#endif
 
 	/* SDL Video attributes: */
 	win_width = width;
@@ -478,14 +486,18 @@ static bool Screen_SetSDLVideoSize(int width, int height, int bitdepth, bool bFo
 
 	if (bPrevUseVsync != ConfigureParams.Screen.bUseVsync)
 	{
+#ifndef __LIBRETRO__
 		char hint[2] = { '0' + ConfigureParams.Screen.bUseVsync, 0 };
 		SDL_SetHintWithPriority(SDL_HINT_RENDER_VSYNC, hint, SDL_HINT_OVERRIDE);
 		bPrevUseVsync = ConfigureParams.Screen.bUseVsync;
+#endif
 	}
 
+#ifndef __LIBRETRO__
 #ifdef SDL_HINT_WINDOWS_NO_CLOSE_ON_ALT_F4		/* requires sdl >= 2.0.4 */
 	/* Disable closing Hatari with alt+F4 under Windows as alt+F4 can be used by some emulated programs */
 	SDL_SetHintWithPriority(SDL_HINT_WINDOWS_NO_CLOSE_ON_ALT_F4, "1", SDL_HINT_OVERRIDE);
+#endif
 #endif
 
 	/* Set new video mode */
