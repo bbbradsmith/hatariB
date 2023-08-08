@@ -2,9 +2,9 @@
 
 A [Libretro](https://www.libretro.com/) core integrating the [Hatari](https://hatari.tuxfamily.org/) emulation of Atari ST, STE, TT, and Falcon computers.
 
-Stable Build: not yet available
-Nightly Build: [Windows 64-bit hatariB](https://nightly.link/bbbradsmith/hatariB/workflows/win64/main)
-Recent Builds: [Github Actions](https://github.com/bbbradsmith/hatariB/actions)
+* Stable Build: not yet available
+* Nightly Build: [Windows 64-bit hatariB](https://nightly.link/bbbradsmith/hatariB/workflows/win64/main)
+* Recent Builds: [Github Actions](https://github.com/bbbradsmith/hatariB/actions)
 
 This is intended as an alternative or replacement for the older [Libretro Hatari Core](https://github.com/libretro/hatari).
 
