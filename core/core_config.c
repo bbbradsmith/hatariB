@@ -55,7 +55,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	// System
 	//
 	{
-		"tos", "TOS ROM", NULL,
+		"hatarib_tos", "TOS ROM", NULL,
 		"Causes restart!! BIOS ROM can use built-in EmuTOS, or choose from:\n"
 		" system/tos.img (default)\n"
 		" system/hatarib/* (all .img, .rom, .bin in folder)\n",
@@ -80,7 +80,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		}, "<etos1024k>" // replace with <tos.img> if system/tos.img exists
 	},
 	{
-		"monitor", "Monitor", NULL,
+		"hatarib_monitor", "Monitor", NULL,
 		"Causes restart!! Monitor type. Colour, monochrome, etc.",
 		NULL, "system",
 		{
@@ -92,26 +92,26 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		}, "1"
 	},
 	{
-		"fast_floppy", "Fast Floppy", NULL,
+		"hatarib_fast_floppy", "Fast Floppy", NULL,
 		"Artifically accelerate floppy disk access, reducing load times.",
 		NULL, "system",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
 	},
 	{
-		"save_floppy", "*Save Floppy Disks", NULL,
+		"hatarib_save_floppy", "*Save Floppy Disks", NULL,
 		"Changes to floppy disks will save a copy in saves/."
 		" If turned off, changes will be lost when the content is closed.",
 		NULL, "system",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
 	},
 	{
-		"hard_reset", "Hard Reset", NULL,
+		"hatarib_hard_reset", "Hard Reset", NULL,
 		"Core Restart is a warm boot (reset button), but this option will use full cold boot instead (power off, on).",
 		NULL, "system",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
 	{
-		"machine", "Machine Type", NULL,
+		"hatarib_machine", "Machine Type", NULL,
 		"Causes restart!! Atari computer type.",
 		NULL, "system",
 		{
@@ -125,7 +125,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		},"0"
 	},
 	{
-		"memory", "ST Memory Size", NULL,
+		"hatarib_memory", "ST Memory Size", NULL,
 		"Atari ST memory size.",
 		NULL, "system",
 		{
@@ -142,7 +142,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		}, "1024"
 	},
 	{
-		"cartridge", "*Cartridge ROM", NULL,
+		"hatarib_cartridge", "*Cartridge ROM", NULL,
 		"ROM image for cartridge port, list of files from system/hatarib/.",
 		NULL, "system",
 		{
@@ -162,7 +162,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		}, "<none>"
 	},
 	{
-		"hardimg", "*Hard Disk", NULL,
+		"hatarib_hardimg", "*Hard Disk", NULL,
 		"Hard drive image, list of files from system/hatarib/.",
 		NULL, "system",
 		{
@@ -182,7 +182,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		}, "<none>"
 	},
 	{
-		"hardtype", "*Hard Disk Type", NULL,
+		"hatarib_hardtype", "*Hard Disk Type", NULL,
 		"Boot from hard disk.",
 		NULL, "system",
 		{
@@ -194,7 +194,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{NULL,NULL},}, "0"
 	},
 	{
-		"hardboot", "Hard Disk Boot", NULL,
+		"hatarib_hardboot", "Hard Disk Boot", NULL,
 		"Boot from hard disk.",
 		NULL, "system",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
@@ -202,33 +202,33 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	//
 	// Input
 	//
-	{ "joy1_port", "Joystick 1", NULL, "Retropad 1 assigned Atari port.", NULL, "input", {{"6","None"},{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"1" },
-	{ "joy2_port", "Joystick 2", NULL, "Retropad 2 assigned Atari port.", NULL, "input", {{"6","None"},{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"0" },
-	{ "joy3_port", "Joystick 3", NULL, "Retropad 3 assigned Atari port.", NULL, "input", {{"6","None"},{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"2" },
-	{ "joy4_port", "Joystick 4", NULL, "Retropad 4 assigned Atari port.", NULL, "input", {{"6","None"},{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"3" },
+	{ "hatarib_joy1_port", "Joystick 1", NULL, "Retropad 1 assigned Atari port.", NULL, "input", {{"6","None"},{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"1" },
+	{ "hatarib_joy2_port", "Joystick 2", NULL, "Retropad 2 assigned Atari port.", NULL, "input", {{"6","None"},{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"0" },
+	{ "hatarib_joy3_port", "Joystick 3", NULL, "Retropad 3 assigned Atari port.", NULL, "input", {{"6","None"},{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"2" },
+	{ "hatarib_joy4_port", "Joystick 4", NULL, "Retropad 4 assigned Atari port.", NULL, "input", {{"6","None"},{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"3" },
 	{
-		"mouse_port", "Mouse", NULL,
+		"hatarib_mouse_port", "Mouse", NULL,
 		"Mouse connected to Joy 0 port."
 		" This can be connected at the same time as a joystick, but their inputs will overlap.",
 		NULL, "input",
 		{{"0","None"},{"1","Joy 0"},{NULL,NULL},}, "1"
 	},
 	{
-		"host_mouse", "Host Mouse Enabled", NULL,
+		"hatarib_host_mouse", "Host Mouse Enabled", NULL,
 		"Allow input from your own mouse device."
 		" With this disabled you can still use the retropad mouse inputs.",
 		NULL, "input",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
 	},
 	{
-		"host_keyboard", "Host Keyboard Enabled", NULL,
+		"hatarib_host_keyboard", "Host Keyboard Enabled", NULL,
 		"Allow input from your own keyboard."
 		" With this disabled you can still use the onscreen keyboard or retropad mapped keys.",
 		NULL, "input",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
 	},
 	{
-		"autofire", "Auto-Fire Rate", NULL,
+		"hatarib_autofire", "Auto-Fire Rate", NULL,
 		"Frames per button press with auto-fire. (Lower number is faster.)",
 		NULL, "input",
 		{
@@ -255,7 +255,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		}, "6"
 	},
 	{
-		"stick_threshold", "Analog Stick Threshold", NULL,
+		"hatarib_stick_threshold", "Analog Stick Threshold", NULL,
 		"How far to tilt in a direction to activate the joystick direction,"
 		" if mapped to an analog stick.",
 		NULL, "input",
@@ -275,7 +275,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		}, "30"
 	},
 	{
-		"mouse_speed", "Mouse Stick Speed", NULL,
+		"hatarib_mouse_speed", "Mouse Stick Speed", NULL,
 		"Speed of the mouse when controlled by the analog sticks.",
 		NULL, "input",
 		{
@@ -293,7 +293,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		}, "4"
 	},
 	{
-		"mouse_deadzone", "Mouse Stick Deadzone", NULL,
+		"hatarib_mouse_deadzone", "Mouse Stick Deadzone", NULL,
 		"Dead zone for mouse analog stick control to prevent movement from controller randomness.",
 		NULL, "input",
 		{
@@ -327,14 +327,14 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	// Video
 	//
 	{
-		"lowres2x", "Low Resolution Double", NULL,
+		"hatarib_lowres2x", "Low Resolution Double", NULL,
 		"Low resolution pixel doubling for 640x400 screen output."
 		" Prevents video output size changes for resolution switch.",
 		NULL, "video",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
 	{
-		"borders", "Screen Borders", NULL,
+		"hatarib_borders", "Screen Borders", NULL,
 		"Atari ST monitors had a visible border around the main screen area,"
 		" but most software does not display anything in it.",
 		NULL, "video",
@@ -345,7 +345,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		}, "1"
 	},
 	{
-		"statusbar", "Status Bar", NULL,
+		"hatarib_statusbar", "Status Bar", NULL,
 		"Display the Hatari status bar at the bottom of the screen,"
 		" or floppy drive light at the top right.",
 		NULL, "video",
@@ -357,7 +357,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		}, "1"
 	},
 	{
-		"aspect", "Pixel Aspect Ratio", NULL,
+		"hatarib_aspect", "Pixel Aspect Ratio", NULL,
 		"Reports a pixel aspect ratio appropriate for a chosen monitor type."
 		" Requires 'Core Provided' Aspect Ratio in Video > Scaling settings.",
 		NULL, "video",
@@ -373,7 +373,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	// Audio
 	//
 	{
-		"samplerate", "Samplerate", NULL,
+		"hatarib_samplerate", "Samplerate", NULL,
 		"Audio samplerate.",
 		NULL, "audio",
 		{
@@ -388,7 +388,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		},"48000"
 	},
 	{
-		"ymmix", "YM Voices Mixing", NULL,
+		"hatarib_ymmix", "YM Voices Mixing", NULL,
 		"Sound chip volume curves.",
 		NULL, "audio",
 		{
@@ -399,7 +399,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		},"2"
 	},
 	{
-		"lpf", "Lowpass Filter", NULL,
+		"hatarib_lpf", "Lowpass Filter", NULL,
 		"Reduces high frequency noise from sound output.",
 		NULL, "audio",
 		{
@@ -411,7 +411,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		}, "3"
 	},
 	{
-		"hpf", "Highpass Filter", NULL,
+		"hatarib_hpf", "Highpass Filter", NULL,
 		"Removes very low frequencies to keep output waveform centred.",
 		NULL, "audio",
 		{
@@ -424,38 +424,38 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	// Advanced
 	//
 	{
-		"driveb","Drive B Enable", NULL,
+		"hatarib_driveb","Drive B Enable", NULL,
 		"Turn off to disconnect drive B.",
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
 	},
 	{
-		"drivesingle","Single-Sided Drives", NULL,
+		"hatarib_drivesingle","Single-Sided Drives", NULL,
 		"Single-Sided floppy drives instead of Double-Sided.",
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
 	{
-		"readonly_floppy","Write Protect Floppy Disks", NULL,
+		"hatarib_readonly_floppy","Write Protect Floppy Disks", NULL,
 		"Write-protect all floppy disks in emulation."
 		" The emulated operating system will know that all writes are failing.",
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
 	{
-		"patchtos","Patch TOS for Fast Boot", NULL,
+		"hatarib_patchtos","Patch TOS for Fast Boot", NULL,
 		"Boot slightly faster for some known TOS ROMs.",
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
 	},
 	{
-		"blitter_st","Blitter in ST Mode", NULL,
+		"hatarib_blitter_st","Blitter in ST Mode", NULL,
 		"Causes restart!! Normally the blitter requires a Mega ST.",
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
 	{
-		"wakestate", "Video Timing", NULL,
+		"hatarib_wakestate", "Video Timing", NULL,
 		"Specify startup timing for video output.",
 		NULL, "advanced",
 		{
@@ -468,19 +468,19 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		}, "3",
 	},
 	{
-		"prefetch", "CPU Prefetch Emulation", NULL,
+		"hatarib_prefetch", "CPU Prefetch Emulation", NULL,
 		"Causes restart!! Uses more CPU power, more accurate.",
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
 	{
-		"cycle_exact", "Cycle-exact Cache Emulation", NULL,
+		"hatarib_cycle_exact", "Cycle-exact Cache Emulation", NULL,
 		"Causes restart!! Uses more CPU power, more accurate.",
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
 	{
-		"mmu", "MMU Emulation", NULL,
+		"hatarib_mmu", "MMU Emulation", NULL,
 		"Causes restart!! For TT or Falcon. Uses more CPU power.",
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
@@ -552,45 +552,45 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{NULL,NULL} \
 	}
 #define OPTION_PAD(padnum) \
-	{ "pad" padnum "_dpad", "Pad " padnum " D-Pad", NULL, NULL, NULL, "pad" padnum, \
+	{ "hatarib_pad" padnum "_dpad", "Pad " padnum " D-Pad", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_STICK(), "1" }, /* joystick */ \
-	{ "pad" padnum "_a", "Pad " padnum " A", NULL, NULL, NULL, "pad" padnum, \
+	{ "hatarib_pad" padnum "_a", "Pad " padnum " A", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_BUTTON(), "2" }, /* auto-fire */ \
-	{ "pad" padnum "_b", "Pad " padnum " B", NULL, NULL, NULL, "pad" padnum, \
+	{ "hatarib_pad" padnum "_b", "Pad " padnum " B", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_BUTTON(), "1" }, /* fire */ \
-	{ "pad" padnum "_x", "Pad " padnum " X", NULL, NULL, NULL, "pad" padnum, \
+	{ "hatarib_pad" padnum "_x", "Pad " padnum " X", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_BUTTON(), "4" }, /* mouse right */ \
-	{ "pad" padnum "_y", "Pad " padnum " Y", NULL, NULL, NULL, "pad" padnum, \
+	{ "hatarib_pad" padnum "_y", "Pad " padnum " Y", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_BUTTON(), "3" }, /* mouse left */ \
-	{ "pad" padnum "_select", "Pad " padnum " Select", NULL, NULL, NULL, "pad" padnum, \
+	{ "hatarib_pad" padnum "_select", "Pad " padnum " Select", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_BUTTON(), "7" }, /* select floppy drive */ \
-	{ "pad" padnum "_start", "Pad " padnum " Start", NULL, NULL, NULL, "pad" padnum, \
+	{ "hatarib_pad" padnum "_start", "Pad " padnum " Start", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_BUTTON(), "8" }, /* help screen */ \
-	{ "pad" padnum "_l1", "Pad " padnum " L1", NULL, NULL, NULL, "pad" padnum, \
+	{ "hatarib_pad" padnum "_l1", "Pad " padnum " L1", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_BUTTON(), "5" }, /* on-screen keyboard */ \
-	{ "pad" padnum "_r1", "Pad " padnum " R1", NULL, NULL, NULL, "pad" padnum, \
+	{ "hatarib_pad" padnum "_r1", "Pad " padnum " R1", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_BUTTON(), "6" }, /* on-screen keyboard one-shot */ \
-	{ "pad" padnum "_l2", "Pad " padnum " L2", NULL, NULL, NULL, "pad" padnum, \
+	{ "hatarib_pad" padnum "_l2", "Pad " padnum " L2", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_BUTTON(), "0" }, /* none */ \
-	{ "pad" padnum "_r2", "Pad " padnum " R2", NULL, NULL, NULL, "pad" padnum, \
+	{ "hatarib_pad" padnum "_r2", "Pad " padnum " R2", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_BUTTON(), "0" }, /* none */ \
-	{ "pad" padnum "_l3", "Pad " padnum " L3", NULL, NULL, NULL, "pad" padnum, \
+	{ "hatarib_pad" padnum "_l3", "Pad " padnum " L3", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_BUTTON(), "16" }, /* key space */ \
-	{ "pad" padnum "_r3", "Pad " padnum " R3", NULL, NULL, NULL, "pad" padnum, \
+	{ "hatarib_pad" padnum "_r3", "Pad " padnum " R3", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_BUTTON(), "17" }, /* key return */ \
-	{ "pad" padnum "_lstick", "Pad " padnum " Left Analog Stick", NULL, NULL, NULL, "pad" padnum, \
+	{ "hatarib_pad" padnum "_lstick", "Pad " padnum " Left Analog Stick", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_STICK(), "1" }, /* joystick */ \
-	{ "pad" padnum "_rstick", "Pad " padnum " Right Analog Stick", NULL, NULL, NULL, "pad" padnum, \
+	{ "hatarib_pad" padnum "_rstick", "Pad " padnum " Right Analog Stick", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_STICK(), "2" }, /* mouse */ \
-	{ "pad" padnum "_oskey_confirm", "Pad " padnum " On-Screen Key Confirm", NULL, NULL, NULL, "pad" padnum, \
+	{ "hatarib_pad" padnum "_oskey_confirm", "Pad " padnum " On-Screen Key Confirm", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_OSKEY_BUTTON(), "2" }, /* b */ \
-	{ "pad" padnum "_oskey_cancel", "Pad " padnum " On-Screen Key Cancel", NULL, NULL, NULL, "pad" padnum, \
+	{ "hatarib_pad" padnum "_oskey_cancel", "Pad " padnum " On-Screen Key Cancel", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_OSKEY_BUTTON(), "1" }, /* a */ \
-	{ "pad" padnum "_oskey_shift", "Pad " padnum " On-Screen Key Shift-Lock", NULL, NULL, NULL, "pad" padnum, \
+	{ "hatarib_pad" padnum "_oskey_shift", "Pad " padnum " On-Screen Key Shift-Lock", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_OSKEY_BUTTON(), "4" }, /* y */ \
-	{ "pad" padnum "_oskey_pos", "Pad " padnum " On-Screen Key Position", NULL, NULL, NULL, "pad" padnum, \
+	{ "hatarib_pad" padnum "_oskey_pos", "Pad " padnum " On-Screen Key Position", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_OSKEY_BUTTON(), "3" }, /* x */ \
-	{ "pad" padnum "_oskey_move", "Pad " padnum " On-Screen Key Cursor", NULL, NULL, NULL, "pad" padnum, \
+	{ "hatarib_pad" padnum "_oskey_move", "Pad " padnum " On-Screen Key Cursor", NULL, NULL, NULL, "pad" padnum, \
 		{ \
 			{"0","None"}, \
 			{"1","D-Pad"}, \
@@ -695,7 +695,7 @@ bool cfg_read_str(const char* key, const char** s)
 bool cfg_read_int_pad(int pad, const char* key, int* v)
 {
 	static char padkey[64];
-	snprintf(padkey,sizeof(padkey),"pad%d_%s",pad+1,key);
+	snprintf(padkey,sizeof(padkey),"hatarib_pad%d_%s",pad+1,key);
 	padkey[sizeof(padkey)-1] = 0;
 	return cfg_read_int(padkey,v);
 }
@@ -709,7 +709,7 @@ void core_config_read_newparam()
 	int vi;
 	const char* vs;
 	newparam = defparam; // start with the defaults
-	CFG_STR("tos")
+	CFG_STR("hatarib_tos")
 	{
 		static const char* TOS_LIST[] = {
 			"<tos.img>",
@@ -734,11 +734,11 @@ void core_config_read_newparam()
 			}
 		}
 	}
-	CFG_INT("monitor") newparam.Screen.nMonitorType = vi;
-	CFG_INT("fast_floppy") newparam.DiskImage.FastFloppy = vi;
-	CFG_INT("save_floppy") {} // TODO
-	CFG_INT("hard_reset") core_option_hard_reset = vi;
-	CFG_INT("machine")
+	CFG_INT("hatarib_monitor") newparam.Screen.nMonitorType = vi;
+	CFG_INT("hatarib_fast_floppy") newparam.DiskImage.FastFloppy = vi;
+	CFG_INT("hatarib_save_floppy") {} // TODO
+	CFG_INT("hatarib_hard_reset") core_option_hard_reset = vi;
+	CFG_INT("hatarib_machine")
 	{
 		// automatic setup based on OPT_MACHINE in options.c
 		static const int CPULEVEL[] = { 0, 0, 0, 0, 3, 3 };
@@ -756,39 +756,39 @@ void core_config_read_newparam()
 			newparam.System.nDSPType = DSP_TYPE_EMU;
 		}
 	}
-	CFG_INT("memory") newparam.Memory.STRamSize_KB = vi;
-	CFG_STR("cartridge") {} // TODO
-	CFG_STR("hardimg") {} // TODO
-	CFG_INT("hardboot") newparam.HardDisk.bBootFromHardDisk = vi;
-	CFG_INT("hardtype") {} // TODO
-	CFG_INT("joy1_port") core_joy_port_map[0] = vi;
-	CFG_INT("joy2_port") core_joy_port_map[1] = vi;
-	CFG_INT("joy3_port") core_joy_port_map[2] = vi;
-	CFG_INT("joy4_port") core_joy_port_map[3] = vi;
-	CFG_INT("mouse_port") core_mouse_port = vi;
-	CFG_INT("host_mouse") core_host_mouse = vi;
-	CFG_INT("host_keyboard") core_host_keyboard = vi;
-	CFG_INT("autofire") {} core_autofire = vi;
-	CFG_INT("stick_threshold") {} core_stick_threshold = vi;
-	CFG_INT("mouse_speed") {} core_mouse_speed = vi;
-	CFG_INT("mouse_deadzone") {} core_mouse_dead = vi;
-	CFG_INT("lowres2x") newparam.Screen.bLowResolutionDouble = vi;
-	CFG_INT("borders") newparam.Screen.bAllowOverscan = vi;
-	CFG_INT("statusbar") { newparam.Screen.bShowStatusbar = (vi==1); newparam.Screen.bShowDriveLed = (vi==2); }
-	CFG_INT("aspect") { if (core_video_aspect_mode != vi) { core_video_aspect_mode = vi; core_video_changed = true; } }
-	CFG_INT("samplerate") newparam.Sound.nPlaybackFreq = vi;
-	CFG_INT("ymmix") newparam.Sound.YmVolumeMixing = vi;
-	CFG_INT("lpf") newparam.Sound.YmLpf = vi;
-	CFG_INT("hpf") newparam.Sound.YmHpf = vi;
-	CFG_INT("driveb") { newparam.DiskImage.EnableDriveB = vi; core_disk_enable_b = vi; }
-	CFG_INT("drivesingle") { newparam.DiskImage.DriveA_NumberOfHeads = newparam.DiskImage.DriveB_NumberOfHeads = vi; }
-	CFG_INT("readonly_floppy") newparam.DiskImage.nWriteProtection = vi;
-	CFG_INT("patchtos") newparam.System.bFastBoot = vi;
-	CFG_INT("blitter_st") newparam.System.bBlitter = vi;
-	CFG_INT("wakestate") newparam.System.VideoTimingMode = vi;
-	CFG_INT("prefetch") newparam.System.bCompatibleCpu = vi;
-	CFG_INT("cycle_exact") newparam.System.bCycleExactCpu = vi;
-	CFG_INT("mmu") newparam.System.bMMU = vi;
+	CFG_INT("hatarib_memory") newparam.Memory.STRamSize_KB = vi;
+	CFG_STR("hatarib_cartridge") {} // TODO
+	CFG_STR("hatarib_hardimg") {} // TODO
+	CFG_INT("hatarib_hardboot") newparam.HardDisk.bBootFromHardDisk = vi;
+	CFG_INT("hatarib_hardtype") {} // TODO
+	CFG_INT("hatarib_joy1_port") core_joy_port_map[0] = vi;
+	CFG_INT("hatarib_joy2_port") core_joy_port_map[1] = vi;
+	CFG_INT("hatarib_joy3_port") core_joy_port_map[2] = vi;
+	CFG_INT("hatarib_joy4_port") core_joy_port_map[3] = vi;
+	CFG_INT("hatarib_mouse_port") core_mouse_port = vi;
+	CFG_INT("hatarib_host_mouse") core_host_mouse = vi;
+	CFG_INT("hatarib_host_keyboard") core_host_keyboard = vi;
+	CFG_INT("hatarib_autofire") {} core_autofire = vi;
+	CFG_INT("hatarib_stick_threshold") {} core_stick_threshold = vi;
+	CFG_INT("hatarib_mouse_speed") {} core_mouse_speed = vi;
+	CFG_INT("hatarib_mouse_deadzone") {} core_mouse_dead = vi;
+	CFG_INT("hatarib_lowres2x") newparam.Screen.bLowResolutionDouble = vi;
+	CFG_INT("hatarib_borders") newparam.Screen.bAllowOverscan = vi;
+	CFG_INT("hatarib_statusbar") { newparam.Screen.bShowStatusbar = (vi==1); newparam.Screen.bShowDriveLed = (vi==2); }
+	CFG_INT("hatarib_aspect") { if (core_video_aspect_mode != vi) { core_video_aspect_mode = vi; core_video_changed = true; } }
+	CFG_INT("hatarib_samplerate") newparam.Sound.nPlaybackFreq = vi;
+	CFG_INT("hatarib_ymmix") newparam.Sound.YmVolumeMixing = vi;
+	CFG_INT("hatarib_lpf") newparam.Sound.YmLpf = vi;
+	CFG_INT("hatarib_hpf") newparam.Sound.YmHpf = vi;
+	CFG_INT("hatarib_driveb") { newparam.DiskImage.EnableDriveB = vi; core_disk_enable_b = vi; }
+	CFG_INT("hatarib_drivesingle") { newparam.DiskImage.DriveA_NumberOfHeads = newparam.DiskImage.DriveB_NumberOfHeads = vi; }
+	CFG_INT("hatarib_readonly_floppy") newparam.DiskImage.nWriteProtection = vi;
+	CFG_INT("hatarib_patchtos") newparam.System.bFastBoot = vi;
+	CFG_INT("hatarib_blitter_st") newparam.System.bBlitter = vi;
+	CFG_INT("hatarib_wakestate") newparam.System.VideoTimingMode = vi;
+	CFG_INT("hatarib_prefetch") newparam.System.bCompatibleCpu = vi;
+	CFG_INT("hatarib_cycle_exact") newparam.System.bCycleExactCpu = vi;
+	CFG_INT("hatarib_mmu") newparam.System.bMMU = vi;
 	for (int i=0; i<4; ++i)
 	{
 		CFG_INT_PAD(i,"dpad"  ) core_stick_map[ i][CORE_INPUT_STICK_DPAD   ] = vi;
