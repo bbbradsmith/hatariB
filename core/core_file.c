@@ -10,11 +10,15 @@
 #define MAX_PATH          2048
 #define MAX_FILENAME      256
 #define MAX_SYSTEM_FILE   128
+#define MAX_SYSTEM_DIR     16
 
 #define USE_RETRO_VFS   1
 
 static int sf_count = 0;
 static char sf_filename[MAX_SYSTEM_FILE][MAX_FILENAME];
+static int sf_dir_count = 0;
+static char sf_dirname[MAX_SYSTEM_DIR][MAX_FILENAME];
+static char sf_dirlabel[MAX_SYSTEM_DIR][MAX_FILENAME];
 
 struct retro_vfs_interface* retro_vfs = NULL;
 int retro_vfs_version = 0;
@@ -218,13 +222,28 @@ static void core_file_system_add(const char* filename, bool prefix_hatarib)
 	++sf_count;
 }
 
-extern void core_file_set_environment(retro_environment_t cb)
+static void core_file_system_add_dir(const char* filename)
+{
+	if (sf_dir_count >= MAX_SYSTEM_DIR) return;
+	if (!strcmp(filename,".")) return;
+	if (!strcmp(filename,"..")) return;
+	strcpy_trunc(sf_filename[sf_count],"hatarib/",MAX_FILENAME);
+	strcat_trunc(sf_dirname[sf_dir_count],filename,MAX_FILENAME);
+	strcpy_trunc(sf_dirlabel[sf_dir_count],filename,MAX_FILENAME);
+	strcat_trunc(sf_dirlabel[sf_dir_count],"/",MAX_FILENAME);
+	++sf_dir_count;
+}
+
+void core_file_set_environment(retro_environment_t cb)
 {
 	struct retro_vfs_interface_info retro_vfs_info = { 3, NULL };
 	const char* cp;
 	
 	sf_count = 0;
+	sf_dir_count = 0;
 	memset(sf_filename,0,sizeof(sf_filename));
+	memset(sf_dirname,0,sizeof(sf_dirname));
+	memset(sf_dirlabel,0,sizeof(sf_dirlabel));
 
 #if USE_RETRO_VFS
 	if (retro_vfs_version > 0)
@@ -280,13 +299,13 @@ extern void core_file_set_environment(retro_environment_t cb)
 		{
 			while(retro_vfs->readdir(dir))
 			{
-				if (!retro_vfs->dirent_is_dir(dir))
+				const char* fn = retro_vfs->dirent_get_name(dir);
+				if (fn)
 				{
-					const char* fn = retro_vfs->dirent_get_name(dir);
-					if (fn)
-					{
+					if (!retro_vfs->dirent_is_dir(dir))
 						core_file_system_add(fn,true);
-					}
+					else
+						core_file_system_add_dir(fn);
 				}
 			}
 			retro_vfs->closedir(dir);
@@ -310,9 +329,12 @@ extern void core_file_set_environment(retro_environment_t cb)
 		{
 			while ((de = readdir(dir)))
 			{
-				if((0 == stat(temp_fn3(system_path,"hatarib/",de->d_name), &fs)) && !(fs.st_mode & S_IFDIR))
+				if(0 == stat(temp_fn3(system_path,"hatarib/",de->d_name), &fs))
 				{
-					core_file_system_add(de->d_name,true);
+					 if (!(fs.st_mode & S_IFDIR))
+						core_file_system_add(de->d_name,true);
+					else
+						core_file_system_add_dir(de->d_name);
 				}
 			}
 			closedir(dir);
@@ -320,13 +342,30 @@ extern void core_file_set_environment(retro_environment_t cb)
 	}
 }
 
-extern int core_file_system_count()
+int core_file_system_count()
 {
 	return sf_count;
 }
 
-extern const char* core_file_system_filename(int index)
+const char* core_file_system_filename(int index)
 {
 	if (index >= sf_count) return "";
 	return sf_filename[index];
+}
+
+int core_file_system_dir_count()
+{
+	return sf_dir_count;
+}
+
+const char* core_file_system_dirname(int index)
+{
+	if (index >= sf_dir_count) return "";
+	return sf_dirname[index];
+}
+
+const char* core_file_system_dirlabel(int index)
+{
+	if (index >= sf_dir_count) return "";
+	return sf_dirlabel[index];
 }

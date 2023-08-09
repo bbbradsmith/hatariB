@@ -27,6 +27,9 @@ extern bool core_write_file_save(const char* filename, unsigned int size, const 
 extern void core_file_set_environment(retro_environment_t cb); // scans system/ folder, includes "tos.img" and everything in"hatarib/" (non-recursive)
 extern int core_file_system_count(); // number of files found
 extern const char* core_file_system_filename(int index); // file list, first is "tos.img" if it exists, and "hatarib/" files follow (with "hatarib/ prefix)
+extern int core_file_system_dir_count();
+extern const char* core_file_system_dirname(int index); // "hatarib/dir"
+extern const char* core_file_system_dirlabel(int index); // "dir/"
 
 // core_disk.c
 extern void core_disk_set_environment(retro_environment_t cb);

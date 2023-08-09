@@ -162,8 +162,8 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		}, "<none>"
 	},
 	{
-		"hatarib_hardimg", "*Hard Disk", NULL,
-		"Hard drive image, list of files from system/hatarib/.",
+		"hatarib_hardimg", "Hard Disk", NULL,
+		"Hard drive image, list of files and directories from system/hatarib/.",
 		NULL, "system",
 		{
 			{"<none>","None"},
@@ -183,14 +183,16 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	},
 	{
 		"hatarib_hardtype", "*Hard Disk Type", NULL,
-		"Boot from hard disk.",
+		"GemDOS type will simulate a hard disk from a folder in system/hatarib/."
+		" The other types must use an image file.",
 		NULL, "system",
 		{
-			{"0","ACSI"},
-			{"1","SCSI"},
-			{"2","IDE (Auto)"},
-			{"3","IDE (Byte Swap Off)"},
-			{"4","IDE (Byte Swap On)"},
+			{"0","GemDOS"},
+			{"1","ACSI"},
+			{"2","SCSI"},
+			{"3","IDE (Auto)"},
+			{"4","IDE (Byte Swap Off)"},
+			{"5","IDE (Byte Swap On)"},
 			{NULL,NULL},}, "0"
 	},
 	{
@@ -198,6 +200,12 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		"Boot from hard disk.",
 		NULL, "system",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
+	},
+	{
+		"hatarib_writeprotect", "GemDOS Hard Disk Write Protect", NULL,
+		"Write protect the GemDOS hard disk folder.",
+		NULL, "system",
+		{{"0","Off"},{"1","On"},{"2","Auto"},{NULL,NULL},}, "0"
 	},
 	//
 	// Input
@@ -321,7 +329,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{"45","45%"},
 			{"50","50%"},
 			{NULL,NULL},
-		}, "10"
+		}, "5"
 	},
 	//
 	// Video
@@ -785,12 +793,47 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_memory") newparam.Memory.STRamSize_KB = vi;
 	CFG_STR("hatarib_cartridge")
 	{
-		if (!strcmp(vs,"<none>"))
+		if (strcmp(vs,"<none>"))
 			strcpy_trunc(newparam.Rom.szCartridgeImageFileName,vs,sizeof(newparam.Rom.szCartridgeImageFileName));
 	}
-	CFG_STR("hatarib_hardimg") {} // TODO
+	//CFG_STR("hatarib_hardimg") // handle within hardtype
+	CFG_INT("hatarib_hardtype")
+	{
+		int ht = vi; // store this before using CFG_STR
+		const char* image = "<none>";
+		CFG_STR("hatarib_hardimg") image = vs;
+		if ((image[0] != 0) && strcmp(image,"<none>")) // don't configure unless we have an image to use
+		{
+			switch(ht)
+			{
+			default:
+			case 0:
+				newparam.HardDisk.bUseHardDiskDirectories = true;
+				strcpy_trunc(newparam.HardDisk.szHardDiskDirectories[0],image,sizeof(newparam.HardDisk.szHardDiskDirectories[0]));
+				break;
+			case 1:
+				newparam.Acsi[0].bUseDevice = true;
+				strcpy_trunc(newparam.Acsi[0].sDeviceFile,image,sizeof(newparam.Acsi[0].sDeviceFile));
+				break;
+			case 2:
+				newparam.Scsi[0].bUseDevice = true;
+				strcpy_trunc(newparam.Scsi[0].sDeviceFile,image,sizeof(newparam.Scsi[0].sDeviceFile));
+				break;
+			case 3:
+			case 4:
+			case 5:
+				newparam.Ide[0].bUseDevice = true;
+				strcpy_trunc(newparam.Ide[0].sDeviceFile,image,sizeof(newparam.Scsi[0].sDeviceFile));
+				{
+					static const BYTESWAPPING BSMAP[3] = { BYTESWAP_AUTO, BYTESWAP_OFF, BYTESWAP_ON };
+					newparam.Ide[0].nByteSwap = BSMAP[ht-2];
+				}
+				break;
+			}
+		}
+	}
 	CFG_INT("hatarib_hardboot") newparam.HardDisk.bBootFromHardDisk = vi;
-	CFG_INT("hatarib_hardtype") {} // TODO
+	CFG_INT("hatarib_writeprotect") newparam.HardDisk.nWriteProtection = vi;
 	CFG_INT("hatarib_joy1_port") core_joy_port_map[0] = vi;
 	CFG_INT("hatarib_joy2_port") core_joy_port_map[1] = vi;
 	CFG_INT("hatarib_joy3_port") core_joy_port_map[2] = vi;
@@ -798,10 +841,10 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_mouse_port") core_mouse_port = vi;
 	CFG_INT("hatarib_host_mouse") core_host_mouse = vi;
 	CFG_INT("hatarib_host_keyboard") core_host_keyboard = vi;
-	CFG_INT("hatarib_autofire") {} core_autofire = vi;
-	CFG_INT("hatarib_stick_threshold") {} core_stick_threshold = vi;
-	CFG_INT("hatarib_mouse_speed") {} core_mouse_speed = vi;
-	CFG_INT("hatarib_mouse_deadzone") {} core_mouse_dead = vi;
+	CFG_INT("hatarib_autofire") core_autofire = vi;
+	CFG_INT("hatarib_stick_threshold") core_stick_threshold = vi;
+	CFG_INT("hatarib_mouse_speed") core_mouse_speed = vi;
+	CFG_INT("hatarib_mouse_deadzone") core_mouse_dead = vi;
 	CFG_INT("hatarib_lowres2x") newparam.Screen.bLowResolutionDouble = vi;
 	CFG_INT("hatarib_borders") newparam.Screen.bAllowOverscan = vi;
 	CFG_INT("hatarib_statusbar") { newparam.Screen.bShowStatusbar = (vi==1); newparam.Screen.bShowDriveLed = (vi==2); }
@@ -905,12 +948,22 @@ void core_config_set_environment(retro_environment_t cb)
 	}
 	if ((def = get_core_option_def("hatarib_hardimg")))
 	{
-		int i = tos_img ? 1 : 0;
+		int i = 0;
 		int j = 0;
+		// directories
+		for (; (i<core_file_system_dir_count()) && (j<MAX_OPTION_FILES); ++j, ++i)
+		{
+			def->values[j+1].value = core_file_system_dirname(i);
+			def->values[j+1].label = core_file_system_dirlabel(i);
+			++j;
+		}
+		// files
+		i = tos_img ? 1 : 0;
 		for (; (i<core_file_system_count()) && (j<MAX_OPTION_FILES); ++j, ++i)
 		{
 			const char* fn = core_file_system_filename(i);
-			if (!has_extension(fn,"img\0" "\0")) continue; // TODO what are valid extensions? Hatari doesn't seem to care?
+			// What are appropriate extensions? Hatari seems to allow anything.
+			if (!has_extension(fn,"img\0" "acsi\0" "scsi\0" "bin\0" "\0")) continue;
 			def->values[j+1].value = fn;
 			def->values[j+1].label = fn + 8; // hatarib/
 			++j;

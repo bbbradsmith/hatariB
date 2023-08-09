@@ -39,13 +39,12 @@ Remaining tasks before ready for public testing:
 * Add reset to button mappings.
 * Option to automatically cold-reset after crash with a timer.
 * Test unicode filenames. Does Libretro expect/convert to UTF-8?
-* Hard disk images.
+* Hard disk images: hdc.c, ide.c, gemdos.c need to replace stdio/etc. with core_file (need to add random-access interface and an opaque file handle pointer?)
 
 Optional tasks:
 * Investigate Libretro MIDI interface. I wonder if I could play MIDI Maze with my real ST?
 * See if I can set up a Mingw32 build.
 * Can savestate restore be more lightweight? What takes so much CPU time?
-* GemDOS directory as hard disk support (requires a lot of file-system patching).
 
 ## History
 

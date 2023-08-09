@@ -49,7 +49,7 @@ bool core_host_mouse = true;
 int core_autofire = 6;
 int core_stick_threshold = 30; // percentage of stick to digital joystick direction threshold
 int core_mouse_speed = 4; // 1-10 speed factor
-int core_mouse_dead = 10; // percentage of stick deadzone
+int core_mouse_dead = 5; // percentage of stick deadzone
 
 //
 // From Hatari
