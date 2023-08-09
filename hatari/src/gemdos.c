@@ -1895,6 +1895,11 @@ static bool GemDOS_ChDir(Uint32 Params)
 
 	File_AddSlashToEndFileName(psTempDirPath);
 	File_MakeAbsoluteName(psTempDirPath);
+#ifdef __LIBRETRO__
+	// TODO MakeAbsoluteName is the tip of the iceberg here.
+	// This whole implementation does a lot of direct access to the filesystem,
+	// which all be redirected. Maybe patch MakeAbsoluteName to treat "system/" as the root and go from therE?
+#endif
 
 	/* Prevent '..' commands moving BELOW the root HDD folder */
 	/* by double checking if path is valid */

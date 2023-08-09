@@ -906,6 +906,7 @@ void Configuration_Apply(bool bReset)
 //fprintf (stderr,"M68000_CheckCpuSettings conf 2\n" );
 
 	/* Clean file and directory names */
+#ifndef __LIBRETRO__
 	File_MakeAbsoluteName(ConfigureParams.Rom.szTosImageFileName);
 	if (strlen(ConfigureParams.Rom.szCartridgeImageFileName) > 0)
 		File_MakeAbsoluteName(ConfigureParams.Rom.szCartridgeImageFileName);
@@ -945,6 +946,15 @@ void Configuration_Apply(bool bReset)
 	File_MakeAbsoluteSpecialName(ConfigureParams.Midi.sMidiInFileName);
 	File_MakeAbsoluteSpecialName(ConfigureParams.Midi.sMidiOutFileName);
 	File_MakeAbsoluteSpecialName(ConfigureParams.Printer.szPrintToFileName);
+#else
+	// Don't do any absolute path conversions.
+	// Also because this writes back to ConfigureParams,
+	// these end up being detected as a change every time core config changes,
+	// which will cause needless resets.
+	// In the longer run we probably don't want to allow access to most
+	// of these filenames anyway.
+	(void)i;
+#endif
 
 	/* Enable/disable floppy drives */
 	FDC_Drive_Set_Enable ( 0 , ConfigureParams.DiskImage.EnableDriveA );
