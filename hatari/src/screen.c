@@ -472,6 +472,7 @@ static bool Screen_SetSDLVideoSize(int width, int height, int bitdepth, bool bFo
 		}
 	}
 
+#ifndef __LIBRETRO__
 	Screen_FreeSDL2Resources();
 	if (sdlWindow &&
 	    ((bInFullScreen && !ConfigureParams.Screen.bKeepResolution) ||
@@ -486,25 +487,20 @@ static bool Screen_SetSDLVideoSize(int width, int height, int bitdepth, bool bFo
 
 	if (bPrevUseVsync != ConfigureParams.Screen.bUseVsync)
 	{
-#ifndef __LIBRETRO__
 		char hint[2] = { '0' + ConfigureParams.Screen.bUseVsync, 0 };
 		SDL_SetHintWithPriority(SDL_HINT_RENDER_VSYNC, hint, SDL_HINT_OVERRIDE);
 		bPrevUseVsync = ConfigureParams.Screen.bUseVsync;
-#endif
 	}
 
-#ifndef __LIBRETRO__
 #ifdef SDL_HINT_WINDOWS_NO_CLOSE_ON_ALT_F4		/* requires sdl >= 2.0.4 */
 	/* Disable closing Hatari with alt+F4 under Windows as alt+F4 can be used by some emulated programs */
 	SDL_SetHintWithPriority(SDL_HINT_WINDOWS_NO_CLOSE_ON_ALT_F4, "1", SDL_HINT_OVERRIDE);
-#endif
 #endif
 
 	/* Set new video mode */
 	DEBUGPRINT(("SDL screen request: %d x %d @ %d (%s) -> window: %d x %d\n", width, height,
 	        bitdepth, (bInFullScreen ? "fullscreen" : "windowed"), win_width, win_height));
 
-#ifndef __LIBRETRO__
 	if (sdlWindow)
 	{
 		if ((SDL_GetWindowFlags(sdlWindow) & SDL_WINDOW_MAXIMIZED) == 0)
@@ -522,6 +518,9 @@ static bool Screen_SetSDLVideoSize(int width, int height, int bitdepth, bool bFo
 		        win_width, win_height);
 		exit(-1);
 	}
+#else
+	(void)bPrevInFullScreen;
+	(void)bPrevUseVsync;
 #endif
 	if (bUseSdlRenderer)
 	{
@@ -626,6 +625,7 @@ static bool Screen_SetSDLVideoSize(int width, int height, int bitdepth, bool bFo
 	DEBUGPRINT(("SDL screen granted: %d x %d @ %d\n", sdlscrn->w, sdlscrn->h,
 	            sdlscrn->format->BitsPerPixel));
 
+//#ifndef __LIBRETRO__
 	if (!bInFullScreen)
 	{
 		/* re-embed the new Hatari SDL window */
@@ -633,6 +633,7 @@ static bool Screen_SetSDLVideoSize(int width, int height, int bitdepth, bool bFo
 	}
 
 	Avi_SetSurface(sdlscrn);
+//#endif
 
 	bRGBTableInSync = false;
 
@@ -842,13 +843,13 @@ void Screen_Init(void)
 		SDL_SetWindowIcon(sdlWindow, pIconSurf);
 		SDL_FreeSurface(pIconSurf);
 	}
+
+	/* Configure some SDL stuff: */
+	SDL_ShowCursor(SDL_DISABLE);
 #else
 	(void)sIconFileName;
 	(void)pIconSurf;
 #endif
-
-	/* Configure some SDL stuff: */
-	SDL_ShowCursor(SDL_DISABLE);
 }
 
 
@@ -863,11 +864,13 @@ void Screen_UnInit(void)
 	free(FrameBuffer.pSTScreenCopy);
 
 	Screen_FreeSDL2Resources();
+#ifndef __LIBRETRO__
 	if (sdlWindow)
 	{
 		SDL_DestroyWindow(sdlWindow);
 		sdlWindow = NULL;
 	}
+#endif
 }
 
 

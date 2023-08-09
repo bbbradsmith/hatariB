@@ -41,6 +41,7 @@ Remaining tasks before ready for public testing:
 * Add reset to button mappings.
 * Option to automatically cold-reset after crash with a timer.
 * Test unicode filenames. Does Libretro expect/convert to UTF-8?
+* Accidentally broke all core option changes that aren't a reset somehow?
 
 Optional tasks:
 * Investigate Libretro MIDI interface. I wonder if I could play MIDI Maze with my real ST?

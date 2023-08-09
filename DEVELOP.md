@@ -66,6 +66,8 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Use SDL software rendering to support all 3 pixel formats allowed by Libretro.
   * Don't SDL_Quit on error.
   * Add option for low resolution pixel doubling.
+* **hatari/src/resolution.c**
+  * Don't use SDL_GetDesktopDisplayMode to get resolution.
 * **hatari/src/video.c**
   * Notify core of video framerate changes.
   * Suppress unused-variable warnings due to `ENABLE_TRACING`.
@@ -106,6 +108,7 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Add option for low resolution pixel doubling.
   * Add options for YM filter configuration.
   * Override some of the default options.
+  * Don't use SDL_NumJoysticks.
 * **hatari/src/keymap.c**
   * Block Scroll Lock, F11, F12, F13 from generating keypresses.
   * Disable all Hatari shortcut keys.
@@ -128,3 +131,8 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
 * **hatari/src/gemdos.c**
 * **hatari/src/hdc.c**
   * Suppress unused-variable warnings due to `ENABLE_TRACING`.
+
+`SDL_Init` and `SDL_Quit` almost all use of the SDL library have been suppressed. There are some remaining uses of the SDL libraries but I do not believe any of them require Init. These include:
+* SDL ending defines and utilities (e.g. `SDL_SwapLE16`) which are used throughout.
+* `SDL_CreateRGBSurface` to create `SDL_SWSURFACE` only. I do not believe this relies on `INIT_VIDEO` (which would have the collateral of `INIT_EVENTS` etc.).
+* `statusbar.c` and `gui-dsl/sdlgui.c` draw to the surface, using `SDL_FillRect`, `SDL_BlitSurface`, `SDL_LockSurface`, etc. which I believe are all fine without `INIT_VIDEO`.

@@ -204,9 +204,11 @@ bool Main_PauseEmulation(bool visualize)
 		/* make sure msg gets shown */
 		Statusbar_Update(sdlscrn, true);
 
+#ifndef __LIBRETRO__
 		if (bGrabMouse && !bInFullScreen)
 			/* Un-grab mouse pointer in windowed mode */
 			SDL_SetRelativeMouseMode(false);
+#endif
 	}
 	return true;
 }
@@ -229,9 +231,11 @@ bool Main_UnPauseEmulation(void)
 	/* Cause full screen update (to clear all) */
 	Screen_SetFullUpdate();
 
+#ifndef __LIBRETRO__
 	if (bGrabMouse)
 		/* Grab mouse pointer again */
 		SDL_SetRelativeMouseMode(true);
+#endif
 	return true;
 }
 
@@ -430,6 +434,7 @@ void Main_WaitOnVbl(void)
  */
 static void Main_CheckForAccurateDelays(void)
 {
+#ifndef __LIBRETRO__
 	int nStartTicks, nEndTicks;
 
 	/* Force a task switch now, so we have a longer timeslice afterwards */
@@ -446,6 +451,9 @@ static void Main_CheckForAccurateDelays(void)
 		Log_Printf(LOG_DEBUG, "Host system has accurate delays. (%d)\n", nEndTicks - nStartTicks);
 	else
 		Log_Printf(LOG_WARN, "Host system does not have accurate delays. (%d)\n", nEndTicks - nStartTicks);
+#else
+	bAccurateDelays = 0;
+#endif
 }
 
 
@@ -461,17 +469,20 @@ static void Main_CheckForAccurateDelays(void)
  */
 void Main_WarpMouse(int x, int y, bool restore)
 {
+#ifdef __LIBRETRO__
 	if (!(restore || ConfigureParams.Screen.bMouseWarp))
 		return;
-#ifdef __LIBRETRO__
-	// libretro has its own way of capturing the mouse
-	bAllowMouseWarp = false;
-#endif
+
 	if (!bAllowMouseWarp)
 		return;
 
 	SDL_WarpMouseInWindow(sdlWindow, x, y);
 	bIgnoreNextMouseMotion = true;
+#else
+	(void)x;
+	(void)y;
+	(void)restore;
+#endif
 }
 
 

@@ -620,6 +620,7 @@ void Configuration_SetDefault(void)
 		ConfigureParams.Joysticks.Joy[i].nKeyCodeRight = SDLK_RIGHT;
 		ConfigureParams.Joysticks.Joy[i].nKeyCodeFire = SDLK_RCTRL;
 	}
+#ifndef __LIBRETRO__
 	if (SDL_NumJoysticks() > 0)
 	{
 		/* ST Joystick #1 is default joystick */
@@ -627,6 +628,7 @@ void Configuration_SetDefault(void)
 		ConfigureParams.Joysticks.Joy[0].nJoyId = (maxjoy ? 1 : 0);
 		ConfigureParams.Joysticks.Joy[1].nJoystickMode = JOYSTICK_REALSTICK;
 	}
+#endif
 
 	/* Set defaults for Keyboard */
 	ConfigureParams.Keyboard.bDisableKeyRepeat = false;
