@@ -142,7 +142,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		}, "1024"
 	},
 	{
-		"hatarib_cartridge", "*Cartridge ROM", NULL,
+		"hatarib_cartridge", "Cartridge ROM", NULL,
 		"ROM image for cartridge port, list of files from system/hatarib/.",
 		NULL, "system",
 		{
@@ -783,7 +783,11 @@ void core_config_read_newparam()
 		}
 	}
 	CFG_INT("hatarib_memory") newparam.Memory.STRamSize_KB = vi;
-	CFG_STR("hatarib_cartridge") {} // TODO
+	CFG_STR("hatarib_cartridge")
+	{
+		if (!strcmp(vs,"<none>"))
+			strcpy_trunc(newparam.Rom.szCartridgeImageFileName,vs,sizeof(newparam.Rom.szCartridgeImageFileName));
+	}
 	CFG_STR("hatarib_hardimg") {} // TODO
 	CFG_INT("hatarib_hardboot") newparam.HardDisk.bBootFromHardDisk = vi;
 	CFG_INT("hatarib_hardtype") {} // TODO

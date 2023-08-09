@@ -1002,8 +1002,6 @@ static uint8_t *TOS_LoadImage(void)
 		unsigned int size;
 		nFileSize = 0;
 		pTosFile = core_read_file_system(ConfigureParams.Rom.szTosImageFileName,&size);
-core_debug_int("pTosFile: ",(int)pTosFile);
-core_debug_int("size: ",(int)size);
 		if (pTosFile)
 		{
 			nFileSize = size;

@@ -39,7 +39,6 @@ Remaining tasks before ready for public testing:
 * Add reset to button mappings.
 * Option to automatically cold-reset after crash with a timer.
 * Test unicode filenames. Does Libretro expect/convert to UTF-8?
-* Cartridge images.
 * Hard disk images.
 
 Optional tasks:

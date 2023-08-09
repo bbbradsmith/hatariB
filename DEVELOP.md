@@ -94,6 +94,8 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Use core_file to load the TOS image.
   * Keep a cached copy of last used TOS to prevent reloading the file on restore.
   * Allow missing TOS to proceed, signal failure to core to be reported there later.
+* **hatari/src/cart.c**
+  * Use core_file to load the cartridge image.
 * **hatari/src/debug/log.h**
 * **hatari/src/debug/log.c**
   * Redirect `Log_Printf` to libretro debug log (optional define for debug).

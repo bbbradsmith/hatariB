@@ -214,7 +214,7 @@ static void core_file_system_add(const char* filename, bool prefix_hatarib)
 	if (prefix_hatarib)
 		strcpy_trunc(sf_filename[sf_count],"hatarib/",MAX_FILENAME);
 	strcat_trunc(sf_filename[sf_count],filename,MAX_FILENAME);
-	//retro_log(RETRO_LOG_INFO,"system file: %s\n",sf_filename[sf_count]);
+	//retro_log(RETRO_LOG_INFO,"core_file_system_add: %s\n",sf_filename[sf_count]);
 	++sf_count;
 }
 
