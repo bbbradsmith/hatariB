@@ -35,7 +35,6 @@ Remaining tasks before ready for public testing:
   * After restore, core disk files may not match what's in the drive. After loading a savestate, update the core inserted state to match hatari's, and set the indices to match the filenames currently in the drive. (If index becomes invalid, it won't be able to save on eject. Give a warning in this case.)
 * On-screen keyboard.
 * Help screen.
-* Add the rest of the keyboard keys to the button mapping config.
 * Add reset to button mappings.
 * Option to automatically cold-reset after crash with a timer.
 * Test unicode filenames. Does Libretro expect/convert to UTF-8?

@@ -387,12 +387,23 @@ void core_input_update(void)
 			{
 				static const int BUTTON_KEY[] = // must match options in core_config.c
 				{
-					RETROK_SPACE,
+					RETROK_SPACE, // 16
 					RETROK_RETURN,
 					RETROK_UP,
 					RETROK_DOWN,
 					RETROK_LEFT,
 					RETROK_RIGHT,
+					RETROK_F1, // 22
+					RETROK_F2,
+					RETROK_F3,
+					RETROK_F4,
+					RETROK_F5,
+					RETROK_F6,
+					RETROK_F7,
+					RETROK_F8,
+					RETROK_F9,
+					RETROK_F10,
+					RETROK_ESCAPE, // 32
 					RETROK_1,
 					RETROK_2,
 					RETROK_3,
@@ -403,6 +414,73 @@ void core_input_update(void)
 					RETROK_8,
 					RETROK_9,
 					RETROK_0,
+					RETROK_MINUS,
+					RETROK_EQUALS,
+					RETROK_BACKQUOTE,
+					RETROK_BACKSPACE,
+					RETROK_TAB, // 47
+					RETROK_q,
+					RETROK_w,
+					RETROK_e,
+					RETROK_r,
+					RETROK_t,
+					RETROK_y,
+					RETROK_u,
+					RETROK_i,
+					RETROK_o,
+					RETROK_p,
+					RETROK_LEFTBRACKET,
+					RETROK_RIGHTBRACKET,
+					RETROK_DELETE,
+					RETROK_LCTRL, // 61
+					RETROK_a,
+					RETROK_s,
+					RETROK_d,
+					RETROK_f,
+					RETROK_g,
+					RETROK_h,
+					RETROK_j,
+					RETROK_k,
+					RETROK_l,
+					RETROK_SEMICOLON,
+					RETROK_QUOTE,
+					RETROK_BACKSLASH,
+					RETROK_LSHIFT, // 74
+					RETROK_z,
+					RETROK_x,
+					RETROK_c,
+					RETROK_v,
+					RETROK_b,
+					RETROK_n,
+					RETROK_m,
+					RETROK_COMMA,
+					RETROK_PERIOD,
+					RETROK_SLASH,
+					RETROK_RSHIFT,
+					RETROK_LALT, // 86
+					RETROK_CAPSLOCK,
+					RETROK_F11, // 88 (Help)
+					RETROK_F12, // (Undo)
+					RETROK_INSERT,
+					RETROK_HOME,
+					RETROK_PAGEUP, // (Left Paren)
+					RETROK_PAGEDOWN, // (Right Paren)
+					RETROK_KP_DIVIDE, // 92
+					RETROK_KP_MULTIPLY,
+					RETROK_KP_MINUS,
+					RETROK_KP_PLUS,
+					RETROK_KP_ENTER,
+					RETROK_KP_PERIOD,
+					RETROK_KP0, // 100
+					RETROK_KP1,
+					RETROK_KP2,
+					RETROK_KP3,
+					RETROK_KP4,
+					RETROK_KP5,
+					RETROK_KP6,
+					RETROK_KP7,
+					RETROK_KP8,
+					RETROK_KP9, // 109
 				};
 				#define BUTTON_KEY_COUNT   (sizeof(BUTTON_KEY)/sizeof(BUTTON_KEY[0]))
 				#define BUTTON_KEY_START   16

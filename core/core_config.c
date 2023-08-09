@@ -529,17 +529,94 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{"19","Key Down"}, \
 		{"20","Key Left"}, \
 		{"21","Key Right"}, \
-		{"22","Key 1"}, \
-		{"23","Key 2"}, \
-		{"24","Key 3"}, \
-		{"25","Key 4"}, \
-		{"26","Key 5"}, \
-		{"27","Key 6"}, \
-		{"28","Key 7"}, \
-		{"29","Key 8"}, \
-		{"30","Key 9"}, \
-		{"31","Key 0"}, \
-		/* TODO lots more */ \
+		{"22","Key F1"}, \
+		{"23","Key F2"}, \
+		{"24","Key F3"}, \
+		{"25","Key F4"}, \
+		{"26","Key F5"}, \
+		{"27","Key F6"}, \
+		{"28","Key F7"}, \
+		{"29","Key F8"}, \
+		{"30","Key F9"}, \
+		{"31","Key F10"}, \
+		{"32","Key Esc"}, \
+		{"33","Key 1"}, \
+		{"34","Key 2"}, \
+		{"35","Key 3"}, \
+		{"36","Key 4"}, \
+		{"37","Key 5"}, \
+		{"38","Key 6"}, \
+		{"39","Key 7"}, \
+		{"40","Key 8"}, \
+		{"41","Key 9"}, \
+		{"42","Key 0"}, \
+		{"43","Key Minus"}, \
+		{"44","Key Equals"}, \
+		{"45","Key Backquote"}, \
+		{"46","Key Backspace"}, \
+		{"47","Key Tab"}, \
+		{"48","Key Q"}, \
+		{"49","Key W"}, \
+		{"50","Key E"}, \
+		{"51","Key R"}, \
+		{"52","Key T"}, \
+		{"53","Key Y"}, \
+		{"54","Key U"}, \
+		{"55","Key I"}, \
+		{"56","Key O"}, \
+		{"57","Key P"}, \
+		{"58","Key Left Brace"}, \
+		{"59","Key Right Brace"}, \
+		{"60","Key Delete"}, \
+		{"61","Key Control"}, \
+		{"62","Key A"}, \
+		{"63","Key S"}, \
+		{"64","Key D"}, \
+		{"65","Key F"}, \
+		{"66","Key G"}, \
+		{"67","Key H"}, \
+		{"68","Key J"}, \
+		{"69","Key K"}, \
+		{"70","Key L"}, \
+		{"71","Key Semicolon"}, \
+		{"72","Key Quote"}, \
+		{"73","Key Backslash"}, \
+		{"74","Key Left Shift"}, \
+		{"75","Key Z"}, \
+		{"76","Key X"}, \
+		{"77","Key C"}, \
+		{"78","Key V"}, \
+		{"79","Key B"}, \
+		{"80","Key N"}, \
+		{"81","Key M"}, \
+		{"82","Key Comma"}, \
+		{"83","Key Period"}, \
+		{"84","Key Slash"}, \
+		{"85","Key Right Shift"}, \
+		{"86","Key Alternate"}, \
+		{"87","Key Capslock"}, \
+		{"88","Key Help"}, \
+		{"89","Key Undo"}, \
+		{"90","Key Insert"}, \
+		{"91","Key Clr Home"}, \
+		{"92","Key Numpad Left Paren"}, \
+		{"93","Key Numpad Right Paren"}, \
+		{"94","Key Numpad Divide"}, \
+		{"95","Key Numpad Multiply"}, \
+		{"96","Key Numpad Subtract"}, \
+		{"97","Key Numpad Add"}, \
+		{"98","Key Numpad Enter"}, \
+		{"99","Key Numpad Decimal"}, \
+		{"100","Key Numpad 0"}, \
+		{"101","Key Numpad 1"}, \
+		{"102","Key Numpad 2"}, \
+		{"103","Key Numpad 3"}, \
+		{"104","Key Numpad 4"}, \
+		{"105","Key Numpad 5"}, \
+		{"106","Key Numpad 6"}, \
+		{"107","Key Numpad 7"}, \
+		{"108","Key Numpad 8"}, \
+		{"109","Key Numpad 9"}, \
 		{NULL,NULL} \
 	}
 #define OPTION_OSKEY_BUTTON() \
