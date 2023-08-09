@@ -91,6 +91,7 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Add `hatari_libretro_flush_audio` to reset audio queue when needed.
 * **hatari/src/tos.c**
   * Allow built-in TOS bios (EmuTOS).
+  * Use core_file to load the TOS image.
   * Keep a cached copy of last used TOS to prevent reloading the file on restore.
   * Allow missing TOS to proceed, signal failure to core to be reported there later.
 * **hatari/src/debug/log.h**

@@ -27,20 +27,20 @@ Development notes: [DEVELOP.md](DEVELOP.md)
 * Default core options favour lower CPU usage, faster load times. This can be changed in the core options.
 
 Remaining tasks before ready for public testing:
-* Support Libretro virtual file system.
 * Load M3U playlists.
 * Load ZIP files.
 * Disks and savestates:
   * Ejecting a modified disk should save it to `saves/` as a replacement for future loads.
   * Hatari savestate size depends on disk image size when it's measured. Try padding up to a minimum size in the serialization code?
   * After restore, core disk files may not match what's in the drive. After loading a savestate, update the core inserted state to match hatari's, and set the indices to match the filenames currently in the drive. (If index becomes invalid, it won't be able to save on eject. Give a warning in this case.)
-* Scan system/hatarib/ directory for TOS, Cartridge, and Hard Disk images.
 * On-screen keyboard.
 * Help screen.
 * Add the rest of the keyboard keys to the button mapping config.
 * Add reset to button mappings.
 * Option to automatically cold-reset after crash with a timer.
 * Test unicode filenames. Does Libretro expect/convert to UTF-8?
+* Cartridge images.
+* Hard disk images.
 
 Optional tasks:
 * Investigate Libretro MIDI interface. I wonder if I could play MIDI Maze with my real ST?

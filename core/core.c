@@ -25,12 +25,16 @@
 // 0 = none, 1 = errors, 2 = all
 #define DEBUG_HATARI_LOG   2
 
+// Logs seem valid for either first retro_set_environment or everything else,
+// set this to 1 when you want to log the first call to retro_set_environment.
+#define DEBUG_RETRO_SET_ENVIRONMENT   0
+
 // make sure this matches ../info/hatarib.info
-static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|m3u|zip";
+static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|m3u|m3u8|zip";
 // IPF/RAW/CRT support requires CAPSLIB which has licensing issues for Libretro.
 // See: https://github.com/libretro/hatari/issues/4
 // See also: https://github.com/mamedev/mame/blob/master/src/lib/formats/ipf_dsk.cpp
-//static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|ipf|raw|ctr|m3u|zip";
+//static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|ipf|raw|ctr|m3u|m3u8|zip";
 
 // serialization quirks
 const uint64_t QUIRKS = RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT;
@@ -102,6 +106,7 @@ bool core_rate_changed = false;
 // (Savestate tends to set them once spuriously during its reset phase.)
 
 bool core_option_hard_reset = false;
+bool content_override_set = false;
 
 static void retro_log_init()
 {
@@ -474,6 +479,11 @@ void core_config_update(bool force)
 	}
 	retro_log(RETRO_LOG_INFO,"Applying configuration update.\n");
 	core_config_apply();
+	// a cold reset should clear the halt
+	if ((core_runflags & CORE_RUNFLAG_HALT) && (core_runflags & CORE_RUNFLAG_RESET_COLD))
+	{
+		core_runflags &= ~CORE_RUNFLAG_HALT;
+	}
 }
 
 //
@@ -486,11 +496,31 @@ RETRO_API void retro_set_environment(retro_environment_t cb)
 
 	// if we initialize the log now, we can log during retro_set_environment,
 	// but the log will become invalid after retro_init, and become unusable?
-	//retro_log_init();
+	#if DEBUG_RETRO_SET_ENVIRONMENT
+		retro_log_init();
+	#endif
 
+	core_file_set_environment(cb);
 	core_input_set_environment(cb);
 	core_disk_set_environment(cb);
 	core_config_set_environment(cb);
+
+	// M3U/M3U8 need fullpath to find the linked files
+	{
+		static const struct retro_system_content_info_override CONTENT_OVERRIDE[] = {
+			{ "m3u|m3u8", true, false },
+			{ NULL, false, false },
+		};
+		if (content_override_set || cb(RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE, (void*)CONTENT_OVERRIDE))
+		{
+			retro_log(RETRO_LOG_INFO,"SET_CONTENT_INFO_OVERRIDE requested need_fullpath\n");
+			content_override_set = true; // seems to fail if called twice?
+		}
+		else
+		{
+			retro_log(RETRO_LOG_ERROR,"SET_CONTENT_INFO_OVERRIDE failed, M3U loading may be broken?\n");
+		}
+	}
 
 	// allow boot with no disks
 	cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, (void*)&BOOL_TRUE);
@@ -498,13 +528,8 @@ RETRO_API void retro_set_environment(retro_environment_t cb)
 	// indicate serialization quirks
 	cb(RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS, (void*)&QUIRKS);
 
-	// TODO
-	// probably part of core_disk:
-	//   RETRO_ENVIRONMENT_GET_VFS_INTERFACE
-	//   GET_SYSTEM_DIRECTORY -> scan for TOS and cartridge lists
-	// consider:
+	// future:
 	//   RETRO_ENVIRONMENT_GET_MIDI_INTERFACE
-	//   think about the posibility of seting this to midi over ip or connecting MIDI maze to my ST??
 }
 
 RETRO_API void retro_set_video_refresh(retro_video_refresh_t cb)
@@ -805,14 +830,12 @@ RETRO_API unsigned retro_get_region(void)
 
 RETRO_API void* retro_get_memory_data(unsigned id)
 {
-	if (id == RETRO_MEMORY_SYSTEM_RAM || id == RETRO_MEMORY_VIDEO_RAM) return STRam;
-	// is there no way to offer the ROM memory here?
+	// This interface seems to be for automatically creating save files,
+	// but this core should save to specially named floppy files image instead.
 	return NULL;
 }
 
 RETRO_API size_t retro_get_memory_size(unsigned id)
 {
-	if (id == RETRO_MEMORY_SYSTEM_RAM || id == RETRO_MEMORY_VIDEO_RAM) return STRamEnd;
-	// is there no way to offer the ROM memory here?
 	return 0;
 }

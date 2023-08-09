@@ -9,6 +9,7 @@ BD=build/
 CORE=$(BD)hatarib.dll
 SOURCES = \
 	core/core.c \
+	core/core_file.c \
 	core/core_input.c \
 	core/core_disk.c \
 	core/core_config.c

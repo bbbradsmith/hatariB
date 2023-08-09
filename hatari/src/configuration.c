@@ -810,7 +810,6 @@ void Configuration_SetDefault(void)
 	ConfigureParams.DiskImage.FastFloppy = true;
 	ConfigureParams.System.bFastBoot = true;
 	ConfigureParams.System.bCycleExactCpu = false;
-	ConfigureParams.System.bCompatibleCpu = false;
 #endif
 }
 

@@ -61,6 +61,7 @@ const int BUILTIN_TOS_LEN[] = {
 	etos192us_len,
 };
 extern uint8_t* core_rom_mem_pointer;
+extern uint8_t* core_read_file_system(const char* filename, unsigned int* size_out);
 #endif
 
 #define TEST_PRG_BASEPAGE 0x1000
@@ -972,7 +973,10 @@ static uint8_t *TOS_LoadImage(void)
 	/* Load TOS image into memory so that we can check its version */
 	TosVersion = 0;
 
-#ifdef __LIBRETRO__
+#ifndef __LIBRETRO__
+	pTosFile = File_Read(ConfigureParams.Rom.szTosImageFileName, &nFileSize, pszTosNameExts);
+#else
+	(void)pszTosNameExts;
 	if (ConfigureParams.Rom.nBuiltinTos != 0)
 	{
 		const uint8_t* builtin_tos = BUILTIN_TOS_ROM[ConfigureParams.Rom.nBuiltinTos];
@@ -995,11 +999,14 @@ static uint8_t *TOS_LoadImage(void)
 	}
 	else
 	{
-#endif
-	pTosFile = File_Read(ConfigureParams.Rom.szTosImageFileName, &nFileSize, pszTosNameExts);
-#ifdef __LIBRETRO__
+		unsigned int size;
+		nFileSize = 0;
+		pTosFile = core_read_file_system(ConfigureParams.Rom.szTosImageFileName,&size);
+core_debug_int("pTosFile: ",(int)pTosFile);
+core_debug_int("size: ",(int)size);
 		if (pTosFile)
 		{
+			nFileSize = size;
 			free(TOSCache_Data);
 			TOSCache_Data = malloc(nFileSize);
 			if (TOSCache_Data)

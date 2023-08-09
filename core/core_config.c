@@ -471,7 +471,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		"hatarib_prefetch", "CPU Prefetch Emulation", NULL,
 		"Causes restart!! Uses more CPU power, more accurate.",
 		NULL, "advanced",
-		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
+		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
 	},
 	{
 		"hatarib_cycle_exact", "Cycle-exact Cache Emulation", NULL,
@@ -667,6 +667,33 @@ extern void Change_CopyChangedParamsToConfiguration(CNF_PARAMS *current, CNF_PAR
 // Internal
 //
 
+// extension will be lowercased
+// compare against exts list of null terminated strings, ended with a double null
+static bool has_extension(const char* fn, const char* exts)
+{
+	char lowercase_ext[16];
+	size_t e = strlen(fn);
+	//retro_log(RETRO_LOG_DEBUG,"has_extension('%s',%p)\n",fn,exts);
+	for(;e>0;--e)
+	{
+		if(fn[e] == '.') break;
+	}
+	if (fn[e] == '.') ++e;
+	strcpy_trunc(lowercase_ext,fn+e,sizeof(lowercase_ext));
+	for (char* c = lowercase_ext; *c!=0; ++c)
+	{
+		if (*c >= 'A' && *c <= 'Z') *c += ('a' - 'A');
+	}
+	//retro_log(RETRO_LOG_DEBUG,"lowercase_ext: '%s'\n",lowercase_ext);
+	while (exts[0] != 0)
+	{
+		//retro_log(RETRO_LOG_DEBUG,"exts: '%s' (%p)\n",exts,exts);
+		if (!strcmp(lowercase_ext,exts)) return true;
+		exts = exts + strlen(exts) + 1;
+	}
+	return false;
+}
+
 static struct retro_variable cfg_var = { NULL, NULL };
 
 bool cfg_read_int(const char* key, int* v)
@@ -719,8 +746,7 @@ void core_config_read_newparam()
 		};
 		#define TOS_LIST_COUNT   CORE_ARRAY_SIZE(TOS_LIST)
 		// TOS files will be found in system/hatarib/ (store system/ relative path)
-		strcpy(newparam.Rom.szTosImageFileName,"hatarib/"); // TODO is there a way to get an OS specific path sep? Can I get away with / ?
-		strcat_trunc(newparam.Rom.szTosImageFileName,vs,sizeof(newparam.Rom.szTosImageFileName));
+		strcpy_trunc(newparam.Rom.szTosImageFileName,vs,sizeof(newparam.Rom.szTosImageFileName));
 		newparam.Rom.nBuiltinTos = 0;
 		// if one of the special cases in TOS_LIST, uses system/tos.img or the builtins
 		for (int i=0; i<TOS_LIST_COUNT; ++i)
@@ -736,7 +762,7 @@ void core_config_read_newparam()
 	}
 	CFG_INT("hatarib_monitor") newparam.Screen.nMonitorType = vi;
 	CFG_INT("hatarib_fast_floppy") newparam.DiskImage.FastFloppy = vi;
-	CFG_INT("hatarib_save_floppy") {} // TODO
+	CFG_INT("hatarib_save_floppy") core_disk_save = vi;
 	CFG_INT("hatarib_hard_reset") core_option_hard_reset = vi;
 	CFG_INT("hatarib_machine")
 	{
@@ -782,7 +808,7 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_hpf") newparam.Sound.YmHpf = vi;
 	CFG_INT("hatarib_driveb") { newparam.DiskImage.EnableDriveB = vi; core_disk_enable_b = vi; }
 	CFG_INT("hatarib_drivesingle") { newparam.DiskImage.DriveA_NumberOfHeads = newparam.DiskImage.DriveB_NumberOfHeads = vi; }
-	CFG_INT("hatarib_readonly_floppy") newparam.DiskImage.nWriteProtection = vi;
+	CFG_INT("hatarib_readonly_floppy") { newparam.DiskImage.nWriteProtection = vi; if (vi) core_disk_save = false; }
 	CFG_INT("hatarib_patchtos") newparam.System.bFastBoot = vi;
 	CFG_INT("hatarib_blitter_st") newparam.System.bBlitter = vi;
 	CFG_INT("hatarib_wakestate") newparam.System.VideoTimingMode = vi;
@@ -832,27 +858,59 @@ void core_config_set_environment(retro_environment_t cb)
 	unsigned version = 0;
 	struct retro_core_option_v2_definition* def;
 	retro_log(RETRO_LOG_DEBUG,"core_config_set_environment(%p)\n",cb);
+	bool tos_img = false;
 
-	// TODO fill in TOS / Cartridge / Hard Disk lists from system/hatarib scan
-	if ((def = get_core_option_def("tos")))
+	if ((def = get_core_option_def("hatarib_tos")))
 	{
-		// populate up to MAX_OPTION_FILES starting from 4
-		def->values[4].value = "pop.tos";
-		def->values[4].label = "pop.tos (test)";
-		// if tos.img is found we should do this:
-		//def->default_value = "<tos.img>";
-		// else if tos.img is not found we should do this:
-		def->values[0].label = "system/tos.img (missing)";
+		int i = 0;
+		int j = 0;
+		if (core_file_system_count() > 0 && !strcmp(core_file_system_filename(0),"tos.img"))
+		{
+			// default to system/tos.img if you have it
+			def->default_value = "<tos.img>";
+			tos_img = true;
+			++i;
+		}
+		else
+		{
+			// otherwise indicate that it's missing
+			def->values[0].label = "system/tos.img (missing)";
+		}
+		
+		for (; (i<core_file_system_count()) && (j<MAX_OPTION_FILES); ++i)
+		{
+			const char* fn = core_file_system_filename(i);
+			if (!has_extension(fn,"img\0" "rom\0" "bin\0" "tos\0" "\0")) continue;
+			def->values[j+4].value = fn;
+			def->values[j+4].label = fn + 8; // hatarib/
+			++j;
+		}
 	}
-	if ((def = get_core_option_def("cartridge")))
+	if ((def = get_core_option_def("hatarib_cartridge")))
 	{
-		def->values[1].value = "pop.img";
-		def->values[1].label = "pop.img (test)";
+		int i = tos_img ? 1 : 0;
+		int j = 0;
+		for (; (i<core_file_system_count()) && (j<MAX_OPTION_FILES); ++i)
+		{
+			const char* fn = core_file_system_filename(i);
+			if (!has_extension(fn,"img\0" "rom\0" "bin\0" "cart\0" "\0")) continue;
+			def->values[j+1].value = fn;
+			def->values[j+1].label = fn + 8; // hatarib/
+			++j;
+		}
 	}
-	if ((def = get_core_option_def("hardimg")))
+	if ((def = get_core_option_def("hatarib_hardimg")))
 	{
-		def->values[1].value = "pop.img";
-		def->values[1].label = "pop.img (test)";
+		int i = tos_img ? 1 : 0;
+		int j = 0;
+		for (; (i<core_file_system_count()) && (j<MAX_OPTION_FILES); ++j, ++i)
+		{
+			const char* fn = core_file_system_filename(i);
+			if (!has_extension(fn,"img\0" "\0")) continue; // TODO what are valid extensions? Hatari doesn't seem to care?
+			def->values[j+1].value = fn;
+			def->values[j+1].label = fn + 8; // hatarib/
+			++j;
+		}
 	}
 
 	if (!cb(RETRO_ENVIRONMENT_GET_CORE_OPTIONS_VERSION, &version)) version = 0;

@@ -14,9 +14,19 @@ extern int core_video_aspect_mode;
 extern bool core_video_changed;
 extern bool core_option_hard_reset;
 
-// core_disk.c TODO move to core_file
+// core_file.c
 extern void strcpy_trunc(char* dest, const char* src, unsigned int len);
 extern void strcat_trunc(char* dest, const char* src, unsigned int len);
+
+extern uint8_t* core_read_file(const char* filename, unsigned int* size_out);
+extern bool core_write_file(const char* filename, unsigned int size, const uint8_t* data);
+extern uint8_t* core_read_file_system(const char* filename, unsigned int* size_out);
+extern uint8_t* core_read_file_save(const char* filename, unsigned int* size_out);
+extern bool core_write_file_save(const char* filename, unsigned int size, const uint8_t* data);
+
+extern void core_file_set_environment(retro_environment_t cb); // scans system/ folder, includes "tos.img" and everything in"hatarib/" (non-recursive)
+extern int core_file_system_count(); // number of files found
+extern const char* core_file_system_filename(int index); // file list, first is "tos.img" if it exists, and "hatarib/" files follow (with "hatarib/ prefix)
 
 // core_disk.c
 extern void core_disk_set_environment(retro_environment_t cb);
@@ -28,6 +38,7 @@ extern void core_disk_drive_toggle(void);
 extern void core_disk_drive_reinsert(void); // used after cold reboot
 
 extern bool core_disk_enable_b;
+extern bool core_disk_save;
 
 // core_config.c
 extern void core_config_set_environment(retro_environment_t cb); // call after core_disk_set_environment (which scans system folder for TOS etc)
