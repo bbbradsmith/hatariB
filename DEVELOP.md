@@ -50,6 +50,7 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * `Main_WaitOnVbl` now sets `SPCFLAG_BRK` to exit the CPU run loop on each simulated vblank.
   * Always assume perfect frame timing rather than measuring system time and manually delaying.
   * Replace SDL event queue polling with a simulated input event queue from the Libretro core. Limit only to key/mouse input events.
+  * Don't SDL_Init or SDL_Quit, SDL is not used except for creating the software texture, which does not require init. (SDL_Quit will conflict with some versions of RetroArch SDL2 input drivers and crash on close.)
   * Disable `Main_WarpMouse` because Libretro will capture the mouse with its focus mode.
   * Replace default status bar help message with a note to press Scroll-Lock for focus mode.
   * Replace loading config from file with core configuration.
@@ -63,6 +64,7 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Don't create or use window or SDL renderer, avoid sending renderer hints.
   * Use existing SDL software surface, but send its data to the core (`core_video_update`) instead of using a renderer present.
   * Use SDL software rendering to support all 3 pixel formats allowed by Libretro.
+  * Don't SDL_Quit on error.
   * Add option for low resolution pixel doubling.
 * **hatari/src/video.c**
   * Notify core of video framerate changes.
@@ -111,6 +113,8 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Provide modifier key state instead of `SDL_GetModState`.
 * **hatari/src/change.c**
   * Signal screen change when Low Resolution pixel doubling option changes.
+* **hatari/src/cpu/memory.c**
+  * Don't SDL_Quit on error.
 * **hatari/src/floppy.c**
 * **hatari/src/includes/floppy.h**
   * Load floppy images from memory instead of from file.

@@ -730,6 +730,7 @@ static void Main_Init(void)
 	}
 	Log_Printf(LOG_INFO, PROG_NAME ", compiled on:  " __DATE__ ", " __TIME__ "\n");
 
+#ifndef __LIBRETRO__
 	/* Init SDL's video subsystem. Note: Audio subsystem
 	   will be initialized later (failure not fatal). */
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
@@ -737,6 +738,7 @@ static void Main_Init(void)
 		fprintf(stderr, "ERROR: could not initialize the SDL library:\n %s\n", SDL_GetError() );
 		exit(-1);
 	}
+#endif
 
 	if ( IPF_Init() != true )
 	{
@@ -838,7 +840,9 @@ static void Main_UnInit(void)
 	IPF_Exit();
 
 	/* SDL uninit: */
+#ifndef __LIBRETRO__
 	SDL_Quit();
+#endif
 
 	/* Close debug log file */
 	Log_UnInit();

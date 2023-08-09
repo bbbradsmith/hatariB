@@ -617,7 +617,9 @@ static bool Screen_SetSDLVideoSize(int width, int height, int bitdepth, bool bFo
 	if (!sdlscrn)
 	{
 		fprintf(stderr, "ERROR: Could not set video mode:\n %s\n", SDL_GetError() );
+#ifndef __LIBRETRO__
 		SDL_Quit();
+#endif
 		exit(-2);
 	}
 

@@ -1677,7 +1677,9 @@ void memory_init(uae_u32 NewSTMemSize, uae_u32 NewTTMemSize, uae_u32 NewRomMemSt
 	if (!STmemory)
 	{
 		write_log ("virtual memory exhausted (STmemory)!\n");
+#ifndef __LIBRETRO__
 		SDL_Quit();
+#endif
 		exit(1);
 	}
 	memset(STmemory, 0, alloc_size);
@@ -1693,7 +1695,9 @@ void memory_init(uae_u32 NewSTMemSize, uae_u32 NewTTMemSize, uae_u32 NewRomMemSt
 		if (!ROMmemory)
 		{
 			fprintf(stderr, "Out of memory (ROM/IO mem)!\n");
+#ifndef __LIBRETRO__
 			SDL_Quit();
+#endif
 			exit(1);
 		}
 	}
