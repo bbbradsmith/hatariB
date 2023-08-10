@@ -291,6 +291,7 @@ static void Paths_InitHomeDirs(void)
  */
 void Paths_Init(const char *argv0)
 {
+#ifndef __LIBRETRO__
 	char *psExecDir;  /* Path string where the hatari executable can be found */
 
 	/* Init working directory string */
@@ -339,13 +340,28 @@ void Paths_Init(const char *argv0)
 
 	/* fprintf(stderr, " WorkingDir = %s\n DataDir = %s\n UserHomeDir = %s\n HatariHomeDir = %s\n ScrenShotDir = %s\n",
 	        sWorkingDir, sDataDir, sUserHomeDir, sHatariHomeDir, sScreenShotDir); */
+#else
+	// libretro core should not use any of these paths,
+	// using this name to help spot accidental usage
+	static char BADPATH[16] = "<nopath>";
+	sWorkingDir = BADPATH;
+	sDataDir = BADPATH;
+	sUserHomeDir = BADPATH;
+	sHatariHomeDir = BADPATH;
+	sScreenShotDir = BADPATH;
+	(void)argv0;
+	(void)Paths_InitHomeDirs;
+	(void)Paths_InitExecDir;
+#endif
 }
 
 void Paths_UnInit(void)
 {
+#ifndef __LIBRETRO__
 	Str_Free(sWorkingDir);
 	Str_Free(sDataDir);
 	Str_Free(sUserHomeDir);
 	Str_Free(sHatariHomeDir);
 	Str_Free(sScreenShotDir);
+#endif
 }

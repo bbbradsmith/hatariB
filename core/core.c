@@ -785,8 +785,9 @@ RETRO_API bool retro_serialize(void *data, size_t size)
 		//++snapshot_buffer[SNAPSHOT_HEADER_SIZE+1];
 
 		memcpy(data,snapshot_buffer,size);
-		//core_debug_bin(data,size,0);
-		//core_trace_next(20); // verify instructions after savestate are the same as after restore
+		//core_debug_bin(data,size,0); // dump uncompressed contents to log
+		//core_trace_next(20); // use to verify instructions after savestate are the same as after restore
+		//core_write_file_save("hatarib_serialize_debug.bin",size,data); // for analyzing the uncompressed contents
 		return true;
 	}
 	return false;

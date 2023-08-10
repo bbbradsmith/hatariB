@@ -253,7 +253,7 @@ Uint8 *MSA_ReadDisk(int Drive, const char *pszFileName, long *pImageSize, int *p
 #ifndef __LIBRETRO__
 	pMsaFile = File_Read(pszFileName, &nFileSize, NULL);
 #else
-	pMsaFile = hatari_libretro_floppy_file_read(pszFileName, &nFileSize, NULL);
+	pMsaFile = hatari_libretro_floppy_file_read(pszFileName, &nFileSize, false);
 #endif
 	if (pMsaFile)
 	{

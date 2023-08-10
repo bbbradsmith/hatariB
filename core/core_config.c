@@ -874,7 +874,7 @@ void core_config_read_newparam()
 			case 4:
 			case 5:
 				newparam.Ide[0].bUseDevice = true;
-				strcpy_trunc(newparam.Ide[0].sDeviceFile,image,sizeof(newparam.Scsi[0].sDeviceFile));
+				strcpy_trunc(newparam.Ide[0].sDeviceFile,image,sizeof(newparam.Ide[0].sDeviceFile));
 				{
 					static const BYTESWAPPING BSMAP[3] = { BYTESWAP_AUTO, BYTESWAP_OFF, BYTESWAP_ON };
 					newparam.Ide[0].nByteSwap = BSMAP[ht-2];
@@ -1018,7 +1018,6 @@ void core_config_set_environment(retro_environment_t cb)
 		{
 			const char* fn = core_file_system_filename(i);
 			// What are appropriate extensions? Hatari seems to allow anything.
-			if (!has_extension(fn,"img\0" "acsi\0" "scsi\0" "bin\0" "\0")) continue;
 			def->values[j+1].value = fn;
 			def->values[j+1].label = fn + 8; // hatarib/
 			++j;

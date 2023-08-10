@@ -54,7 +54,11 @@
  */
 typedef struct scsi_data {
 	bool enabled;
+#ifndef __LIBRETRO__
 	FILE *image_file;
+#else
+	void* image_file;
+#endif
 	Uint32 nLastBlockAddr;      /* The specified sector number */
 	bool bSetLastBlockAddr;
 	Uint8 nLastError;
@@ -82,7 +86,11 @@ typedef struct {
 	int buffer_size;
 	int data_len;
 	int offset;                 /* Current offset into data buffer */
+#ifndef __LIBRETRO__
 	FILE *dmawrite_to_fh;
+#else
+	void* dmawrite_to_fh;
+#endif
 	SCSI_DEV devs[8];
 } SCSI_CTRLR;
 
@@ -99,7 +107,11 @@ extern int HDC_InitDevice(const char *hdtype, SCSI_DEV *dev, char *filename, uns
 extern void HDC_ResetCommandStatus(void);
 extern short int HDC_ReadCommandByte(int addr);
 extern void HDC_WriteCommandByte(int addr, Uint8 byte);
+#ifndef __LIBRETRO__
 extern int HDC_PartitionCount(FILE *fp, const Uint64 tracelevel, int *pIsByteSwapped);
+#else
+extern int HDC_PartitionCount(void* fp, const Uint64 tracelevel, int *pIsByteSwapped);
+#endif
 extern off_t HDC_CheckAndGetSize(const char *hdtype, const char *filename, unsigned long blockSize);
 extern bool HDC_WriteCommandPacket(SCSI_CTRLR *ctr, Uint8 b);
 extern void HDC_DmaTransfer(void);

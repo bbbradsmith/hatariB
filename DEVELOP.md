@@ -128,6 +128,8 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Read back inserted floppy filenames after savestate restore.
   * Mark disks potentially changed by savestates for re-save.
   * Disable check for filesystem write protect on floppy images, not available to libretro core.
+* **hatari/src/includes/file.h**
+  * Access to core_file interface.
 * **hatari/src/st.c**
 * **hatari/src/dim.c**
 * **hatari/src/msa.c**
@@ -136,9 +138,18 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Load floppy image from memory instead of from file.
   * Use core interfaces to save modified floppies to saves/ folder.
 * **hatari/src/midi.c**
-* **hatari/src/gemdos.c**
-* **hatari/src/hdc.c**
   * Suppress unused-variable warnings due to `ENABLE_TRACING`.
+* **hatari/src/gemdos.c**
+  * Suppress unused-variable warnings due to `ENABLE_TRACING`.
+* **hatari/src/hdc.c**
+* **hatari/src/includes/hdc.h**
+  * Replace direct filesystem access with core_file.
+  * Suppress unused-variable warnings due to `ENABLE_TRACING`.
+* **hatari/src/ncr5380.c**
+  * Replace direct filesystem access with core_file.
+* **hatari/src/paths.c**
+  * Disable all attempts to find system paths, replace with `<nopath>` to help find and eliminate remaining attempts to use them.
+
 
 `SDL_Init` and `SDL_Quit` almost all use of the SDL library have been suppressed. There are some remaining uses of the SDL libraries but I do not believe any of them require Init. These include:
 * SDL ending defines and utilities (e.g. `SDL_SwapLE16`) which are used throughout.

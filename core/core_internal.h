@@ -29,7 +29,7 @@ const char* get_temp_fn(); // gets the last temporary path created for a save/sy
 
 // direct file access
 // file access types:
-//   read-only (rb), write-truncate (wb), read-write (wb+), read-write-truncate (rb+)
+//   read-only (rb), write-truncate (wb), read-write (rb+), read-write-truncate (wb+)
 #define CORE_FILE_READ       0
 #define CORE_FILE_WRITE      1
 #define CORE_FILE_REVISE     2
@@ -40,15 +40,19 @@ extern void* core_file_open(const char* path, int access);
 extern void* core_file_open_system(const char* path, int access);
 extern void* core_file_open_save(const char* path, int access);
 extern bool core_file_exists(const char* path); // returns true if file exists and is not a directory (and is read or writable)
-extern bool core_file_save_exists(const char* filename);
+extern bool core_file_exists_save(const char* filename);
 extern void core_file_close(void* file);
 extern int core_file_seek(void* file, int64_t offset, int dir);
-extern int64_t core_file_read(void* buf, int64_t len, void* file);
-extern int64_t core_file_write(const void* buf, int64_t len, void* file);
+extern int64_t core_file_tell(void* file);
+extern int64_t core_file_read(void* buf, int64_t size, int64_t count, void* file);
+extern int64_t core_file_write(const void* buf, int64_t size, int64_t count, void* file);
 extern int core_file_flush(void* file);
 extern int core_file_remove(const char* path);
 extern int core_file_rename(const char* old_path, const char* new_path);
 extern int core_file_stat(const char* path, struct stat* fs);
+extern int core_file_stat_system(const char* path, struct stat* fs);
+extern int64_t core_file_size(const char* path);
+extern int64_t core_file_size_system(const char* path);
 extern void* core_file_opendir(const char* path);
 extern struct dirent* core_file_readdir(void* dir);
 extern int core_file_closedir(void* dir);

@@ -983,10 +983,10 @@ bool core_disk_save_write(const uint8_t* data, unsigned int size, void* file)
 
 	if (file != disk_save_advanced_file)
 		retro_log(RETRO_LOG_ERROR,"core_disk_save_write with changed file? (%p != %p)\n",file,disk_save_advanced_file);
-	return (size == core_file_write(data, size, file));
+	return (size == core_file_write(data, 1, size, file));
 }
 
 bool core_disk_save_exists(const char* filename)
 {
-	return core_file_save_exists(filename);
+	return core_file_exists_save(filename);
 }
