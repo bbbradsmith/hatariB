@@ -75,7 +75,7 @@ extern void core_disk_drive_reinsert(void); // used after cold reboot
 
 // advanced file save, as serial writes
 extern void* core_disk_save_open(const char* filename);
-extern void core_disk_save_close(void* file, bool success); // if !success, will delete the file after closing
+extern void core_disk_save_close_extra(void* file, bool success); // finishes save, if success updates extra_data cache, otherwise deletes the incomplete file
 extern bool core_disk_save_write(const uint8_t* data, unsigned int size, void* file);
 extern bool core_disk_save_exists(const char* filename);
 

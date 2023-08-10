@@ -56,8 +56,8 @@ Development notes: [DEVELOP.md](DEVELOP.md)
   * The images written to *saves/* will be standard Atari ST image formats, and you should be able to load them in other emulators if you wish.
   * Note that Hatari is not able to simulate the formatting of a blank disk in-emulator. The [stand-alone version of Hatari](https://hatari.tuxfamily.org/download.html) has a utility in its menu that can be used to create a blank ST file. A different Atari ST emulator [Steem.SSE](https://sourceforge.net/projects/steemsse/) can simulate the formatting process.
   * In the core options *Advanced > Write Protect Floppy Disks* will act as if all inserted disks have their write protect tab open. This means the emulated operating floppy disk will refuse to modify them, and no further data will be written to the disk. This is independent of the save feature, and can be turned on and off at will. Turning it on after a disk is modified will not prevent the previous modifications from being saved.
-  * *STX* saves will create a *WD1772* file instead of an *STX* when saved. This is an overlay of changes made to the file, because the STX format itself cannot be re-written. If you wish to use these with the stand-alone Hatari, place the overlay file in the same folder as its STX. Because of the overlay *Save Floppy Disk* must be enabled for the modified data to persist after an ejection.
-  * *DIM* format disks cannot be saved, it is recommended to convert them to *ST*.
+  * *STX* saves will create a *WD1772* file instead of an *STX* when saved. This is an overlay of changes made to the file, because the STX format itself cannot be re-written. If you wish to use these with the stand-alone Hatari, place the overlay file in the same folder as its STX.
+  * *DIM* format disks cannot be saved by Hatari. It is recommended to convert them to *ST* files instead.
   * Hard Disk folders or images in *system/* will be written to directly when they 
 * TOS ROMs:
   * The TOS ROM can be chosen in the core option *Sstem > TOS ROM*.
@@ -98,7 +98,6 @@ Optional tasks:
 * Investigate Libretro MIDI interface. I wonder if I could play MIDI Maze against my real ST?
 * See if a MinGW 32-bit built is reasonable? Might provide a stepping stone to other targets, and additional compile checks.
 * Can savestate restore be more lightweight? What takes so much CPU time? Maybe it's disk access?
-* STX saves are inconvenient because they have two files to cache. Should we just add a secondary file cache for the overlay?
 
 ## History
 

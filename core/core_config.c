@@ -98,7 +98,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
 	},
 	{
-		"hatarib_save_floppy", "*Save Floppy Disks", NULL,
+		"hatarib_save_floppy", "Save Floppy Disks", NULL,
 		"Changes to floppy disks will save a copy in saves/."
 		" If turned off, changes will be lost when the content is closed.",
 		NULL, "system",
@@ -182,7 +182,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		}, "<none>"
 	},
 	{
-		"hatarib_hardtype", "*Hard Disk Type", NULL,
+		"hatarib_hardtype", "Hard Disk Type", NULL,
 		"GemDOS type will simulate a hard disk from a folder in system/hatarib/."
 		" The other types must use an image file.",
 		NULL, "system",

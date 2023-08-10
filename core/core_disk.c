@@ -12,9 +12,15 @@
 
 struct disk_image
 {
+	// primary file
 	uint8_t* data;
 	unsigned int size;
 	char filename[MAX_FILENAME];
+	// secondary file (used for STX save)
+	uint8_t* extra_data;
+	unsigned int extra_size;
+	char extra_filename[MAX_FILENAME];
+	// whether the file has a save
 	bool saved;
 };
 
@@ -34,7 +40,7 @@ static int initial_image;
 //
 
 // floppy.c
-extern bool hatari_libretro_floppy_insert(int drive, const char* filename, void* data, unsigned int size);
+extern bool hatari_libretro_floppy_insert(int drive, const char* filename, void* data, unsigned int size, void* extra_data, unsigned int extra_size);
 extern void hatari_libretro_floppy_eject(int drive);
 extern const char* hatari_libretro_floppy_inserted(int drive);
 extern void hatari_libretro_floppy_changed(int drive);
@@ -46,7 +52,10 @@ void disks_clear()
 {
 	drive = 0;
 	for (int i=0; i < MAX_DISKS; ++i)
+	{
 		free(disks[i].data);
+		free(disks[i].extra_data);
+	}
 	memset(disks,0,sizeof(disks));
 	for (int i=0; i< 2; ++i)
 	{
@@ -96,7 +105,9 @@ static bool set_eject_state_drive(bool ejected, int d)
 	if (disks[image_index[d]].data == NULL) return false;
 
 	// now ready to insert
-	if (!hatari_libretro_floppy_insert(d, disks[image_index[d]].filename, disks[image_index[d]].data, disks[image_index[d]].size))
+	if (!hatari_libretro_floppy_insert(d, disks[image_index[d]].filename,
+		disks[image_index[d]].data, disks[image_index[d]].size,
+		disks[image_index[d]].extra_data, disks[image_index[d]].extra_size))
 	{
 		static char floppy_error_msg[MAX_FILENAME+256];
 		struct retro_message_ext msg;
@@ -159,6 +170,7 @@ static unsigned get_num_images(void)
 static bool replace_image_index(unsigned index, const struct retro_game_info* game)
 {
 	const char* path = NULL;
+	const char* ext = NULL;
 	//struct retro_game_info_ext* game_ext = NULL;
 
 	retro_log(RETRO_LOG_DEBUG,"replace_image_index(%d,%p)\n",index,game);
@@ -193,11 +205,14 @@ static bool replace_image_index(unsigned index, const struct retro_game_info* ga
 	//else game_ext = NULL;
 	
 	path = game->path;
-	// find base filename
+	ext = NULL;
+	// find base filename and extension
+	if (path)
 	{
 		int e = strlen(path);
 		for(;e>0;--e)
 		{
+			if(path[e-1] == '.' && ext == NULL) ext = path + e;
 			if(path[e-1] == '/' || path[e-1] == '\\') break;
 		}
 		path += e;
@@ -208,8 +223,11 @@ static bool replace_image_index(unsigned index, const struct retro_game_info* ga
 	if (image_insert[1] && (image_index[1] == index)) set_eject_state_drive(false,0);
 
 	free(disks[index].data);
+	free(disks[index].extra_data);
 	disks[index].data = NULL;
+	disks[index].extra_data = NULL;
 	disks[index].size = 0;
+	disks[index].extra_size = 0;
 	disks[index].saved = false;
 
 	if (core_disk_enable_save && path)
@@ -223,8 +241,22 @@ static bool replace_image_index(unsigned index, const struct retro_game_info* ga
 			disks[index].size = save_size;
 			disks[index].saved = true;
 		}
-		// Note that STX saves end up in a separate .wd1172 file,
-		// which gets loaded on insert instead (if core_disk_enable_save is true).
+		if (ext && !strcasecmp(ext,"stx")) // STX has a secondary save file used as an overlay
+		{
+			strcpy_trunc(disks[index].extra_filename,path,MAX_FILENAME);
+			int l = strlen(disks[index].extra_filename);
+			if (l >= 3) disks[index].extra_filename[l-3] = 0;
+			strcat_trunc(disks[index].extra_filename,"wd1772",MAX_FILENAME);
+			unsigned int extra_size = 0;
+			uint8_t* extra_data = core_read_file_save(disks[index].extra_filename,&extra_size);
+			if (extra_data != NULL)
+			{
+				retro_log(RETRO_LOG_INFO,"STX WD1772 overlay save found: %s (%d bytes)\n",disks[index].extra_filename,extra_size);
+				disks[index].extra_data = extra_data;
+				disks[index].extra_size = extra_size;
+				disks[index].saved = true;
+			}
+		}
 	}
 
 	if (disks[index].data == NULL)
@@ -488,12 +520,16 @@ void core_disk_drive_reinsert(void)
 // standard save:
 //   saves file to saves/ if enabled
 //   replaces the disk cache with the new data for the remainder of the session
-//   (TODO: STX currently bypasses this by writing an overlay file instead, maybe we need to cache the second file?)
 //   for efficiency, core_disk_save can be given owndership of the data pointer passed.
 bool core_disk_save(const char* filename, uint8_t* data, unsigned int size, bool core_owns_data)
 {
 	int i;
 	retro_log(RETRO_LOG_DEBUG,"core_disk_save('%s',%p,%d,%d)\n",filename,data,size,(int)core_owns_data);
+	if (data == NULL)
+	{
+		retro_log(RETRO_LOG_ERROR,"disk save data null?\n");
+		return false;
+	}
 
 	// write to disk if allowed
 	bool result = true;
@@ -501,7 +537,6 @@ bool core_disk_save(const char* filename, uint8_t* data, unsigned int size, bool
 	{
 		result = core_write_file_save(filename, size, data);
 	}
-	if (data == NULL) return false;
 
 	i = 0;
 	for (; i<MAX_DISKS; ++i)
@@ -515,6 +550,7 @@ bool core_disk_save(const char* filename, uint8_t* data, unsigned int size, bool
 		{
 			if (disks[i].data && size <= disks[i].size) // same size or smaller, just copy it over
 			{
+				retro_log(RETRO_LOG_DEBUG,"disk cache overwritten: %s\n",filename);
 				memcpy(disks[i].data, data, size);
 				disks[i].size = size;
 			}
@@ -524,12 +560,14 @@ bool core_disk_save(const char* filename, uint8_t* data, unsigned int size, bool
 				disks[i].data = malloc(size);
 				if (disks[i].data == NULL)
 				{
+					retro_log(RETRO_LOG_ERROR,"disk cache out of memory: %s\n",filename);
 					strcpy(disks[i].filename,"<Out Of Memory>");
 					disks[i].size = 0;
 					result = false;
 				}
 				else
 				{
+					retro_log(RETRO_LOG_DEBUG,"disk cache reallocated: %s\n",filename);
 					memcpy(disks[i].data, data, size);
 					disks[i].size = size;
 				}
@@ -537,12 +575,20 @@ bool core_disk_save(const char* filename, uint8_t* data, unsigned int size, bool
 		}
 		else
 		{
+			retro_log(RETRO_LOG_DEBUG,"disk cache transfered: %s\n",filename);
 			free(disks[i].data);
 			disks[i].data = data;
 			disks[i].size = size;
+			data = NULL; // take ownership
 		}
 	}
-	else if (core_owns_data) // not cached, but we're responsible for discarding
+	else // not found
+	{
+		retro_log(RETRO_LOG_INFO,"core_disk_save for uncached disk: %s\n",filename);		
+	}
+
+	// free data if ownership was given but transferred
+	if (core_owns_data)
 	{
 		free(data);
 	}
@@ -553,14 +599,26 @@ bool core_disk_save(const char* filename, uint8_t* data, unsigned int size, bool
 // more advanced save file creation
 // opens one file and allows serial writes
 // on close, will delete itself if failure is indicated
+// otherwise can update the extra_data cache
 //
 
 void* disk_save_advanced_file = NULL;
 char disk_save_advanced_path[2048] = "";
 char disk_save_advanced_filename[MAX_FILENAME] = "";
 
+// buffer to 
+uint8_t* disk_save_advanced_buffer = NULL;
+unsigned int disk_save_advanced_buffer_size = 0;
+unsigned int disk_save_advanced_buffer_pos = 0;
+// use 2MB
+#define ADVBUFFER_SIZE   (2*1024*1024)
+
 void* core_disk_save_open(const char* filename)
 {
+	free(disk_save_advanced_buffer);
+	disk_save_advanced_buffer = malloc(ADVBUFFER_SIZE);
+	disk_save_advanced_buffer_size = ADVBUFFER_SIZE;
+
 	// open file and remember it for closing time
 	void* handle = core_file_open_save(filename,CORE_FILE_WRITE);
 	disk_save_advanced_file = handle;
@@ -570,24 +628,93 @@ void* core_disk_save_open(const char* filename)
 	return handle;
 }
 
-void core_disk_save_close(void* file, bool success)
+void core_disk_save_close_extra(void* file, bool success)
 {
 	core_file_close(file);
 	if (file != disk_save_advanced_file)
 	{
-		retro_log(RETRO_LOG_ERROR,"core_disk_save_close with changed file? (%p != %p)\n",file,disk_save_advanced_file);
+		// this shouldn't happen
+		retro_log(RETRO_LOG_ERROR,"core_disk_save_close_extra with changed file? (%p != %p)\n",file,disk_save_advanced_file);
 	}
 	else if (!success)
 	{
-		retro_log(RETRO_LOG_ERROR,"core_disk_save_close failure, deleting: '%s'\n",disk_save_advanced_path);
+	// file closed but it was a failure, delete it
+		retro_log(RETRO_LOG_ERROR,"core_disk_save_close_extra failure, deleting: '%s'\n",disk_save_advanced_path);
 		if (0 != core_file_remove(disk_save_advanced_path))
 			retro_log(RETRO_LOG_ERROR,"failed to delete: '%s'\n",disk_save_advanced_path);
 	}
-	// note this does not participate in caching
+	else // success
+	{
+		// if it's a cached disk, update it
+		int i=0;
+		for (; i<MAX_DISKS; ++i)
+		{
+			if (!strcmp(disks[i].extra_filename,disk_save_advanced_filename)) break;
+		}
+		if (i < MAX_DISKS)
+		{
+			if (disk_save_advanced_buffer)
+			{
+				free(disks[i].extra_data);
+				disks[i].extra_data = disk_save_advanced_buffer;
+				disks[i].extra_size = disk_save_advanced_buffer_pos;
+				disks[i].saved = true;
+				disk_save_advanced_buffer = NULL; // disks owns the pointer now
+				retro_log(RETRO_LOG_DEBUG,"disk cache transfered: %s\n",disk_save_advanced_filename);
+			}
+			else // if disk_save_advanced_buffer failed we can still try to read it back from the file
+			{
+				unsigned int size;
+				uint8_t* data;
+				retro_log(RETRO_LOG_WARN,"core_disk_save_close_extra failed to cache, attempting reload: %s\n",disk_save_advanced_filename);
+				data = core_read_file_save(disk_save_advanced_filename,&size);
+				if (data)
+				{
+					free(disks[i].extra_data);
+					disks[i].extra_data = data;
+					disks[i].extra_size = size;
+					disks[i].saved = true;
+					retro_log(RETRO_LOG_DEBUG,"disk cache read back: %s\n",disk_save_advanced_filename);
+				}
+				else
+				{
+					retro_log(RETRO_LOG_ERROR,"core_disk_save_close_extra failed to reload from file: %s\n",disk_save_advanced_filename);
+				}
+			}
+		}
+	}
+	free(disk_save_advanced_buffer);
+	disk_save_advanced_buffer = NULL;
 }
 
 bool core_disk_save_write(const uint8_t* data, unsigned int size, void* file)
 {
+	// store the data to give to the cache later
+	if (disk_save_advanced_buffer)
+	{
+		// grow the buffer if needed
+		if ((disk_save_advanced_buffer_pos + size) > disk_save_advanced_buffer_size)
+		{
+			uint8_t* r = realloc(disk_save_advanced_buffer, disk_save_advanced_buffer_size * 2);
+			if (r == NULL) // if realloc fails, it does not free the original pointer
+			{
+				free(disk_save_advanced_buffer); // free it and abandon the attempt to cache it
+				disk_save_advanced_buffer = NULL;
+			}
+			else
+			{
+				disk_save_advanced_buffer = r;
+				disk_save_advanced_buffer_size *= 2;
+			}
+		}
+		// if still valid, add the new data
+		if (disk_save_advanced_buffer)
+		{
+			memcpy(disk_save_advanced_buffer+disk_save_advanced_buffer_pos,data,size);
+			disk_save_advanced_buffer_pos += size;
+		}
+	}
+
 	if (file != disk_save_advanced_file)
 		retro_log(RETRO_LOG_ERROR,"core_disk_save_write with changed file? (%p != %p)\n",file,disk_save_advanced_file);
 	return (size == core_file_write(data, size, file));
