@@ -84,12 +84,10 @@ Development notes: [DEVELOP.md](DEVELOP.md)
   * Hard Disk modifications are written directly to their source files, and are not included in savestates.
   
 Remaining tasks before ready for public testing:
-* Load M3U playlists.
 * Load ZIP files.
 * On-screen keyboard.
 * Help screen.
 * Button-mapped reset.
-* Button-mapped prev/next disk (RetroArch's eject,next,insert is cumbersome).
 * Option to automatically cold-reset after crash with a timer.
 * Test unicode filenames. Does Libretro expect/convert to UTF-8?
 * Hard disk images: hdc.c, ide.c, gemdos.c need to replace stdio/etc. with core_file abstraction. Also ncr5380.c and inffile.c.

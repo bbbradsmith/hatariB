@@ -167,6 +167,139 @@ static unsigned get_num_images(void)
 	return image_count;
 }
 
+//
+// file loaders
+//
+
+static bool add_image_index(void);
+static bool replace_image_index(unsigned index, const struct retro_game_info* game);
+
+
+
+static bool load_m3u(uint8_t* data, unsigned int size, const char* m3u_path, unsigned first_index)
+{
+	static char path[2048] = "";
+	static char link[2048] = "";
+	static char line[2048] = "";
+
+	// remove data from disks
+	disks[first_index].data = NULL;
+	disks[first_index].size = 0;
+	disks[first_index].saved = false;
+
+	retro_log(RETRO_LOG_INFO,"load_m3u(%d,'%s',%d)\n",size,m3u_path?m3u_path:"NULL",first_index);
+
+	// find the base path
+	if (m3u_path == NULL)
+	{
+		retro_log(RETRO_LOG_ERROR,"load_m3u with no path?\n");
+		m3u_path = "";
+	}
+	strcpy_trunc(path,m3u_path,sizeof(path));
+	{
+		int e = strlen(path);
+		for(;e>0;--e)
+		{
+			if(path[e-1] == '/' || path[e-1] == '\\') break;
+		}
+		path[e] = 0;
+	}
+
+	if (data == NULL)
+	{
+		retro_log(RETRO_LOG_ERROR,"load_m3u with no data? '%s'\n",m3u_path);
+		return false;
+	}
+
+	// scan the file line by line
+	unsigned int p = 0;
+	unsigned int lp = 0;
+	bool first = true;
+	while (p < size)
+	{
+		char c = data[p];
+		if (c == 10 || c == 13 || (p+1) >= size) // end of line
+		{
+			// trim trailing whitespace
+			while (lp > 1 && (line[lp-1] == ' ' || line[lp-1] == '\t'))
+			{
+				line[lp-1] = 0;
+				--lp;
+			}
+			// use the line if not a comment or empty
+			if (lp != 0 && line[0] != '#')
+			{
+				struct retro_game_info info;
+
+				// assume a line containing a colon (e.g. C:) or starting with a / is an absolute path
+				bool absolute = false;
+				if (line[0] == '/') absolute = true;
+				else
+				{
+					for (unsigned int i=0; i<lp; ++i)
+					{
+						if (line[i] == ':') { absolute = true; break; }
+					}
+				}
+
+				retro_log(RETRO_LOG_DEBUG,"M3U Line: '%s'\n",line);
+				link[0] = 0;
+				if (!absolute) // relative path
+					strcpy_trunc(link,path,sizeof(link));
+				strcat_trunc(link,line,sizeof(link));
+
+				memset(&info,0,sizeof(info));
+				info.path = link;
+				info.data = NULL;
+				info.size = 0;
+				info.meta = NULL;
+				int index = first_index;
+				if (first)
+				{
+					first = false;
+				}
+				else // add new indices after the first one
+				{
+					index = get_num_images();
+					if (!add_image_index())
+					{
+						retro_log(RETRO_LOG_ERROR,"Too many disks loaded, stopping M3U before: %s\n",link);
+						break;
+					}
+				}
+				// load the file
+				replace_image_index(index, &info);
+			}
+			// ready for next line
+			lp = 0;
+		}
+		else if (lp < (sizeof(line)-1))
+		{
+			line[lp] = c;
+			line[lp+1] = 0;
+			++lp;
+		}
+		++p;
+	}
+
+	free(data);
+	return true;
+}
+
+static bool load_zip(uint8_t* data, unsigned int size, const char* zip_filename, unsigned first_index)
+{
+	// remove data from disks
+	disks[first_index].data = NULL;
+	disks[first_index].size = 0;
+	disks[first_index].saved = false;
+
+	retro_log(RETRO_LOG_INFO,"load_zip(%d,'%s',%d)\n",size,zip_filename?zip_filename:"NULL",first_index);
+
+	// TODO
+	// prefix files with zip_filename + # like retroarch does if you load from an archive
+	return false;
+}
+
 static bool replace_image_index(unsigned index, const struct retro_game_info* game)
 {
 	const char* path = NULL;
@@ -280,10 +413,14 @@ static bool replace_image_index(unsigned index, const struct retro_game_info* ga
 		}
 	}
 
-	// TODO m3u/m3u8 or zip should parse the file and recursively call this function,
-	// first replacing this one, but then adding new ones. Zip should use alphabetical sort?
-	// If invalid keep with empty data and call it <Invalid M3U> etc.?
-	// see example: https://github.com/libretro/beetle-psx-libretro/blob/379793f1005b1d8810b99f81fe7b5f9126831c89/libretro.cpp#L4024C13-L4024C20
+	if (ext && (!strcasecmp(ext,"m3u") || !strcasecmp(ext,"m3u8")))
+	{
+		return load_m3u(disks[index].data, disks[index].size, game->path, index);
+	}
+	else if (ext && !strcasecmp(ext,"zip"))
+	{
+		return load_zip(disks[index].data, disks[index].size, path, index);
+	}
 
 	if (path == NULL)
 	{
