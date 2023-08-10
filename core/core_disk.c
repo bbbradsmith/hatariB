@@ -356,7 +356,7 @@ static bool load_zip(uint8_t* data, unsigned int size, const char* zip_filename,
 			mz_zip_archive_file_stat fsi, fsj;
 			mz_zip_reader_file_stat(&zip, file_list[i], &fsi);
 			mz_zip_reader_file_stat(&zip, file_list[j], &fsj);
-			if (strcasecmp(fsi.m_filename,fsj.m_filename)>0)
+			if (strcasecmp(fsi.m_filename,fsj.m_filename) < 0)
 			{
 				unsigned int swap = file_list[j];
 				file_list[j] = file_list[i];
