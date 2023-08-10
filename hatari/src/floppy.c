@@ -530,6 +530,7 @@ extern bool hatari_libretro_floppy_insert(int drive, const char* filename, void*
 extern void hatari_libretro_floppy_eject(int drive);
 extern Uint8* hatari_libretro_floppy_file_read(const char *pszFileName, long *pFileSize, const char * const ppszExts[]);
 extern const char* hatari_libretro_floppy_inserted(int drive);
+extern void hatari_libretro_floppy_changed(int drive);
 static void* floppy_data[2] = {NULL,NULL};
 static unsigned int floppy_size[2] = {0,0};
 static int floppy_read_drive = 0;
@@ -567,6 +568,10 @@ const char* hatari_libretro_floppy_inserted(int drive)
 {
 	if (!EmulationDrives[drive].bDiskInserted) return NULL;
 	return ConfigureParams.DiskImage.szDiskFileName[drive];
+}
+void hatari_libretro_floppy_changed(int drive)
+{
+	EmulationDrives[drive].bContentsChanged = true;
 }
 #endif
 

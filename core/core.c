@@ -476,6 +476,9 @@ static bool core_serialize(bool write)
 	if (write) result = hatari_libretro_save_state();
 	else       result = hatari_libretro_restore_state();
 
+	// update core_disk to match changes to the inserted disks
+	core_disk_reindex();
+
 	// finish
 
 	if (write && snapshot_error)

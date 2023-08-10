@@ -15,6 +15,7 @@ struct disk_image
 	uint8_t* data;
 	unsigned int size;
 	char filename[MAX_FILENAME];
+	bool saved;
 };
 
 bool core_disk_enable_b = true;
@@ -36,6 +37,7 @@ static int initial_image;
 extern bool hatari_libretro_floppy_insert(int drive, const char* filename, void* data, unsigned int size);
 extern void hatari_libretro_floppy_eject(int drive);
 extern const char* hatari_libretro_floppy_inserted(int drive);
+extern void hatari_libretro_floppy_changed(int drive);
 //
 // Utilities
 //
@@ -208,6 +210,7 @@ static bool replace_image_index(unsigned index, const struct retro_game_info* ga
 	free(disks[index].data);
 	disks[index].data = NULL;
 	disks[index].size = 0;
+	disks[index].saved = false;
 
 	if (core_disk_enable_save && path)
 	{
@@ -218,6 +221,7 @@ static bool replace_image_index(unsigned index, const struct retro_game_info* ga
 			retro_log(RETRO_LOG_INFO,"Disk image replaced with save: %s (%d bytes)\n",path,save_size);
 			disks[index].data = save_data;
 			disks[index].size = save_size;
+			disks[index].saved = true;
 		}
 		// Note that STX saves end up in a separate .wd1172 file,
 		// which gets loaded on insert instead (if core_disk_enable_save is true).
@@ -390,11 +394,9 @@ void core_disk_unload_game(void)
 	disks_clear();
 }
 
-void core_disk_serialize(void)
+void core_disk_reindex(void)
 {
-	// if not writing, we need to reconnect to the inserted floppies which may have changed
-	// and mirror the new hatari floppy state
-	if (core_serialize_write) return;
+	// after loading a savesate, remap the loaded disks to the ones we have in core_disk
 	for (int d=0; d<2; ++d)
 	{
 		const char* infile = hatari_libretro_floppy_inserted(d);
@@ -414,13 +416,31 @@ void core_disk_serialize(void)
 			if (i < MAX_DISKS)
 			{
 				image_index[d] = i;
-				// TODO if this image has an associated save file then we should set this disk as modified in case there are reverted changes
-				// store a "has save" flag on load, or on write-out to keep track of this
+				if (disks[i].saved)
+				{
+					// Reloading a savesate may have reverted changes to the disk.
+					// If it was never saved, then there would be no changes,
+					// but if we've seen this disk load a save or receive one,
+					// there's a possibility a savesate will be reverting data,
+					// which will need to be saved again. In the case that the data
+					// is the same, it seems okay to request a redundant save,
+					// since we've already established a valid save file exists.
+					// We mark this drive's contents as changed so it will be saved
+					// at the next eject/close.
+					hatari_libretro_floppy_changed(d);
+					retro_log(RETRO_LOG_DEBUG,"Savestate marks floppy contents changed: %s\n",disks[i].filename);
+				}
 			}
 			else
 			{
 				image_index[d] = MAX_DISKS; // set to invalid index
 				retro_log(RETRO_LOG_ERROR,"core_disk_serialize disk in drive %d not cached: '%s'\n",d,infile);
+				// do a save test for possible modifications
+				if (core_disk_save_exists(infile)) // note this doesn't work for STX because it wants an overlay instead
+				{
+					hatari_libretro_floppy_changed(d);
+					retro_log(RETRO_LOG_DEBUG,"Savestate marks uncached floppy contents changed: %s\n",infile);
+				}
 			}
 		}
 	}
@@ -490,6 +510,7 @@ bool core_disk_save(const char* filename, uint8_t* data, unsigned int size, bool
 	}
 	if (i < MAX_DISKS)
 	{
+		disks[i].saved = true;
 		if (!core_owns_data)
 		{
 			if (disks[i].data && size <= disks[i].size) // same size or smaller, just copy it over

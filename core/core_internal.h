@@ -64,7 +64,7 @@ extern void core_disk_set_environment(retro_environment_t cb);
 extern void core_disk_init(void);
 extern void core_disk_load_game(const struct retro_game_info *game);
 extern void core_disk_unload_game(void);
-extern void core_disk_serialize(void);
+extern void core_disk_reindex(void); // call after loading a savestate to rebuild disk cache indices
 extern void core_disk_drive_toggle(void);
 extern void core_disk_drive_reinsert(void); // used after cold reboot
 
