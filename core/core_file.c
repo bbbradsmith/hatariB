@@ -265,7 +265,7 @@ bool core_write_file_save(const char* filename, unsigned int size, const uint8_t
 void* core_file_open(const char* path, int access)
 {
 	retro_log(RETRO_LOG_INFO,"core_file_open('%s',%d)\n",path,access);
-	path = temp_fn_sepfix(filename);
+	path = temp_fn_sepfix(path);
 
 	void* handle = NULL;
 	if (retro_vfs_version >= 3)
@@ -306,7 +306,7 @@ void* core_file_open_save(const char* path, int access)
 bool core_file_exists(const char* path)
 {
 	retro_log(RETRO_LOG_DEBUG,"core_file_exists('%s')\n",path);
-	path = temp_fn_sepfix(filename);
+	path = temp_fn_sepfix(path);
 
 	if (retro_vfs_version >= 3)
 	{
@@ -426,7 +426,7 @@ int core_file_flush(void* file)
 int core_file_remove(const char* path)
 {
 	retro_log(RETRO_LOG_DEBUG,"core_file_remove('%s')\n",path);
-	path = temp_fn_sepfix(filename);
+	path = temp_fn_sepfix(path);
 
 	if (retro_vfs_version >= 3)
 	{
@@ -443,7 +443,7 @@ int core_file_rename(const char* old_path, const char* new_path)
 	char op_fix[MAX_PATH];
 
 	retro_log(RETRO_LOG_DEBUG,"core_file_rename('%s','%s')\n",old_path,new_path);
-	strcpy_trunc(op_fix,temp_fn_sepfix(old_path),sizeof(op_fix);
+	strcpy_trunc(op_fix,temp_fn_sepfix(old_path),sizeof(op_fix));
 	old_path = op_fix;
 	new_path = temp_fn_sepfix(new_path);
 
