@@ -1,5 +1,9 @@
 #pragma once
 
+// fake structures used only as pointers (for compiler type checking)
+typedef struct { int dummy; } corefile;
+typedef struct { int dummy; } coredir;
+
 // 0=0RGB1555, 1=XRGB8888, 2=RGB565
 extern int core_pixel_format;
 

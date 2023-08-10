@@ -56,28 +56,32 @@ extern char* WinTmpFile(void);
 #define CORE_FILE_WRITE      1
 #define CORE_FILE_REVISE     2
 #define CORE_FILE_TRUNCATE   3
-struct stat; // defined where used
-struct dirent; // defined where used
-extern void* core_file_open(const char* path, int access);
-extern void* core_file_open_system(const char* path, int access);
-extern void* core_file_open_save(const char* path, int access);
+#define CORE_FILE_READ       0
+#define CORE_FILE_WRITE      1
+#define CORE_FILE_REVISE     2
+#define CORE_FILE_TRUNCATE   3
+struct stat;
+struct dirent;
+extern corefile* core_file_open(const char* path, int access);
+extern corefile* core_file_open_system(const char* path, int access);
+extern corefile* core_file_open_save(const char* path, int access);
 extern bool core_file_exists(const char* path); // returns true if file exists and is not a directory (and is read or writable)
 extern bool core_file_exists_save(const char* filename);
-extern void core_file_close(void* file);
-extern int core_file_seek(void* file, int64_t offset, int dir);
-extern int64_t core_file_tell(void* file);
-extern int64_t core_file_read(void* buf, int64_t size, int64_t count, void* file);
-extern int64_t core_file_write(const void* buf, int64_t size, int64_t count, void* file);
-extern int core_file_flush(void* file);
+extern void core_file_close(corefile* file);
+extern int core_file_seek(corefile* file, int64_t offset, int dir);
+extern int64_t core_file_tell(corefile* file);
+extern int64_t core_file_read(void* buf, int64_t size, int64_t count, corefile* file);
+extern int64_t core_file_write(const void* buf, int64_t size, int64_t count, corefile* file);
+extern int core_file_flush(corefile* file);
 extern int core_file_remove(const char* path);
 extern int core_file_rename(const char* old_path, const char* new_path);
 extern int core_file_stat(const char* path, struct stat* fs);
 extern int core_file_stat_system(const char* path, struct stat* fs);
 extern int64_t core_file_size(const char* path);
 extern int64_t core_file_size_system(const char* path);
-extern void* core_file_opendir(const char* path);
-extern struct dirent* core_file_readdir(void* dir);
-extern int core_file_closedir(void* dir);
+extern coredir* core_file_opendir(const char* path);
+extern struct dirent* core_file_readdir(coredir* dir);
+extern int core_file_closedir(coredir* dir);
 #endif
 
 #endif /* HATARI_FILE_H */

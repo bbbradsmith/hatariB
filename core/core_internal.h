@@ -34,28 +34,28 @@ const char* get_temp_fn(); // gets the last temporary path created for a save/sy
 #define CORE_FILE_WRITE      1
 #define CORE_FILE_REVISE     2
 #define CORE_FILE_TRUNCATE   3
-struct stat; // defined where used
-struct dirent; // defined where used
-extern void* core_file_open(const char* path, int access);
-extern void* core_file_open_system(const char* path, int access);
-extern void* core_file_open_save(const char* path, int access);
+struct stat;
+struct dirent;
+extern corefile* core_file_open(const char* path, int access);
+extern corefile* core_file_open_system(const char* path, int access);
+extern corefile* core_file_open_save(const char* path, int access);
 extern bool core_file_exists(const char* path); // returns true if file exists and is not a directory (and is read or writable)
 extern bool core_file_exists_save(const char* filename);
-extern void core_file_close(void* file);
-extern int core_file_seek(void* file, int64_t offset, int dir);
-extern int64_t core_file_tell(void* file);
-extern int64_t core_file_read(void* buf, int64_t size, int64_t count, void* file);
-extern int64_t core_file_write(const void* buf, int64_t size, int64_t count, void* file);
-extern int core_file_flush(void* file);
+extern void core_file_close(corefile* file);
+extern int core_file_seek(corefile* file, int64_t offset, int dir);
+extern int64_t core_file_tell(corefile* file);
+extern int64_t core_file_read(void* buf, int64_t size, int64_t count, corefile* file);
+extern int64_t core_file_write(const void* buf, int64_t size, int64_t count, corefile* file);
+extern int core_file_flush(corefile* file);
 extern int core_file_remove(const char* path);
 extern int core_file_rename(const char* old_path, const char* new_path);
 extern int core_file_stat(const char* path, struct stat* fs);
 extern int core_file_stat_system(const char* path, struct stat* fs);
 extern int64_t core_file_size(const char* path);
 extern int64_t core_file_size_system(const char* path);
-extern void* core_file_opendir(const char* path);
-extern struct dirent* core_file_readdir(void* dir);
-extern int core_file_closedir(void* dir);
+extern coredir* core_file_opendir(const char* path);
+extern struct dirent* core_file_readdir(coredir* dir);
+extern int core_file_closedir(coredir* dir);
 
 extern void core_file_set_environment(retro_environment_t cb); // scans system/ folder, includes "tos.img" and everything in"hatarib/" (non-recursive)
 extern int core_file_system_count(); // number of files found
@@ -79,9 +79,9 @@ extern void core_disk_drive_reinsert(void); // used after cold reboot
  extern bool core_disk_save(const char* filename, uint8_t* data, unsigned int size, bool core_owns_data);
 
 // advanced file save, as serial writes
-extern void* core_disk_save_open(const char* filename);
-extern void core_disk_save_close_extra(void* file, bool success); // finishes save, if success updates extra_data cache, otherwise deletes the incomplete file
-extern bool core_disk_save_write(const uint8_t* data, unsigned int size, void* file);
+extern corefile* core_disk_save_open(const char* filename);
+extern void core_disk_save_close_extra(corefile* file, bool success); // finishes save, if success updates extra_data cache, otherwise deletes the incomplete file
+extern bool core_disk_save_write(const uint8_t* data, unsigned int size, corefile* file);
 extern bool core_disk_save_exists(const char* filename);
 
 extern bool core_disk_enable_b;

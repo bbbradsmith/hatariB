@@ -879,7 +879,7 @@ unsigned int disk_save_advanced_buffer_pos = 0;
 // use 2MB
 #define ADVBUFFER_SIZE   (2*1024*1024)
 
-void* core_disk_save_open(const char* filename)
+corefile* core_disk_save_open(const char* filename)
 {
 	free(disk_save_advanced_buffer);
 	disk_save_advanced_buffer = malloc(ADVBUFFER_SIZE);
@@ -894,7 +894,7 @@ void* core_disk_save_open(const char* filename)
 	return handle;
 }
 
-void core_disk_save_close_extra(void* file, bool success)
+void core_disk_save_close_extra(corefile* file, bool success)
 {
 	core_file_close(file);
 	if (file != disk_save_advanced_file)
@@ -953,7 +953,7 @@ void core_disk_save_close_extra(void* file, bool success)
 	disk_save_advanced_buffer = NULL;
 }
 
-bool core_disk_save_write(const uint8_t* data, unsigned int size, void* file)
+bool core_disk_save_write(const uint8_t* data, unsigned int size, corefile* file)
 {
 	// store the data to give to the cache later
 	if (disk_save_advanced_buffer)

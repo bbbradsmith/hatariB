@@ -397,7 +397,7 @@ struct BlockDriverState {
 #ifndef __LIBRETRO__
     FILE *fhndl;
 #else
-	void* fhndl;
+    corefile* fhndl;
 #endif
     off_t file_size;
     int media_changed;

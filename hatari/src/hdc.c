@@ -743,7 +743,7 @@ static void HDC_EmulateCommandPacket(SCSI_CTRLR *ctr)
 #ifndef __LIBRETRO__
 int HDC_PartitionCount(FILE *fp, const Uint64 tracelevel, int *pIsByteSwapped)
 #else
-int HDC_PartitionCount(void* fp, const Uint64 tracelevel, int *pIsByteSwapped)
+int HDC_PartitionCount(corefile* fp, const Uint64 tracelevel, int *pIsByteSwapped)
 #endif
 {
 	unsigned char *pinfo, bootsector[512];
@@ -931,7 +931,7 @@ int HDC_InitDevice(const char *hdtype, SCSI_DEV *dev, char *filename, unsigned l
 #ifndef __LIBRETRO__
 	FILE *fp;
 #else
-	void* fp;
+	corefile* fp;
 #endif
 
 	dev->enabled = false;

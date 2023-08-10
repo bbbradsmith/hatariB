@@ -262,12 +262,12 @@ bool core_write_file_save(const char* filename, unsigned int size, const uint8_t
 // Direct file system abstraction
 //
 
-void* core_file_open(const char* path, int access)
+corefile* core_file_open(const char* path, int access)
 {
 	retro_log(RETRO_LOG_INFO,"core_file_open('%s',%d)\n",path,access);
 	path = temp_fn_sepfix(path);
 
-	void* handle = NULL;
+	corefile* handle = NULL;
 	if (retro_vfs_version >= 3)
 	{
 		struct retro_vfs_file_handle* f;
@@ -276,7 +276,7 @@ void* core_file_open(const char* path, int access)
 		else if (access == CORE_FILE_REVISE  ) mode = RETRO_VFS_FILE_ACCESS_READ_WRITE | RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING;
 		else if (access == CORE_FILE_TRUNCATE) mode = RETRO_VFS_FILE_ACCESS_READ_WRITE;
 		f = retro_vfs->open(path,mode,0);
-		handle = (void*)f;
+		handle = (corefile*)f;
 	}
 	else
 	{
@@ -286,18 +286,18 @@ void* core_file_open(const char* path, int access)
 		else if (access == CORE_FILE_REVISE  ) mode = "rb+";
 		else if (access == CORE_FILE_TRUNCATE) mode = "wb+";
 		f = fopen(path,mode);
-		handle = (void*)f;
+		handle = (corefile*)f;
 	}
 	retro_log(RETRO_LOG_DEBUG,"core_file_open('%s',%d) = %p\n",path,access,handle);
 	return handle;
 }
 
-void* core_file_open_system(const char* path, int access)
+corefile* core_file_open_system(const char* path, int access)
 {
 	return core_file_open(temp_fn2(system_path,path),access);
 }
 
-void* core_file_open_save(const char* path, int access)
+corefile* core_file_open_save(const char* path, int access)
 {
 	save_path_init();
 	return core_file_open(temp_fn2(save_path,path),access);
@@ -334,7 +334,7 @@ bool core_file_exists_save(const char* filename)
 }
 
 
-void core_file_close(void* file)
+void core_file_close(corefile* file)
 {
 	retro_log(RETRO_LOG_DEBUG,"core_file_close(%p)\n",file);
 	if (retro_vfs_version >= 3)
@@ -347,7 +347,7 @@ void core_file_close(void* file)
 	}
 }
 
-int core_file_seek(void* file, int64_t offset, int dir)
+int core_file_seek(corefile* file, int64_t offset, int dir)
 {
 	retro_log(RETRO_LOG_DEBUG,"core_file_seek(%p,%d,%d)\n",file,(int)offset,dir);
 	if (retro_vfs_version >= 3)
@@ -367,7 +367,7 @@ int core_file_seek(void* file, int64_t offset, int dir)
 	}
 }
 
-int64_t core_file_tell(void* file)
+int64_t core_file_tell(corefile* file)
 {
 	retro_log(RETRO_LOG_DEBUG,"core_file_tell(%p)\n",file);
 	if (retro_vfs_version >= 3)
@@ -380,7 +380,7 @@ int64_t core_file_tell(void* file)
 	}
 }
 
-int64_t core_file_read(void* buf, int64_t size, int64_t count, void* file)
+int64_t core_file_read(void* buf, int64_t size, int64_t count, corefile* file)
 {
 	retro_log(RETRO_LOG_DEBUG,"core_file_read(%p,%d,%d,%p)\n",buf,(int)size,(int)count,file);
 	if (retro_vfs_version >= 3)
@@ -395,7 +395,7 @@ int64_t core_file_read(void* buf, int64_t size, int64_t count, void* file)
 	}
 }
 
-int64_t core_file_write(const void* buf, int64_t size, int64_t count, void* file)
+int64_t core_file_write(const void* buf, int64_t size, int64_t count, corefile* file)
 {
 	retro_log(RETRO_LOG_DEBUG,"core_file_write(%p,%d,%d,%p)\n",buf,(int)size,(int)count,file);
 	if (retro_vfs_version >= 3)
@@ -410,7 +410,7 @@ int64_t core_file_write(const void* buf, int64_t size, int64_t count, void* file
 	}
 }
 
-int core_file_flush(void* file)
+int core_file_flush(corefile* file)
 {
 	retro_log(RETRO_LOG_DEBUG,"core_file_flush(%p)\n",file);
 	if (retro_vfs_version >= 3)
@@ -514,22 +514,22 @@ int64_t core_file_size_system(const char* path)
 	return core_file_size(temp_fn2(system_path,path));
 }
 
-void* core_file_opendir(const char* path)
+coredir* core_file_opendir(const char* path)
 {
 	retro_log(RETRO_LOG_DEBUG,"core_file_opendir('%s')\n",path);
 	path = temp_fn_sepfix(path);
 
 	if (retro_vfs_version >= 3)
 	{
-		return (void*)retro_vfs->opendir(path,true);
+		return (coredir*)retro_vfs->opendir(path,true);
 	}
 	else
 	{
-		return (void*)opendir(path);
+		return (coredir*)opendir(path);
 	}
 }
 
-struct dirent* core_file_readdir(void* dir)
+struct dirent* core_file_readdir(coredir* dir)
 {
 	retro_log(RETRO_LOG_DEBUG,"core_file_readdir('%p')\n",dir);
 	if (retro_vfs_version >= 3)
@@ -550,7 +550,7 @@ struct dirent* core_file_readdir(void* dir)
 	}
 }
 
-int core_file_closedir(void* dir)
+int core_file_closedir(coredir* dir)
 {
 	retro_log(RETRO_LOG_DEBUG,"core_file_closedir('%p')\n",dir);
 	if (retro_vfs_version >= 3)

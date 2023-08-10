@@ -77,7 +77,7 @@ const char MemorySnapShot_fileid[] = "Hatari memorySnapShot.c";
 typedef gzFile MSS_File;
 
 #elifdef __LIBRETRO__
-typedef void* MSS_File;
+typedef corefile* MSS_File;
 
 #else
 
