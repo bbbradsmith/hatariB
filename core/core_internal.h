@@ -13,6 +13,7 @@ extern retro_log_printf_t retro_log;
 extern int core_video_aspect_mode;
 extern bool core_video_changed;
 extern bool core_option_hard_reset;
+extern bool core_serialize_write; // current serialization direction
 
 // core_file.c
 extern void strcpy_trunc(char* dest, const char* src, unsigned int len);
@@ -23,6 +24,33 @@ extern bool core_write_file(const char* filename, unsigned int size, const uint8
 extern uint8_t* core_read_file_system(const char* filename, unsigned int* size_out);
 extern uint8_t* core_read_file_save(const char* filename, unsigned int* size_out);
 extern bool core_write_file_save(const char* filename, unsigned int size, const uint8_t* data);
+const char* get_temp_fn(); // gets the last temporary path created for a save/system read or write (use carefully)
+
+// direct file access
+// file access types:
+//   read-only (rb), write-truncate (wb), read-write (wb+), read-write-truncate (rb+)
+#define CORE_FILE_READ       0
+#define CORE_FILE_WRITE      1
+#define CORE_FILE_REVISE     2
+#define CORE_FILE_TRUNCATE   3
+struct stat; // defined where used
+struct dirent; // defined where used
+extern void* core_file_open(const char* path, int access);
+extern void* core_file_open_system(const char* path, int access);
+extern void* core_file_open_save(const char* path, int access);
+extern bool core_file_exists(const char* path); // returns true if file exists and is not a directory (and is read or writable)
+extern bool core_file_save_exists(const char* filename);
+extern void core_file_close(void* file);
+extern int core_file_seek(void* file, int64_t offset, int dir);
+extern int64_t core_file_read(void* buf, int64_t len, void* file);
+extern int64_t core_file_write(const void* buf, int64_t len, void* file);
+extern int core_file_flush(void* file);
+extern int core_file_remove(const char* path);
+extern int core_file_rename(const char* old_path, const char* new_path);
+extern int core_file_stat(const char* path, struct stat* fs);
+extern void* core_file_opendir(const char* path);
+extern struct dirent* core_file_readdir(void* dir);
+extern int core_file_closedir(void* dir);
 
 extern void core_file_set_environment(retro_environment_t cb); // scans system/ folder, includes "tos.img" and everything in"hatarib/" (non-recursive)
 extern int core_file_system_count(); // number of files found
@@ -40,8 +68,19 @@ extern void core_disk_serialize(void);
 extern void core_disk_drive_toggle(void);
 extern void core_disk_drive_reinsert(void); // used after cold reboot
 
+// simple file save, as a complete buffer
+// after saving, the image cached in core_disk.c will be updated (if the file is cached),
+// and if core_owns_data it will just take over the pointer instead of copying it.
+ extern bool core_disk_save(const char* filename, uint8_t* data, unsigned int size, bool core_owns_data);
+
+// advanced file save, as serial writes
+extern void* core_disk_save_open(const char* filename);
+extern void core_disk_save_close(void* file, bool success); // if !success, will delete the file after closing
+extern bool core_disk_save_write(const uint8_t* data, unsigned int size, void* file);
+extern bool core_disk_save_exists(const char* filename);
+
 extern bool core_disk_enable_b;
-extern bool core_disk_save;
+extern bool core_disk_enable_save;
 
 // core_config.c
 extern void core_config_set_environment(retro_environment_t cb); // call after core_disk_set_environment (which scans system folder for TOS etc)

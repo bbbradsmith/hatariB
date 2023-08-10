@@ -410,10 +410,15 @@ bool MSA_WriteDisk(int Drive, const char *pszFileName, Uint8 *pBuffer, int Image
 	}
 
 	/* And save to file! */
+#ifndef __LIBRETRO__
 	nRet = File_Save(pszFileName,pMSAImageBuffer, pMSABuffer-pMSAImageBuffer, false);
 
 	/* Free workspace */
 	free(pMSAImageBuffer);
+#else
+	nRet = core_disk_save(pszFileName, pMSAImageBuffer, pMSABuffer-pMSAImageBuffer, true);
+	// don't free it, core now owns data
+#endif
 
 	return nRet;
 

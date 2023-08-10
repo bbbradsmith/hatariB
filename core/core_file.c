@@ -1,17 +1,19 @@
-#include "../libretro/libretro.h"
-#include "core.h"
-#include "core_internal.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include "../hatari/src/includes/main.h"
+#include "../libretro/libretro.h"
+#include "core.h"
+#include "core_internal.h"
 
 #define MAX_PATH          2048
 #define MAX_FILENAME      256
 #define MAX_SYSTEM_FILE   128
 #define MAX_SYSTEM_DIR     16
 
+// set to 0 to only use standard filesystem
 #define USE_RETRO_VFS   1
 
 static int sf_count = 0;
@@ -52,7 +54,7 @@ void strcat_trunc(char* dest, const char* src, unsigned int len)
 }
 
 //
-// File system abstraction
+// Basic file system abstraction
 //
 
 static char temp_fn[MAX_PATH];
@@ -69,6 +71,11 @@ const char* temp_fn3(const char* path1, const char* path2, const char* path3)
 {
 	temp_fn2(path1,path2);
 	if(path3) strcat_trunc(temp_fn, path3, sizeof(temp_fn));
+	return temp_fn;
+}
+
+const char* get_temp_fn()
+{
 	return temp_fn;
 }
 
@@ -189,22 +196,278 @@ bool core_write_file(const char* filename, unsigned int size, const uint8_t* dat
 
 uint8_t* core_read_file_system(const char* filename, unsigned int* size_out)
 {
-	retro_log(RETRO_LOG_INFO,"core_read_file_system('%s')\n",filename);
+	//retro_log(RETRO_LOG_INFO,"core_read_file_system('%s')\n",filename);
 	return core_read_file(temp_fn2(system_path,filename),size_out);
 }
 
 uint8_t* core_read_file_save(const char* filename, unsigned int* size_out)
 {
-	retro_log(RETRO_LOG_INFO,"core_read_file_save('%s')\n",filename);
+	//retro_log(RETRO_LOG_INFO,"core_read_file_save('%s')\n",filename);
 	save_path_init();
 	return core_read_file(temp_fn2(save_path,filename),size_out);
 }
 
 bool core_write_file_save(const char* filename, unsigned int size, const uint8_t* data)
 {
-	retro_log(RETRO_LOG_INFO,"core_write_file_save('%s',%d)\n",filename,size);
+	//retro_log(RETRO_LOG_INFO,"core_write_file_save('%s',%d)\n",filename,size);
 	save_path_init();
 	return core_write_file(temp_fn2(save_path,filename), size, data);
+}
+
+//
+// Direct file system abstraction
+//
+
+void* core_file_open(const char* path, int access)
+{
+	retro_log(RETRO_LOG_INFO,"core_file_open('%s',%d)\n",path,access);
+	void* handle = NULL;
+	if (retro_vfs_version >= 3)
+	{
+		struct retro_vfs_file_handle* f;
+		unsigned mode = RETRO_VFS_FILE_ACCESS_READ;
+		if      (access == CORE_FILE_WRITE   ) mode = RETRO_VFS_FILE_ACCESS_WRITE;
+		else if (access == CORE_FILE_REVISE  ) mode = RETRO_VFS_FILE_ACCESS_READ_WRITE | RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING;
+		else if (access == CORE_FILE_TRUNCATE) mode = RETRO_VFS_FILE_ACCESS_READ_WRITE;
+		f = retro_vfs->open(path,mode,0);
+		handle = (void*)f;
+	}
+	else
+	{
+		FILE* f;
+		const char* mode = "rb";
+		if      (access == CORE_FILE_WRITE   ) mode = "wb";
+		else if (access == CORE_FILE_REVISE  ) mode = "rb+";
+		else if (access == CORE_FILE_TRUNCATE) mode = "wb+";
+		f = fopen(path,mode);
+		handle = (void*)f;
+	}
+	retro_log(RETRO_LOG_DEBUG,"core_file_open('%s',%d) = %p\n",path,access,handle);
+	return handle;
+}
+
+void* core_file_open_system(const char* path, int access)
+{
+	return core_file_open(temp_fn2(system_path,path),access);
+}
+
+void* core_file_open_save(const char* path, int access)
+{
+	save_path_init();
+	return core_file_open(temp_fn2(save_path,path),access);
+}
+
+bool core_file_exists(const char* path)
+{
+	retro_log(RETRO_LOG_DEBUG,"core_file_exists('%s')\n",path);
+	if (retro_vfs_version >= 3)
+	{
+		int vst = retro_vfs->stat(path,NULL);
+		if (!(vst & RETRO_VFS_STAT_IS_VALID)) return false;
+		if (vst & RETRO_VFS_STAT_IS_DIRECTORY) return false;
+		return true;
+	}
+	else
+	{
+		// conditions based on hatari/src/file.c File_Exists
+		struct stat fs;
+		if ((0 == stat(path, &fs)) && (fs.st_mode & (S_IRUSR|S_IWUSR)) && !S_ISDIR(fs.st_mode))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+bool core_file_save_exists(const char* filename)
+{
+	save_path_init();
+	return core_file_exists(temp_fn2(save_path,filename));
+}
+
+
+void core_file_close(void* file)
+{
+	retro_log(RETRO_LOG_DEBUG,"core_file_close(%p)\n",file);
+	if (retro_vfs_version >= 3)
+	{
+		retro_vfs->close((struct retro_vfs_file_handle*)file);
+	}
+	else
+	{
+		fclose((FILE*)file);
+	}
+}
+
+int core_file_seek(void* file, int64_t offset, int dir)
+{
+	retro_log(RETRO_LOG_DEBUG,"core_file_seek(%p,%d,%d)\n",file,(int)offset,dir);
+	if (retro_vfs_version >= 3)
+	{
+		int mode = RETRO_VFS_SEEK_POSITION_START;
+		if      (dir == SEEK_CUR) mode = RETRO_VFS_SEEK_POSITION_CURRENT;
+		else if (dir == SEEK_END) mode = RETRO_VFS_SEEK_POSITION_END;
+
+		if (retro_vfs->seek((struct retro_vfs_file_handle*)file,offset,mode) < 0)
+			return -1;
+		else
+			return 0;
+	}
+	else
+	{
+		return fseek((FILE*)file,(long)offset,dir);
+	}
+}
+
+int64_t core_file_read(void* buf, int64_t len, void* file)
+{
+	retro_log(RETRO_LOG_DEBUG,"core_file_read(%p,%d,%p)\n",buf,len,file);
+	if (retro_vfs_version >= 3)
+	{
+		int64_t result = retro_vfs->read((struct retro_vfs_file_handle*)file,buf,len);
+		if (result < 0) return 0;
+		return result;
+	}
+	else
+	{
+		return fread(buf,1,len,(FILE*)file);
+	}
+}
+
+int64_t core_file_write(const void* buf, int64_t len, void* file)
+{
+	retro_log(RETRO_LOG_DEBUG,"core_file_write(%p,%d,%p)\n",buf,len,file);
+	if (retro_vfs_version >= 3)
+	{
+		int64_t result = retro_vfs->write((struct retro_vfs_file_handle*)file,buf,len);
+		if (result < 0) return 0;
+		return result;
+	}
+	else
+	{
+		return fwrite(buf,1,len,(FILE*)file);
+	}
+}
+
+int core_file_flush(void* file)
+{
+	retro_log(RETRO_LOG_DEBUG,"core_file_flush(%p)\n",file);
+	if (retro_vfs_version >= 3)
+	{
+		return retro_vfs->flush((struct retro_vfs_file_handle*)file);
+	}
+	else
+	{
+		return fflush((FILE*)file);
+	}
+}
+
+int core_file_remove(const char* path)
+{
+	retro_log(RETRO_LOG_DEBUG,"core_file_remove('%s')\n",path);
+	if (retro_vfs_version >= 3)
+	{
+		return retro_vfs->remove(path);
+	}
+	else
+	{
+		return remove(path);
+	}
+}
+
+int core_file_rename(const char* old_path, const char* new_path)
+{
+	retro_log(RETRO_LOG_DEBUG,"core_file_rename('%s','%s')\n",old_path,new_path);
+	if (retro_vfs_version >= 3)
+	{
+		return retro_vfs->rename(old_path, new_path);
+	}
+	else
+	{
+		return rename(old_path, new_path);
+	}
+}
+
+int core_file_stat(const char* path, struct stat* fs)
+{
+	retro_log(RETRO_LOG_DEBUG,"core_file_stat('%s',%p)\n",path,fs);
+	if (retro_vfs_version >= 3)
+	{
+		int32_t vsize;
+		int vst = retro_vfs->stat(path,&vsize);
+		if (!(vst & RETRO_VFS_STAT_IS_VALID)) return -1;
+		if (fs)
+		{
+			memset(fs,0,sizeof(struct stat));
+			// gemdos.c uses:
+			//   st_mtime
+			//   st_atime
+			//   st_mode with: S_IWURS, S_IFDIR, and S_ISDIR
+			//   st_size
+			fs->st_mtime = 0; // don't have this
+			fs->st_atime = 0; // don't have this
+			fs->st_mode |= S_IWUSR; // don't have this, assume write permissions always
+			if (vst & RETRO_VFS_STAT_IS_DIRECTORY)
+			{
+			    fs->st_mode |= S_IFDIR;
+				fs->st_mode |= S_ISDIR(~0);
+			}
+			if (vst & RETRO_VFS_STAT_IS_CHARACTER_SPECIAL) fs->st_mode |= S_IFCHR; // not used but retro vfs has it
+			fs->st_size = (off_t)vsize;
+		}
+		return 0;
+	}
+	else
+	{
+		return stat(path, fs);
+	}
+}
+
+void* core_file_opendir(const char* path)
+{
+	retro_log(RETRO_LOG_DEBUG,"core_file_opendir('%s')\n",path);
+	if (retro_vfs_version >= 3)
+	{
+		return (void*)retro_vfs->opendir(path,true);
+	}
+	else
+	{
+		return (void*)opendir(path);
+	}
+}
+
+struct dirent* core_file_readdir(void* dir)
+{
+	retro_log(RETRO_LOG_DEBUG,"core_file_readdir('%p')\n",dir);
+	if (retro_vfs_version >= 3)
+	{
+		static struct dirent d;
+		memset(&d,0,sizeof(d));
+		// gemdos.c only uses name
+		if (retro_vfs->readdir((struct retro_vfs_dir_handle*)dir))
+		{
+			const char* name = retro_vfs->dirent_get_name((struct retro_vfs_dir_handle*)dir);
+			if (name) strcpy_trunc(d.d_name,name,sizeof(d.d_name));
+		}
+		return &d;
+	}
+	else
+	{
+		return readdir((DIR*)dir);
+	}
+}
+
+int core_file_closedir(void* dir)
+{
+	retro_log(RETRO_LOG_DEBUG,"core_file_closedir('%p')\n",dir);
+	if (retro_vfs_version >= 3)
+	{
+		return retro_vfs->closedir((struct retro_vfs_dir_handle*)dir);
+	}
+	else
+	{
+		return closedir((DIR*)dir);
+	}
 }
 
 //

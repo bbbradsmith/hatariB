@@ -12,11 +12,14 @@
 #define AUDIO_BUFFER_LEN   (4*2*96000/50)
 
 // header size must accomodate core data before the hatari memory snapshot
+// minimum size is supposed to accomodate 2 floppy images of up to 2MB data each
 // overhead is some safety extra in case hatari wants to increase the snapshot size later
 // (doesn't seem to change size without config changes that might need a restart)
 // round is an even file size to round up to.
 // Change the version any time the contents of the header change.
+// TODO set the minimum + 4MB
 #define SNAPSHOT_HEADER_SIZE   1024
+#define SNAPSHOT_MINIMUM       (0)
 #define SNAPSHOT_OVERHEAD      (64 * 1024)
 #define SNAPSHOT_ROUND         (64 * 1024)
 #define SNAPSHOT_VERSION       1
@@ -412,7 +415,11 @@ static void snapshot_buffer_prepare(size_t size)
 	memset(snapshot_buffer,0,snapshot_size);
 }
 
-static bool core_serialize_write = false;
+//
+// savestates
+//
+
+bool core_serialize_write = false; // serialization direction
 
 static void core_serialize_internal(void* x, size_t size)
 {
@@ -425,11 +432,14 @@ void core_serialize_int32(int32_t*x) { core_serialize_internal(x,sizeof(int32_t)
 
 static bool core_serialize(bool write)
 {
+	uint8_t bval;
 	int32_t result = 0;
 	core_serialize_write = write;
 	core_snapshot_open_internal();
 
-	// header
+	// header (core data)
+
+	// integrity
 	result = SNAPSHOT_VERSION;
 	core_serialize_int32(&result);
 	if (result != SNAPSHOT_VERSION)
@@ -437,15 +447,36 @@ static bool core_serialize(bool write)
 		retro_log(RETRO_LOG_ERROR,"savestate version does not match SNAPSHOT_VERSION (%d != %d)\n",result,SNAPSHOT_VERSION);
 		return false;
 	}
+	result = (int32_t)0x12345678UL;
+	core_serialize_int32(&result);
+	if (result != (int32_t)0x12345678UL)
+	{
+		retro_log(RETRO_LOG_ERROR,"savestate endian does not match system (%08X != %08X)\n",(uint32_t)result,0x12345678UL);
+		return false;
+	}
+	bval = sizeof(void*);
+	core_serialize_uint8(&bval);
+	if (bval != sizeof(void*))
+	{
+		retro_log(RETRO_LOG_ERROR,"savessate memory address size does not match system (%d != %d)\n",result*8,sizeof(void*)*8);
+		return false;
+	}
+
+	// core state
 	core_serialize_uint8(&core_runflags);
 	core_input_serialize();
-	//retro_log(RETRO_LOG_DEBUG,"core_serialize header: %d <= %d\n",snapshot_pos,SNAPSHOT_HEADER_SIZE);
+	retro_log(RETRO_LOG_DEBUG,"core_serialize header: %d <= %d\n",snapshot_pos,SNAPSHOT_HEADER_SIZE);
 	if (snapshot_pos > SNAPSHOT_HEADER_SIZE)
 		retro_log(RETRO_LOG_ERROR,"core_serialize header too large! %d > %d\n",snapshot_pos,SNAPSHOT_HEADER_SIZE);
 
+	// suffix (hatari data)
+
+	// hatari state
 	result = 0;
 	if (write) result = hatari_libretro_save_state();
 	else       result = hatari_libretro_restore_state();
+
+	// finish
 
 	if (write && snapshot_error)
 	{
@@ -461,7 +492,7 @@ static bool core_serialize(bool write)
 		environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg);		
 	}
 
-	//retro_log(RETRO_LOG_DEBUG,"core_serialized: %d of %d used\n",snapshot_max,snapshot_size);
+	retro_log(RETRO_LOG_DEBUG,"core_serialized: %d of %d used\n",snapshot_max,snapshot_size);
 	if (result != 0)
 	{
 		snapshot_error = true;
@@ -469,6 +500,10 @@ static bool core_serialize(bool write)
 	}
 	return !snapshot_error;
 }
+
+//
+// config update
+//
 
 void core_config_update(bool force)
 {
@@ -800,6 +835,8 @@ RETRO_API bool retro_load_game(const struct retro_game_info *game)
 	free(snapshot_buffer); snapshot_buffer = NULL;
 	core_serialize(true);
 	snapshot_size = snapshot_max + SNAPSHOT_OVERHEAD;
+	if (snapshot_size < SNAPSHOT_MINIMUM)
+		snapshot_size = SNAPSHOT_MINIMUM;
 	if (snapshot_size % SNAPSHOT_ROUND)
 		snapshot_size += (SNAPSHOT_ROUND - (snapshot_size % SNAPSHOT_ROUND));
 

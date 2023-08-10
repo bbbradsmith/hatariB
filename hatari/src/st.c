@@ -87,7 +87,12 @@ bool ST_WriteDisk(int Drive, const char *pszFileName, Uint8 *pBuffer, int ImageS
 #ifdef SAVE_TO_ST_IMAGES
 
 	/* Just save buffer directly to file */
+#ifndef __LIBRETRO__
 	return File_Save(pszFileName, pBuffer, ImageSize, false);
+#else
+	return core_disk_save(pszFileName, pBuffer, ImageSize, false);
+	// core will memcpy this data if ImageSize has not changed
+#endif
 
 #else   /*SAVE_TO_ST_IMAGES*/
 

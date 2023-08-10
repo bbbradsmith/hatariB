@@ -524,6 +524,7 @@ int	Floppy_DriveTransitionUpdateState ( int Drive )
 extern bool hatari_libretro_floppy_insert(int drive, const char* filename, void* data, unsigned int size);
 extern void hatari_libretro_floppy_eject(int drive);
 extern Uint8* hatari_libretro_floppy_file_read(const char *pszFileName, long *pFileSize, const char * const ppszExts[]);
+extern const char* hatari_libretro_floppy_inserted(int drive);
 static void* floppy_data[2] = {NULL,NULL};
 static unsigned int floppy_size[2] = {0,0};
 static int floppy_read_drive = 0;
@@ -556,6 +557,11 @@ Uint8* hatari_libretro_floppy_file_read(const char *pszFileName, long *pFileSize
 	memcpy(data_out,data,size);
 	if (pFileSize) *pFileSize = (long)size;
 	return data_out;
+}
+const char* hatari_libretro_floppy_inserted(int drive)
+{
+	if (!EmulationDrives[drive].bDiskInserted) return NULL;
+	return ConfigureParams.DiskImage.szDiskFileName[drive];
 }
 #endif
 
@@ -687,8 +693,6 @@ bool Floppy_EjectDiskFromDrive(int Drive)
 		/* OK, has contents changed? If so, need to save */
 		if (EmulationDrives[Drive].bContentsChanged)
 		{
-#ifndef __LIBRETRO__
-// TODO saving not yet supported
 			/* Is OK to save image (if boot-sector is bad, don't allow a save) */
 			if (EmulationDrives[Drive].bOKToSave)
 			{
@@ -710,9 +714,6 @@ bool Floppy_EjectDiskFromDrive(int Drive)
 				else
 					Log_Printf(LOG_INFO, "Writing of this format failed or not supported, discarded the contents\n of floppy image '%s'.", psFileName);
 			} else
-#else
-			(void)bSaved;
-#endif
 				Log_Printf(LOG_INFO, "Writing not possible, discarded the contents of floppy image\n '%s'.", psFileName);
 		}
 

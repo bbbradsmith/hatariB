@@ -175,6 +175,10 @@ bool DIM_WriteDisk(int Drive, const char *pszFileName, Uint8 *pBuffer, int Image
 
 #else   /*SAVE_TO_ST_IMAGES*/
 
+#ifdef __LIBRETRO__
+	core_error_msg("DIM file saving is not supported by Hatari.");
+#endif
+
 	/* Oops, cannot save */
 	return false;
 

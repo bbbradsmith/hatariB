@@ -374,7 +374,11 @@ Uint8 *STX_ReadDisk(int Drive, const char *pszFileName, long *pImageSize, int *p
  */
 bool STX_WriteDisk ( int Drive , const char *pszFileName , Uint8 *pBuffer , int ImageSize )
 {
+#ifndef __LIBRETRO__
 	FILE		*FileOut;
+#else
+	void*		FileOut;
+#endif
 	char		FilenameSave[ FILENAME_MAX ];
 	Uint8		buf[ 100 ];
 	Uint8		*p;
@@ -417,7 +421,11 @@ bool STX_WriteDisk ( int Drive , const char *pszFileName , Uint8 *pBuffer , int 
 	Log_Printf ( LOG_DEBUG , "stx write <%s>\n" , FilenameSave );
 
 	
+#ifndef __LIBRETRO__
 	FileOut = fopen ( FilenameSave , "wb+" );
+#else
+	FileOut = core_disk_save_open( FilenameSave );
+#endif
 	if ( !FileOut )
 	{
 		Log_Printf ( LOG_ERROR , "STX_WriteDisk drive=%d file=%s, error fopen\n" , Drive , pszFileName );
@@ -437,10 +445,18 @@ bool STX_WriteDisk ( int Drive , const char *pszFileName , Uint8 *pBuffer , int 
 	STX_WriteU32_BE ( p , STX_SaveStruct[ Drive ].SaveTracksCount );	/* +12 ... +15 */
 	p += 4;
 	
+#ifndef __LIBRETRO__
 	if ( fwrite ( buf , p-buf , 1 , FileOut ) != 1 )
+#else
+	if ( !core_disk_save_write( buf, p-buf, FileOut ) )
+#endif
 	{
 		Log_Printf ( LOG_ERROR , "STX_WriteDisk drive=%d file=%s, error fwrite header\n" , Drive , pszFileName );
+	#ifndef __LIBRETRO__
 		fclose(FileOut);
+	#else
+		core_disk_save_close(FileOut, false);
+	#endif
 		return false;
 	}
 
@@ -482,19 +498,35 @@ bool STX_WriteDisk ( int Drive , const char *pszFileName , Uint8 *pBuffer , int 
 
 		/* Write the header */
 //Str_Dump_Hex_Ascii ( (char *) buf , p-buf, 16, "" , stderr );
+	#ifndef __LIBRETRO__
 		if ( fwrite ( buf , p-buf , 1 , FileOut ) != 1 )
+	#else
+		if ( !core_disk_save_write( buf, p-buf, FileOut ) )
+	#endif
 		{
 			Log_Printf ( LOG_ERROR , "STX_WriteDisk drive=%d file=%s, error fwrite sector header\n" , Drive , pszFileName );
+		#ifndef __LIBRETRO__
 			fclose(FileOut);
+		#else
+			core_disk_save_close(FileOut, false);
+		#endif
 			return false;
 		}
 
 		/* Write the data */
 //Str_Dump_Hex_Ascii ( (char *) pStxSaveSector->pData , pStxSaveSector->SectorSize, 16, "" , stderr );
+#ifndef __LIBRETRO__
 		if ( fwrite ( pStxSaveSector->pData , pStxSaveSector->SectorSize , 1 , FileOut ) != 1 )
+#else
+		if ( !core_disk_save_write( pStxSaveSector->pData, pStxSaveSector->SectorSize, FileOut ) )
+#endif
 		{
 			Log_Printf ( LOG_ERROR , "STX_WriteDisk drive=%d file=%s, error fwrite sector data\n" , Drive , pszFileName );
+		#ifndef __LIBRETRO__
 			fclose(FileOut);
+		#else
+			core_disk_save_close(FileOut, false);
+		#endif
 			return false;
 		}
 
@@ -525,19 +557,35 @@ bool STX_WriteDisk ( int Drive , const char *pszFileName , Uint8 *pBuffer , int 
 
 		/* Write the header */
 //Str_Dump_Hex_Ascii ( (char *) buf , p-buf, 16, "" , stderr );
+	#ifndef __LIBRETRO__
 		if ( fwrite ( buf , p-buf , 1 , FileOut ) != 1 )
+	#else
+		if ( !core_disk_save_write( buf, p-buf, FileOut ) )
+	#endif
 		{
 			Log_Printf ( LOG_ERROR , "STX_WriteDisk drive=%d file=%s, error fwrite track header\n" , Drive , pszFileName );
+		#ifndef __LIBRETRO__
 			fclose(FileOut);
+		#else
+			core_disk_save_close(FileOut, false);
+		#endif
 			return false;
 		}
 
 		/* Write the data at +12 */
 //Str_Dump_Hex_Ascii ( (char *) pStxSaveTrack->pDataWrite , pStxSaveTrack->TrackSizeWrite, 16, "" , stderr );
+	#ifndef __LIBRETRO__
 		if ( fwrite ( pStxSaveTrack->pDataWrite , pStxSaveTrack->TrackSizeWrite , 1 , FileOut ) != 1 )
+	#else
+		if ( !core_disk_save_write( pStxSaveTrack->pDataWrite, pStxSaveTrack->TrackSizeWrite, FileOut ) )
+	#endif
 		{
 			Log_Printf ( LOG_ERROR , "STX_WriteDisk drive=%d file=%s, error fwrite track data\n" , Drive , pszFileName );
+		#ifndef __LIBRETRO__
 			fclose(FileOut);
+		#else
+			core_disk_save_close(FileOut, false);
+		#endif
 			return false;
 		}
 
@@ -545,7 +593,11 @@ bool STX_WriteDisk ( int Drive , const char *pszFileName , Uint8 *pBuffer , int 
 	}
 
 
+#ifndef __LIBRETRO__
 	fclose ( FileOut );
+#else
+	core_disk_save_close(FileOut, true);
+#endif
 
 	return true;
 }
@@ -569,7 +621,13 @@ static bool	STX_LoadSaveFile ( int Drive , const char *FilenameSave )
 	STX_TRACK_STRUCT	*pStxTrack;
 
 
+#ifndef __LIBRETRO__
 	SaveFileBuffer = File_Read ( FilenameSave, &SaveFileSize, NULL );
+#else
+	unsigned int size;
+	SaveFileBuffer = core_read_file_save( FilenameSave, &size );
+	SaveFileSize = (long)size;
+#endif
 	if (!SaveFileBuffer)
 	{
 		Log_Printf ( LOG_ERROR , "STX_LoadSaveFile drive=%d file=%s error\n" , Drive , FilenameSave );
@@ -825,7 +883,11 @@ bool	STX_Insert ( int Drive , const char *FilenameSTX , Uint8 *pImageBuffer , lo
 
 	/* Try to load an optional ".wd1772" save file. In case of error, we continue anyway with the current STX image */
 	if ( ( STX_FileNameToSave ( FilenameSTX , FilenameSave ) )
+#ifndef __LIBRETRO__
 	  && ( File_Exists ( FilenameSave ) ) )
+#else
+	  && ( core_disk_enable_save && core_disk_save_exists( FilenameSave ) ) )
+#endif
 	{
 		Log_Printf ( LOG_INFO , "STX : STX_Insert drive=%d file=%s buf=%p size=%ld load wd1172 %s\n" , Drive , FilenameSTX , pImageBuffer , ImageSize , FilenameSave );
 		if ( STX_LoadSaveFile ( Drive , FilenameSave ) == false )

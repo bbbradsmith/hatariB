@@ -505,6 +505,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{"3","Cursor Keys"}, \
 		{NULL,NULL} \
 	}
+	// TODO procedurally generate the indices for this one so I don't have to retype them all if anything changes
 #define OPTION_PAD_BUTTON() \
 	{ \
 		{"0","None"}, \
@@ -847,7 +848,7 @@ void core_config_read_newparam()
 	}
 	CFG_INT("hatarib_monitor") newparam.Screen.nMonitorType = vi;
 	CFG_INT("hatarib_fast_floppy") newparam.DiskImage.FastFloppy = vi;
-	CFG_INT("hatarib_save_floppy") core_disk_save = vi;
+	CFG_INT("hatarib_save_floppy") core_disk_enable_save = vi;
 	CFG_INT("hatarib_hard_reset") core_option_hard_reset = vi;
 	CFG_INT("hatarib_machine")
 	{
@@ -932,7 +933,7 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_hpf") newparam.Sound.YmHpf = vi;
 	CFG_INT("hatarib_driveb") { newparam.DiskImage.EnableDriveB = vi; core_disk_enable_b = vi; }
 	CFG_INT("hatarib_drivesingle") { newparam.DiskImage.DriveA_NumberOfHeads = newparam.DiskImage.DriveB_NumberOfHeads = vi; }
-	CFG_INT("hatarib_readonly_floppy") { newparam.DiskImage.nWriteProtection = vi; if (vi) core_disk_save = false; }
+	CFG_INT("hatarib_readonly_floppy") newparam.DiskImage.nWriteProtection = vi;
 	CFG_INT("hatarib_patchtos") newparam.System.bFastBoot = vi;
 	CFG_INT("hatarib_blitter_st") newparam.System.bBlitter = vi;
 	CFG_INT("hatarib_wakestate") newparam.System.VideoTimingMode = vi;

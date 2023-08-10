@@ -15,11 +15,10 @@ struct disk_image
 	uint8_t* data;
 	unsigned int size;
 	char filename[MAX_FILENAME];
-	bool modified;
 };
 
 bool core_disk_enable_b = true;
-bool core_disk_save = true;
+bool core_disk_enable_save = true;
 
 static bool first_init = true;
 static struct disk_image disks[MAX_DISKS];
@@ -34,9 +33,9 @@ static int initial_image;
 //
 
 // floppy.c
-bool hatari_libretro_floppy_insert(int drive, const char* filename, void* data, unsigned int size);
-void hatari_libretro_floppy_eject(int drive);
-
+extern bool hatari_libretro_floppy_insert(int drive, const char* filename, void* data, unsigned int size);
+extern void hatari_libretro_floppy_eject(int drive);
+extern const char* hatari_libretro_floppy_inserted(int drive);
 //
 // Utilities
 //
@@ -74,7 +73,6 @@ static bool set_eject_state_drive(bool ejected, int d)
 		{
 			image_insert[d] = false;
 			hatari_libretro_floppy_eject(d); // Hatari eject
-			// TODO if ejected, save the disk if modified
 		}
 		return true;
 	}
@@ -209,10 +207,9 @@ static bool replace_image_index(unsigned index, const struct retro_game_info* ga
 
 	free(disks[index].data);
 	disks[index].data = NULL;
-	disks[index].modified = false;
 	disks[index].size = 0;
 
-	if (core_disk_save && path)
+	if (core_disk_enable_save && path)
 	{
 		unsigned int save_size = 0;
 		uint8_t* save_data = core_read_file_save(path,&save_size);
@@ -222,6 +219,8 @@ static bool replace_image_index(unsigned index, const struct retro_game_info* ga
 			disks[index].data = save_data;
 			disks[index].size = save_size;
 		}
+		// Note that STX saves end up in a separate .wd1172 file,
+		// which gets loaded on insert instead (if core_disk_enable_save is true).
 	}
 
 	if (disks[index].data == NULL)
@@ -393,13 +392,36 @@ void core_disk_unload_game(void)
 
 void core_disk_serialize(void)
 {
-	// TODO is there anything to serialize? do we want to track disk changes?
-	// I think after a load, we want to update the inserted state to match hatari's,
-	// and match two two indices to our image filenames (set to invalid index if no match).
-	// If there was no match and we eject later a modified disk, there will be an error notification that it could not save?
-	// ...or maybe we can just save using the hatari filename anyway, despite not having it in the disks list. That'd probably be fine.
-	// check if any weird insertions are done after a savestate load?
-	// i think padding floppy in savestate to 2mb would cover almost all STX files
+	// if not writing, we need to reconnect to the inserted floppies which may have changed
+	// and mirror the new hatari floppy state
+	if (core_serialize_write) return;
+	for (int d=0; d<2; ++d)
+	{
+		const char* infile = hatari_libretro_floppy_inserted(d);
+		if (!infile)
+		{
+			image_insert[d] = false;
+		}
+		else // match to an existing disk image
+		{
+			int i;
+			image_insert[d] = true; // update insertion state
+			i=0;
+			for (; i<MAX_DISKS; ++i)
+			{
+				if (!strcmp(disks[i].filename,infile)) break;
+			}
+			if (i < MAX_DISKS)
+			{
+				image_index[d] = i;
+			}
+			else
+			{
+				image_index[d] = MAX_DISKS; // set to invalid index
+				retro_log(RETRO_LOG_ERROR,"core_disk_serialize disk in drive %d not cached: '%s'\n",d,infile);
+			}
+		}
+	}
 }
 
 void core_disk_drive_toggle(void)
@@ -435,4 +457,120 @@ void core_disk_drive_reinsert(void)
 		set_eject_state(restore_eject);
 	}
 	drive = restore_drive;
+}
+
+//
+// saving
+//
+
+// standard save:
+//   saves file to saves/ if enabled
+//   replaces the disk cache with the new data for the remainder of the session
+//   (TODO: STX currently bypasses this by writing an overlay file instead, maybe we need to cache the second file?)
+//   for efficiency, core_disk_save can be given owndership of the data pointer passed.
+bool core_disk_save(const char* filename, uint8_t* data, unsigned int size, bool core_owns_data)
+{
+	int i;
+	retro_log(RETRO_LOG_DEBUG,"core_disk_save('%s',%p,%d,%d)\n",filename,data,size,(int)core_owns_data);
+
+	// write to disk if allowed
+	bool result = true;
+	if (core_disk_enable_save)
+	{
+		result = core_write_file_save(filename, size, data);
+	}
+	if (data == NULL) return false;
+
+	i = 0;
+	for (; i<MAX_DISKS; ++i)
+	{
+		if (!strcmp(disks[i].filename,filename)) break;
+	}
+	if (i < MAX_DISKS)
+	{
+		if (!core_owns_data)
+		{
+			if (disks[i].data && size <= disks[i].size) // same size or smaller, just copy it over
+			{
+				memcpy(disks[i].data, data, size);
+				disks[i].size = size;
+			}
+			else // need to reallocate and copy
+			{
+				free(disks[i].data);
+				disks[i].data = malloc(size);
+				if (disks[i].data == NULL)
+				{
+					strcpy(disks[i].filename,"<Out Of Memory>");
+					disks[i].size = 0;
+					result = false;
+				}
+				else
+				{
+					memcpy(disks[i].data, data, size);
+					disks[i].size = size;
+				}
+			}
+		}
+		else
+		{
+			free(disks[i].data);
+			disks[i].data = data;
+			disks[i].size = size;
+		}
+	}
+	else if (core_owns_data) // not cached, but we're responsible for discarding
+	{
+		free(data);
+	}
+	return result;
+}
+
+//
+// more advanced save file creation
+// opens one file and allows serial writes
+// on close, will delete itself if failure is indicated
+//
+
+void* disk_save_advanced_file = NULL;
+char disk_save_advanced_path[2048] = "";
+char disk_save_advanced_filename[MAX_FILENAME] = "";
+
+void* core_disk_save_open(const char* filename)
+{
+	// open file and remember it for closing time
+	void* handle = core_file_open_save(filename,CORE_FILE_WRITE);
+	disk_save_advanced_file = handle;
+	strcpy_trunc(disk_save_advanced_path,get_temp_fn(),sizeof(disk_save_advanced_path));
+	strcpy_trunc(disk_save_advanced_filename,filename,sizeof(disk_save_advanced_filename));
+	retro_log(RETRO_LOG_DEBUG,"core_disk_save_open('%s') = %p\n",filename,handle);
+	return handle;
+}
+
+void core_disk_save_close(void* file, bool success)
+{
+	core_file_close(file);
+	if (file != disk_save_advanced_file)
+	{
+		retro_log(RETRO_LOG_ERROR,"core_disk_save_close with changed file? (%p != %p)\n",file,disk_save_advanced_file);
+	}
+	else if (!success)
+	{
+		retro_log(RETRO_LOG_ERROR,"core_disk_save_close failure, deleting: '%s'\n",disk_save_advanced_path);
+		if (0 != core_file_remove(disk_save_advanced_path))
+			retro_log(RETRO_LOG_ERROR,"failed to delete: '%s'\n",disk_save_advanced_path);
+	}
+	// note this does not participate in caching
+}
+
+bool core_disk_save_write(const uint8_t* data, unsigned int size, void* file)
+{
+	if (file != disk_save_advanced_file)
+		retro_log(RETRO_LOG_ERROR,"core_disk_save_write with changed file? (%p != %p)\n",file,disk_save_advanced_file);
+	return (size == core_file_write(data, size, file));
+}
+
+bool core_disk_save_exists(const char* filename)
+{
+	return core_file_save_exists(filename);
 }

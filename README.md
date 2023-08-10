@@ -16,38 +16,92 @@ Development notes: [DEVELOP.md](DEVELOP.md)
 
 ## Notes
 
-* Currently only builds for Windows 64-bit. If you'd like to help set up other platforms, please create an issue.
-* The default TOS ROM is `system/tos.img` but EmuTOS is provided if this file is unavailable.
-* Additional TOS ROMs, as well as Cartridge and Hard Disk images can be supplied in `system/hatarib/`, up to a limit of 100 files.
-* EmuTOS is compatible with most software, but not all. In most incompatibility cases it will show a "Panic" message at boot. The 1024k universal EmuTOS is the default, which has the most features, but the 192uk and 192us EmuTOS images may be slightly more compatible with ST software.
-* Load New Disk may not play well with savestates.
-  * Inserting a new disk may increase the needed savestate size and cause a failure to save, but you can eject the disk and try again.
-  * RetroArch will change the savestate name to match the new loaded disk, as well, so you may have to Load Content with that disk later to be able to load its savesate, and you may need to manually eject and re-insert the disk after reloading.
-* Savestates should be seamless, allowing run-ahead and netplay in theory, but the restore action is very CPU intensive and may cause a delay at every rollback.
-* Default core options favour lower CPU usage, faster load times. This can be changed in the core options.
-
+* Hatari Manual:
+  * [Hatari Online Manual](https://hatari.tuxfamily.org/doc/manual.html)
+* Supported platforms:
+  * Windows 64-bit
+  * If you'd like to help set up other platforms, please [create a Github issue](https://github.com/bbbradsmith/hatariB/issues) to dicuss it.
+* Default controls:
+  * Left Stick and D-Pad - Joystick
+  * Right Stick - Mouse
+  * B - Joystick Fire
+  * A - Joystick Autofire
+  * Y, X - Mouse Left, Right
+  * Select - Select drive A or B
+  * Start - Help screen
+  * L1 - On-screen keyboard
+  * R1 - On-screen keyboard one-shot (pauses emulation, resumes at keypress)
+  * L2, R2 - Unassigned
+  * L3 - Space key
+  * R3 - Return key
+  * These can be configured in the core options.
+* File formats:
+  * Floppy disk: ST, MSA, DIM, STX
+  * Muli-disk: M3U, M3U8, ZIP
+  * TOS ROM: TOS, IMG, ROM, BIN
+  * Cartridge: IMG, ROM, BIN, CART
+  * Hard disk: (no standard file extensions)
+  * TOS, Cartridge, and Hard disk files should be placed in *system/hatarib/*.
+  * When loading multiple disks, the best method is to use M3U playlists to specify all needed disks at once during *Load Content*. Information: [M3U file tutorial](https://docs.retroachievements.org/Multi-Disc-Games-Tutorial/).
+  * *Load New Disk* can add additional disks while running, but has several caveats, especially regarding savestates. See below.
+  * *GemDOS* type hard disks use a directory in *system/hatarib/* as a simulated drive.
+  * *ASCI*, *SCSI* and *IDE* hard disks use binary image file from *system/hatarib/*.
+* Saving:
+  * When a modified floppy disk is ejected, or the core is closed, a modified copy of that disk image will be written to the *saves/* folder.
+  * Whenever a new floppy disk is added (*Load Content*, or *Load New Disk*), the saved copy will be substituted for the original if it exists.
+  * If the *System > Save Floppy Disks* core option is disabled, only the original copy of the file will be used, and the *saves/* folder will not be accessed. However, the modified disk images will still persist in memory for the duration of the session, until you close the content.
+  * Only the two currently inserted disks are included in savestates. If there are other disks in your loaded collection, they may take on their most recent version from the saves/ folder next time you open this content. A savestate will not be able to restore them to an earlier version.
+  * Floppy disks in *saves/* must have a unique filename. Try not to use generic names like *savedisk.st*, and instead include the game title in its filename.
+  * If possible, it is recommended that save disks for games use the *ST* format, because it is the simplest and least likely to have errors.
+  * The images written to *saves/* will be standard Atari ST image formats, and you should be able to load them in other emulators if you wish.
+  * In the core options *Advanced > Write Protect Floppy Disks* will act as if all inserted disks have their write protect tab open. This means the emulated operating floppy disk will refuse to modify them, and no further data will be written to the disk. This is independent of the save feature, and can be turned on and off at will. Turning it on after a disk is modified will not prevent the previous modifications from being saved.
+  * *STX* saves will create a *WD1772* file instead of an *STX* when saved. This is an overlay of changes made to the file, because the STX format itself cannot be re-written. If you wish to use these with the stand-alone Hatari, place the overlay file in the same folder as its STX. Because of the overlay *Save Floppy Disk* must be enabled for the modified data to persist after an ejection.
+  * *DIM* format disks cannot be saved, it is recommended to convert them to *ST*.
+  * Hard Disk folders or images in *system/* will be written to directly when they 
+* TOS ROMs:
+  * The TOS ROM can be chosen in the core option *Sstem > TOS ROM*.
+  * The default TOS ROM is *system/tos.img*, but *[EmuTOS 1024k](https://emutos.sourceforge.io/)* is provided as a free substitute.
+  * Additional TOS ROMs can be supplied in *system/hatarib/*, up to a limit of 100 files.
+  * *EmuTOS* is compatible with most software, but not all. In most incompatibility cases it will show a "Panic" message at boot.
+  * *EmuTOS 1024k* is the default, with a full feature set, and univeral support for all emulated machine types.
+  * *EmuTOS 192uk* may be slightly more compatible with *ST* software, but provides fewer features. With a colour monitor it starts up in 50hz by default.
+  * *EmuTOS 192us* is similar to *192uk* but instead starts in 60hz.
+* Accuracy:
+  * Some of the default core options are chosen to favour lower CPU usage, and faster load times, but these can be adjusted.
+  * *System > Fast Floppy* gives artificially faster disk access, on by default.
+  * *System > Patch TOS for Fast Boot* modifies known TOS images to boot faster, on by default.
+  * *System > CPU Prefetch Emulation* - Emulates memory prefetch, needed for some games. On by default.
+  * *System > Cycle-exact Cache Emulation* - Very accurate cache emulation, not usually needed for compatibility. Off by default.
+  * See the *Advanced* category for other relevant options.
+* Savestates:
+  * Savestates are seamless, allowing run-ahead and netplay in theory, but the restore action is very CPU intensive and may cause stuttering in the live output.
+  * *Load New Disk* has several caveats with savesates:
+      * RetroArch will change the savestate name to match the newest loaded disk, so be sure that you know that savestates associated with that disk.
+      * To restore in a later session, start the core as you did before and use *Load New Disk* to add all needed disks before attempting to restore the savestate. The last disk loaded must be the same as before, so that the savestate name will match correctly.
+      * In rare cases, inserting a unusually large new disk may increase the needed savestate size and cause a failure to save. You can eject the disk and try reducing the savestate size before trying again. (RetroArch has a limitation that savestate size must be fixed, determined at Load Content time.)
+      * It is generally recommended to use M3U playlists instead of *Load New Disk* when possible ([tutorial](https://docs.retroachievements.org/Multi-Disc-Games-Tutorial/)).
+  * Hard Disk modifications are written directly to their source files, and are not included in savestates.
+  
 Remaining tasks before ready for public testing:
 * Load M3U playlists.
 * Load ZIP files.
-* Disks and savestates:
-  * Ejecting a modified disk should save it to `saves/` as a replacement for future loads.
-  * Hatari savestate size depends on disk image size when it's measured. Try padding up to a minimum size in the serialization code?
-  * After restore, core disk files may not match what's in the drive. After loading a savestate, update the core inserted state to match hatari's, and set the indices to match the filenames currently in the drive. (If index becomes invalid, it won't be able to save on eject. Give a warning in this case.)
 * On-screen keyboard.
 * Help screen.
-* Add reset to button mappings.
+* Button-mapped reset.
+* Button-mapped prev/next disk (RetroArch's eject,next,insert is cumbersome).
 * Option to automatically cold-reset after crash with a timer.
 * Test unicode filenames. Does Libretro expect/convert to UTF-8?
-* Hard disk images: hdc.c, ide.c, gemdos.c need to replace stdio/etc. with core_file (need to add random-access interface and an opaque file handle pointer?)
+* Hard disk images: hdc.c, ide.c, gemdos.c need to replace stdio/etc. with core_file abstraction. Also ncr5380.c and inffile.c.
 
 Optional tasks:
-* Investigate Libretro MIDI interface. I wonder if I could play MIDI Maze with my real ST?
-* See if I can set up a Mingw32 build.
-* Can savestate restore be more lightweight? What takes so much CPU time?
+* Investigate Libretro MIDI interface. I wonder if I could play MIDI Maze against my real ST?
+* See if a MinGW 32-bit built is reasonable? Might provide a stepping stone to other targets, and additional compile checks.
+* Can savestate restore be more lightweight? What takes so much CPU time? Maybe it's disk access?
+* STX saves are inconvenient because they have two files to cache. Should we just add a secondary file cache for the overlay?
 
 ## History
 
-No releases yet.
+No releases yet. See nightly builds above for a preview.
 
 ## License
 

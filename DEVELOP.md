@@ -124,12 +124,14 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
 * **hatari/src/floppy.c**
 * **hatari/src/includes/floppy.h**
   * Load floppy images from memory instead of from file.
+  * Read back inserted floppy filenames after savestate restore.
 * **hatari/src/st.c**
 * **hatari/src/dim.c**
 * **hatari/src/msa.c**
 * **hatari/src/floppy_ipf.c**
 * **hatari/src/floppy_stx.c**
   * Load floppy image from memory instead of from file.
+  * Use core interfaces to save modified floppies to saves/ folder.
 * **hatari/src/midi.c**
 * **hatari/src/gemdos.c**
 * **hatari/src/hdc.c**
