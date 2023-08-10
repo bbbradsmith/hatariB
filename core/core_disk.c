@@ -414,6 +414,8 @@ void core_disk_serialize(void)
 			if (i < MAX_DISKS)
 			{
 				image_index[d] = i;
+				// TODO if this image has an associated save file then we should set this disk as modified in case there are reverted changes
+				// store a "has save" flag on load, or on write-out to keep track of this
 			}
 			else
 			{

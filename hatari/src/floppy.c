@@ -212,6 +212,7 @@ bool Floppy_IsWriteProtected(int Drive)
 	}
 	else
 	{
+#ifndef __LIBRETRO__
 		struct stat FloppyStat;
 		/* Check whether disk is writable */
 		if (stat(EmulationDrives[Drive].sFileName, &FloppyStat) == 0
@@ -219,6 +220,10 @@ bool Floppy_IsWriteProtected(int Drive)
 			return false;
 		else
 			return true;
+#else
+		// the image file read-only status is not accessible to the core, assume always yes
+		return false;
+#endif
 	}
 }
 

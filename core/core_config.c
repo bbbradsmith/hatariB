@@ -202,7 +202,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
 	{
-		"hatarib_writeprotect", "GemDOS Hard Disk Write Protect", NULL,
+		"hatarib_hard_readonly", "GemDOS Hard Disk Write Protect", NULL,
 		"Write protect the GemDOS hard disk folder.",
 		NULL, "system",
 		{{"0","Off"},{"1","On"},{"2","Auto"},{NULL,NULL},}, "0"
@@ -911,7 +911,7 @@ void core_config_read_newparam()
 		}
 	}
 	CFG_INT("hatarib_hardboot") newparam.HardDisk.bBootFromHardDisk = vi;
-	CFG_INT("hatarib_writeprotect") newparam.HardDisk.nWriteProtection = vi;
+	CFG_INT("hatarib_hard_readonly") newparam.HardDisk.nWriteProtection = vi;
 	CFG_INT("hatarib_joy1_port") core_joy_port_map[0] = vi;
 	CFG_INT("hatarib_joy2_port") core_joy_port_map[1] = vi;
 	CFG_INT("hatarib_joy3_port") core_joy_port_map[2] = vi;
@@ -963,6 +963,10 @@ void core_config_read_newparam()
 		CFG_INT_PAD(i,"oskey_pos"    ) core_oskey_map[i][CORE_INPUT_OSKEY_POS    ] = vi;
 		CFG_INT_PAD(i,"oskey_move"   ) core_oskey_map[i][CORE_INPUT_OSKEY_MOVE   ] = vi; // stick
 	}
+
+	// preserve floppy disk paths which change every time a disk is inserted (prevents ejection due to the filename going empty)
+	memcpy(newparam.DiskImage.szDiskFileName[0],ConfigureParams.DiskImage.szDiskFileName[0],sizeof(newparam.DiskImage.szDiskFileName[0]));
+	memcpy(newparam.DiskImage.szDiskFileName[1],ConfigureParams.DiskImage.szDiskFileName[1],sizeof(newparam.DiskImage.szDiskFileName[1]));
 }
 
 //
