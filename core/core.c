@@ -11,15 +11,15 @@
 // 4 frames of buffer at slowest framerate
 #define AUDIO_BUFFER_LEN   (4*2*96000/50)
 
-// header size must accomodate core data before the hatari memory snapshot
-// minimum size is supposed to accomodate 2 floppy images of up to 2MB data each
-// overhead is some safety extra in case hatari wants to increase the snapshot size later
-// (doesn't seem to change size without config changes that might need a restart)
-// round is an even file size to round up to.
-// Change the version any time the contents of the header change.
-// TODO set the minimum + 4MB
+// Header size must accomodate core data before the hatari memory snapshot
+// the base savesate for a 1MB ST is about 3.5MB
+// inserting floppies adds to it, they might be as large as 2MB each
+// using an 8MB minimum (+ ST memory size over 1MB) accomodates this.
+// The overhead is added to the initial estimate just in case it's not quite enough,
+// and the rounding just makes the file size into a round number,
+// because I thought it was aesthetically pleasing to do so.
 #define SNAPSHOT_HEADER_SIZE   1024
-#define SNAPSHOT_MINIMUM       (0)
+#define SNAPSHOT_MINIMUM       (8 * 1024 * 1024)
 #define SNAPSHOT_OVERHEAD      (64 * 1024)
 #define SNAPSHOT_ROUND         (64 * 1024)
 #define SNAPSHOT_VERSION       1
@@ -477,7 +477,7 @@ static bool core_serialize(bool write)
 	else       result = hatari_libretro_restore_state();
 
 	// update core_disk to match changes to the inserted disks
-	core_disk_reindex();
+	if (!write) core_disk_reindex();
 
 	// finish
 
@@ -838,8 +838,13 @@ RETRO_API bool retro_load_game(const struct retro_game_info *game)
 	free(snapshot_buffer); snapshot_buffer = NULL;
 	core_serialize(true);
 	snapshot_size = snapshot_max + SNAPSHOT_OVERHEAD;
-	if (snapshot_size < SNAPSHOT_MINIMUM)
-		snapshot_size = SNAPSHOT_MINIMUM;
+	// if we've got more than 1MB RAM we should increase our minimum to accomodate it
+	int minimum = SNAPSHOT_MINIMUM;
+	if (STRamEnd > (1024*1024))
+		minimum += (STRamEnd - (1024*1024));
+	if (snapshot_size < minimum)
+		snapshot_size = minimum;
+	// round up
 	if (snapshot_size % SNAPSHOT_ROUND)
 		snapshot_size += (SNAPSHOT_ROUND - (snapshot_size % SNAPSHOT_ROUND));
 
