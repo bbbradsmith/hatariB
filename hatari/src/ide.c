@@ -394,7 +394,11 @@ struct BlockDriverState {
     void (*change_cb)(void *opaque);
     void *change_opaque;
 
+#ifndef __LIBRETRO__
     FILE *fhndl;
+#else
+	void* fhndl;
+#endif
     off_t file_size;
     int media_changed;
     int byteswap;
@@ -519,12 +523,20 @@ static int bdrv_read(BlockDriverState *bs, int64_t sector_num,
 
 	len = nb_sectors * bs->sector_size;
 
+#ifndef __LIBRETRO__
 	if (fseeko(bs->fhndl, sector_num * bs->sector_size, SEEK_SET) != 0)
+#else
+	if (core_file_seek(bs->fhndl, sector_num * bs->sector_size, SEEK_SET) != 0)
+#endif
 	{
 		perror("bdrv_read");
 		return -errno;
 	}
+#ifndef __LIBRETRO__
 	ret = fread(buf, 1, len, bs->fhndl);
+#else
+	ret = core_file_read(buf, 1, len, bs->fhndl);
+#endif
 	if (ret != len)
 	{
 		Log_Printf(LOG_ERROR, "IDE: bdrv_read error (%d != %d length) at sector %lu!\n",
@@ -568,7 +580,11 @@ static int bdrv_write(BlockDriverState *bs, int64_t sector_num,
 
 	len = nb_sectors * bs->sector_size;
 
+#ifndef __LIBRETRO__
 	if (fseeko(bs->fhndl, sector_num * bs->sector_size, SEEK_SET) != 0)
+#else
+	if (core_file_seek(bs->fhndl, sector_num * bs->sector_size, SEEK_SET) != 0)
+#endif
 	{
 		perror("bdrv_write");
 		return -errno;
@@ -576,7 +592,11 @@ static int bdrv_write(BlockDriverState *bs, int64_t sector_num,
 
 	if (!bs->byteswap)
 	{
+#ifndef __LIBRETRO__
 		ret = fwrite(buf, 1, len, bs->fhndl);
+#else
+		ret = core_file_write(buf, 1, len, bs->fhndl);
+#endif
 	}
 	else
 	{
@@ -587,7 +607,11 @@ static int bdrv_write(BlockDriverState *bs, int64_t sector_num,
 		{
 			buf16[idx / 2] = SDL_Swap16(*(const uint16_t *)&buf[idx]);
 		}
+#ifndef __LIBRETRO__
 		ret = fwrite(buf16, 1, len, bs->fhndl);
+#else
+		ret = core_file_write(buf16, 1, len, bs->fhndl);
+#endif
 		free(buf16);
 	}
 	if (ret != len)
@@ -620,10 +644,17 @@ static int bdrv_open(BlockDriverState *bs, const char *filename, unsigned long b
 		return -1;
 	}
 
+#ifndef __LIBRETRO__
 	bs->fhndl = fopen(filename, "rb+");
 	if (!bs->fhndl) {
 		/* Maybe the file is read-only? */
 		bs->fhndl = fopen(filename, "rb");
+#else
+	bs->fhndl = core_file_open_system(filename, CORE_FILE_REVISE);
+	if (!bs->fhndl) {
+		/* Maybe the file is read-only? */
+		bs->fhndl = core_file_open_system(filename, CORE_FILE_READ);
+#endif
 		if (!bs->fhndl)
 		{
 			perror("bdrv_open");
@@ -634,6 +665,7 @@ static int bdrv_open(BlockDriverState *bs, const char *filename, unsigned long b
 			     filename);
 		bs->read_only = 1;
 	}
+#ifndef __LIBRETRO__
 	else if (!File_Lock(bs->fhndl))
 	{
 		Log_AlertDlg(LOG_ERROR, "Locking IDE HD file for writing failed\n'%s'!\n", filename);
@@ -641,6 +673,9 @@ static int bdrv_open(BlockDriverState *bs, const char *filename, unsigned long b
 		bs->fhndl = NULL;
 		return -1;
 	}
+#else
+	// libretro does not have a file lock interface in its retro vfs
+#endif
 
 	/* call the change callback */
 	bs->media_changed = 1;
@@ -652,13 +687,21 @@ static int bdrv_open(BlockDriverState *bs, const char *filename, unsigned long b
 
 static void bdrv_flush(BlockDriverState *bs)
 {
+#ifndef __LIBRETRO__
 	fflush(bs->fhndl);
+#else
+	core_file_flush(bs->fhndl);
+#endif
 }
 
 static void bdrv_close(BlockDriverState *bs)
 {
+#ifndef __LIBRETRO__
 	File_UnLock(bs->fhndl);
 	fclose(bs->fhndl);
+#else
+	core_file_close(bs->fhndl);
+#endif
 	bs->fhndl = NULL;
 }
 

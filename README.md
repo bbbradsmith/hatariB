@@ -89,7 +89,7 @@ Remaining tasks before ready for public testing:
 * Button-mapped reset.
 * Option to automatically cold-reset after crash with a timer.
 * Test unicode filenames. Does Libretro expect/convert to UTF-8?
-* Hard disk images: ide.c, gemdos.c need to replace stdio/etc. with core_file abstraction. Also inffile.c.
+* Hard disk images: gemdos.c need to replace stdio/etc. with core_file abstraction. Also inffile.c.
 * nvram.c seems to want to load a file, send it to saves? what is it?
 
 Optional tasks:
