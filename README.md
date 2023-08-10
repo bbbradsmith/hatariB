@@ -84,7 +84,6 @@ Development notes: [DEVELOP.md](DEVELOP.md)
   * Hard Disk modifications are written directly to their source files, and are not included in savestates.
   
 Remaining tasks before ready for public testing:
-* Load ZIP files.
 * On-screen keyboard.
 * Help screen.
 * Button-mapped reset.
@@ -120,3 +119,4 @@ Authors of incorporated works:
 * [EmuTOS](https://raw.githubusercontent.com/emutos/emutos/master/doc/authors.txt)
 * [libretro.h](https://github.com/libretro/libretro-common/blob/7edbfaf17baffa1b8a00231762aa7ead809711b5/include/libretro.h)
 * [libretro_sdl_keymap.h](https://github.com/libretro/RetroArch/blob/b4143882245edd737c7e7c522b25e32f8d1f64ad/input/input_keymaps.c#L607)
+* [miniz](https://github.com/richgel999/miniz/)

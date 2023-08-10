@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "../miniz/miniz.h"
 
 #define MAX_DISKS 32
 #define MAX_FILENAME 256
@@ -183,6 +184,7 @@ static bool load_m3u(uint8_t* data, unsigned int size, const char* m3u_path, uns
 	static char line[2048] = "";
 
 	// remove data from disks
+	strcpy(disks[first_index].filename,"<m3u>");
 	disks[first_index].data = NULL;
 	disks[first_index].size = 0;
 	disks[first_index].saved = false;
@@ -215,17 +217,20 @@ static bool load_m3u(uint8_t* data, unsigned int size, const char* m3u_path, uns
 	unsigned int p = 0;
 	unsigned int lp = 0;
 	bool first = true;
-	while (p < size)
+	while (p <= size)
 	{
-		char c = data[p];
-		if (c == 10 || c == 13 || (p+1) >= size) // end of line
+		char c = 10;
+		 if (p < size) c = data[p]; // if p==size then c=10 to generate a final end-of-line
+		if (c == 10 || c == 13) // end of line
 		{
+			retro_log(RETRO_LOG_DEBUG,"M3U line: '%s'\n",line);
 			// trim trailing whitespace
 			while (lp > 1 && (line[lp-1] == ' ' || line[lp-1] == '\t'))
 			{
 				line[lp-1] = 0;
 				--lp;
 			}
+			retro_log(RETRO_LOG_DEBUG,"M3U trim: '%s'\n",line);
 			// use the line if not a comment or empty
 			if (lp != 0 && line[0] != '#')
 			{
@@ -242,7 +247,6 @@ static bool load_m3u(uint8_t* data, unsigned int size, const char* m3u_path, uns
 					}
 				}
 
-				retro_log(RETRO_LOG_DEBUG,"M3U Line: '%s'\n",line);
 				link[0] = 0;
 				if (!absolute) // relative path
 					strcpy_trunc(link,path,sizeof(link));
@@ -252,7 +256,7 @@ static bool load_m3u(uint8_t* data, unsigned int size, const char* m3u_path, uns
 				info.path = link;
 				info.data = NULL;
 				info.size = 0;
-				info.meta = NULL;
+				info.meta = "<m3u>"; // use this to block recursive m3u
 				int index = first_index;
 				if (first)
 				{
@@ -288,16 +292,133 @@ static bool load_m3u(uint8_t* data, unsigned int size, const char* m3u_path, uns
 
 static bool load_zip(uint8_t* data, unsigned int size, const char* zip_filename, unsigned first_index)
 {
+	static char base[256] = "";
+	static char link[256] = "";
+	mz_zip_archive zip;
+
 	// remove data from disks
+	strcpy(disks[first_index].filename,"<zip>");
 	disks[first_index].data = NULL;
 	disks[first_index].size = 0;
 	disks[first_index].saved = false;
 
-	retro_log(RETRO_LOG_INFO,"load_zip(%d,'%s',%d)\n",size,zip_filename?zip_filename:"NULL",first_index);
+	if (zip_filename)
+	{
+		// retroarch prefixes zip-unpacked files with the zip-name + #, following suit
+		strcpy_trunc(base,zip_filename,sizeof(base));
+		strcat_trunc(base,"#",sizeof(base));
+	}
+	else zip_filename = "<NULL>";
 
-	// TODO
-	// prefix files with zip_filename + # like retroarch does if you load from an archive
-	return false;
+	retro_log(RETRO_LOG_INFO,"load_zip(%d,'%s',%d)\n",size,zip_filename,first_index);
+
+	if (data == NULL || size < 1)
+	{
+		retro_log(RETRO_LOG_ERROR,"load_zip with no data? '%s'\n",zip_filename);
+		free(data); // just in case of 0 byte file
+		return false;
+	}
+
+	memset(&zip, 0, sizeof(zip));
+	if (!mz_zip_reader_init_mem(&zip, data, size, 0))
+	{
+		retro_log(RETRO_LOG_ERROR,"Could not parse ZIP file: %s (%s)\n",zip_filename,mz_zip_get_error_string(mz_zip_get_last_error(&zip)));
+		free(data);
+		return false;
+	}
+
+	// get a list of files to include
+	unsigned int file_count = 0;
+	unsigned int file_list[MAX_DISKS];
+	for (unsigned int i=0; i<mz_zip_reader_get_num_files(&zip); ++i)
+	{
+		mz_zip_archive_file_stat fs;
+		if (!mz_zip_reader_file_stat(&zip, i, &fs))
+		{
+			retro_log(RETRO_LOG_ERROR,"Could not parse ZIP file info: %s (%s)\n",zip_filename,mz_zip_get_error_string(mz_zip_get_last_error(&zip)));
+			break;
+		}
+		if (fs.m_is_directory) continue;
+		if (has_extension(fs.m_filename,"st\0" "msa\0" "dim\0" "stx\0" "\0"))
+		{
+			retro_log(RETRO_LOG_DEBUG,"Zipped file: %s\n",fs.m_filename);
+			file_list[file_count] = i;
+			++file_count;
+			if (file_count >= MAX_DISKS) break;
+		}
+	}
+
+	// sort the files in alphabetical order
+	for (unsigned int i=1; i<file_count; ++i)
+	{
+		for (unsigned int j=0; j<i; ++j)
+		{
+			mz_zip_archive_file_stat fsi, fsj;
+			mz_zip_reader_file_stat(&zip, file_list[i], &fsi);
+			mz_zip_reader_file_stat(&zip, file_list[j], &fsj);
+			if (strcasecmp(fsi.m_filename,fsj.m_filename)>0)
+			{
+				unsigned int swap = file_list[j];
+				file_list[j] = file_list[i];
+				file_list[i] = swap;
+			}
+		}
+	}
+
+	// extract the files
+	bool first = true;
+	for (unsigned int i=0; i<file_count; ++i)
+	{
+		// prepare filename (remove any directories, add base prefix)
+		mz_zip_archive_file_stat fs;
+		if (!mz_zip_reader_file_stat(&zip, file_list[i], &fs))
+		{
+			retro_log(RETRO_LOG_ERROR,"Could not reparse ZIP file info: %s (%s)\n",zip_filename,mz_zip_get_error_string(mz_zip_get_last_error(&zip)));
+			break;
+		}
+		strcpy_trunc(link,base,sizeof(link));
+		int e = strlen(fs.m_filename);
+		for(;e>0;--e)
+		{
+			if (fs.m_filename[e-1] == '/' || fs.m_filename[e-1] == '\\') break;
+		}
+		strcat_trunc(link,fs.m_filename+e,sizeof(link));
+
+		// extract data
+		size_t zsize = 0;
+		void* zdata = mz_zip_reader_extract_to_heap(&zip, file_list[i], &zsize, 0);
+		if (zdata == NULL)
+		{
+			retro_log(RETRO_LOG_ERROR,"Could not extract ZIP file: %s (%s)\n",link,mz_zip_get_error_string(mz_zip_get_last_error(&zip)));
+			break;
+		}
+
+		struct retro_game_info info;
+		memset(&info,0,sizeof(info));
+		info.path = link;
+		info.data = zdata;
+		info.size = zsize;
+		info.meta = NULL;
+		int index = first_index;
+		if (first)
+		{
+			first = false;
+		}
+		else // add new indices after the first one
+		{
+			index = get_num_images();
+			if (!add_image_index())
+			{
+				retro_log(RETRO_LOG_ERROR,"Too many disks loaded, stopping ZIP before: %s\n",link);
+				break;
+			}
+		}
+		// add the file
+		replace_image_index(index, &info);
+	}
+
+	free(data);
+	return true;
 }
 
 static bool replace_image_index(unsigned index, const struct retro_game_info* game)
@@ -415,6 +536,14 @@ static bool replace_image_index(unsigned index, const struct retro_game_info* ga
 
 	if (ext && (!strcasecmp(ext,"m3u") || !strcasecmp(ext,"m3u8")))
 	{
+		if (game->meta && !strcmp(game->meta,"<m3u>")) // use meta = "<m3u>" to prevent recursive M3Us
+		{
+			free(disks[index].data);
+			disks[index].data = NULL;
+			disks[index].size = 0;
+			strcpy(disks[index].filename,"<M3U can't contain other M3Us>");
+			return false;
+		}
 		return load_m3u(disks[index].data, disks[index].size, game->path, index);
 	}
 	else if (ext && !strcasecmp(ext,"zip"))

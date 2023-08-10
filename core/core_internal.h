@@ -18,6 +18,7 @@ extern bool core_serialize_write; // current serialization direction
 // core_file.c
 extern void strcpy_trunc(char* dest, const char* src, unsigned int len);
 extern void strcat_trunc(char* dest, const char* src, unsigned int len);
+extern bool has_extension(const char* fn, const char* exts); // case insensitive, exts = series of null terminated strings, then an extra 0 to finish the list
 
 extern uint8_t* core_read_file(const char* filename, unsigned int* size_out);
 extern bool core_write_file(const char* filename, unsigned int size, const uint8_t* data);

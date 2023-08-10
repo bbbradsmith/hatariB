@@ -53,6 +53,27 @@ void strcat_trunc(char* dest, const char* src, unsigned int len)
 	strcpy_trunc(dest, src, len);
 }
 
+// compare against exts list of null terminated strings, ended with a double null
+bool has_extension(const char* fn, const char* exts)
+{
+	//retro_log(RETRO_LOG_DEBUG,"has_extension('%s',%p)\n",fn,exts);
+	size_t e = strlen(fn);
+	for(;e>0;--e)
+	{
+		if(fn[e] == '.') break;
+	}
+	if (fn[e] == '.') ++e;
+	else return false; // no extension found
+	const char* ext = fn + e;
+	while (exts[0] != 0)
+	{
+		//retro_log(RETRO_LOG_DEBUG,"exts: '%s' (%p)\n",exts,exts);
+		if (!strcasecmp(ext,exts)) return true;
+		exts = exts + strlen(exts) + 1;
+	}
+	return false;
+}
+
 //
 // Basic file system abstraction
 //
