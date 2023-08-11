@@ -12,7 +12,7 @@ extern retro_input_state_t input_state_cb;
 extern retro_log_printf_t retro_log;
 extern int core_video_aspect_mode;
 extern bool core_video_changed;
-extern bool core_option_hard_reset;
+extern bool core_option_soft_reset;
 extern bool core_serialize_write; // current serialization direction
 
 // core_file.c

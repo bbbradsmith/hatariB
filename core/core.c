@@ -108,7 +108,7 @@ bool core_rate_changed = false;
 // in a single frame, and onl the last one matters.
 // (Savestate tends to set them once spuriously during its reset phase.)
 
-bool core_option_hard_reset = false;
+bool core_option_soft_reset = false;
 bool content_override_set = false;
 
 static void retro_log_init()
@@ -688,7 +688,7 @@ RETRO_API void retro_set_controller_port_device(unsigned port, unsigned device)
 RETRO_API void retro_reset(void)
 {
 	// TODO reset on-screen keyboard / help overlay
-	if (core_runflags & CORE_RUNFLAG_HALT || core_option_hard_reset)
+	if (core_runflags & CORE_RUNFLAG_HALT || !core_option_soft_reset)
 	{
 		core_runflags &= ~CORE_RUNFLAG_HALT;
 		Reset_Cold();

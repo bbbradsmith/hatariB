@@ -105,8 +105,9 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
 	},
 	{
-		"hatarib_hard_reset", "Hard Reset", NULL,
-		"Core Restart is a warm boot (reset button), but this option will use full cold boot instead (power off, on).",
+		"hatarib_soft_reset", "Soft Reset", NULL,
+		"Core Restart is full cold boot by default (power off, on),"
+		" but this will change it to a warm boot (reset button).",
 		NULL, "system",
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
@@ -823,7 +824,7 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_monitor") newparam.Screen.nMonitorType = vi;
 	CFG_INT("hatarib_fast_floppy") newparam.DiskImage.FastFloppy = vi;
 	CFG_INT("hatarib_save_floppy") core_disk_enable_save = vi;
-	CFG_INT("hatarib_hard_reset") core_option_hard_reset = vi;
+	CFG_INT("hatarib_soft_reset") core_option_soft_reset = vi;
 	CFG_INT("hatarib_machine")
 	{
 		// automatic setup based on OPT_MACHINE in options.c
