@@ -126,7 +126,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	},
 	{
 		"hatarib_memory", "ST Memory Size", NULL,
-		"Atari ST memory size.",
+		"Causes restart!! Atari ST memory size.",
 		NULL, "system",
 		{
 			{"256","256 KB"},
@@ -163,7 +163,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	},
 	{
 		"hatarib_hardimg", "Hard Disk", NULL,
-		"Hard drive image, list of files and directories from system/hatarib/.",
+		"Causes restart!! Hard drive image, list of files and directories from system/hatarib/.",
 		NULL, "system",
 		{
 			{"<none>","None"},
@@ -183,16 +183,17 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	},
 	{
 		"hatarib_hardtype", "Hard Disk Type", NULL,
-		"GemDOS type will simulate a hard disk from a folder in system/hatarib/."
+		"Causes restart!! GemDOS type will simulate a hard disk from a folder in system/hatarib/."
 		" The other types must use an image file.",
 		NULL, "system",
 		{
 			{"0","GemDOS"},
-			{"1","ACSI"},
-			{"2","SCSI"},
-			{"3","IDE (Auto)"},
-			{"4","IDE (Byte Swap Off)"},
-			{"5","IDE (Byte Swap On)"},
+			{"1","GemDOS (Use 8-bit Filenames)"},
+			{"2","ACSI"},
+			{"3","SCSI"},
+			{"4","IDE (Auto)"},
+			{"5","IDE (Byte Swap Off)"},
+			{"6","IDE (Byte Swap On)"},
 			{NULL,NULL},}, "0"
 	},
 	{
@@ -202,10 +203,10 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
 	},
 	{
-		"hatarib_hard_readonly", "GemDOS Hard Disk Write Protect", NULL,
-		"Write protect the GemDOS hard disk folder.",
+		"hatarib_hard_readonly", "Hard Disk Write Protect", NULL,
+		"Write protect the hard disk folder or image.",
 		NULL, "system",
-		{{"0","Off"},{"1","On"},{"2","Auto"},{NULL,NULL},}, "0"
+		{{"0","Off"},{"1","On"},{"2","Auto"},{NULL,NULL},}, "1"
 	},
 	//
 	// Input
@@ -858,33 +859,35 @@ void core_config_read_newparam()
 			switch(ht)
 			{
 			default:
-			case 0:
+			case 0: // GemDOS
+			case 1: // GemDOS (Use 8-bit Filenames)
+				newparam.HardDisk.bFilenameConversion = (ht == 1);
 				newparam.HardDisk.bUseHardDiskDirectories = true;
 				strcpy_trunc(newparam.HardDisk.szHardDiskDirectories[0],image,sizeof(newparam.HardDisk.szHardDiskDirectories[0]));
 				break;
-			case 1:
+			case 2: // ACSI
 				newparam.Acsi[0].bUseDevice = true;
 				strcpy_trunc(newparam.Acsi[0].sDeviceFile,image,sizeof(newparam.Acsi[0].sDeviceFile));
 				break;
-			case 2:
+			case 3: // SCSI
 				newparam.Scsi[0].bUseDevice = true;
 				strcpy_trunc(newparam.Scsi[0].sDeviceFile,image,sizeof(newparam.Scsi[0].sDeviceFile));
 				break;
-			case 3:
-			case 4:
-			case 5:
+			case 4: // IDE (Auto)
+			case 5: // IDE (Byte Swap Off)
+			case 6: // IDE (Byte Swap On)
 				newparam.Ide[0].bUseDevice = true;
 				strcpy_trunc(newparam.Ide[0].sDeviceFile,image,sizeof(newparam.Ide[0].sDeviceFile));
 				{
 					static const BYTESWAPPING BSMAP[3] = { BYTESWAP_AUTO, BYTESWAP_OFF, BYTESWAP_ON };
-					newparam.Ide[0].nByteSwap = BSMAP[ht-2];
+					newparam.Ide[0].nByteSwap = BSMAP[ht-4];
 				}
 				break;
 			}
 		}
 	}
 	CFG_INT("hatarib_hardboot") newparam.HardDisk.bBootFromHardDisk = vi;
-	CFG_INT("hatarib_hard_readonly") newparam.HardDisk.nWriteProtection = vi;
+	CFG_INT("hatarib_hard_readonly") { newparam.HardDisk.nWriteProtection = vi; core_hard_readonly = vi; }
 	CFG_INT("hatarib_joy1_port") core_joy_port_map[0] = vi;
 	CFG_INT("hatarib_joy2_port") core_joy_port_map[1] = vi;
 	CFG_INT("hatarib_joy3_port") core_joy_port_map[2] = vi;

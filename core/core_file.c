@@ -30,6 +30,8 @@ static char system_path[MAX_PATH] = "";
 static char save_path[MAX_PATH] = "";
 static bool save_path_ready = false;
 
+int core_hard_readonly = 1;
+
 //
 // Utilities
 //
@@ -430,19 +432,62 @@ int core_file_remove(const char* path)
 
 	if (retro_vfs_version >= 3)
 	{
+		// RetroArch VFS will faill to remove directories on windows (1.15.0)
+		// but will probably be fixed in a later version.
+		// https://github.com/libretro/RetroArch/issues/15578
 		return retro_vfs->remove(path);
 	}
 	else
 	{
-		return remove(path);
+		// microsoft's version of remove will give EACCESS error for directories,
+		// so we must redirect to rmdir instead.
+		struct stat s;
+		if ((core_file_stat(path,&s) == 0) && (S_ISDIR(s.st_mode)))
+		{
+			return rmdir(path);
+		}
+		else
+		{
+			return remove(path);
+		}
 	}
+}
+
+int core_file_remove_system(const char* path)
+{
+	return core_file_remove(temp_fn2(system_path,path));
+}
+
+int core_file_mkdir(const char* path)
+{
+	retro_log(RETRO_LOG_DEBUG,"core_file_mkdir('%s')\n",path);
+	path = temp_fn_sepfix(path);
+
+	if (retro_vfs_version >= 3)
+	{
+		return retro_vfs->mkdir(path);
+	}
+	else
+	{
+#if defined(WIN32) // gemdos.c was doing this, does Win64 really define WIN32? Does mkdir really have different numbers of parameters??
+		return mkdir(path);
+#else
+		return mkdir(path,0755); // wow a use for octal >:P
+#endif
+		// (permissions the same as those used in gemdos.c)
+	}
+}
+
+int core_file_mkdir_system(const char* path)
+{
+	return core_file_mkdir(temp_fn2(system_path,path));
 }
 
 int core_file_rename(const char* old_path, const char* new_path)
 {
 	char op_fix[MAX_PATH];
-
 	retro_log(RETRO_LOG_DEBUG,"core_file_rename('%s','%s')\n",old_path,new_path);
+
 	strcpy_trunc(op_fix,temp_fn_sepfix(old_path),sizeof(op_fix));
 	old_path = op_fix;
 	new_path = temp_fn_sepfix(new_path);
@@ -455,6 +500,15 @@ int core_file_rename(const char* old_path, const char* new_path)
 	{
 		return rename(old_path, new_path);
 	}
+}
+
+int core_file_rename_system(const char* old_path, const char* new_path)
+{
+	char ops[MAX_PATH];
+	char nps[MAX_PATH];
+	strcpy_trunc(ops,temp_fn2(system_path,old_path),sizeof(ops));
+	strcpy_trunc(nps,temp_fn2(system_path,new_path),sizeof(nps));
+	return core_file_rename(ops,nps);
 }
 
 int core_file_stat(const char* path, struct stat* fs)
@@ -514,53 +568,72 @@ int64_t core_file_size_system(const char* path)
 	return core_file_size(temp_fn2(system_path,path));
 }
 
+static int opendir_debug_count = 0;
+
 coredir* core_file_opendir(const char* path)
 {
+	coredir* result;
 	retro_log(RETRO_LOG_DEBUG,"core_file_opendir('%s')\n",path);
 	path = temp_fn_sepfix(path);
-
 	if (retro_vfs_version >= 3)
 	{
-		return (coredir*)retro_vfs->opendir(path,true);
+		result = (coredir*)retro_vfs->opendir(path,true);
 	}
 	else
 	{
-		return (coredir*)opendir(path);
+		result = (coredir*)opendir(path);
 	}
+	if (result) ++opendir_debug_count;
+	retro_log(RETRO_LOG_DEBUG,"(opendir) open directories: %d\n",opendir_debug_count);
+	return result;
 }
 
-struct dirent* core_file_readdir(coredir* dir)
+coredir* core_file_opendir_system(const char* path)
 {
+	return core_file_opendir(temp_fn2(system_path,path));
+}
+
+struct coredirent* core_file_readdir(coredir* dir)
+{
+	// only used by gemdos.c and all we need is the name
+	static struct coredirent d;
+	const char* name = NULL;
 	retro_log(RETRO_LOG_DEBUG,"core_file_readdir('%p')\n",dir);
+	memset(&d,0,sizeof(d));
 	if (retro_vfs_version >= 3)
 	{
-		static struct dirent d;
-		memset(&d,0,sizeof(d));
-		// gemdos.c only uses name
-		if (retro_vfs->readdir((struct retro_vfs_dir_handle*)dir))
-		{
-			const char* name = retro_vfs->dirent_get_name((struct retro_vfs_dir_handle*)dir);
-			if (name) strcpy_trunc(d.d_name,name,sizeof(d.d_name));
-		}
-		return &d;
+		if (!retro_vfs->readdir((struct retro_vfs_dir_handle*)dir))
+			return NULL;
+		name = retro_vfs->dirent_get_name((struct retro_vfs_dir_handle*)dir);
 	}
 	else
 	{
-		return readdir((DIR*)dir);
+		struct dirent* df;
+		df = readdir((DIR*)dir);
+		if (df == NULL)
+			return NULL;
+		name = df->d_name;
 	}
+	if (name)
+		strcpy_trunc(d.d_name,name,sizeof(d.d_name));
+	return &d;
 }
 
 int core_file_closedir(coredir* dir)
 {
+	int result;
 	retro_log(RETRO_LOG_DEBUG,"core_file_closedir('%p')\n",dir);
 	if (retro_vfs_version >= 3)
 	{
-		return retro_vfs->closedir((struct retro_vfs_dir_handle*)dir);
+		result = retro_vfs->closedir((struct retro_vfs_dir_handle*)dir);
 	}
 	else
 	{
-		return closedir((DIR*)dir);
+		result = closedir((DIR*)dir);
 	}
+	if (result == 0) --opendir_debug_count;
+	retro_log(RETRO_LOG_DEBUG,"(closedir) open directories: %d\n",opendir_debug_count);
+	return result;
 }
 
 //
@@ -583,7 +656,7 @@ static void core_file_system_add_dir(const char* filename)
 	if (sf_dir_count >= MAX_SYSTEM_DIR) return;
 	if (!strcmp(filename,".")) return;
 	if (!strcmp(filename,"..")) return;
-	strcpy_trunc(sf_filename[sf_count],"hatarib/",MAX_FILENAME);
+	strcpy_trunc(sf_dirname[sf_dir_count],"hatarib/",MAX_FILENAME);
 	strcat_trunc(sf_dirname[sf_dir_count],filename,MAX_FILENAME);
 	strcpy_trunc(sf_dirlabel[sf_dir_count],filename,MAX_FILENAME);
 	strcat_trunc(sf_dirlabel[sf_dir_count],"/",MAX_FILENAME);

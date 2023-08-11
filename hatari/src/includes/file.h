@@ -52,6 +52,7 @@ extern void File_HandleDotDirs(char *path);
 extern char* WinTmpFile(void);
 #endif
 #ifdef __LIBRETRO__
+// simulated low level access
 #define CORE_FILE_READ       0
 #define CORE_FILE_WRITE      1
 #define CORE_FILE_REVISE     2
@@ -61,7 +62,7 @@ extern char* WinTmpFile(void);
 #define CORE_FILE_REVISE     2
 #define CORE_FILE_TRUNCATE   3
 struct stat;
-struct dirent;
+extern int core_hard_readonly;
 extern corefile* core_file_open(const char* path, int access);
 extern corefile* core_file_open_system(const char* path, int access);
 extern corefile* core_file_open_save(const char* path, int access);
@@ -74,14 +75,21 @@ extern int64_t core_file_read(void* buf, int64_t size, int64_t count, corefile* 
 extern int64_t core_file_write(const void* buf, int64_t size, int64_t count, corefile* file);
 extern int core_file_flush(corefile* file);
 extern int core_file_remove(const char* path);
+extern int core_file_remove_system(const char* path);
+extern int core_file_mkdir(const char* path);
+extern int core_file_mkdir_system(const char* path);
 extern int core_file_rename(const char* old_path, const char* new_path);
+extern int core_file_rename_system(const char* old_path, const char* new_path);
 extern int core_file_stat(const char* path, struct stat* fs);
 extern int core_file_stat_system(const char* path, struct stat* fs);
 extern int64_t core_file_size(const char* path);
 extern int64_t core_file_size_system(const char* path);
 extern coredir* core_file_opendir(const char* path);
-extern struct dirent* core_file_readdir(coredir* dir);
+extern coredir* core_file_opendir_system(const char* path);
+extern struct coredirent* core_file_readdir(coredir* dir);
 extern int core_file_closedir(coredir* dir);
+// replaces File_Read
+extern uint8_t* core_read_file_system(const char* filename, unsigned int* size_out);
 #endif
 
 #endif /* HATARI_FILE_H */

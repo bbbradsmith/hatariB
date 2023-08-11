@@ -947,7 +947,7 @@ int HDC_InitDevice(const char *hdtype, SCSI_DEV *dev, char *filename, unsigned l
 	{
 		if (!(fp = fopen(filename, "rb")))
 #else
-	if (!(fp = core_file_open_system(filename, CORE_FILE_REVISE)))
+	if (core_hard_readonly==1 || !(fp = core_file_open_system(filename, CORE_FILE_REVISE)))
 	{
 		if (!(fp = core_file_open_system(filename, CORE_FILE_READ)))
 #endif
@@ -1162,7 +1162,8 @@ static void Acsi_DmaTransfer(void)
 #ifndef __LIBRETRO__
 			int wlen = fwrite(&STRam[nDmaAddr], 1, AcsiBus.data_len, AcsiBus.dmawrite_to_fh);
 #else
-			int wlen = core_file_write(&STRam[nDmaAddr], 1, AcsiBus.data_len, AcsiBus.dmawrite_to_fh);
+			int wlen = 0;
+			if (core_hard_readonly != 1) wlen = core_file_write(&STRam[nDmaAddr], 1, AcsiBus.data_len, AcsiBus.dmawrite_to_fh);
 #endif
 			if (wlen != AcsiBus.data_len)
 			{

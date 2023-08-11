@@ -31,6 +31,7 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * `set_target_properties(hatari PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)`
   * `add_library(core ${SOURCES})`
   * `target_compile_definitions(core PUBLIC __LIBRETRO__)`
+  * Removed `HAVE_STATVFS` check because we use the Libretro VFS instead.
 * **hatari/src/cpu/CMakeLists.txt**
 * **hatari/src/debug/CMakeLists.txt**
 * **hatari/src/falcon/CMakeLists.txt**
@@ -140,10 +141,15 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
 * **hatari/src/midi.c**
   * Suppress unused-variable warnings due to `ENABLE_TRACING`.
 * **hatari/src/gemdos.c**
-  * Suppress unused-variable warnings due to `ENABLE_TRACING`.
+* **hatari/src/ide.c**
+* **hatari/src/ide.c**
+* **hatari/src/ncr5380.c**
 * **hatari/src/hdc.c**
+* **hataru/src/inffile.c**
 * **hatari/src/includes/hdc.h**
-  * Replace direct filesystem access with core_file.
+* **hataru/src/includes/inffile.h**
+  * Replace hard disk direct filesystem/image access with core_file.
+  * Add write protection option for ACSI/SCSI/IDE hard disks as well.
   * Suppress unused-variable warnings due to `ENABLE_TRACING`.
 * **hatari/src/ncr5380.c**
   * Replace direct filesystem access with core_file.

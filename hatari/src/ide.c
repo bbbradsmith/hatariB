@@ -595,7 +595,8 @@ static int bdrv_write(BlockDriverState *bs, int64_t sector_num,
 #ifndef __LIBRETRO__
 		ret = fwrite(buf, 1, len, bs->fhndl);
 #else
-		ret = core_file_write(buf, 1, len, bs->fhndl);
+		ret = 0;
+		if (core_hard_readonly != 1) ret = core_file_write(buf, 1, len, bs->fhndl);
 #endif
 	}
 	else
@@ -610,7 +611,8 @@ static int bdrv_write(BlockDriverState *bs, int64_t sector_num,
 #ifndef __LIBRETRO__
 		ret = fwrite(buf16, 1, len, bs->fhndl);
 #else
-		ret = core_file_write(buf16, 1, len, bs->fhndl);
+		ret = 0;
+		if (core_hard_readonly != 1) ret = core_file_write(buf16, 1, len, bs->fhndl);
 #endif
 		free(buf16);
 	}
@@ -650,7 +652,9 @@ static int bdrv_open(BlockDriverState *bs, const char *filename, unsigned long b
 		/* Maybe the file is read-only? */
 		bs->fhndl = fopen(filename, "rb");
 #else
-	bs->fhndl = core_file_open_system(filename, CORE_FILE_REVISE);
+	bs->fhndl = NULL;
+	if (core_hard_readonly != 1)
+		bs->fhndl = core_file_open_system(filename, CORE_FILE_REVISE);
 	if (!bs->fhndl) {
 		/* Maybe the file is read-only? */
 		bs->fhndl = core_file_open_system(filename, CORE_FILE_READ);

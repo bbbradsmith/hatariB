@@ -135,7 +135,11 @@ typedef struct
 	bool bUsed;
 	char szMode[4];     /* enough for all used fopen() modes: rb/rb+/wb+ */
 	Uint32 Basepage;
+#ifndef __LIBRETRO__
 	FILE *FileHandle;
+#else
+	corefile* FileHandle;
+#endif
 	/* TODO: host path might not fit into this */
 	char szActualName[MAX_GEMDOS_PATH];        /* used by F_DATIME (0x57) */
 } FILE_HANDLE;
@@ -211,7 +215,11 @@ static bool GemDOS_GetFileInformation(int Handle, DATETIME *DateTime)
 	const char *fname = FileHandles[Handle].szActualName;
 	struct stat fstat;
 
+#ifndef __LIBRETRO__
 	if (stat(fname, &fstat) == 0)
+#else
+	if (core_file_stat_system(fname, &fstat) == 0)
+#endif
 	{
 		GemDOS_DateTime2Tos(fstat.st_mtime, DateTime, fname);
 		return true;
@@ -234,7 +242,11 @@ static bool GemDOS_SetFileInformation(int Handle, DATETIME *DateTime)
 	/* make sure Hatari itself doesn't need to write/modify
 	 * the file after it's modification time is changed.
 	 */
+#ifndef __LIBRETRO__
 	fflush(FileHandles[Handle].FileHandle);
+#else
+	core_file_flush(FileHandles[Handle].FileHandle);
+#endif
 
 	/* use host modification times instead of Atari ones? */
 	if (ConfigureParams.HardDisk.bGemdosHostTime)
@@ -257,7 +269,11 @@ static bool GemDOS_SetFileInformation(int Handle, DATETIME *DateTime)
 	timebuf.modtime = mktime(&timespec);
 
 	/* but keep previous access time */
+#ifndef __LIBRETRO__
 	if (stat(filename, &filestat) != 0)
+#else
+	if (core_file_stat_system(filename, &filestat) != 0)
+#endif
 		return false;
 	timebuf.actime = filestat.st_atime;
 
@@ -313,7 +329,11 @@ static dta_ret_t PopulateDTA(char *path, struct dirent *file, DTA *pDTA, Uint32 
 		return DTA_ERR;
 	}
 
+#ifndef __LIBRETRO__
 	if (stat(tempstr, &filestat) != 0)
+#else
+	if (core_file_stat_system(tempstr, &filestat) != 0)
+#endif
 	{
 		/* skip file if it doesn't exist, otherwise return an error */
 		dta_ret_t ret = (errno == ENOENT ? DTA_SKIP : DTA_ERR);
@@ -488,7 +508,11 @@ static const char* fsfirst_dirmask(const char *string)
 static void GemDOS_CloseFileHandle(int i)
 {
 	if (FileHandles[i].bUsed)
+#ifndef __LIBRETRO__
 		fclose(FileHandles[i].FileHandle);
+#else
+		core_file_close(FileHandles[i].FileHandle);
+#endif
 	FileHandles[i].FileHandle = NULL;
 	FileHandles[i].Basepage = 0;
 	FileHandles[i].bUsed = false;
@@ -581,7 +605,13 @@ static bool GEMDOS_DoesHostDriveFolderExist(char* lpstrPath, int iDrive)
 
 	Log_Printf(LOG_DEBUG, "Checking GEMDOS %c: HDD: %s\n", 'A'+iDrive, lpstrPath);
 
+#ifndef __LIBRETRO__
 	if (access(lpstrPath, F_OK) != 0 )
+#else
+	// just use stat instead of access
+	struct stat status;
+	if (core_file_stat_system(lpstrPath, &status) != 0 || (status.st_mode & S_IFDIR) == 0)
+#endif
 	{
 		/* Try lower case drive letter instead */
 		int	iIndex = strlen(lpstrPath)-1;
@@ -590,10 +620,16 @@ static bool GEMDOS_DoesHostDriveFolderExist(char* lpstrPath, int iDrive)
 
 	/* Check if it's a HDD identifier (or other emulated device)
 	 * and if the file/folder is accessible (security basis) */
+#ifndef __LIBRETRO__
 	if (iDrive > 1 && access(lpstrPath, F_OK) == 0 )
 	{
 		struct stat status;
 		if (stat(lpstrPath, &status) == 0 && (status.st_mode & S_IFDIR) != 0)
+#else
+	if (iDrive > 1) // just use stat instead of access
+	{
+		if (core_file_stat_system(lpstrPath, &status) == 0 && (status.st_mode & S_IFDIR) != 0)
+#endif
 		{
 			bExist = true;
 		}
@@ -606,6 +642,85 @@ static bool GEMDOS_DoesHostDriveFolderExist(char* lpstrPath, int iDrive)
 	return bExist;
 }
 
+#ifdef __LIBRETRO__
+extern void strcpy_trunc(char* dest, const char* src, unsigned int len);
+// simplified from hatari/src/scandir.c
+static int core_scandir_system(const char *dirname, struct dirent ***namelist,
+            //int (*sdfilter)(const struct dirent *), // filter unused
+            int (*dcomp)(const struct dirent **, const struct dirent **))
+{
+	unsigned int count = 0;
+	struct coredirent* de;
+	coredir* dir;
+	struct dirent** names;
+
+	// count entries
+	dir = core_file_opendir_system(dirname);
+	if (dir == NULL) return -1;
+	while ((de = core_file_readdir(dir)))
+	{
+		++count;
+	}
+	core_file_closedir(dir);
+
+	// scandir allocates each entry separately
+	names = (struct dirent**)malloc(count*sizeof(struct dirent*));
+	if (names == NULL) return -1;
+	for (unsigned int i=0; i<count; ++i) names[i] = NULL;
+	for (unsigned int i=0; i<count; ++i)
+	{
+		names[i] = (struct dirent*)malloc(sizeof(struct dirent));
+		if (names[i] == NULL) goto error_out;
+		memset(names[i],0,sizeof(struct dirent));
+	}
+
+	// read entries into our allocated collection
+	// the number of entries could have changed since the count but:
+	//   - if there's less, just free the unused names
+	//   - if there's more, just ignore them
+	dir = core_file_opendir_system(dirname);
+	if (dir == NULL) goto error_out;
+	unsigned int real_count = 0;
+	while(real_count < count && (de = core_file_readdir(dir)))
+	{
+		memset(names[real_count],0,sizeof(struct dirent));
+		strcpy_trunc(names[real_count]->d_name,de->d_name,sizeof(names[real_count]->d_name));
+		++real_count;
+	}
+	if (core_file_readdir(dir) != NULL || real_count != count)
+	{
+		core_error_msg(dirname);
+		core_error_msg("GemDOS directory contents changed during scandir.");
+	}
+	core_file_closedir(dir);
+	for (unsigned int i=real_count; i<count; ++i)
+	{
+		free(names[i]);
+		names[i] = NULL;
+	}
+	count = real_count;
+
+	// sort
+	if (count > 0 && dcomp != NULL)
+		qsort(names, count, sizeof(struct dirent *),(int (*)(const void *, const void *))dcomp);
+
+	*namelist = names;
+	return count;
+
+error_out:
+	for (unsigned int i=0; i<count; ++i)
+		free(names[i]);
+	free(names);
+	return -1;
+}
+static int core_file_mode(const char* m)
+{
+	// I think this is all used strings (along with "rb")
+	if (!strcmp(m,"rb+")) return CORE_FILE_REVISE;
+	if (!strcmp(m,"wb+")) return CORE_FILE_TRUNCATE;
+	return CORE_FILE_READ;
+}
+#endif
 
 /**
  * Determine upper limit of partitions that should be emulated.
@@ -625,7 +740,11 @@ static bool GemDOS_DetermineMaxPartitions(int *pnMaxDrives)
 	 * letter sub-folders there (then use multi-partition mode) or if
 	 * arbitrary sub-folders are there (then use single-partition mode)
 	 */
+#ifndef __LIBRETRO__
 	count = scandir(ConfigureParams.HardDisk.szHardDiskDirectories[0], &files, 0, alphasort);
+#else
+	count = core_scandir_system(ConfigureParams.HardDisk.szHardDiskDirectories[0], &files, alphasort);
+#endif
 	if (count < 0)
 	{
 		Log_Printf(LOG_ERROR, "GEMDOS hard disk emulation failed:\n "
@@ -708,6 +827,9 @@ void GemDOS_InitDrives(void)
 			return;
 		}
 	}
+#ifndef __LIBRETRO__
+	core_debug_int("GemDOS drives: ",nMaxDrives);
+#endif
 
 	ImagePartitions = nAcsiPartitions + nScsiPartitions + nIDEPartitions;
 	if (ConfigureParams.HardDisk.nGemdosDrive == DRIVE_SKIP)
@@ -828,16 +950,24 @@ static void save_file_handle_info(FILE_HANDLE *handle)
 	MemorySnapShot_Store(&handle->szActualName, sizeof(handle->szActualName));
 	if (handle->bUsed)
 	{
+#ifndef __LIBRETRO__
 		offset = ftello(handle->FileHandle);
 		stat(handle->szActualName, &fstat);
+#else
+		offset = core_file_tell(handle->FileHandle);
+		core_file_stat_system(handle->szActualName, &fstat);
+#endif
 		mtime = fstat.st_mtime; /* modification time */
 	}
 	else
 	{
 		/* avoid warnings about access to undefined data */
 		offset = 0;
-		stat("/", &fstat);
+#ifndef __LIBRETRO__
 		mtime = fstat.st_mtime;
+#else
+		mtime = 0;
+#endif
 	}
 	MemorySnapShot_Store(&mtime, sizeof(mtime));
 	MemorySnapShot_Store(&offset, sizeof(offset));
@@ -854,10 +984,18 @@ static void restore_file_handle_info(int i, FILE_HANDLE *handle)
 	struct stat fstat;
 	time_t mtime;
 	off_t offset;
+#ifndef __LIBRETRO__
 	FILE *fp;
+#else
+	corefile* fp;
+#endif
 
 	if (handle->bUsed)
+#ifndef __LIBRETRO__
 		fclose(handle->FileHandle);
+#else
+		core_file_close(handle->FileHandle);
+#endif
 
 	/* read all to proceed correctly in snapshot */
 	MemorySnapShot_Store(&handle->bUsed, sizeof(handle->bUsed));
@@ -871,7 +1009,11 @@ static void restore_file_handle_info(int i, FILE_HANDLE *handle)
 	if (!handle->bUsed)
 		return;
 
+#ifndef __LIBRETRO__
 	if (stat(handle->szActualName, &fstat) != 0)
+#else
+	if (core_file_stat_system(handle->szActualName, &fstat) != 0)
+#endif
 	{
 		handle->bUsed = false;
 		Log_Printf(LOG_WARN, "GEMDOS handle %d cannot be restored, file missing: %s\n",
@@ -884,13 +1026,22 @@ static void restore_file_handle_info(int i, FILE_HANDLE *handle)
 		Log_Printf(LOG_WARN, "restored GEMDOS handle %d points to a file that has been modified in meanwhile: %s\n",
 			   i, handle->szActualName);
 	}
+#ifndef __LIBRETRO__	
 	fp = fopen(handle->szActualName, handle->szMode);
 	if (fp == NULL || fseeko(fp, offset, SEEK_SET) != 0)
+#else
+	fp = core_file_open_system(handle->szActualName, core_file_mode(handle->szMode));
+	if (fp == NULL || core_file_seek(fp, offset, SEEK_SET) != 0)
+#endif
 	{
 		handle->bUsed = false;
 		Log_Printf(LOG_WARN, "GEMDOS '%s' handle %d cannot be restored, seek to saved offset %"PRId64" failed for: %s\n",
 			   handle->szMode, i, (int64_t)offset, handle->szActualName);
+#ifndef __LIBRETRO__
 		fclose(fp);
+#else
+		core_file_close(fp);
+#endif
 		return;
 	}
 	handle->FileHandle = fp;
@@ -1132,15 +1283,27 @@ static int GemDOS_FileName2HardDriveID(char *pszFileName)
 static char* match_host_dir_entry(const char *path, const char *name, bool pattern)
 {
 #define MAX_UTF8_NAME_LEN (3*(8+1+3)+1) /* UTF-8 can have up to 3 bytes per character */
+#ifndef __LIBRETRO__
 	struct dirent *entry;
+#else
+	struct coredirent *entry;
+#endif
 	char *match = NULL;
+#ifndef __LIBRETRO__
 	DIR *dir;
+#else
+	coredir* dir;
+#endif
 	char nameHost[MAX_UTF8_NAME_LEN];
 
 	Str_AtariToHost(name, nameHost, MAX_UTF8_NAME_LEN, INVALID_CHAR);
 	name = nameHost;
 	
+#ifndef __LIBRETRO__
 	dir = opendir(path);
+#else
+	dir = core_file_opendir_system(path);
+#endif
 	if (!dir)
 		return NULL;
 
@@ -1149,7 +1312,11 @@ static char* match_host_dir_entry(const char *path, const char *name, bool patte
 #endif
 	if (pattern)
 	{
+#ifndef __LIBRETRO__
 		while ((entry = readdir(dir)))
+#else
+		while ((entry = core_file_readdir(dir)))
+#endif
 		{
 			char *d_name = entry->d_name;
 			Str_DecomposedToPrecomposedUtf8(d_name, d_name);   /* for OSX */
@@ -1162,7 +1329,11 @@ static char* match_host_dir_entry(const char *path, const char *name, bool patte
 	}
 	else
 	{
+#ifndef __LIBRETRO__
 		while ((entry = readdir(dir)))
+#else
+		while ((entry = core_file_readdir(dir)))
+#endif
 		{
 			char *d_name = entry->d_name;
 			Str_DecomposedToPrecomposedUtf8(d_name, d_name);   /* for OSX */
@@ -1173,7 +1344,11 @@ static char* match_host_dir_entry(const char *path, const char *name, bool patte
 			}
 		}
 	}
+#ifndef __LIBRETRO__
 	closedir(dir);
+#else
+	core_file_closedir(dir);
+#endif
 #if DEBUG_PATTERN_MATCH
 	fprintf(stderr, "-> '%s'\n", match);
 #endif
@@ -1765,10 +1940,17 @@ static bool GemDOS_MkDir(Uint32 Params)
 	GemDOS_CreateHardDriveFileName(Drive, pDirName, psDirPath, FILENAME_MAX);
 	
 	/* Attempt to make directory */
+#ifndef __LIBRETRO__	
 	if (mkdir(psDirPath, 0755) == 0)
 		Regs[REG_D0] = GEMDOS_EOK;
 	else
 		Regs[REG_D0] = errno2gemdos(errno, ERROR_PATH);
+#else
+	if (core_file_mkdir_system(psDirPath) == 0)
+		Regs[REG_D0] = GEMDOS_EOK;
+	else
+		Regs[REG_D0] = errno2gemdos(EACCES, ERROR_PATH); // substitute error
+#endif
 	free(psDirPath);
 	return true;
 }
@@ -1823,10 +2005,17 @@ static bool GemDOS_RmDir(Uint32 Params)
 	GemDOS_CreateHardDriveFileName(Drive, pDirName, psDirPath, FILENAME_MAX);
 
 	/* Attempt to remove directory */
+#ifndef __LIBRETRO__
 	if (rmdir(psDirPath) == 0)
 		Regs[REG_D0] = GEMDOS_EOK;
 	else
 		Regs[REG_D0] = errno2gemdos(errno, ERROR_PATH);
+#else
+	if (core_file_remove_system(psDirPath) == 0)
+		Regs[REG_D0] = GEMDOS_EOK;
+	else
+		Regs[REG_D0] = errno2gemdos(EACCES, ERROR_PATH); // substitute error
+#endif
 	free(psDirPath);
 	return true;
 }
@@ -1885,7 +2074,11 @@ static bool GemDOS_ChDir(Uint32 Params)
 	/* Remove trailing slashes (stat on Windows does not like that) */
 	File_CleanFileName(psTempDirPath);
 
+#ifndef __LIBRETRO__
 	if (stat(psTempDirPath, &buf))
+#else
+	if (core_file_stat_system(psTempDirPath, &buf))
+#endif
 	{
 		/* error */
 		free(psTempDirPath);
@@ -1894,11 +2087,10 @@ static bool GemDOS_ChDir(Uint32 Params)
 	}
 
 	File_AddSlashToEndFileName(psTempDirPath);
+#ifndef __LIBRETRO__
 	File_MakeAbsoluteName(psTempDirPath);
-#ifdef __LIBRETRO__
-	// TODO MakeAbsoluteName is the tip of the iceberg here.
-	// This whole implementation does a lot of direct access to the filesystem,
-	// which all be redirected. Maybe patch MakeAbsoluteName to treat "system/" as the root and go from therE?
+#else
+	// assuming this is unnecessary
 #endif
 
 	/* Prevent '..' commands moving BELOW the root HDD folder */
@@ -1933,8 +2125,13 @@ static bool GemDOS_FilePathMissing(char *szActualFileName)
 	if (ptr)
 	{
 		*ptr = 0;   /* Strip filename from string */
+#ifndef __LIBRETRO__
 		if (!File_DirExists(szActualFileName))
 			return true;
+#else
+		struct stat buf;
+		return (core_file_stat_system(szActualFileName, &buf) == 0 && S_ISDIR(buf.st_mode));
+#endif
 	}
 	return false;
 }
@@ -2012,7 +2209,11 @@ static bool GemDOS_Create(Uint32 Params)
 	}
 	
 	/* truncate and open for reading & writing */
+#ifndef __LIBRETRO__
 	FileHandles[Index].FileHandle = fopen(szActualFileName, "wb+");
+#else
+	FileHandles[Index].FileHandle = core_file_open_system(szActualFileName, CORE_FILE_TRUNCATE);
+#endif
 
 	if (FileHandles[Index].FileHandle != NULL)
 	{
@@ -2026,7 +2227,11 @@ static bool GemDOS_Create(Uint32 Params)
 		if (Mode & GEMDOS_FILE_ATTRIB_READONLY)
 		{
 			/* after closing, file should be read-only */
+#ifndef __LIBRETRO__
 			if (chmod(szActualFileName, S_IRUSR|S_IRGRP|S_IROTH))
+#else
+			if (true) // libretro vfs has no chmod
+#endif
 			{
 				perror("Failed to set file to read-only");
 			}
@@ -2085,7 +2290,11 @@ static bool GemDOS_Open(Uint32 Params)
 		"read-only", "write-only", "read/write", "read/write"
 	};
 	int Drive, Index;
+#ifndef __LIBRETRO__
 	FILE *OverrideHandle;
+#else
+	corefile* OverrideHandle;
+#endif
 	bool bToTos = false;
 	uint32_t nStrAddr = STMemory_ReadLong(Params);
 	int Mode = STMemory_ReadWord(Params+SIZE_LONG) & 3;
@@ -2164,7 +2373,11 @@ static bool GemDOS_Open(Uint32 Params)
 		 */
 		if (Mode == 0 ||
 		    ConfigureParams.HardDisk.nWriteProtection == WRITEPROT_ON ||
+#ifndef __LIBRETRO__
 		    (stat(szActualFileName, &FileStat) == 0 && !(FileStat.st_mode & S_IWUSR)))
+#else
+		    (core_file_stat_system(szActualFileName, &FileStat) == 0 && !(FileStat.st_mode & S_IWUSR)))
+#endif
 		{
 			ModeStr = "rb";
 			RealMode = "read-only";
@@ -2174,7 +2387,18 @@ static bool GemDOS_Open(Uint32 Params)
 			ModeStr = "rb+";
 			RealMode = "read+write";
 		}
+#ifndef __LIBRETRO__
 		FileHandles[Index].FileHandle = fopen(szActualFileName, ModeStr);
+#else
+		FileHandles[Index].FileHandle = core_file_open_system(szActualFileName, core_file_mode(ModeStr));
+		// fall back to "rb" if it fails because our st_mode stat is bogus anyway
+		if (FileHandles[Index].FileHandle == NULL)
+		{
+			ModeStr = "rb";
+			RealMode = "read-only";
+			FileHandles[Index].FileHandle = core_file_open_system(szActualFileName, CORE_FILE_READ);
+		}
+#endif
 	}
 
 	if (FileHandles[Index].FileHandle != NULL)
@@ -2298,16 +2522,28 @@ static bool GemDOS_Read(Uint32 Params)
 	}
 	
 	/* To quick check to see where our file pointer is and how large the file is */
+#ifndef __LIBRETRO__
 	CurrentPos = ftello(FileHandles[Handle].FileHandle);
 	if (CurrentPos == -1L
 	    || fseeko(FileHandles[Handle].FileHandle, 0, SEEK_END) != 0)
+#else
+	CurrentPos = core_file_tell(FileHandles[Handle].FileHandle);
+	if (CurrentPos == -1L
+	    || core_file_seek(FileHandles[Handle].FileHandle, 0, SEEK_END) != 0)
+#endif
 	{
 		Regs[REG_D0] = GEMDOS_E_SEEK;
 		return true;
 	}
+#ifndef __LIBRETRO__
 	FileSize = ftello(FileHandles[Handle].FileHandle);
 	if (FileSize == -1L
 	    || fseeko(FileHandles[Handle].FileHandle, CurrentPos, SEEK_SET) != 0)
+#else
+	FileSize = core_file_tell(FileHandles[Handle].FileHandle);
+	if (FileSize == -1L
+	    || core_file_seek(FileHandles[Handle].FileHandle, CurrentPos, SEEK_SET) != 0)
+#endif
 	{
 		Regs[REG_D0] = GEMDOS_E_SEEK;
 		return true;
@@ -2340,6 +2576,7 @@ static bool GemDOS_Read(Uint32 Params)
 
 	/* And read data in */
 	pBuffer = (char *)STMemory_STAddrToPointer(Addr);
+#ifndef __LIBRETRO__
 	nBytesRead = fread(pBuffer, 1, Size, FileHandles[Handle].FileHandle);
 	
 	if (ferror(FileHandles[Handle].FileHandle))
@@ -2351,6 +2588,11 @@ static bool GemDOS_Read(Uint32 Params)
 		clearerr(FileHandles[Handle].FileHandle);
 	}
 	else
+#else
+	nBytesRead = core_file_read(pBuffer, 1, Size, FileHandles[Handle].FileHandle);
+	// can't really simulate ferror with corelib vfs (doesn't have per-file error, don't want to track them with an internal lookup)
+	// so: just assume it workd
+#endif
 		/* Return number of bytes read */
 		Regs[REG_D0] = nBytesRead;
 
@@ -2369,7 +2611,11 @@ static bool GemDOS_Write(Uint32 Params)
 	Uint32 Addr;
 	Sint32 Size;
 	int Handle, fh_idx;
+#ifndef __LIBRETRO__
 	FILE *fp;
+#else
+	corefile* fp;
+#endif
 
 	/* Read details from stack */
 	Handle = STMemory_ReadWord(Params);
@@ -2395,11 +2641,15 @@ static bool GemDOS_Write(Uint32 Params)
 	}
 	else
 	{
+#ifndef __LIBRETRO__
 		if (!bUseTos && Handle == 1)
 			fp = stdout;
 		else if (!bUseTos && (Handle == 2 || Handle == -1))
 			fp = stderr;
 		else
+#else
+		// stdout/stderr are not available to libretro core virtual filesystem
+#endif
 			return false;	/* assume it was TOS one -> redirect */
 	}
 
@@ -2412,18 +2662,31 @@ static bool GemDOS_Write(Uint32 Params)
 	}
 
 	pBuffer = (char *)STMemory_STAddrToPointer(Addr);
+#ifndef __LIBRETRO__
 	nBytesWritten = fwrite(pBuffer, 1, Size, fp);
 	if (fh_idx >= 0 && ferror(fp))
 	{
 		int errnum = errno;
+#else
+	nBytesWritten = core_file_write(pBuffer, 1, Size, fp);
+	if (fh_idx >= 0 && nBytesWritten != Size)
+	{
+		int errnum = EACCES; // use this as error type
+#endif
 		Log_Printf(LOG_WARN, "GEMDOS failed to write to '%s'\n",
 			   FileHandles[fh_idx].szActualName);
 		Regs[REG_D0] = errno2gemdos(errnum, ERROR_FILE);
+#ifndef __LIBRETRO__
 		clearerr(fp);
+#endif
 	}
 	else
 	{
+#ifndef __LIBRETRO__
 		fflush(fp);
+#else
+		core_file_flush(fp);
+#endif
 		Regs[REG_D0] = nBytesWritten;      /* OK */
 	}
 	return true;
@@ -2480,10 +2743,17 @@ static bool GemDOS_FDelete(Uint32 Params)
 	GemDOS_CreateHardDriveFileName(Drive, pszFileName, psActualFileName, FILENAME_MAX);
 
 	/* Now delete file?? */
+#ifndef __LIBRETRO__
 	if (unlink(psActualFileName) == 0)
 		Regs[REG_D0] = GEMDOS_EOK;          /* OK */
 	else
 		Regs[REG_D0] = errno2gemdos(errno, ERROR_FILE);
+#else
+	if (core_file_remove_system(psActualFileName) == 0)
+		Regs[REG_D0] = GEMDOS_EOK;          /* OK */
+	else
+		Regs[REG_D0] = errno2gemdos(EACCES, ERROR_FILE); // substitute error
+#endif
 
 	free(psActualFileName);
 	return true;
@@ -2501,7 +2771,11 @@ static bool GemDOS_LSeek(Uint32 Params)
 	int Handle, Mode;
 	long nFileSize;
 	long nOldPos, nDestPos;
+#ifndef __LIBRETRO__
 	FILE *fhndl;
+#else
+	corefile* fhndl;
+#endif
 
 	/* Read details from stack */
 	Offset = (Sint32)STMemory_ReadLong(Params);
@@ -2521,6 +2795,7 @@ static bool GemDOS_LSeek(Uint32 Params)
 	fhndl = FileHandles[Handle].FileHandle;
 
 	/* Save old position in file */
+#ifndef __LIBRETRO__
 	nOldPos = ftell(fhndl);
 
 	/* Determine the size of the file */
@@ -2530,6 +2805,17 @@ static bool GemDOS_LSeek(Uint32 Params)
 		return true;
 	}
 	nFileSize = ftell(fhndl);
+#else
+	nOldPos = core_file_tell(fhndl);
+
+	/* Determine the size of the file */
+	if (core_file_seek(fhndl, 0L, SEEK_END) != 0 || nOldPos < 0)
+	{
+		Regs[REG_D0] = GEMDOS_E_SEEK;
+		return true;
+	}
+	nFileSize = core_file_tell(fhndl);
+#endif
 
 	switch (Mode)
 	{
@@ -2542,16 +2828,28 @@ static bool GemDOS_LSeek(Uint32 Params)
 	if (nDestPos < 0 || nDestPos > nFileSize)
 	{
 		/* Restore old position and return error */
+#ifndef __LIBRETRO__
 		if (fseek(fhndl, nOldPos, SEEK_SET) != 0)
+#else
+		if (core_file_seek(fhndl, nOldPos, SEEK_SET) != 0)
+#endif
 			perror("GemDOS_LSeek");
 		Regs[REG_D0] = GEMDOS_ERANGE;
 		return true;
 	}
 
 	/* Seek to new position and return offset from start of file */
+#ifndef __LIBRETRO__
 	if (fseek(fhndl, nDestPos, SEEK_SET) != 0)
+#else
+	if (core_file_seek(fhndl, nDestPos, SEEK_SET) != 0)
+#endif
 		perror("GemDOS_LSeek");
+#ifndef __LIBRETRO__
 	Regs[REG_D0] = ftell(fhndl);
+#else
+	Regs[REG_D0] = core_file_tell(fhndl);
+#endif
 
 	return true;
 }
@@ -2603,7 +2901,11 @@ static bool GemDOS_Fattrib(Uint32 Params)
 		Regs[REG_D0] = GEMDOS_EFILNF;         /* File not found */
 		return true;
 	}
+#ifndef __LIBRETRO__
 	if (stat(sActualFileName, &FileStat) != 0)
+#else
+	if (core_file_stat_system(sActualFileName, &FileStat) != 0)
+#endif
 	{
 		Regs[REG_D0] = GEMDOS_EFILNF;         /* File not found */
 		return true;
@@ -2642,6 +2944,7 @@ static bool GemDOS_Fattrib(Uint32 Params)
 		}
 	}
 	
+#ifndef __LIBRETRO__
 	if (nAttrib & GEMDOS_FILE_ATTRIB_READONLY)
 	{
 		/* set read-only (readable by all) */
@@ -2660,6 +2963,9 @@ static bool GemDOS_Fattrib(Uint32 Params)
 			return true;
 		}
 	}
+#else
+	// libretro can't chmod
+#endif
 	
 	/* FIXME: support hidden/system/archive flags?
 	 * System flag is from DOS, not used by TOS.
@@ -2667,7 +2973,11 @@ static bool GemDOS_Fattrib(Uint32 Params)
 	 * and set whenever file is written to.
 	 */
 
+#ifndef __LIBRETRO__
 	Regs[REG_D0] = errno2gemdos(errno, (nAttrib & GEMDOS_FILE_ATTRIB_SUBDIRECTORY) ? ERROR_PATH : ERROR_FILE);
+#else
+	Regs[REG_D0] = GEMDOS_EOK; // prevent reporting errors?
+#endif
 	return true;
 }
 
@@ -2783,7 +3093,11 @@ static int GemDOS_Pexec(Uint32 Params)
 {
 	int Drive, len;
 	char *pszFileName;
+#ifndef __LIBRETRO__
 	FILE *fh;
+#else
+	corefile* fh;
+#endif
 	char sFileName[FILENAME_MAX];
 	uint8_t prgh[28];		/* Buffer for program header */
 	Uint32 prgname, cmdline, env_string;
@@ -2839,14 +3153,23 @@ static int GemDOS_Pexec(Uint32 Params)
 		return false;
 
 	GemDOS_CreateHardDriveFileName(Drive, pszFileName, sFileName, sizeof(sFileName));
+#ifndef __LIBRETRO__
 	fh = fopen(sFileName, "rb");
+#else
+	fh = core_file_open_system(sFileName, CORE_FILE_READ);
+#endif
 	if (!fh)
 	{
 		Regs[REG_D0] = GEMDOS_EFILNF;
 		return true;
 	}
+#ifndef __LIBRETRO__
 	len = fread(prgh, 1, sizeof(prgh), fh);
 	fclose(fh);
+#else
+	len = core_file_read(prgh, 1, sizeof(prgh), fh);
+	core_file_close(fh);
+#endif
 	if (len != sizeof(prgh) || prgh[0] != 0x60 || prgh[1] != 0x1a
 	    || prgh[2] & 0x80 || prgh[6] & 0x80 || prgh[10] & 0x80)
 	{
@@ -2965,7 +3288,11 @@ static bool GemDOS_SFirst(Uint32 Params)
 	const char *dirmask;
 	struct dirent **files;
 	int Drive;
+#ifndef __LIBRETRO__
 	DIR *fsdir;
+#else
+	coredir* fsdir;
+#endif
 	int i, j, count;
 	DTA *pDTA;
 	Uint32 DTA_Gemdos;
@@ -3049,7 +3376,11 @@ static bool GemDOS_SFirst(Uint32 Params)
 	 * TODO: host path may not fit into InternalDTA
 	 */
 	fsfirst_dirname(szActualFileName, InternalDTAs[useidx].path);
+#ifndef __LIBRETRO__
 	fsdir = opendir(InternalDTAs[useidx].path);
+#else
+	fsdir = core_file_opendir_system(InternalDTAs[useidx].path);
+#endif
 
 	if (fsdir == NULL)
 	{
@@ -3057,9 +3388,15 @@ static bool GemDOS_SFirst(Uint32 Params)
 		return true;
 	}
 	/* close directory */
+#ifndef __LIBRETRO__
 	closedir(fsdir);
 
 	count = scandir(InternalDTAs[useidx].path, &files, 0, alphasort);
+#else
+	core_file_closedir(fsdir);
+
+	count = core_scandir_system(InternalDTAs[useidx].path, &files, alphasort);
+#endif
 	/* File (directory actually) not found */
 	if (count < 0)
 	{
@@ -3186,10 +3523,17 @@ static bool GemDOS_Rename(Uint32 Params)
 		              szOldActualFileName, sizeof(szOldActualFileName));
 
 	/* Rename files */
+#ifndef __LIBRETRO__
 	if (rename(szOldActualFileName,szNewActualFileName) == 0)
 		Regs[REG_D0] = GEMDOS_EOK;
 	else
 		Regs[REG_D0] = errno2gemdos(errno, ERROR_FILE);
+#else __LIBRETRO__
+	if (core_file_rename_system(szOldActualFileName,szNewActualFileName) == 0)
+		Regs[REG_D0] = GEMDOS_EOK;
+	else
+		Regs[REG_D0] = errno2gemdos(EACCES, ERROR_FILE); // substitute error
+#endif
 	return true;
 }
 
@@ -4254,7 +4598,16 @@ int GemDOS_LoadAndReloc(const char *psPrgName, uint32_t baseaddr, bool bFullBpSe
 	uint32_t nRelOff, nCurrAddr;
 	uint32_t memtop;
 
+core_debug_msg("GemDOS_LoadAndReloc");
+#ifndef __LIBRETRO__
 	prg = File_ReadAsIs(psPrgName, &nFileSize);
+#else
+core_debug_msg("GemDOS_hello?");
+	unsigned int size = 0;
+	prg = core_read_file_system(psPrgName, &size);
+	nFileSize = size;
+#endif
+core_debug_msg("GemDOS_loaded?");
 	if (!prg)
 	{
 		Log_Printf(LOG_ERROR, "Failed to load '%s'.\n", psPrgName);

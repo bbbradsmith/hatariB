@@ -579,7 +579,8 @@ static void raw_scsi_write_data(struct raw_scsi *rs, uae_u8 data)
 #ifndef __LIBRETRO__
 				r = fwrite(ScsiBus.buffer, 1, ScsiBus.data_len, ScsiBus.dmawrite_to_fh);
 #else
-				r = core_file_write(ScsiBus.buffer, 1, ScsiBus.data_len, ScsiBus.dmawrite_to_fh);
+				r = 0;
+				if (core_hard_readonly != 1) r = core_file_write(ScsiBus.buffer, 1, ScsiBus.data_len, ScsiBus.dmawrite_to_fh);
 #endif
 				if (r != ScsiBus.data_len)
 				{

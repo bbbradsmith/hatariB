@@ -44,8 +44,11 @@ Development notes: [DEVELOP.md](DEVELOP.md)
   * TOS, Cartridge, and Hard disk files should be placed in *system/hatarib/*.
   * When loading multiple disks, the best method is to use M3U playlists to specify all needed disks at once during *Load Content*. Information: [M3U file tutorial](https://docs.retroachievements.org/Multi-Disc-Games-Tutorial/).
   * *Load New Disk* can add additional disks while running, but has several caveats, especially regarding savestates. See below.
-  * *GemDOS* type hard disks use a directory in *system/hatarib/* as a simulated drive.
-  * *ASCI*, *SCSI* and *IDE* hard disks use binary image file from *system/hatarib/*.
+* Hard Disks:
+  * *GemDOS* type hard disks can select a subdirectory within *system/hatarib/* to use as a simulated drive.
+  * A *GemDOS* folder can represent multiple paritions by having its base directory contain only single-letter folder names representing drive letters. *C/*, *D/*, etc.
+  * *ASCI*, *SCSI* and *IDE* hard disks use a binary image file chosen from *system/hatarib/*.
+  * *Hard disks are read-only by default for safety. This can be disabled in the *System > Hard Disk Write Protect* core option.
 * Saving:
   * When a modified floppy disk is ejected, or the core is closed, a modified copy of that disk image will be written to the *saves/* folder.
   * Whenever a new floppy disk is added (*Load Content*, or *Load New Disk*), the saved copy will be substituted for the original if it exists. (Also, if you want to return to the original disk, you can delete it from *saves/*.)
@@ -82,15 +85,17 @@ Development notes: [DEVELOP.md](DEVELOP.md)
       * In rare cases, inserting a unusually large new disk may increase the needed savestate size and cause a failure to save. You can eject the disk and try reducing the savestate size before trying again. (RetroArch has a limitation that savestate size must be fixed, determined at Load Content time.)
       * It is generally recommended to use M3U playlists instead of *Load New Disk* when possible ([tutorial](https://docs.retroachievements.org/Multi-Disc-Games-Tutorial/)).
   * Hard Disk modifications are written directly to their source files, and are not included in savestates.
-  
+* Quirks:
+  * We cannot delete directories in a GemDOS hard disk, because of [a bug in the RetroArch virtual file system](https://github.com/libretro/RetroArch/issues/15578) that affects windows only. This will likely be fixed in the future by an update to RetroArch. There's a working fallback if the VFS isn't provided by the host, but this isn't something easily accessible by the user, and the VFS provides other advantages so it should not be turned off. You can work around this by deleting the folder on your host computer instead.
+
 Remaining tasks before ready for public testing:
 * On-screen keyboard.
 * Help screen.
 * Button-mapped reset.
 * Option to automatically cold-reset after crash with a timer.
 * Test unicode filenames. Does Libretro expect/convert to UTF-8?
-* Hard disk images: gemdos.c need to replace stdio/etc. with core_file abstraction. Also inffile.c.
 * nvram.c seems to want to load a file, send it to saves? what is it?
+* Make sure there isn't a lot of log spam, especially during successful savestate save/reload. Wrap the core_file debug in a define. unstuck, etc.
 
 Optional tasks:
 * Investigate Libretro MIDI interface. I wonder if I could play MIDI Maze against my real ST?

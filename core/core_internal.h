@@ -19,6 +19,7 @@ extern bool core_serialize_write; // current serialization direction
 extern void strcpy_trunc(char* dest, const char* src, unsigned int len);
 extern void strcat_trunc(char* dest, const char* src, unsigned int len);
 extern bool has_extension(const char* fn, const char* exts); // case insensitive, exts = series of null terminated strings, then an extra 0 to finish the list
+extern int core_hard_readonly;
 
 extern uint8_t* core_read_file(const char* filename, unsigned int* size_out);
 extern bool core_write_file(const char* filename, unsigned int size, const uint8_t* data);
@@ -35,7 +36,6 @@ const char* get_temp_fn(); // gets the last temporary path created for a save/sy
 #define CORE_FILE_REVISE     2
 #define CORE_FILE_TRUNCATE   3
 struct stat;
-struct dirent;
 extern corefile* core_file_open(const char* path, int access);
 extern corefile* core_file_open_system(const char* path, int access);
 extern corefile* core_file_open_save(const char* path, int access);
@@ -48,13 +48,18 @@ extern int64_t core_file_read(void* buf, int64_t size, int64_t count, corefile* 
 extern int64_t core_file_write(const void* buf, int64_t size, int64_t count, corefile* file);
 extern int core_file_flush(corefile* file);
 extern int core_file_remove(const char* path);
+extern int core_file_remove_system(const char* path);
+extern int core_file_mkdir(const char* path);
+extern int core_file_mkdir_system(const char* path);
 extern int core_file_rename(const char* old_path, const char* new_path);
+extern int core_file_rename_system(const char* old_path, const char* new_path);
 extern int core_file_stat(const char* path, struct stat* fs);
 extern int core_file_stat_system(const char* path, struct stat* fs);
 extern int64_t core_file_size(const char* path);
 extern int64_t core_file_size_system(const char* path);
 extern coredir* core_file_opendir(const char* path);
-extern struct dirent* core_file_readdir(coredir* dir);
+extern coredir* core_file_opendir_system(const char* path);
+extern struct coredirent* core_file_readdir(coredir* dir);
 extern int core_file_closedir(coredir* dir);
 
 extern void core_file_set_environment(retro_environment_t cb); // scans system/ folder, includes "tos.img" and everything in"hatarib/" (non-recursive)

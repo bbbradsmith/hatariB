@@ -4,6 +4,14 @@
 typedef struct { int dummy; } corefile;
 typedef struct { int dummy; } coredir;
 
+// dirent seems to be sometimes "direct" in some units, inconsistently? gotta roll our own then.
+// only needed by gemdos.c, which only uses the name anyway
+struct coredirent
+{
+	char d_name[260];
+};
+// wonder if we might need something equivalent for stat which seems possibly nonstandard as well?
+
 // 0=0RGB1555, 1=XRGB8888, 2=RGB565
 extern int core_pixel_format;
 
