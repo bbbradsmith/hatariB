@@ -529,6 +529,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	// The values for OPTION_PAD_BUTTON will be automatically replaced with NUMBERS.
 	// The ones that are numbered at the beginning are for reference when implementing
 	// their mapping in core_input.c (which must match this list precisely)
+	// and also make sure the defaults still match (e.g. key space / key return on L3/R3)
 #define OPTION_PAD_BUTTON() \
 	{ \
 		{"0","None"}, \
@@ -547,8 +548,9 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{"13","STE Button Pause"}, \
 		{"14","Soft Reset"}, \
 		{"15","Hard Reset"}, \
-		{"16","Key Space"}, \
-		{"17","Key Return"}, \
+		{"16","Toggle Status Bar"}, \
+		{"17","Key Space"}, \
+		{"18","Key Return"}, \
 		{"","Key Up"}, \
 		{"","Key Down"}, \
 		{"","Key Left"}, \
@@ -684,9 +686,9 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	{ "hatarib_pad" padnum "_r2", "Pad " padnum " R2", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_BUTTON(), "0" }, /* none */ \
 	{ "hatarib_pad" padnum "_l3", "Pad " padnum " L3", NULL, NULL, NULL, "pad" padnum, \
-		OPTION_PAD_BUTTON(), "16" }, /* key space */ \
+		OPTION_PAD_BUTTON(), "17" }, /* key space */ \
 	{ "hatarib_pad" padnum "_r3", "Pad " padnum " R3", NULL, NULL, NULL, "pad" padnum, \
-		OPTION_PAD_BUTTON(), "17" }, /* key return */ \
+		OPTION_PAD_BUTTON(), "18" }, /* key return */ \
 	{ "hatarib_pad" padnum "_lstick", "Pad " padnum " Left Analog Stick", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_STICK(), "1" }, /* joystick */ \
 	{ "hatarib_pad" padnum "_rstick", "Pad " padnum " Right Analog Stick", NULL, NULL, NULL, "pad" padnum, \
@@ -771,6 +773,7 @@ static const struct retro_input_descriptor INPUT_DESCRIPTORS[] = {
 extern CNF_PARAMS ConfigureParams;
 extern bool Change_DoNeedReset(CNF_PARAMS *current, CNF_PARAMS *changed);
 extern void Change_CopyChangedParamsToConfiguration(CNF_PARAMS *current, CNF_PARAMS *changed, bool bForceReset);
+extern void Screen_ModeChanged(bool bForceChange);
 
 //
 // Internal
@@ -971,6 +974,12 @@ void core_config_read_newparam()
 	// preserve floppy disk paths which change every time a disk is inserted (prevents ejection due to the filename going empty)
 	memcpy(newparam.DiskImage.szDiskFileName[0],ConfigureParams.DiskImage.szDiskFileName[0],sizeof(newparam.DiskImage.szDiskFileName[0]));
 	memcpy(newparam.DiskImage.szDiskFileName[1],ConfigureParams.DiskImage.szDiskFileName[1],sizeof(newparam.DiskImage.szDiskFileName[1]));
+}
+
+void config_toggle_statusbar(void)
+{
+	ConfigureParams.Screen.bShowStatusbar = !ConfigureParams.Screen.bShowStatusbar;
+	Screen_ModeChanged(true);
 }
 
 //

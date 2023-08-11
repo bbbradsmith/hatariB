@@ -32,6 +32,7 @@
 #define AUX_DRIVE_SWAP   0x00000040
 #define AUX_WARM_BOOT    0x00000080
 #define AUX_COLD_BOOT    0x00000100
+#define AUX_STATUSBAR    0x00000200
 
 #define AUX(mask_)   (aux_buttons & (AUX_##mask_))
 #define AUX_SET(v_,mask_)   { \
@@ -286,6 +287,7 @@ void core_input_update(void)
 	bool drive_swap = false;
 	bool warm_boot = false;
 	bool cold_boot = false;
+	bool statusbar = false;
 	// onscreen keyboard state
 	int osk_stick = 0;
 	int osk_button[4] = {0,0,0,0};
@@ -404,13 +406,13 @@ void core_input_update(void)
 			{
 				static const int BUTTON_KEY[] = // must match options in core_config.c
 				{
-					RETROK_SPACE, // 16
+					RETROK_SPACE, // 17
 					RETROK_RETURN,
 					RETROK_UP,
 					RETROK_DOWN,
 					RETROK_LEFT,
 					RETROK_RIGHT,
-					RETROK_F1, // 22
+					RETROK_F1,
 					RETROK_F2,
 					RETROK_F3,
 					RETROK_F4,
@@ -420,7 +422,7 @@ void core_input_update(void)
 					RETROK_F8,
 					RETROK_F9,
 					RETROK_F10,
-					RETROK_ESCAPE, // 32
+					RETROK_ESCAPE,
 					RETROK_1,
 					RETROK_2,
 					RETROK_3,
@@ -435,7 +437,7 @@ void core_input_update(void)
 					RETROK_EQUALS,
 					RETROK_BACKQUOTE,
 					RETROK_BACKSPACE,
-					RETROK_TAB, // 47
+					RETROK_TAB,
 					RETROK_q,
 					RETROK_w,
 					RETROK_e,
@@ -449,7 +451,7 @@ void core_input_update(void)
 					RETROK_LEFTBRACKET,
 					RETROK_RIGHTBRACKET,
 					RETROK_DELETE,
-					RETROK_LCTRL, // 61
+					RETROK_LCTRL,
 					RETROK_a,
 					RETROK_s,
 					RETROK_d,
@@ -462,7 +464,7 @@ void core_input_update(void)
 					RETROK_SEMICOLON,
 					RETROK_QUOTE,
 					RETROK_BACKSLASH,
-					RETROK_LSHIFT, // 74
+					RETROK_LSHIFT,
 					RETROK_z,
 					RETROK_x,
 					RETROK_c,
@@ -474,21 +476,21 @@ void core_input_update(void)
 					RETROK_PERIOD,
 					RETROK_SLASH,
 					RETROK_RSHIFT,
-					RETROK_LALT, // 86
+					RETROK_LALT,
 					RETROK_CAPSLOCK,
-					RETROK_F11, // 88 (Help)
+					RETROK_F11, // (Help)
 					RETROK_F12, // (Undo)
 					RETROK_INSERT,
 					RETROK_HOME,
 					RETROK_PAGEUP, // (Left Paren)
 					RETROK_PAGEDOWN, // (Right Paren)
-					RETROK_KP_DIVIDE, // 92
+					RETROK_KP_DIVIDE,
 					RETROK_KP_MULTIPLY,
 					RETROK_KP_MINUS,
 					RETROK_KP_PLUS,
 					RETROK_KP_ENTER,
 					RETROK_KP_PERIOD,
-					RETROK_KP0, // 100
+					RETROK_KP0,
 					RETROK_KP1,
 					RETROK_KP2,
 					RETROK_KP3,
@@ -497,10 +499,10 @@ void core_input_update(void)
 					RETROK_KP6,
 					RETROK_KP7,
 					RETROK_KP8,
-					RETROK_KP9, // 109
+					RETROK_KP9, // 110
 				};
 				#define BUTTON_KEY_COUNT   (sizeof(BUTTON_KEY)/sizeof(BUTTON_KEY[0]))
-				#define BUTTON_KEY_START   16
+				#define BUTTON_KEY_START   17
 
 				const int m = core_button_map[i][k];
 
@@ -592,25 +594,17 @@ void core_input_update(void)
 					case 15: // Hard Reset
 						cold_boot = true;
 						break;
+					case 16: // Toggle Statusbar
+						statusbar = true;
+						break;
 					}
 				}
 			}
 		}
 	}
-	(void)osk_button; // TODO suppress unused variable error?
 
 	// unstick any hanging keys
 	core_input_keyboard_unstick();
-
-	// select drive
-	if (drive_swap && !AUX(DRIVE_SWAP)) core_disk_drive_toggle();
-	AUX_SET(drive_swap,DRIVE_SWAP);
-
-	// perform reset
-	if (warm_boot && !AUX(WARM_BOOT)) core_signal_reset(false);
-	if (cold_boot && !AUX(COLD_BOOT)) core_signal_reset(true);
-	AUX_SET(warm_boot,WARM_BOOT);
-	AUX_SET(cold_boot,COLD_BOOT);
 
 	if (core_mouse_port) // mouse is connected to joy 0
 	{
@@ -668,6 +662,24 @@ void core_input_update(void)
 			vmouse_y = vm_y;
 		}
 	}
+
+	// auxiliary buttons
+
+	// select drive
+	if (drive_swap && !AUX(DRIVE_SWAP)) core_disk_drive_toggle();
+	AUX_SET(drive_swap,DRIVE_SWAP);
+
+	// perform reset
+	if (warm_boot && !AUX(WARM_BOOT)) core_signal_reset(false);
+	if (cold_boot && !AUX(COLD_BOOT)) core_signal_reset(true);
+	AUX_SET(warm_boot,WARM_BOOT);
+	AUX_SET(cold_boot,COLD_BOOT);
+
+	// status bar toggle
+	if (statusbar && !AUX(STATUSBAR)) config_toggle_statusbar();
+	AUX_SET(statusbar,STATUSBAR);
+
+	(void)osk_button; // TODO suppress unused variable error?
 }
 
 void core_input_post(void)

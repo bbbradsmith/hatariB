@@ -100,6 +100,7 @@ Remaining tasks before ready for public testing:
 * Have funnelled Log_AlertDlg to onscreen notifications. Try to disable any that are too frequent or already diagnosed.
 * Help screen should mention licenses, GPLv2, Miniz MIT, etc.
 * Test the start FPS override on the effected machine, will it fix the stutter?
+* Initialize core_stick_map, core_button_map, core_oskey_map to defaults in case of no config? Can I do this procedurally?
 
 Optional tasks:
 * Investigate Libretro MIDI interface. I wonder if I could play MIDI Maze against my real ST?
