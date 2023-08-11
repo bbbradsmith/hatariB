@@ -10,6 +10,17 @@ static CNF_PARAMS newparam; // TODO copy default to this then modify during appl
 // system/hatarib/ file scane used to populate arrays in CORE_OPTION_DEF below
 #define MAX_OPTION_FILES   100
 
+const char* const NUMBERS[128] = {
+	  "0",  "1",  "2",  "3",  "4",  "5",  "6",  "7",  "8",  "9", "10", "11", "12", "13", "14", "15",
+	 "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31",
+	 "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47",
+	 "48", "49", "50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63",
+	 "64", "65", "66", "67", "68", "69", "70", "71", "72", "73", "74", "75", "76", "77", "78", "79",
+	 "80", "81", "82", "83", "84", "85", "86", "87", "88", "89", "90", "91", "92", "93", "94", "95",
+	 "96", "97", "98", "99","100","101","102","103","104","105","106","107","108","109","110","111",
+	"112","113","114","115","116","117","118","119","120","121","122","123","124","125","126","127",
+};
+
 static struct retro_core_option_v2_category CORE_OPTION_CAT[] = {
 	{
 		"system", "System",
@@ -507,7 +518,9 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{"3","Cursor Keys"}, \
 		{NULL,NULL} \
 	}
-	// TODO procedurally generate the indices for this one so I don't have to retype them all if anything changes
+	// The values for OPTION_PAD_BUTTON will be automatically replaced with NUMBERS.
+	// The ones that are numbered at the beginning are for reference when implementing
+	// their mapping in core_input.c
 #define OPTION_PAD_BUTTON() \
 	{ \
 		{"0","None"}, \
@@ -526,100 +539,100 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{"13","STE Button Pause"}, \
 		{"14","Soft Reset"}, \
 		{"15","Hard Reset"}, \
-		{"16","Key Space"}, \
-		{"17","Key Return"}, \
-		{"18","Key Up"}, \
-		{"19","Key Down"}, \
-		{"20","Key Left"}, \
-		{"21","Key Right"}, \
-		{"22","Key F1"}, \
-		{"23","Key F2"}, \
-		{"24","Key F3"}, \
-		{"25","Key F4"}, \
-		{"26","Key F5"}, \
-		{"27","Key F6"}, \
-		{"28","Key F7"}, \
-		{"29","Key F8"}, \
-		{"30","Key F9"}, \
-		{"31","Key F10"}, \
-		{"32","Key Esc"}, \
-		{"33","Key 1"}, \
-		{"34","Key 2"}, \
-		{"35","Key 3"}, \
-		{"36","Key 4"}, \
-		{"37","Key 5"}, \
-		{"38","Key 6"}, \
-		{"39","Key 7"}, \
-		{"40","Key 8"}, \
-		{"41","Key 9"}, \
-		{"42","Key 0"}, \
-		{"43","Key Minus"}, \
-		{"44","Key Equals"}, \
-		{"45","Key Backquote"}, \
-		{"46","Key Backspace"}, \
-		{"47","Key Tab"}, \
-		{"48","Key Q"}, \
-		{"49","Key W"}, \
-		{"50","Key E"}, \
-		{"51","Key R"}, \
-		{"52","Key T"}, \
-		{"53","Key Y"}, \
-		{"54","Key U"}, \
-		{"55","Key I"}, \
-		{"56","Key O"}, \
-		{"57","Key P"}, \
-		{"58","Key Left Brace"}, \
-		{"59","Key Right Brace"}, \
-		{"60","Key Delete"}, \
-		{"61","Key Control"}, \
-		{"62","Key A"}, \
-		{"63","Key S"}, \
-		{"64","Key D"}, \
-		{"65","Key F"}, \
-		{"66","Key G"}, \
-		{"67","Key H"}, \
-		{"68","Key J"}, \
-		{"69","Key K"}, \
-		{"70","Key L"}, \
-		{"71","Key Semicolon"}, \
-		{"72","Key Quote"}, \
-		{"73","Key Backslash"}, \
-		{"74","Key Left Shift"}, \
-		{"75","Key Z"}, \
-		{"76","Key X"}, \
-		{"77","Key C"}, \
-		{"78","Key V"}, \
-		{"79","Key B"}, \
-		{"80","Key N"}, \
-		{"81","Key M"}, \
-		{"82","Key Comma"}, \
-		{"83","Key Period"}, \
-		{"84","Key Slash"}, \
-		{"85","Key Right Shift"}, \
-		{"86","Key Alternate"}, \
-		{"87","Key Capslock"}, \
-		{"88","Key Help"}, \
-		{"89","Key Undo"}, \
-		{"90","Key Insert"}, \
-		{"91","Key Clr Home"}, \
-		{"92","Key Numpad Left Paren"}, \
-		{"93","Key Numpad Right Paren"}, \
-		{"94","Key Numpad Divide"}, \
-		{"95","Key Numpad Multiply"}, \
-		{"96","Key Numpad Subtract"}, \
-		{"97","Key Numpad Add"}, \
-		{"98","Key Numpad Enter"}, \
-		{"99","Key Numpad Decimal"}, \
-		{"100","Key Numpad 0"}, \
-		{"101","Key Numpad 1"}, \
-		{"102","Key Numpad 2"}, \
-		{"103","Key Numpad 3"}, \
-		{"104","Key Numpad 4"}, \
-		{"105","Key Numpad 5"}, \
-		{"106","Key Numpad 6"}, \
-		{"107","Key Numpad 7"}, \
-		{"108","Key Numpad 8"}, \
-		{"109","Key Numpad 9"}, \
+		{"","Key Space"}, \
+		{"","Key Return"}, \
+		{"","Key Up"}, \
+		{"","Key Down"}, \
+		{"","Key Left"}, \
+		{"","Key Right"}, \
+		{"","Key F1"}, \
+		{"","Key F2"}, \
+		{"","Key F3"}, \
+		{"","Key F4"}, \
+		{"","Key F5"}, \
+		{"","Key F6"}, \
+		{"","Key F7"}, \
+		{"","Key F8"}, \
+		{"","Key F9"}, \
+		{"","Key F10"}, \
+		{"","Key Esc"}, \
+		{"","Key 1"}, \
+		{"","Key 2"}, \
+		{"","Key 3"}, \
+		{"","Key 4"}, \
+		{"","Key 5"}, \
+		{"","Key 6"}, \
+		{"","Key 7"}, \
+		{"","Key 8"}, \
+		{"","Key 9"}, \
+		{"","Key 0"}, \
+		{"","Key Minus"}, \
+		{"","Key Equals"}, \
+		{"","Key Backquote"}, \
+		{"","Key Backspace"}, \
+		{"","Key Tab"}, \
+		{"","Key Q"}, \
+		{"","Key W"}, \
+		{"","Key E"}, \
+		{"","Key R"}, \
+		{"","Key T"}, \
+		{"","Key Y"}, \
+		{"","Key U"}, \
+		{"","Key I"}, \
+		{"","Key O"}, \
+		{"","Key P"}, \
+		{"","Key Left Brace"}, \
+		{"","Key Right Brace"}, \
+		{"","Key Delete"}, \
+		{"","Key Control"}, \
+		{"","Key A"}, \
+		{"","Key S"}, \
+		{"","Key D"}, \
+		{"","Key F"}, \
+		{"","Key G"}, \
+		{"","Key H"}, \
+		{"","Key J"}, \
+		{"","Key K"}, \
+		{"","Key L"}, \
+		{"","Key Semicolon"}, \
+		{"","Key Quote"}, \
+		{"","Key Backslash"}, \
+		{"","Key Left Shift"}, \
+		{"","Key Z"}, \
+		{"","Key X"}, \
+		{"","Key C"}, \
+		{"","Key V"}, \
+		{"","Key B"}, \
+		{"","Key N"}, \
+		{"","Key M"}, \
+		{"","Key Comma"}, \
+		{"","Key Period"}, \
+		{"","Key Slash"}, \
+		{"","Key Right Shift"}, \
+		{"","Key Alternate"}, \
+		{"","Key Capslock"}, \
+		{"","Key Help"}, \
+		{"","Key Undo"}, \
+		{"","Key Insert"}, \
+		{"","Key Clr Home"}, \
+		{"","Key Numpad Left Paren"}, \
+		{"","Key Numpad Right Paren"}, \
+		{"","Key Numpad Divide"}, \
+		{"","Key Numpad Multiply"}, \
+		{"","Key Numpad Subtract"}, \
+		{"","Key Numpad Add"}, \
+		{"","Key Numpad Enter"}, \
+		{"","Key Numpad Decimal"}, \
+		{"","Key Numpad 0"}, \
+		{"","Key Numpad 1"}, \
+		{"","Key Numpad 2"}, \
+		{"","Key Numpad 3"}, \
+		{"","Key Numpad 4"}, \
+		{"","Key Numpad 5"}, \
+		{"","Key Numpad 6"}, \
+		{"","Key Numpad 7"}, \
+		{"","Key Numpad 8"}, \
+		{"","Key Numpad 9"}, \
 		{NULL,NULL} \
 	}
 #define OPTION_OSKEY_BUTTON() \
@@ -780,12 +793,17 @@ bool cfg_read_str(const char* key, const char** s)
 	return true;
 }
 
-bool cfg_read_int_pad(int pad, const char* key, int* v)
+const char* cfg_get_pad_key(int pad, const char* key)
 {
 	static char padkey[64];
 	snprintf(padkey,sizeof(padkey),"hatarib_pad%d_%s",pad+1,key);
 	padkey[sizeof(padkey)-1] = 0;
-	return cfg_read_int(padkey,v);
+	return padkey;
+}
+
+bool cfg_read_int_pad(int pad, const char* key, int* v)
+{
+	return cfg_read_int(cfg_get_pad_key(pad,key),v);
 }
 
 #define CFG_INT(key) if (cfg_read_int((key),&vi))
@@ -1025,6 +1043,24 @@ void core_config_set_environment(retro_environment_t cb)
 			def->values[j+1].value = fn;
 			def->values[j+1].label = fn + 8; // hatarib/
 			++j;
+		}
+	}
+	for (int i=0; i<4; ++i)
+	{
+		// fill in the number values for OPTION_PAD_BUTTONs
+		static const char* const BUTTONS[12] =  {"a","b","x","y","select","start","l1","l2","r1","r2","l3","r3"};
+		for (int j=0; j<12; ++j)
+		{
+			const char* key = cfg_get_pad_key(i,BUTTONS[j]);
+			if((def = get_core_option_def(key)))
+			{
+				for (int k=0; k<128 && def->values[k].label != NULL; ++k)
+				{
+					def->values[k].value = NUMBERS[k];
+					// for debugging the list
+					//retro_log(RETRO_LOG_DEBUG,"%s[%d] = %s (%s)\n",key,k,def->values[k].value,def->values[k].label);
+				}
+			}
 		}
 	}
 
