@@ -85,6 +85,7 @@ Development notes: [DEVELOP.md](DEVELOP.md)
       * In rare cases, inserting a unusually large new disk may increase the needed savestate size and cause a failure to save. You can eject the disk and try reducing the savestate size before trying again. (RetroArch has a limitation that savestate size must be fixed, determined at Load Content time.)
       * It is generally recommended to use M3U playlists instead of *Load New Disk* when possible ([tutorial](https://docs.retroachievements.org/Multi-Disc-Games-Tutorial/)).
   * Hard Disk modifications are written directly to their source files, and are not included in savestates.
+  * If you increase the size of memory, you should close and restart the core before using savestates, to allow RetroArch to update the savestate size.
 * Quirks:
   * We cannot delete directories in a GemDOS hard disk, because of [a bug in the RetroArch virtual file system](https://github.com/libretro/RetroArch/issues/15578) that affects windows only. This will likely be fixed in the future by an update to RetroArch. There's a working fallback if the VFS isn't provided by the host, but this isn't something easily accessible by the user, and the VFS provides other advantages so it should not be turned off. You can work around this by deleting the folder on your host computer instead.
 
@@ -95,7 +96,8 @@ Remaining tasks before ready for public testing:
 * Option to automatically cold-reset after crash with a timer.
 * Test unicode filenames. Does Libretro expect/convert to UTF-8?
 * nvram.c seems to want to load a file, send it to saves? what is it?
-* Make sure there isn't a lot of log spam, especially during successful savestate save/reload. Wrap the core_file debug in a define. unstuck, etc.
+* Make hard reset the default, it's more intuitive and more useful.
+* Remember to disable the Hatari log dump.
 
 Optional tasks:
 * Investigate Libretro MIDI interface. I wonder if I could play MIDI Maze against my real ST?

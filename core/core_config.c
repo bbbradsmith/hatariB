@@ -962,7 +962,7 @@ void core_config_set_environment(retro_environment_t cb)
 {
 	unsigned version = 0;
 	struct retro_core_option_v2_definition* def;
-	retro_log(RETRO_LOG_DEBUG,"core_config_set_environment(%p)\n",cb);
+	//retro_log(RETRO_LOG_DEBUG,"core_config_set_environment(%p)\n",cb);
 	bool tos_img = false;
 
 	if ((def = get_core_option_def("hatarib_tos")))

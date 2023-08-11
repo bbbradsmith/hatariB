@@ -210,7 +210,7 @@ void core_input_keyboard_unstick() // release any keys that don't currently matc
 		if (!core_host_keyboard || !input_state_cb(0,RETRO_DEVICE_KEYBOARD,0,i))
 		{
 			core_input_keyboard_event(false,i,0,mod); // release key
-			retro_log(RETRO_LOG_DEBUG,"core_input_keyboard_unstick() released: %d\n",i);
+			//retro_log(RETRO_LOG_DEBUG,"core_input_keyboard_unstick() released: %d\n",i);
 		}
 	}
 }

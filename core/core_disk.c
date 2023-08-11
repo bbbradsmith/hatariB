@@ -129,7 +129,7 @@ static bool set_eject_state_drive(bool ejected, int d)
 
 static bool set_eject_state(bool ejected)
 {
-	retro_log(RETRO_LOG_DEBUG,"set_eject_state(%d) drive %d\n",ejected,drive);
+	//retro_log(RETRO_LOG_DEBUG,"set_eject_state(%d) drive %d\n",ejected,drive);
 	return set_eject_state_drive(ejected, drive);
 }
 
@@ -223,14 +223,14 @@ static bool load_m3u(uint8_t* data, unsigned int size, const char* m3u_path, uns
 		 if (p < size) c = data[p]; // if p==size then c=10 to generate a final end-of-line
 		if (c == 10 || c == 13) // end of line
 		{
-			retro_log(RETRO_LOG_DEBUG,"M3U line: '%s'\n",line);
+			//retro_log(RETRO_LOG_DEBUG,"M3U line: '%s'\n",line);
 			// trim trailing whitespace
 			while (lp > 1 && (line[lp-1] == ' ' || line[lp-1] == '\t'))
 			{
 				line[lp-1] = 0;
 				--lp;
 			}
-			retro_log(RETRO_LOG_DEBUG,"M3U trim: '%s'\n",line);
+			//retro_log(RETRO_LOG_DEBUG,"M3U trim: '%s'\n",line);
 			// use the line if not a comment or empty
 			if (lp != 0 && line[0] != '#')
 			{
@@ -577,14 +577,14 @@ static bool add_image_index(void)
 static bool set_initial_image(unsigned index, const char* path)
 {
 	retro_log(RETRO_LOG_DEBUG,"set_initial_image(%d,%p)\n",index,path);
-	if(path) retro_log(RETRO_LOG_DEBUG,"path: %s\n",path);
+	if(path) retro_log(RETRO_LOG_DEBUG,"path: %s\n",path); // logging this path but not doing anything with it
 	initial_image = index;
 	return true;
 }
 
 static bool get_image_path(unsigned index, char* path, size_t len)
 {
-	retro_log(RETRO_LOG_DEBUG,"get_image_path(%d,%p,%d)\n",index,path,(int)len);
+	//retro_log(RETRO_LOG_DEBUG,"get_image_path(%d,%p,%d)\n",index,path,(int)len);
 	if (index >= MAX_DISKS) return false;
 	if (path && len>0)
 	{
@@ -595,7 +595,7 @@ static bool get_image_path(unsigned index, char* path, size_t len)
 
 static bool get_image_label(unsigned index, char* label, size_t len)
 {
-	retro_log(RETRO_LOG_DEBUG,"get_image_label(%d,%p,%d)\n",index,label,(int)len);
+	//retro_log(RETRO_LOG_DEBUG,"get_image_label(%d,%p,%d)\n",index,label,(int)len);
 	if (index >= MAX_DISKS) return false;
 	if (label == NULL || len == 0) return true;
 	// prefix to indicate insertion
@@ -660,7 +660,7 @@ void core_disk_init(void)
 
 void core_disk_load_game(const struct retro_game_info *game)
 {
-	retro_log(RETRO_LOG_DEBUG,"core_disk_load_game(%p)\n",game);
+	//retro_log(RETRO_LOG_DEBUG,"core_disk_load_game(%p)\n",game);
 
 	disks_clear();
 	if (game == NULL) return;
@@ -726,7 +726,7 @@ void core_disk_reindex(void)
 					// We mark this drive's contents as changed so it will be saved
 					// at the next eject/close.
 					hatari_libretro_floppy_changed(d);
-					retro_log(RETRO_LOG_DEBUG,"Savestate marks floppy contents changed: %s\n",disks[i].filename);
+					//retro_log(RETRO_LOG_DEBUG,"Savestate marks floppy contents changed: %s\n",disks[i].filename);
 				}
 			}
 			else
@@ -737,7 +737,7 @@ void core_disk_reindex(void)
 				if (core_disk_save_exists(infile)) // note this doesn't work for STX because it wants an overlay instead
 				{
 					hatari_libretro_floppy_changed(d);
-					retro_log(RETRO_LOG_DEBUG,"Savestate marks uncached floppy contents changed: %s\n",infile);
+					//retro_log(RETRO_LOG_DEBUG,"Savestate marks uncached floppy contents changed: %s\n",infile);
 				}
 			}
 		}
@@ -764,7 +764,7 @@ void core_disk_drive_reinsert(void)
 {
 	int restore_drive = drive;
 	bool restore_eject;
-	retro_log(RETRO_LOG_DEBUG,"core_disk_drive_reinsert()\n");
+	//retro_log(RETRO_LOG_DEBUG,"core_disk_drive_reinsert()\n");
 	drive = 0;
 	restore_eject = get_eject_state();
 	set_eject_state(true);
