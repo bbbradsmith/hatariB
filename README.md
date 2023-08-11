@@ -96,7 +96,7 @@ Remaining tasks before ready for public testing:
 * Help screen.
 * Have funnelled Log_AlertDlg to onscreen notifications. Try to disable any that are too frequent or already diagnosed.
 * Help screen should mention licenses, GPLv2, Miniz MIT, etc.
-* Input seems to get "stuck" sometimes, not sure of the cause. Mouse buttons stop working or can't stop firing, etc. can't seem to remedy it when it happens except doing a reset. Add a #define for input logging (dump all buttons recieved each frame?) and tie it to a core option I can flick on next time it happens.
+* Input seems to get "stuck" sometimes, not sure of the cause. Mouse buttons stop working or can't stop firing, etc. can't seem to remedy it when it happens except doing a reset. Added CORE_INPUT_DEBUG=1 which adds a debug log option if it comes up again... remember to set to 0 for release.
 
 Optional tasks:
 * Investigate Libretro MIDI interface. I wonder if I could play MIDI Maze against my real ST?

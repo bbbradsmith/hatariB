@@ -64,6 +64,7 @@ int core_button_map[4][12] = {BUTTON_DEF,BUTTON_DEF,BUTTON_DEF,BUTTON_DEF};
 int core_oskey_map[4][5] = {OSKEY_DEF,OSKEY_DEF,OSKEY_DEF,OSKEY_DEF};
 
 // other input configuration
+bool core_input_debug = false;
 bool core_mouse_port = true;
 bool core_host_keyboard = true;
 bool core_host_mouse = true;
@@ -210,6 +211,10 @@ void core_input_keyboard_event(bool down, unsigned keycode, uint32_t character, 
 
 void core_input_keyboard_event_callback(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers)
 {
+	#if CORE_INPUT_DEBUG
+	if (core_input_debug)
+		retro_log(RETRO_LOG_INFO,"core_input_keyboard_event_callback(%d,%d,%d,%04X)\n",down,keycode,character,key_modifiers);
+	#endif
 	//retro_log(RETRO_LOG_DEBUG,"core_input_keyboard_event_callback(%d,%d,%d,%04X)\n",down,keycode,character,key_modifiers);
 	// assuming we don't need to mutex the event queue,
 	// because it doesn't make sense for retro_keyboard_callback to operate during retro_run,
@@ -234,6 +239,10 @@ void core_input_keyboard_unstick() // release any keys that don't currently matc
 		{
 			core_input_keyboard_event(false,i,0,mod); // release key
 			//retro_log(RETRO_LOG_DEBUG,"core_input_keyboard_unstick() released: %d\n",i);
+			#if CORE_INPUT_DEBUG
+			if (core_input_debug)
+				retro_log(RETRO_LOG_INFO,"core_input_keyboard_unstick() released: %d\n",i);
+			#endif
 		}
 	}
 }
@@ -283,6 +292,45 @@ void core_input_init(void)
 
 void core_input_update(void)
 {
+	#if CORE_INPUT_DEBUG
+	static int framecount = 0;
+	if (core_input_debug)
+	{
+		retro_log(RETRO_LOG_INFO,"core_input_update() frame: %08X M %c%c\n",framecount,AUX(MOUSE_L)?'L':'.',AUX(MOUSE_R)?'R':'.');
+		++framecount;
+		if ((framecount % 512) == 0) // big state dump every ~10 seconds
+		{
+			retro_log(RETRO_LOG_INFO,"mappings: \n");
+			for (int i=0; i<4; ++i)
+				retro_log(RETRO_LOG_INFO,"pad%d>%d (%d%d%d) (%d %d %d %d %d %d %d %d %d %d %d %d)\n",
+					i,core_joy_port_map[i],
+					core_stick_map[i][0],
+					core_stick_map[i][1],
+					core_stick_map[i][2],
+					core_button_map[i][0],
+					core_button_map[i][1],
+					core_button_map[i][2],
+					core_button_map[i][3],
+					core_button_map[i][4],
+					core_button_map[i][5],
+					core_button_map[i][6],
+					core_button_map[i][7],
+					core_button_map[i][8],
+					core_button_map[i][9],
+					core_button_map[i][10],
+					core_button_map[i][11]);
+			// not dumped:
+			//  retrok_down
+			//  mod_state
+			//  joy_autofire
+			//  joy_stick
+			//  retrok_joy
+			//  core_oskey_map
+			//  aux_buttons not mouse
+		}
+	}
+	#endif
+
 	// accumulated virtual mouse state
 	bool vm_l = false;
 	bool vm_r = false;
@@ -310,6 +358,13 @@ void core_input_update(void)
 	// have each joystick update its mapped controls
 	for (int i=0; i<4; ++i)
 	{
+		#if CORE_INPUT_DEBUG
+		static int debug_ax[3];
+		static int debug_ay[3];
+		static int debug_b[12];
+		bool debug_pad = false;
+		#endif
+
 		int stick_threshold;
 		int j = core_joy_port_map[i];
 		// i = retropad
@@ -349,6 +404,12 @@ void core_input_update(void)
 				if (ay <= -stick_threshold) osk_stick |= JOY_STICK_U;
 				if (ay >=  stick_threshold) osk_stick |= JOY_STICK_D;
 			}
+			#if CORE_INPUT_DEBUG
+			debug_ax[k] = ax;
+			debug_ay[k] = ay;	
+			if (ax > 0x2000 || ax < -0x2000 || ay > 0x2000 || ay <-0x2000)
+				debug_pad = true;
+			#endif
 
 			switch (core_stick_map[i][k]) // must match options in core_config.c
 			{
@@ -409,6 +470,10 @@ void core_input_update(void)
 			};
 			if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, DEVICE[k]))
 			{
+				#if CORE_INPUT_DEBUG
+				debug_b[k] = 1;
+				debug_pad = true;
+				#endif
 				static const int BUTTON_KEY[] = // must match options in core_config.c
 				{
 					RETROK_SPACE, // 17
@@ -605,7 +670,33 @@ void core_input_update(void)
 					}
 				}
 			}
+			#if CORE_INPUT_DEBUG
+			else debug_b[k] = 0;
+			#endif
 		}
+		#if CORE_INPUT_DEBUG
+		if (core_input_debug && debug_pad)
+			retro_log(RETRO_LOG_INFO,"P%d %c%c%c%c%c%c%c%c%c%c%c%c %2d%2d %2d%2d %2d%2d\n",
+				i,
+				debug_b[ 0] ? 'A' : '.',
+				debug_b[ 1] ? 'B' : '.',
+				debug_b[ 2] ? 'X' : '.',
+				debug_b[ 3] ? 'Y' : '.',
+				debug_b[ 4] ? 's' : '.',
+				debug_b[ 5] ? 'S' : '.',
+				debug_b[ 6] ? 'L' : '.',
+				debug_b[ 7] ? 'R' : '.',
+				debug_b[ 8] ? 'l' : '.',
+				debug_b[ 9] ? 'r' : '.',
+				debug_b[10] ? '[' : '.',
+				debug_b[11] ? ']' : '.',
+				debug_ax[0] / 0x1000,
+				debug_ay[0] / 0x1000,
+				debug_ax[1] / 0x1000,
+				debug_ay[1] / 0x1000,
+				debug_ax[2] / 0x1000,
+				debug_ay[2] / 0x1000);
+		#endif
 	}
 
 	// unstick any hanging keys
@@ -623,6 +714,13 @@ void core_input_update(void)
 			vm_r |= pm_r;
 			vm_x += pm_x;
 			vm_y += pm_y;
+			#if CORE_INPUT_DEBUG
+			if (core_input_debug && (pm_l || pm_r || pm_x || pm_y))
+				retro_log(RETRO_LOG_INFO,"M %c%c %3d %3d\n",
+					pm_l ? 'L' : '.',
+					pm_r ? 'R' : '.',
+					pm_x, pm_y);
+			#endif
 		}
 
 		if ((vm_l && !AUX(MOUSE_L)) || (!vm_l && AUX(MOUSE_L)))
@@ -636,6 +734,10 @@ void core_input_update(void)
 			event.button.y = vm_y;
 			event_queue_push(&event);
 			AUX_SET(vm_l,MOUSE_L);
+			#if CORE_INPUT_DEBUG
+			if (core_input_debug)
+				retro_log(RETRO_LOG_INFO,"Mouse L %s\n",vm_l ? "DOWN" : "UP");
+			#endif
 		}
 
 		if ((vm_r && !AUX(MOUSE_R)) || (!vm_r && AUX(MOUSE_R)))
@@ -648,7 +750,11 @@ void core_input_update(void)
 			event.button.x = vm_x;
 			event.button.y = vm_y;
 			event_queue_push(&event);
-			AUX_SET(vm_r,MOUSE_L);
+			AUX_SET(vm_r,MOUSE_R);
+			#if CORE_INPUT_DEBUG
+			if (core_input_debug)
+				retro_log(RETRO_LOG_INFO,"Mouse R %s\n",vm_r ? "DOWN" : "UP");
+			#endif
 		}
 
 		if (vm_x != vmouse_x || vm_y != vmouse_y)
@@ -665,6 +771,10 @@ void core_input_update(void)
 			event_queue_push(&event);
 			vmouse_x = vm_x;
 			vmouse_y = vm_y;
+			#if CORE_INPUT_DEBUG
+			if (core_input_debug)
+				retro_log(RETRO_LOG_INFO,"Mouse Move %3d %3d\n",vm_x,vm_y);
+			#endif
 		}
 	}
 
@@ -685,6 +795,19 @@ void core_input_update(void)
 	AUX_SET(statusbar,STATUSBAR);
 
 	(void)osk_button; // TODO suppress unused variable error?
+
+	#if CORE_INPUT_DEBUG
+	if (core_input_debug)
+	{
+		retro_log(RETRO_LOG_INFO,"--- J01: %02X %02X  M: %c%c %5d %5d\n",
+			joy_fire[0],
+			joy_fire[1],
+			AUX(MOUSE_L) ? 'L' : '.',
+			AUX(MOUSE_R) ? 'R' : '.',
+			vmouse_x,
+			vmouse_y);
+	}
+	#endif
 }
 
 void core_input_post(void)

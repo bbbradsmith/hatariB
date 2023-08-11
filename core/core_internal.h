@@ -5,6 +5,9 @@
 
 #define   CORE_ARRAY_SIZE(a_)   (sizeof(a_)/sizeof(a_[0]))
 
+// adds a config option to dump all input polling to the log every frame
+#define CORE_INPUT_DEBUG   1
+
 // core.c
 extern retro_environment_t environ_cb;
 extern retro_input_poll_t input_poll_cb;
@@ -107,6 +110,10 @@ extern void core_input_update(void); // call in retro_run, polls Libretro inputs
 extern void core_input_post(void); // call to force hatari to process the input queue
 extern void core_input_finish(void); // call at end of retro_run
 extern void core_input_serialize(void);
+
+#if CORE_INPUT_DEBUG
+extern bool core_input_debug;
+#endif
 
 extern bool core_mouse_port;
 extern bool core_host_keyboard;
