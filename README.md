@@ -94,7 +94,6 @@ Development notes: [DEVELOP.md](DEVELOP.md)
 Remaining tasks before ready for public testing:
 * On-screen keyboard.
 * Help screen.
-* Button-mapped reset.
 * Option to automatically cold-reset after crash with a timer.
 * Test unicode filenames. Does Libretro expect/convert to UTF-8?
 * Remember to disable the Hatari log dump.

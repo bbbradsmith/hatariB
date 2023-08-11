@@ -570,10 +570,10 @@ void core_input_update(void)
 						if (j < JOY_PORTS) joy_fire[j] |= JOY_FIRE_PAUSE;
 						break;
 					case 14: // Soft Reset
-						// TODO
+						core_signal_reset(false);
 						break;
 					case 15: // Hard Reset
-						// TODO
+						core_signal_reset(true);
 						break;
 					}
 				}

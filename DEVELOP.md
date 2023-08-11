@@ -90,7 +90,7 @@ Otherwise there are minor changes to the CMake build files, marked with a commen
   * Replaced snapshot file access with a core-provided in-memory buffer.
   * Disable snapshot compression because Libretro needs it uncompressed.
   * Make `bCaptureError` externally accessible to check for errors after restore.
-  * Disable some Log_AlertDlg to prevent spam.
+  * Disable some `Log_AlertDlg`s to prevent spam.
 * **hatari/src/hatari-glue.c**
   * Add `hatari_libretro_save_state` and `hatari_libretro_restore_state` to execute savestates between `retro_run` calls.
   * Add `hatari_libretro_flush_audio` to reset audio queue when needed.
