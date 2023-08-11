@@ -94,7 +94,6 @@ Development notes: [DEVELOP.md](DEVELOP.md)
 Remaining tasks before ready for public testing:
 * On-screen keyboard.
 * Help screen.
-* Option to automatically cold-reset after crash with a timer.
 * Remember to disable the Hatari log dump.
 * Have funnelled Log_AlertDlg to onscreen notifications. Try to disable any that are too frequent or already diagnosed.
 * Help screen should mention licenses, GPLv2, Miniz MIT, etc.

@@ -470,6 +470,44 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
 	},
 	{
+		"hatarib_crashtime","Crash Timeout Reset", NULL,
+		"Time in seconds. If the CPU halts, nothing will happen until a hard reset."
+		" This option will automatically reset after the chosen time.",
+		NULL, "advanced",
+		{
+			{"0","Off"},
+			{"1","1"},
+			{"2","2"},
+			{"3","3"},
+			{"4","4"},
+			{"5","5"},
+			{"6","6"},
+			{"7","7"},
+			{"8","8"},
+			{"9","9"},
+			{"10","10"},
+			{"11","11"},
+			{"12","12"},
+			{"13","13"},
+			{"14","14"},
+			{"15","15"},
+			{"16","16"},
+			{"17","17"},
+			{"18","18"},
+			{"19","19"},
+			{"20","20"},
+			{"25","25"},
+			{"30","30"},
+			{"35","35"},
+			{"40","40"},
+			{"45","45"},
+			{"50","50"},
+			{"55","55"},
+			{"60","60"},
+			{NULL,NULL}
+		}, "10"
+	},
+	{
 		"hatarib_startfps","Override Startup FPS", NULL,
 		"Old versions of RetroArch may have trouble changing FPS after core starts up."
 		" This can force the first reported FPS to one that matches the primary rate of your game."
@@ -941,6 +979,7 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_drivesingle") { newparam.DiskImage.DriveA_NumberOfHeads = newparam.DiskImage.DriveB_NumberOfHeads = vi; }
 	CFG_INT("hatarib_readonly_floppy") newparam.DiskImage.nWriteProtection = vi;
 	CFG_INT("hatarib_patchtos") newparam.System.bFastBoot = vi;
+	CFG_INT("hatarib_crashtime") core_crashtime = vi;
 	CFG_INT("hatarib_startfps") core_start_fps = vi;
 	CFG_INT("hatarib_blitter_st") newparam.System.bBlitter = vi;
 	CFG_INT("hatarib_wakestate") newparam.System.VideoTimingMode = vi;

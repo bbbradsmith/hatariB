@@ -74,6 +74,8 @@ int core_mouse_dead = 5; // percentage of stick deadzone
 //
 
 extern void Main_EventHandler(void);
+extern int Reset_Warm(void);
+extern int Reset_Cold(void);
 
 //
 // translated SDL event queue
@@ -670,8 +672,8 @@ void core_input_update(void)
 	AUX_SET(drive_swap,DRIVE_SWAP);
 
 	// perform reset
-	if (warm_boot && !AUX(WARM_BOOT)) core_signal_reset(false);
-	if (cold_boot && !AUX(COLD_BOOT)) core_signal_reset(true);
+	if (warm_boot && !AUX(WARM_BOOT)) Reset_Warm();
+	if (cold_boot && !AUX(COLD_BOOT)) Reset_Cold();
 	AUX_SET(warm_boot,WARM_BOOT);
 	AUX_SET(cold_boot,COLD_BOOT);
 

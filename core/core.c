@@ -80,6 +80,7 @@ extern int hatari_libretro_restore_state(void);
 //
 
 // external
+
 int core_pixel_format = 0;
 bool core_init_return = false;
 uint8_t core_runflags = 0;
@@ -87,8 +88,14 @@ int core_trace_countdown = 0;
 uint8_t* core_rom_mem_pointer = NULL;
 int core_start_fps = 0;
 bool core_start_fps_locked = true;
+int core_crashtime = 10;
+int core_crash_frames = 0; // reset to 0 whenever CORE_RUNFLAG_HALT
+bool core_option_soft_reset = false;
 
 // internal
+
+bool content_override_set = false;
+
 void* core_video_buffer = NULL;
 int16_t core_audio_buffer[AUDIO_BUFFER_LEN];
 int core_video_w = 640;
@@ -109,9 +116,6 @@ bool core_rate_changed = false;
 // This is because they can sometimes be updated multiple times
 // in a single frame, and onl the last one matters.
 // (Savestate tends to set them once spuriously during its reset phase.)
-
-bool core_option_soft_reset = false;
-bool content_override_set = false;
 
 static void retro_log_init()
 {
@@ -311,6 +315,7 @@ void core_signal_halt(void)
 		environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg);
 	}
 	core_runflags |= CORE_RUNFLAG_HALT;
+	core_crash_frames = 0;
 }
 
 void core_signal_tos_fail(void)
@@ -326,6 +331,7 @@ void core_signal_tos_fail(void)
 	msg.progress = -1;
 	environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg);
 	core_runflags |= CORE_RUNFLAG_HALT;
+	core_crash_frames = 0;
 }
 
 void core_signal_alert(const char* alertmsg)
@@ -341,7 +347,7 @@ void core_signal_alert(const char* alertmsg)
 	environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg);
 }
 
-void core_signal_reset(bool cold)
+void core_signal_reset(bool cold) // called by Reset_ST, allows the retro_run loop to know a reset happened.
 {
 	//retro_log(RETRO_LOG_DEBUG,"core_signal_reset(%d)\n",cold);
 	core_runflags |= cold ? CORE_RUNFLAG_RESET_COLD : CORE_RUNFLAG_RESET_WARM;
@@ -537,11 +543,6 @@ void core_config_update(bool force)
 	}
 	retro_log(RETRO_LOG_INFO,"Applying configuration update.\n");
 	core_config_apply();
-	// a cold reset should clear the halt
-	if ((core_runflags & CORE_RUNFLAG_HALT) && (core_runflags & CORE_RUNFLAG_RESET_COLD))
-	{
-		core_runflags &= ~CORE_RUNFLAG_HALT;
-	}
 }
 
 //
@@ -716,7 +717,7 @@ RETRO_API void retro_set_controller_port_device(unsigned port, unsigned device)
 RETRO_API void retro_reset(void)
 {
 	// TODO reset on-screen keyboard / help overlay
-	if (core_runflags & CORE_RUNFLAG_HALT || !core_option_soft_reset)
+	if (core_runflags & CORE_RUNFLAG_HALT || !core_option_soft_reset) // halt always needs a cold reset
 	{
 		core_runflags &= ~CORE_RUNFLAG_HALT;
 		Reset_Cold();
@@ -752,7 +753,7 @@ RETRO_API void retro_run(void)
 		core_signal_alert(cold ? "Cold Boot" : "Warm Boot");
 		m68k_go_quit();
 		UAE_Set_Quit_Reset(cold);
-		core_runflags &= ~CORE_RUNFLAG_RESET;
+		core_runflags &= ~(CORE_RUNFLAG_RESET | CORE_RUNFLAG_HALT);
 		m68k_go(true);
 		core_init_return = true;
 		m68k_go_frame();
@@ -768,10 +769,20 @@ RETRO_API void retro_run(void)
 	core_input_post();
 
 	// run one frame
-	if (!(core_runflags & CORE_RUNFLAG_HALT)) // TODO config option to un-halt after X frames?
+	if (!(core_runflags & CORE_RUNFLAG_HALT))
 	{
 		m68k_go_frame();
 		hatari_libretro_flush_audio();
+	}
+	else
+	{
+		++core_crash_frames;
+		core_debug_int("core_crash_frames: ",core_crash_frames);
+		if ((core_crash_frames / core_video_fps) >= core_crashtime)
+		{
+			Reset_Cold();
+			core_crash_frames = 0;
+		}
 	}
 
 	// send video
