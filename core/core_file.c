@@ -260,6 +260,12 @@ uint8_t* core_read_file_save(const char* filename, unsigned int* size_out)
 	return core_read_file(temp_fn2(save_path,filename),size_out);
 }
 
+bool core_write_file_system(const char* filename, unsigned int size, const uint8_t* data)
+{
+	save_path_init();
+	return core_write_file(temp_fn2(system_path,filename), size, data);
+}
+
 bool core_write_file_save(const char* filename, unsigned int size, const uint8_t* data)
 {
 	save_path_init();

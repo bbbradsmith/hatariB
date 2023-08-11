@@ -14,6 +14,7 @@ extern int core_video_aspect_mode;
 extern bool core_video_changed;
 extern bool core_option_soft_reset;
 extern bool core_serialize_write; // current serialization direction
+extern void core_signal_alert(const char* alertmsg); // onscreen notifications
 
 // core_file.c
 extern void strcpy_trunc(char* dest, const char* src, unsigned int len);
@@ -26,6 +27,7 @@ extern bool core_write_file(const char* filename, unsigned int size, const uint8
 extern uint8_t* core_read_file_system(const char* filename, unsigned int* size_out);
 extern uint8_t* core_read_file_save(const char* filename, unsigned int* size_out);
 extern bool core_write_file_save(const char* filename, unsigned int size, const uint8_t* data);
+extern bool core_write_file_system(const char* filename, unsigned int size, const uint8_t* data);
 const char* get_temp_fn(); // gets the last temporary path created for a save/system read or write (use carefully)
 
 // direct file access

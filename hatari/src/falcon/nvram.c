@@ -104,7 +104,17 @@ static Uint8 nvram[64] = {
 
 
 static Uint8 nvram_index;
+#ifndef __LIBRETRO__
 static char nvram_filename[FILENAME_MAX];
+#else
+#define NVRAM_FILENAME   "hatarib.nvram"
+const char* nvram_filename = NVRAM_FILENAME;
+#define CORE_FILE_READ       0
+extern corefile* core_file_open_system(const char* path, int access);
+extern int64_t core_file_read(void* buf, int64_t size, int64_t count, corefile* file);
+extern void core_file_close(corefile* file);
+extern bool core_write_file_system(const char* filename, unsigned int size, const uint8_t* data);
+#endif
 
 
 /*-----------------------------------------------------------------------*/
@@ -114,6 +124,8 @@ static char nvram_filename[FILENAME_MAX];
 static bool NvRam_Load(void)
 {
 	bool ret = false;
+	
+#ifndef __LIBRETRO__
 	FILE *f = fopen(nvram_filename, "rb");
 	if (f != NULL)
 	{
@@ -134,6 +146,24 @@ static bool NvRam_Load(void)
 	{
 		Log_Printf(LOG_INFO, "NVRAM not found at '%s'\n", nvram_filename);
 	}
+#else
+	if (!NvRam_Present()) return false;
+
+	corefile* f = core_file_open_system(nvram_filename,CORE_FILE_READ); // has to go in system/ because it is loaded before retro_game_load()
+	if (f != NULL)
+	{
+		Uint8 fnvram[NVRAM_LEN];
+		if (core_file_read(fnvram, 1, NVRAM_LEN, f) == NVRAM_LEN)
+		{
+			memcpy(nvram+NVRAM_START, fnvram, NVRAM_LEN);
+			core_info_msg("system/" NVRAM_FILENAME " loaded.");
+			ret = true;
+		}
+		core_file_close(f);
+	}
+	if (!ret)
+		core_error_msg("system/" NVRAM_FILENAME " not found.");
+#endif
 
 	return ret;
 }
@@ -145,6 +175,7 @@ static bool NvRam_Load(void)
  */
 static bool NvRam_Save(void)
 {
+#ifndef __LIBRETRO__
 	bool ret = false;
 	FILE *f = fopen(nvram_filename, "wb");
 	if (f != NULL)
@@ -166,6 +197,10 @@ static bool NvRam_Save(void)
 	}
 
 	return ret;
+#else
+	if (!NvRam_Present()) return false;
+	return core_write_file_system(nvram_filename, NVRAM_LEN, nvram+NVRAM_START);
+#endif
 }
 
 
@@ -279,6 +314,7 @@ void NvRam_Reset(void)
  */
 void NvRam_Init(void)
 {
+#ifndef __LIBRETRO__
 	const char sBaseName[] = "hatari.nvram";
 	const char *psHomeDir;
 
@@ -288,6 +324,7 @@ void NvRam_Init(void)
 		sprintf(nvram_filename, "%s%c%s", psHomeDir, PATHSEP, sBaseName);
 	else
 		strcpy(nvram_filename, sBaseName);
+#endif
 
 	if (!NvRam_Load())		// load NVRAM file automatically
 	{

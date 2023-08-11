@@ -3528,7 +3528,7 @@ static bool GemDOS_Rename(Uint32 Params)
 		Regs[REG_D0] = GEMDOS_EOK;
 	else
 		Regs[REG_D0] = errno2gemdos(errno, ERROR_FILE);
-#else __LIBRETRO__
+#else
 	if (core_file_rename_system(szOldActualFileName,szNewActualFileName) == 0)
 		Regs[REG_D0] = GEMDOS_EOK;
 	else

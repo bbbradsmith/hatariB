@@ -61,7 +61,8 @@ Development notes: [DEVELOP.md](DEVELOP.md)
   * In the core options *Advanced > Write Protect Floppy Disks* will act as if all inserted disks have their write protect tab open. This means the emulated operating floppy disk will refuse to modify them, and no further data will be written to the disk. This is independent of the save feature, and can be turned on and off at will. Turning it on after a disk is modified will not prevent the previous modifications from being saved.
   * *STX* saves will create a *WD1772* file instead of an *STX* when saved. This is an overlay of changes made to the file, because the STX format itself cannot be re-written. If you wish to use these with the stand-alone Hatari, place the overlay file in the same folder as its STX.
   * *DIM* format disks cannot be saved by Hatari. It is recommended to convert them to *ST* files instead.
-  * Hard Disk folders or images in *system/* will be written to directly when they 
+  * Hard Disk folders or images in *system/* will be written to directly when they are modified.
+  * The TT and Falcon machines have a small non-volatile RAM (NVRAM) that stores system settings. This is saved to **system/hatarib.nvram** when the content is closed.
 * TOS ROMs:
   * The TOS ROM can be chosen in the core option *Sstem > TOS ROM*.
   * The default TOS ROM is *system/tos.img*, but *[EmuTOS 1024k](https://emutos.sourceforge.io/)* is provided as a free substitute.
@@ -70,6 +71,7 @@ Development notes: [DEVELOP.md](DEVELOP.md)
   * *EmuTOS 1024k* is the default, with a full feature set, and univeral support for all emulated machine types.
   * *EmuTOS 192uk* may be slightly more compatible with *ST* software, but provides fewer features. With a colour monitor it starts up in 50hz by default.
   * *EmuTOS 192us* is similar to *192uk* but instead starts in 60hz.
+  * Most other TOS files are only compatible with certain machines.
 * Accuracy:
   * Some of the default core options are chosen to favour lower CPU usage, and faster load times, but these can be adjusted.
   * *System > Fast Floppy* gives artificially faster disk access, on by default.
@@ -95,9 +97,9 @@ Remaining tasks before ready for public testing:
 * Button-mapped reset.
 * Option to automatically cold-reset after crash with a timer.
 * Test unicode filenames. Does Libretro expect/convert to UTF-8?
-* nvram.c seems to want to load a file, send it to saves? what is it?
-* Make hard reset the default, it's more intuitive and more useful.
 * Remember to disable the Hatari log dump.
+* Have funnelled Log_AlertDlg to onscreen notifications. Try to disable any that are too frequent or already diagnosed.
+* Help screen should mention licenses, GPLv2, Miniz MIT, etc.
 
 Optional tasks:
 * Investigate Libretro MIDI interface. I wonder if I could play MIDI Maze against my real ST?

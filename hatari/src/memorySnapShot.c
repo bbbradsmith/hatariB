@@ -509,15 +509,18 @@ void MemorySnapShot_Restore_Do(void)
 		/* changes may affect also info shown in statusbar */
 		Statusbar_UpdateInfo();
 
+#ifndef __LIBRETRO__
 		if (bCaptureError)
 		{
 			Log_AlertDlg(LOG_ERROR, "Full memory state restore failed!\nPlease reboot emulation.");
 			return;
 		}
+#endif
 	}
 
 //fprintf ( stderr , "MemorySnapShot_Restore_Do out\n" );
 
+#ifndef __LIBRETRO__
 	/* Did error? */
 	if (bCaptureError)
 		Log_AlertDlg(LOG_ERROR, "Unable to restore memory state from file: %s", Temp_FileName);
@@ -525,6 +528,7 @@ void MemorySnapShot_Restore_Do(void)
 		Log_AlertDlg(LOG_INFO, "Memory state file restored: %s", Temp_FileName);
 	else
 		Log_Printf(LOG_INFO, "Memory state file restored: %s", Temp_FileName);
+#endif
 }
 
 

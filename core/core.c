@@ -162,6 +162,11 @@ void core_error_msg(const char* msg)
 	retro_log(RETRO_LOG_ERROR,"%s\n",msg);
 }
 
+void core_info_msg(const char* msg)
+{
+	retro_log(RETRO_LOG_INFO,"%s\n",msg);
+}
+
 void core_debug_hatari(bool error, const char* msg)
 {
 #if (DEBUG_HATARI_LOG < 1)
@@ -319,6 +324,19 @@ void core_signal_tos_fail(void)
 	msg.progress = -1;
 	environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg);
 	core_runflags |= CORE_RUNFLAG_HALT;
+}
+
+void core_signal_alert(const char* alertmsg)
+{
+	struct retro_message_ext msg;
+	msg.msg = alertmsg;
+	msg.duration = 5 * 1000;
+	msg.priority = 1;
+	msg.level = RETRO_LOG_INFO;
+	msg.target = RETRO_MESSAGE_TARGET_ALL;
+	msg.type = RETRO_MESSAGE_TYPE_NOTIFICATION;
+	msg.progress = -1;
+	environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg);
 }
 
 void core_signal_reset(bool cold)

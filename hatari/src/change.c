@@ -44,6 +44,9 @@ const char Change_fileid[] = "Hatari change.c";
 #if ENABLE_DSP_EMU
 # include "falcon/dsp.h"
 #endif
+#ifdef __LIBRETRO__
+#include "falcon/nvram.h"
+#endif
 
 #define DEBUG 0
 #if DEBUG
@@ -384,6 +387,12 @@ void Change_CopyChangedParamsToConfiguration(CNF_PARAMS *current, CNF_PARAMS *ch
 		bReInitMidi = true;
 	}
 
+#ifdef __LIBRETRO__
+	// a machine change should save/reload NVRam if relevant
+	// (NvRam was altered to only save or load when using the relevant machines)
+	if (NeedReset) NvRam_UnInit();
+#endif
+
 	/* Copy details to configuration,
 	 * so it can be saved out or set on reset
 	 */
@@ -391,6 +400,10 @@ void Change_CopyChangedParamsToConfiguration(CNF_PARAMS *current, CNF_PARAMS *ch
 	{
 		ConfigureParams = *changed;
 	}
+
+#ifdef __LIBRETRO__
+	if (NeedReset) NvRam_Init();
+#endif
 
 	/* Copy details to global, if we reset copy them all */
 	Configuration_Apply(NeedReset);

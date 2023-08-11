@@ -266,6 +266,7 @@ static void corelog_prefix_va(LOGTYPE t, const char* fmt, va_list args)
 	vsnprintf(corelog+o,sizeof(corelog)-o,fmt,args);
 	core_debug_hatari(t <= LOG_ERROR,corelog);
 }
+extern void core_signal_alert(const char* alertmsg);
 #endif
 
 /*-----------------------------------------------------------------------*/
@@ -332,9 +333,10 @@ void Log_AlertDlg(LOGTYPE nType, const char *psFormat, ...)
 	#endif
 	}
 
-#ifndef __LIBRETRO__ // don't allow blocking dialog box
+#ifndef __LIBRETRO__
 	/* Show alert dialog box: */
 	if (sdlscrn && nType <= AlertDlgLogLevel)
+#endif
 	{
 		char *psTmpBuf;
 		psTmpBuf = malloc(2048);
@@ -346,10 +348,14 @@ void Log_AlertDlg(LOGTYPE nType, const char *psFormat, ...)
 		va_start(argptr, psFormat);
 		vsnprintf(psTmpBuf, 2048, psFormat, argptr);
 		va_end(argptr);
+#ifndef __LIBRETRO__
 		DlgAlert_Notice(psTmpBuf);
+#else
+		// don't allow the blocking dialog box, but send the notifications
+		core_signal_alert(psTmpBuf);
+#endif
 		free(psTmpBuf);
 	}
-#endif
 }
 
 

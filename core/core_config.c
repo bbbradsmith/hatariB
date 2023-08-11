@@ -377,7 +377,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{"2","NTSC TV"},
 			{"3","PAL TV"},
 			{NULL,NULL}
-		}, "1"
+		}, "0"
 	},
 	//
 	// Audio

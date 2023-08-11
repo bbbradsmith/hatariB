@@ -24,7 +24,9 @@ This has been built and tested with MSYS2 UCRT64. The following tools are requir
 
 ## Changes to Hatari
 
-Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherwise there are minor changes to the CMake build files, marked with a comment that beings with: `# hatariB`
+Changes to the C source code are all contained in `__LIBRETRO__` defines. This is important for merging future versions. None of the original code has been modified or deleted, only disabled within `#ifdef` blocks.
+
+Otherwise there are minor changes to the CMake build files, marked with a comment that beings with: `# hatariB`
 
 * **hatari/src/CMakeLists.txt**
   * Disabled `hatari` exectuable build target, added `core` library target with `__LIBRETRO__` define.
@@ -88,6 +90,7 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Replaced snapshot file access with a core-provided in-memory buffer.
   * Disable snapshot compression because Libretro needs it uncompressed.
   * Make `bCaptureError` externally accessible to check for errors after restore.
+  * Disable some Log_AlertDlg to prevent spam.
 * **hatari/src/hatari-glue.c**
   * Add `hatari_libretro_save_state` and `hatari_libretro_restore_state` to execute savestates between `retro_run` calls.
   * Add `hatari_libretro_flush_audio` to reset audio queue when needed.
@@ -102,7 +105,7 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
 * **hatari/src/debug/log.c**
   * Redirect `Log_Printf` to libretro debug log (optional define for debug).
   * Redirect `LOG_TRACE` and `LOG_TRACE_PRINT` to libretro debug log.
-  * Disable blocking `DlgAlert_Notice`, replaced with Libretro error log.
+  * Disable blocking `DlgAlert_Notice`, send to onscreen notification and error log instead.
 * **hatari/src/reset.c**
   * Signal the core when a reset happens so it can be handled properly.
 * **hatari/src/gui-sdl/dlgHalt.c**
@@ -121,6 +124,7 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Provide modifier key state instead of `SDL_GetModState`.
 * **hatari/src/change.c**
   * Signal screen change when Low Resolution pixel doubling option changes.
+  * Save/Reload NvRam when machine changes, only if TT or Falcon.
 * **hatari/src/cpu/memory.c**
   * Don't SDL_Quit on error.
 * **hatari/src/floppy.c**
@@ -151,10 +155,12 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. Otherw
   * Replace hard disk direct filesystem/image access with core_file.
   * Add write protection option for ACSI/SCSI/IDE hard disks as well.
   * Suppress unused-variable warnings due to `ENABLE_TRACING`.
-* **hatari/src/ncr5380.c**
-  * Replace direct filesystem access with core_file.
 * **hatari/src/paths.c**
   * Disable all attempts to find system paths, replace with `<nopath>` to help find and eliminate remaining attempts to use them.
+* **hatari/src/falcon/nvram.c**
+  * NVRAM file should only save/load when using TT or Falcon mode.
+  * Redirect file to system/hatarib.nvram
+* **hatar
 
 
 `SDL_Init` and `SDL_Quit` almost all use of the SDL library have been suppressed. There are some remaining uses of the SDL libraries but I do not believe any of them require Init. These include:

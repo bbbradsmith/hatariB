@@ -1019,11 +1019,12 @@ static uint8_t *TOS_LoadImage(void)
 
 	if (!pTosFile || nFileSize < 0x40)
 	{
-		Log_AlertDlg(LOG_FATAL, "Can not load TOS file:\n'%s'", ConfigureParams.Rom.szTosImageFileName);
-		free(pTosFile);
 	#ifdef __LIBRETRO__
 		core_signal_tos_fail();
+	#else
+		Log_AlertDlg(LOG_FATAL, "Can not load TOS file:\n'%s'", ConfigureParams.Rom.szTosImageFileName);
 	#endif
+		free(pTosFile);
 		return NULL;
 	}
 
