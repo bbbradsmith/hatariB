@@ -300,7 +300,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		"Speed of the mouse when controlled by the analog sticks.",
 		NULL, "input",
 		{
-			{"2","1"}, // 2 is the minimum for d-pad motion with the current factors
+			{"2","1"}, // 2 is the minimum 1px for d-pad motion with the current factors (32768 * 0.00005 * 0.4 * 2 = ~1.3 >= 1)
 			{"3","2"},
 			{"4","3"},
 			{"5","4"},
