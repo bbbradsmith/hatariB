@@ -23,12 +23,29 @@
 #define JOY_FIRE_OPT   0x08
 #define JOY_FIRE_PAUSE 0x10
 
+#define AUX_MOUSE_L      0x00000001
+#define AUX_MOUSE_R      0x00000002
+#define AUX_OSK_U        0x00000004
+#define AUX_OSK_D        0x00000008
+#define AUX_OSK_L        0x00000010
+#define AUX_OSK_R        0x00000020
+#define AUX_DRIVE_SWAP   0x00000040
+#define AUX_WARM_BOOT    0x00000080
+#define AUX_COLD_BOOT    0x00000100
+
+#define AUX(mask_)   (aux_buttons & (AUX_##mask_))
+#define AUX_SET(v_,mask_)   { \
+	if(v_) aux_buttons |=  (AUX_##mask_); \
+	else   aux_buttons &= ~(AUX_##mask_); }
+
+// AUX(MOUSE_L) gets the state of MOUSE_L
+// AUX_SET(b,MOUSE_L) sets MOUSE_L to the state of b
+
 // input state that gets serialized
 static uint8_t retrok_down[RETROK_LAST] = {0}; // for repeat tracking
 static int32_t vmouse_x, vmouse_y; // virtual mouse state
-static uint8_t vmouse_l, vmouse_r;
 static int32_t mod_state;
-static uint8_t drive_toggle; // TODO make a bitfield of osk, drive toggle, resets? mouse l/r?
+static int32_t aux_buttons; // last state of auxiliary buttons
 static uint8_t joy_autofire[4];
 
 // input state that is temporary
@@ -228,10 +245,8 @@ void core_input_serialize(void)
 	for (int i=0; i<4; ++i) core_serialize_uint8(&joy_autofire[i]);
 	core_serialize_int32(&vmouse_x);
 	core_serialize_int32(&vmouse_y);
-	core_serialize_uint8(&vmouse_l);
-	core_serialize_uint8(&vmouse_r);
 	core_serialize_int32(&mod_state);
-	core_serialize_uint8(&drive_toggle);
+	core_serialize_int32(&aux_buttons);
 }
 
 void core_input_set_environment(retro_environment_t cb)
@@ -251,8 +266,7 @@ void core_input_init(void)
 	event_queue_init();
 	memset(&retrok_down,0,sizeof(retrok_down));
 	vmouse_x = vmouse_y = 0;
-	vmouse_l = vmouse_r = false;
-	drive_toggle = 0;
+	aux_buttons = 0;
 	for (int i=0; i<JOY_PORTS; ++i)
 	{
 		joy_fire[i] = 0;
@@ -263,12 +277,15 @@ void core_input_init(void)
 
 void core_input_update(void)
 {
-	// virtual mouse state
+	// accumulated virtual mouse state
 	bool vm_l = false;
 	bool vm_r = false;
 	int vm_x = vmouse_x;
 	int vm_y = vmouse_y;
-	bool dt = false;
+	// accumulated auxiliary button state
+	bool drive_swap = false;
+	bool warm_boot = false;
+	bool cold_boot = false;
 	// onscreen keyboard state
 	int osk_stick = 0;
 	int osk_button[4] = {0,0,0,0};
@@ -545,7 +562,7 @@ void core_input_update(void)
 						// TODO
 						break;
 					case 7: // Select Floppy Drive
-						dt = true;
+						drive_swap = true;
 						break;
 					case 8: // Help Screen
 						// TODO
@@ -570,10 +587,10 @@ void core_input_update(void)
 						if (j < JOY_PORTS) joy_fire[j] |= JOY_FIRE_PAUSE;
 						break;
 					case 14: // Soft Reset
-						core_signal_reset(false);
+						warm_boot = true;
 						break;
 					case 15: // Hard Reset
-						core_signal_reset(true);
+						cold_boot = true;
 						break;
 					}
 				}
@@ -586,8 +603,14 @@ void core_input_update(void)
 	core_input_keyboard_unstick();
 
 	// select drive
-	if (dt && !drive_toggle) core_disk_drive_toggle();
-	drive_toggle = dt ? 1 : 0;
+	if (drive_swap && !AUX(DRIVE_SWAP)) core_disk_drive_toggle();
+	AUX_SET(drive_swap,DRIVE_SWAP);
+
+	// perform reset
+	if (warm_boot && !AUX(WARM_BOOT)) core_signal_reset(false);
+	if (cold_boot && !AUX(COLD_BOOT)) core_signal_reset(true);
+	AUX_SET(warm_boot,WARM_BOOT);
+	AUX_SET(cold_boot,COLD_BOOT);
 
 	if (core_mouse_port) // mouse is connected to joy 0
 	{
@@ -603,7 +626,7 @@ void core_input_update(void)
 			vm_y += pm_y;
 		}
 
-		if ((vm_l && !vmouse_l) || (!vm_l && vmouse_l))
+		if ((vm_l && !AUX(MOUSE_L)) || (!vm_l && AUX(MOUSE_L)))
 		{
 			SDL_Event event; memset(&event,0,sizeof(event));
 			event.button.type = vm_l ? SDL_MOUSEBUTTONDOWN : SDL_MOUSEBUTTONUP;
@@ -613,10 +636,10 @@ void core_input_update(void)
 			event.button.x = vm_x;
 			event.button.y = vm_y;
 			event_queue_push(&event);
-			vmouse_l = vm_l;
+			AUX_SET(vm_l,MOUSE_L);
 		}
 
-		if ((vm_r && !vmouse_r) || (!vm_r && vmouse_r))
+		if ((vm_r && !AUX(MOUSE_R)) || (!vm_r && AUX(MOUSE_R)))
 		{
 			SDL_Event event; memset(&event,0,sizeof(event));
 			event.button.type = vm_r ? SDL_MOUSEBUTTONDOWN : SDL_MOUSEBUTTONUP;
@@ -626,7 +649,7 @@ void core_input_update(void)
 			event.button.x = vm_x;
 			event.button.y = vm_y;
 			event_queue_push(&event);
-			vmouse_r = vm_r;
+			AUX_SET(vm_r,MOUSE_L);
 		}
 
 		if (vm_x != vmouse_x || vm_y != vmouse_y)
@@ -634,8 +657,8 @@ void core_input_update(void)
 			SDL_Event event; memset(&event,0,sizeof(event));
 			event.motion.type = SDL_MOUSEMOTION;
 			event.motion.state = 0;
-			if (vmouse_l) event.motion.state |= SDL_BUTTON_LMASK;
-			if (vmouse_r) event.motion.state |= SDL_BUTTON_RMASK;
+			if (AUX(MOUSE_L)) event.motion.state |= SDL_BUTTON_LMASK;
+			if (AUX(MOUSE_R)) event.motion.state |= SDL_BUTTON_RMASK;
 			event.motion.x = vm_x;
 			event.motion.y = vm_y;
 			event.motion.xrel = vm_x - vmouse_x;

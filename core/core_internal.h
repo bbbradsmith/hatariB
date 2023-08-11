@@ -14,6 +14,7 @@ extern int core_video_aspect_mode;
 extern bool core_video_changed;
 extern bool core_option_soft_reset;
 extern bool core_serialize_write; // current serialization direction
+extern int core_start_fps;
 extern void core_signal_alert(const char* alertmsg); // onscreen notifications
 
 // core_file.c

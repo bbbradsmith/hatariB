@@ -99,28 +99,28 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{"1","RGB Colour Low/Medium-Resolution"},
 			{"2","VGA"},
 			{"3","TV"},
-			{NULL,NULL},
+			{NULL,NULL}
 		}, "1"
 	},
 	{
 		"hatarib_fast_floppy", "Fast Floppy", NULL,
 		"Artifically accelerate floppy disk access, reducing load times.",
 		NULL, "system",
-		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
 	},
 	{
 		"hatarib_save_floppy", "Save Floppy Disks", NULL,
 		"Changes to floppy disks will save a copy in saves/."
 		" If turned off, changes will be lost when the content is closed.",
 		NULL, "system",
-		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
 	},
 	{
 		"hatarib_soft_reset", "Soft Reset", NULL,
 		"Core Restart is full cold boot by default (power off, on),"
 		" but this will change it to a warm boot (reset button).",
 		NULL, "system",
-		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "0"
 	},
 	{
 		"hatarib_machine", "Machine Type", NULL,
@@ -212,41 +212,41 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		"hatarib_hardboot", "Hard Disk Boot", NULL,
 		"Boot from hard disk.",
 		NULL, "system",
-		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "0"
 	},
 	{
 		"hatarib_hard_readonly", "Hard Disk Write Protect", NULL,
 		"Write protect the hard disk folder or image.",
 		NULL, "system",
-		{{"0","Off"},{"1","On"},{"2","Auto"},{NULL,NULL},}, "1"
+		{{"0","Off"},{"1","On"},{"2","Auto"},{NULL,NULL}}, "1"
 	},
 	//
 	// Input
 	//
-	{ "hatarib_joy1_port", "Joystick 1", NULL, "Retropad 1 assigned Atari port.", NULL, "input", {{"6","None"},{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"1" },
-	{ "hatarib_joy2_port", "Joystick 2", NULL, "Retropad 2 assigned Atari port.", NULL, "input", {{"6","None"},{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"0" },
-	{ "hatarib_joy3_port", "Joystick 3", NULL, "Retropad 3 assigned Atari port.", NULL, "input", {{"6","None"},{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"2" },
-	{ "hatarib_joy4_port", "Joystick 4", NULL, "Retropad 4 assigned Atari port.", NULL, "input", {{"6","None"},{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"}},"3" },
+	{ "hatarib_joy1_port", "Joystick 1", NULL, "Retropad 1 assigned Atari port.", NULL, "input", {{"6","None"},{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"},{NULL,NULL}},"1" },
+	{ "hatarib_joy2_port", "Joystick 2", NULL, "Retropad 2 assigned Atari port.", NULL, "input", {{"6","None"},{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"},{NULL,NULL}},"0" },
+	{ "hatarib_joy3_port", "Joystick 3", NULL, "Retropad 3 assigned Atari port.", NULL, "input", {{"6","None"},{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"},{NULL,NULL}},"2" },
+	{ "hatarib_joy4_port", "Joystick 4", NULL, "Retropad 4 assigned Atari port.", NULL, "input", {{"6","None"},{"0","Joy 0"},{"1","Joy 1"},{"2","STE A"},{"3","STE B"},{"4","Parallel 1"},{"5","Parallel 2"},{NULL,NULL}},"3" },
 	{
 		"hatarib_mouse_port", "Mouse", NULL,
 		"Mouse connected to Joy 0 port."
 		" This can be connected at the same time as a joystick, but their inputs will overlap.",
 		NULL, "input",
-		{{"0","None"},{"1","Joy 0"},{NULL,NULL},}, "1"
+		{{"0","None"},{"1","Joy 0"},{NULL,NULL}}, "1"
 	},
 	{
 		"hatarib_host_mouse", "Host Mouse Enabled", NULL,
 		"Allow input from your own mouse device."
 		" With this disabled you can still use the retropad mouse inputs.",
 		NULL, "input",
-		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
 	},
 	{
 		"hatarib_host_keyboard", "Host Keyboard Enabled", NULL,
 		"Allow input from your own keyboard."
 		" With this disabled you can still use the onscreen keyboard or retropad mapped keys.",
 		NULL, "input",
-		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
 	},
 	{
 		"hatarib_autofire", "Auto-Fire Rate", NULL,
@@ -448,32 +448,40 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		"hatarib_driveb","Drive B Enable", NULL,
 		"Turn off to disconnect drive B.",
 		NULL, "advanced",
-		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
 	},
 	{
 		"hatarib_drivesingle","Single-Sided Drives", NULL,
 		"Single-Sided floppy drives instead of Double-Sided.",
 		NULL, "advanced",
-		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "0"
 	},
 	{
 		"hatarib_readonly_floppy","Write Protect Floppy Disks", NULL,
 		"Write-protect all floppy disks in emulation."
 		" The emulated operating system will know that all writes are failing.",
 		NULL, "advanced",
-		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "0"
 	},
 	{
 		"hatarib_patchtos","Patch TOS for Fast Boot", NULL,
 		"Boot slightly faster for some known TOS ROMs.",
 		NULL, "advanced",
-		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
+	},
+	{
+		"hatarib_startfps","Override Startup FPS", NULL,
+		"Old versions of RetroArch may have trouble changing FPS after core starts up."
+		" This can force the first reported FPS to one that matches the primary rate of your game."
+		" (Requires Close Content and restart of core.)",
+		NULL, "advanced",
+		{{"0","Off"},{"50","50 Hz"},{"60","60 Hz"},{"71","71 Hz"},{NULL,NULL}}, "0"
 	},
 	{
 		"hatarib_blitter_st","Blitter in ST Mode", NULL,
 		"Causes restart!! Normally the blitter requires a Mega ST.",
 		NULL, "advanced",
-		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "0"
 	},
 	{
 		"hatarib_wakestate", "Video Timing", NULL,
@@ -492,19 +500,19 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		"hatarib_prefetch", "CPU Prefetch Emulation", NULL,
 		"Causes restart!! Uses more CPU power, more accurate.",
 		NULL, "advanced",
-		{{"0","Off"},{"1","On"},{NULL,NULL},}, "1"
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
 	},
 	{
 		"hatarib_cycle_exact", "Cycle-exact Cache Emulation", NULL,
 		"Causes restart!! Uses more CPU power, more accurate.",
 		NULL, "advanced",
-		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "0"
 	},
 	{
 		"hatarib_mmu", "MMU Emulation", NULL,
 		"Causes restart!! For TT or Falcon. Uses more CPU power.",
 		NULL, "advanced",
-		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "0"
 	},
 	//
 	// Pads
@@ -520,7 +528,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	}
 	// The values for OPTION_PAD_BUTTON will be automatically replaced with NUMBERS.
 	// The ones that are numbered at the beginning are for reference when implementing
-	// their mapping in core_input.c
+	// their mapping in core_input.c (which must match this list precisely)
 #define OPTION_PAD_BUTTON() \
 	{ \
 		{"0","None"}, \
@@ -539,8 +547,8 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{"13","STE Button Pause"}, \
 		{"14","Soft Reset"}, \
 		{"15","Hard Reset"}, \
-		{"","Key Space"}, \
-		{"","Key Return"}, \
+		{"16","Key Space"}, \
+		{"17","Key Return"}, \
 		{"","Key Up"}, \
 		{"","Key Down"}, \
 		{"","Key Left"}, \
@@ -930,6 +938,7 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_drivesingle") { newparam.DiskImage.DriveA_NumberOfHeads = newparam.DiskImage.DriveB_NumberOfHeads = vi; }
 	CFG_INT("hatarib_readonly_floppy") newparam.DiskImage.nWriteProtection = vi;
 	CFG_INT("hatarib_patchtos") newparam.System.bFastBoot = vi;
+	CFG_INT("hatarib_startfps") core_start_fps = vi;
 	CFG_INT("hatarib_blitter_st") newparam.System.bBlitter = vi;
 	CFG_INT("hatarib_wakestate") newparam.System.VideoTimingMode = vi;
 	CFG_INT("hatarib_prefetch") newparam.System.bCompatibleCpu = vi;
