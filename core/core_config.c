@@ -508,14 +508,6 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		}, "10"
 	},
 	{
-		"hatarib_startfps","Override Startup FPS", NULL,
-		"Old versions of RetroArch may have trouble changing FPS after core starts up."
-		" This can force the first reported FPS to one that matches the primary rate of your game."
-		" (Requires Close Content and restart of core.)",
-		NULL, "advanced",
-		{{"0","Off"},{"50","50 Hz"},{"60","60 Hz"},{"71","71 Hz"},{NULL,NULL}}, "0"
-	},
-	{
 		"hatarib_blitter_st","Blitter in ST Mode", NULL,
 		"Causes restart!! Normally the blitter requires a Mega ST.",
 		NULL, "advanced",
@@ -980,7 +972,6 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_readonly_floppy") newparam.DiskImage.nWriteProtection = vi;
 	CFG_INT("hatarib_patchtos") newparam.System.bFastBoot = vi;
 	CFG_INT("hatarib_crashtime") core_crashtime = vi;
-	CFG_INT("hatarib_startfps") core_start_fps = vi;
 	CFG_INT("hatarib_blitter_st") newparam.System.bBlitter = vi;
 	CFG_INT("hatarib_wakestate") newparam.System.VideoTimingMode = vi;
 	CFG_INT("hatarib_prefetch") newparam.System.bCompatibleCpu = vi;

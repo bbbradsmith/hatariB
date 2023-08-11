@@ -86,8 +86,6 @@ bool core_init_return = false;
 uint8_t core_runflags = 0;
 int core_trace_countdown = 0;
 uint8_t* core_rom_mem_pointer = NULL;
-int core_start_fps = 0;
-bool core_start_fps_locked = true;
 int core_crashtime = 10;
 int core_crash_frames = 0; // reset to 0 whenever CORE_RUNFLAG_HALT
 bool core_option_soft_reset = false;
@@ -622,8 +620,6 @@ RETRO_API void retro_init(void)
 	retro_log_init();
 	retro_log(RETRO_LOG_INFO,"retro_init()\n");
 
-	core_start_fps_locked = true; // lock FPS override until retro_run begins
-
 	// try to get the best pixel format we can
 	{
 		const char* PIXEL_FORMAT_NAMES[3] = { "0RGB1555", "XRGB8888", "RGB565" };
@@ -691,12 +687,6 @@ RETRO_API void retro_get_system_av_info(struct retro_system_av_info *info)
 	info->timing.fps = core_video_fps;
 	info->timing.sample_rate = core_audio_samplerate;
 
-	if (core_start_fps_locked && core_start_fps) // override FPS during startup
-	{
-		retro_log(RETRO_LOG_INFO," startup FPS override: %d (replaces: %d)\n",core_start_fps,core_video_fps);
-		info->timing.fps = core_start_fps;
-	}
-
 	if (core_video_fps != 50 && core_video_fps != 60 && core_video_fps != 71)
 	{
 		retro_log(RETRO_LOG_ERROR,"Unexpected fps (%d), assuming 50\n",core_video_fps);
@@ -730,15 +720,6 @@ RETRO_API void retro_reset(void)
 
 RETRO_API void retro_run(void)
 {
-	// first run unlocks the optional FPS startup override
-	if (core_start_fps_locked)
-	{
-		// signal a change if we're not currently matching the lock
-		core_start_fps_locked = false;
-		if (core_start_fps && core_video_fps != core_start_fps)
-			core_rate_changed = true;
-	}
-
 	// handle any pending configuration updates
 	core_config_update(false);
 
