@@ -300,18 +300,18 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		"Speed of the mouse when controlled by the analog sticks.",
 		NULL, "input",
 		{
-			{"1","1"},
-			{"2","2"},
-			{"3","3"},
-			{"4","4"},
-			{"5","5"},
-			{"6","6"},
-			{"7","7"},
-			{"8","8"},
-			{"9","9"},
-			{"10","10"},
+			{"2","1"}, // 2 is the minimum for d-pad motion with the current factors
+			{"3","2"},
+			{"4","3"},
+			{"5","4"},
+			{"6","5"}, // 6 seems comfortable
+			{"7","6"},
+			{"8","7"},
+			{"10","8"},
+			{"12","9"},
+			{"14","10"}, // giving it a slight curve, but calling it 1-10 for the user
 			{NULL,NULL},
-		}, "4"
+		}, "6"
 	},
 	{
 		"hatarib_mouse_deadzone", "Mouse Stick Deadzone", NULL,

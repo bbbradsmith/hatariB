@@ -26,7 +26,7 @@
 
 // Transmit Hatari log message to the Libretro debug log
 // 0 = none, 1 = errors, 2 = all
-#define DEBUG_HATARI_LOG   2
+#define DEBUG_HATARI_LOG   0
 
 // Logs seem valid for either first retro_set_environment or everything else,
 // set this to 1 when you want to log the first call to retro_set_environment.

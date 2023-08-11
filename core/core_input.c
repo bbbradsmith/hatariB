@@ -55,10 +55,13 @@ static int32_t joy_stick[JOY_PORTS];
 static uint8_t retrok_joy[RETROK_LAST]; // overlay to retrok_down
 
 // input mappings
+#define STICK_DEF    {1,1,2}
+#define BUTTON_DEF   {2,1,4,3,7,8,5,6,0,0,17,18}
+#define OSKEY_DEF    {2,1,4,3,1}
 int core_joy_port_map[4] = {1,0,2,3};
-int core_stick_map[4][3];
-int core_button_map[4][12];
-int core_oskey_map[4][5];
+int core_stick_map[4][3] = {STICK_DEF,STICK_DEF,STICK_DEF,STICK_DEF};
+int core_button_map[4][12] = {BUTTON_DEF,BUTTON_DEF,BUTTON_DEF,BUTTON_DEF};
+int core_oskey_map[4][5] = {OSKEY_DEF,OSKEY_DEF,OSKEY_DEF,OSKEY_DEF};
 
 // other input configuration
 bool core_mouse_port = true;
@@ -66,7 +69,7 @@ bool core_host_keyboard = true;
 bool core_host_mouse = true;
 int core_autofire = 6;
 int core_stick_threshold = 30; // percentage of stick to digital joystick direction threshold
-int core_mouse_speed = 4; // 1-10 speed factor
+int core_mouse_speed = 6; // 1-20 speed factor
 int core_mouse_dead = 5; // percentage of stick deadzone
 
 //
@@ -364,7 +367,7 @@ void core_input_update(void)
 			case 2: // Mouse
 				{
 					int deadzone = (0x8000 * core_mouse_dead) / 100;
-					const float SPEED_FACTOR = 0.0001;
+					const float SPEED_FACTOR = 0.00005;
 					float speed = (float)core_mouse_speed * SPEED_FACTOR * ((float)0x8000 / (float)(0x8000 - deadzone));
 					if (k == CORE_INPUT_STICK_DPAD) speed *= 0.4; // D-Pad needs a slower speed
 
