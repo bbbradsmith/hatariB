@@ -152,3 +152,16 @@ extern int core_button_map[4][12];
 #define CORE_INPUT_OSKEY_POS       3
 #define CORE_INPUT_OSKEY_MOVE      4
 extern int core_oskey_map[4][5];
+
+// core_osk.c
+extern void core_osk_input(uint32_t osk_new); // bitfield of new OSK button presses (sent by core_input_poll)
+extern void core_osk_render(void* video_buffer, int w, int h, int pitch); // call to render overlay over video_buffer
+extern void core_osk_restore(void); // call to restore overlay
+
+extern int core_pause_osk; // pause screen appearance setting
+
+#define CORE_OSK_OFF        0
+#define CORE_OSK_PAUSE      1
+#define CORE_OSK_KEY        2
+#define CORE_OSK_KEY_SHOT   3
+extern int core_osk_mode;

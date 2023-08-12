@@ -3,7 +3,7 @@
 A [Libretro](https://www.libretro.com/) core integrating the [Hatari](https://hatari.tuxfamily.org/) emulation of Atari ST, STE, TT, and Falcon computers.
 
 * Stable Build: not yet available
-* Nightly Build: [Windows 64-bit hatariB](https://nightly.link/bbbradsmith/hatariB/workflows/win64/main)
+* Unstable Build: [Windows 64-bit hatariB](https://nightly.link/bbbradsmith/hatariB/workflows/win64/main)
 * Recent Builds: [Github Actions](https://github.com/bbbradsmith/hatariB/actions)
 
 This is intended as an alternative or replacement for the older [Libretro Hatari Core](https://github.com/libretro/hatari).
@@ -55,10 +55,10 @@ Development notes: [DEVELOP.md](DEVELOP.md)
   * If the *System > Save Floppy Disks* core option is disabled, only the original copy of the file will be used, and the *saves/* folder will not be accessed. However, the modified disk images will still persist in memory for the duration of the session, until you close the content.
   * Only the two currently inserted disks are included in savestates. If there are other disks in your loaded collection, they may take on their most recent version from the saves/ folder next time you open this content. A savestate will not be able to restore them to an earlier version.
   * Floppy disks in *saves/* must have a unique filename. Try not to use generic names like *savedisk.st*, and instead include the game title in its filename.
-  * If possible, it is recommended that save disks for games use the *ST* format, because it is the simplest and least likely to have errors. You can download a prepared blank disk here: **[blank.st](../../raw/main/blank.st)**.
+  * If possible, it is recommended that save disks for games use the *ST* format, because it is the simplest and least error prone format. You can download a prepared blank disk here: **[blank.st](../../raw/main/blank.st)**.
   * The images written to *saves/* will be standard Atari ST image formats, and you should be able to load them in other emulators if you wish.
   * Note that Hatari is not able to simulate the formatting of a blank disk in-emulator. The [stand-alone version of Hatari](https://hatari.tuxfamily.org/download.html) has a utility in its menu that can be used to create a blank ST file. A different Atari ST emulator [Steem.SSE](https://sourceforge.net/projects/steemsse/) can simulate the formatting process.
-  * In the core options *Advanced > Write Protect Floppy Disks* will act as if all inserted disks have their write protect tab open. This means the emulated operating floppy disk will refuse to modify them, and no further data will be written to the disk. This is independent of the save feature, and can be turned on and off at will. Turning it on after a disk is modified will not prevent the previous modifications from being saved.
+  * In the core options *Advanced > Write Protect Floppy Disks* will act as if all inserted disks have their write protect tab open. This means the emulated operating system will refuse to write any further data to the disk, and will report the error. This is independent of the save feature, and can be turned on and off at will. Turning it on after a disk is modified will not prevent previous modifications from being saved when it is ejected.
   * *STX* saves will create a *WD1772* file instead of an *STX* when saved. This is an overlay of changes made to the file, because the STX format itself cannot be re-written. If you wish to use these with the stand-alone Hatari, place the overlay file in the same folder as its STX.
   * *DIM* format disks cannot be saved by Hatari. It is recommended to convert them to *ST* files instead.
   * Hard Disk folders or images in *system/* will be written to directly when they are modified.
@@ -92,16 +92,21 @@ Development notes: [DEVELOP.md](DEVELOP.md)
   * We cannot delete directories in a GemDOS hard disk, because of [a bug in the RetroArch virtual file system](https://github.com/libretro/RetroArch/issues/15578) that affects windows only. This will likely be fixed in the future by an update to RetroArch. There's a working fallback if the VFS isn't provided by the host, but this isn't something easily accessible by the user, and the VFS provides other advantages so it should not be turned off. You can work around this by deleting the folder on your host computer instead.
 
 Remaining tasks before ready for public testing:
+* CPU type option (auto vs. 68000 68030 etc.)
 * On-screen keyboard.
-* Help screen.
+* Help screen. (paused, dimmed, with text on top)
+* Pause screen (paused, optionally dimmed, no text)
 * Have funnelled Log_AlertDlg to onscreen notifications. Try to disable any that are too frequent or already diagnosed.
 * Help screen should mention licenses, GPLv2, Miniz MIT, etc.
 * Input seems to get "stuck" sometimes, not sure of the cause. Mouse buttons stop working or can't stop firing, etc. can't seem to remedy it when it happens except doing a reset. Added CORE_INPUT_DEBUG=1 which adds a debug log option if it comes up again... remember to set to 0 for release.
+* Relocate the vscode project out of the ignored "secrets" folder, it's worth preserving on github too, just clean up the absolute paths and stuff (maybe c:\msys64 is acceptable tho).
+* Clean up DEVELOP.md dependency list, give the specific libraries needed. (I think zlib/make is probably not needed by action setup too, inherent in cmake, and zlib should be ucrt64 specific.)
+* reconsider the "hatari_libretro_... naming convention for a few things, should probably just be called "core"
 
 Optional tasks:
 * Investigate Libretro MIDI interface. I wonder if I could play MIDI Maze against my real ST?
-* See if a MinGW 32-bit built is reasonable? Might provide a stepping stone to other targets, and additional compile checks.
-* Can savestate restore be more lightweight? What takes so much CPU time? Maybe it's disk access?
+* See if a MinGW 32-bit auto-build is reasonable? Might provide a stepping stone to other targets, and provide additional compile checks.
+* Can savestate restore be more lightweight? What takes so much CPU time? Are there any lingering spurious disk accesses?
 
 ## History
 

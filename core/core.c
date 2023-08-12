@@ -94,11 +94,15 @@ bool core_option_soft_reset = false;
 
 bool content_override_set = false;
 
-void* core_video_buffer = NULL;
+uint32_t blank_screen[320*200] = { 0 }; // safety buffer in case frame was never been provided
+
+void* core_video_buffer = blank_screen;
 int16_t core_audio_buffer[AUDIO_BUFFER_LEN];
-int core_video_w = 640;
-int core_video_h = 400;
-int core_video_pitch = 640*4;
+int16_t core_audio_last[2] = { 0, 0 };
+double core_audio_hold_remain = 0;
+int core_video_w = 320;
+int core_video_h = 200;
+int core_video_pitch = 320 * sizeof(uint32_t);
 int core_video_resolution = 0;
 float core_video_aspect = 1.0;
 int core_video_aspect_mode = 0;
@@ -248,6 +252,15 @@ static const double PIXEL_ASPECT_RATIO[4][RESOLUTION_MAX+2] = {
 
 void core_video_update(void* data, int w, int h, int pitch, int resolution)
 {
+	if (data == NULL) // provide safety buffer until restored
+	{
+		core_video_buffer = blank_screen;
+		w = 320;
+		h = 200;
+		pitch = 320 * 4;
+		resolution = core_video_resolution; // unchanged
+	}
+
 	if (w > VIDEO_MAX_W) w = VIDEO_MAX_W;
 	if (h > VIDEO_MAX_H) w = VIDEO_MAX_H;
 	if (pitch > VIDEO_MAX_PITCH) w = VIDEO_MAX_PITCH;
@@ -277,6 +290,29 @@ void core_audio_update(const int16_t data[][2], int index, int length)
 	{
 		core_audio_buffer[pos+0] = data[index+i][0];
 		core_audio_buffer[pos+1] = data[index+i][1];
+		pos += 2;
+	}
+	// save last sample in case hold is needed
+	if (l2 > 0)
+	{
+		core_audio_last[0] = data[index+l2-1][0];
+		core_audio_last[1] = data[index+l2-1][1];
+	}
+}
+
+static void core_audio_hold(int length)
+{
+	// generate hold samples to fill a pause
+	int pos = core_audio_samples_pending;
+	int len = length * 2;
+	int max = AUDIO_BUFFER_LEN - pos;
+	if (len > max) len = max;
+	core_audio_samples_pending += len;
+	int l2 = len / 2;
+	for (int i=0; i<l2; ++i)
+	{
+		core_audio_buffer[pos+0] = core_audio_last[0];
+		core_audio_buffer[pos+1] = core_audio_last[1];
 		pos += 2;
 	}
 }
@@ -646,6 +682,10 @@ RETRO_API void retro_init(void)
 	core_audio_samplerate = core_audio_samplerate_new;
 	core_video_changed = false;
 	core_rate_changed = false;
+
+	core_audio_hold_remain = 0;
+	core_audio_last[0] = 0;
+	core_audio_last[1] = 0;
 }
 
 RETRO_API void retro_deinit(void)
@@ -702,11 +742,15 @@ RETRO_API void retro_get_system_av_info(struct retro_system_av_info *info)
 
 RETRO_API void retro_set_controller_port_device(unsigned port, unsigned device)
 {
+	retro_log(RETRO_LOG_INFO,"retro_set_controller_port_device(%d,%d)\n",port,device);
 }
 
 RETRO_API void retro_reset(void)
 {
-	// TODO reset on-screen keyboard / help overlay
+	// core reset cancels OSK and pause
+	core_osk_mode = CORE_OSK_OFF;
+	core_runflags &= ~(CORE_RUNFLAG_PAUSE || CORE_RUNFLAG_OSK);
+	// also generates a reset, cold if requested or needed because of halt
 	if (core_runflags & CORE_RUNFLAG_HALT || !core_option_soft_reset) // halt always needs a cold reset
 	{
 		core_runflags &= ~CORE_RUNFLAG_HALT;
@@ -727,7 +771,21 @@ RETRO_API void retro_run(void)
 	// poll input, generate event queue for hatari
 	core_input_update();
 
+	// input may have changed OSK state
+	if (core_osk_mode)
+	{
+		core_runflags |= CORE_RUNFLAG_OSK;
+		if (core_osk_mode == CORE_OSK_PAUSE || core_osk_mode == CORE_OSK_KEY_SHOT)
+			core_runflags |= CORE_RUNFLAG_PAUSE;
+	}
+	else
+	{
+		core_runflags &= ~(CORE_RUNFLAG_PAUSE | CORE_RUNFLAG_OSK);
+	}
+
 	// process CPU reset by restarting the loop and UAE
+	// can still happen while paused, as no CPU cycles are executed here, but screen dimensions etc. can be updated,
+	// though this will result in a black screen until unpaused and allowed to render
 	if (core_runflags & CORE_RUNFLAG_RESET)
 	{
 		bool cold = core_runflags & CORE_RUNFLAG_RESET_COLD;
@@ -750,13 +808,14 @@ RETRO_API void retro_run(void)
 	core_input_post();
 
 	// run one frame
-	if (!(core_runflags & CORE_RUNFLAG_HALT))
+	if (!(core_runflags & (CORE_RUNFLAG_HALT | CORE_RUNFLAG_PAUSE)))
 	{
 		m68k_go_frame();
 		hatari_libretro_flush_audio();
 	}
-	else
+	else if (core_crashtime && ((core_runflags & (CORE_RUNFLAG_HALT | CORE_RUNFLAG_PAUSE)) == CORE_RUNFLAG_HALT))
 	{
+		// automatic reset timer after halt
 		++core_crash_frames;
 		core_debug_int("core_crash_frames: ",core_crash_frames);
 		if ((core_crash_frames / core_video_fps) >= core_crashtime)
@@ -784,7 +843,32 @@ RETRO_API void retro_run(void)
 		environ_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &info);
 		core_video_changed = false;
 	}
+
+	// draw overlay
+	if (core_runflags & CORE_RUNFLAG_OSK)
+		core_osk_render(core_video_buffer,core_video_w,core_video_h,core_video_pitch);
+
+	// send video
 	video_cb(core_video_buffer,core_video_w,core_video_h,core_video_pitch);
+
+	// undo overlay
+	if (core_runflags & CORE_RUNFLAG_OSK)
+		core_osk_restore();
+
+	// fill audio if pause
+	if (core_runflags & (CORE_RUNFLAG_PAUSE | CORE_RUNFLAG_HALT))
+	{
+		// how many new samples should we need?
+		// use floating point to allow fractionals
+		double sample_expect = ((double)core_audio_samplerate) / ((double)core_video_fps);
+		double pending = (double)(core_audio_samples_pending / 2);
+		if (pending < sample_expect)
+			core_audio_hold_remain += (sample_expect - pending);
+		int hold_samples = (int)core_audio_hold_remain;
+		core_audio_hold_remain -= (double)hold_samples;
+		core_audio_hold(hold_samples);
+		//retro_log(RETRO_LOG_DEBUG,"audio hold: %d\n",hold_samples);
+	}
 
 	// send audio
 	if (core_audio_samples_pending > 0)
@@ -794,6 +878,7 @@ RETRO_API void retro_run(void)
 		audio_batch_cb(core_audio_buffer, len/2);
 		//retro_log(RETRO_LOG_DEBUG,"audio_batch_cb(%p,%d)\n",core_audio_buffer,len/2);
 		core_audio_samples_pending = 0;
+		//retro_log(RETRO_LOG_DEBUG,"audio send: %d\n",len/2);
 	}
 
 	// event queue end of frame
@@ -840,25 +925,21 @@ RETRO_API bool retro_unserialize(const void *data, size_t size)
 
 RETRO_API void retro_cheat_reset(void)
 {
-	// no cheat mechanism available
+	retro_log(RETRO_LOG_DEBUG,"retro_cheat_reset()\n");
 }
 
 RETRO_API void retro_cheat_set(unsigned index, bool enabled, const char *code)
 {
+	retro_log(RETRO_LOG_DEBUG,"retro_cheat_set(%d,%d,'%s')\n",index,enabled,code?code:"(NULL)");
 	// no cheat mechanism available
-	(void)index;
-	(void)enabled;
-	(void)code;
 }
 
 RETRO_API bool retro_load_game(const struct retro_game_info *game)
 {
-	retro_log(RETRO_LOG_DEBUG,"retro_load_game()\n");
+	retro_log(RETRO_LOG_INFO,"retro_load_game(%s)\n",game?"game":"NULL");
 
 	if (game)
-	{
 		core_disk_load_game(game);
-	}
 
 	// finish initialization of the CPU
 	core_init_return = true;

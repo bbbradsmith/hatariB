@@ -1,5 +1,10 @@
 #pragma once
 
+// external core stuff globally visible throughout core and hatari code (hatari/src/include/main.h)
+// changing this will cause a full rebuild, especially the massive generated cpuemu code.
+// use core_internal.h instead for stuff that only the core needs to know about
+// (or just extern stuff piecemeal)
+
 // fake structures used only as pointers (for compiler type checking)
 typedef struct { int dummy; } corefile;
 typedef struct { int dummy; } coredir;
@@ -23,7 +28,13 @@ extern bool core_init_return;
 #define CORE_RUNFLAG_RESET_COLD   0x02
 #define CORE_RUNFLAG_RESET_WARM   0x04
 #define CORE_RUNFLAG_RESET        (CORE_RUNFLAG_RESET_COLD | CORE_RUNFLAG_RESET_WARM)
+#define CORE_RUNFLAG_PAUSE        0x08
+#define CORE_RUNFLAG_OSK          0x10
 extern uint8_t core_runflags;
+// HALT = crashed, CPU no longer running, can't run emulation
+// RESET = perform a reset sequence next frame
+// PAUSE = user paused emulation
+// OSK = on-screen keyboard or other overlay active
 
 // print to Libretro log
 extern void core_debug_msg(const char* msg);

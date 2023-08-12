@@ -303,6 +303,9 @@ static void Screen_FreeSDL2Resources(void)
 		if (bUseSdlRenderer)
 			SDL_FreeSurface(sdlscrn);
 		sdlscrn = NULL;
+	#ifdef __LIBRETRO__
+		core_video_update(NULL, 0, 0, 0, 0); // tell the core sdlscrn is no longer valid
+	#endif
 	}
 	if (sdlRenderer)
 	{
@@ -472,8 +475,8 @@ static bool Screen_SetSDLVideoSize(int width, int height, int bitdepth, bool bFo
 		}
 	}
 
-#ifndef __LIBRETRO__
 	Screen_FreeSDL2Resources();
+#ifndef __LIBRETRO__
 	if (sdlWindow &&
 	    ((bInFullScreen && !ConfigureParams.Screen.bKeepResolution) ||
 	     (bPrevInFullScreen != bInFullScreen) ||

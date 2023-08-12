@@ -9,6 +9,35 @@
 // Internal input state
 //
 
+#define AUX_MOUSE_L      0x00000001
+#define AUX_MOUSE_R      0x00000002
+#define AUX_PAUSE        0x00000004
+#define AUX_OSK_ON       0x00000008
+#define AUX_OSK_SHOT     0x00000010
+#define AUX_DRIVE_SWAP   0x00000020
+#define AUX_WARM_BOOT    0x00000040
+#define AUX_COLD_BOOT    0x00000080
+#define AUX_STATUSBAR    0x00000100
+
+#define AUX_OSK_U        0x00010000
+#define AUX_OSK_D        0x00020000
+#define AUX_OSK_L        0x00040000
+#define AUX_OSK_R        0x00080000
+#define AUX_OSK_CONFIRM  0x00100000
+#define AUX_OSK_CANCEL   0x00200000
+#define AUX_OSK_SHIFT    0x00400000
+#define AUX_OSK_POS      0x00800000
+#define AUX_OSK_MOVE     0x01000000
+#define AUX_OSK_ALL      0xFFFF0000
+
+#define AUX(mask_)   (aux_buttons & (AUX_##mask_))
+#define AUX_SET(v_,mask_)   { \
+	if(v_) aux_buttons |=  (AUX_##mask_); \
+	else   aux_buttons &= ~(AUX_##mask_); }
+
+// AUX(MOUSE_L) gets the state of MOUSE_L
+// AUX_SET(b,MOUSE_L) sets MOUSE_L to the state of b
+
 #define JOY_PORTS   6
 // 1-button joysticks
 #define JOY_STICK_U    0x01
@@ -23,24 +52,19 @@
 #define JOY_FIRE_OPT   0x08
 #define JOY_FIRE_PAUSE 0x10
 
-#define AUX_MOUSE_L      0x00000001
-#define AUX_MOUSE_R      0x00000002
-#define AUX_OSK_U        0x00000004
-#define AUX_OSK_D        0x00000008
-#define AUX_OSK_L        0x00000010
-#define AUX_OSK_R        0x00000020
-#define AUX_DRIVE_SWAP   0x00000040
-#define AUX_WARM_BOOT    0x00000080
-#define AUX_COLD_BOOT    0x00000100
-#define AUX_STATUSBAR    0x00000200
-
-#define AUX(mask_)   (aux_buttons & (AUX_##mask_))
-#define AUX_SET(v_,mask_)   { \
-	if(v_) aux_buttons |=  (AUX_##mask_); \
-	else   aux_buttons &= ~(AUX_##mask_); }
-
-// AUX(MOUSE_L) gets the state of MOUSE_L
-// AUX_SET(b,MOUSE_L) sets MOUSE_L to the state of b
+#define OSK_CONFIRM   0
+#define OSK_CANCEL    1
+#define OSK_SHIFT     2
+#define OSK_POS       3
+#define OSK_MOVE      4
+#define OSK_U         5
+#define OSK_D         6
+#define OSK_L         7
+#define OSK_R         8
+// TODO i've got these wrong, confirm, cancel and pos we need
+//      shift shouldn't be necessary (make modifier keys a toggle instead)
+//      "move" was actually the stick setting
+//      so it's onyl 3 buttons (confirm, cancel, pos), and "move" was actually the axis
 
 // input state that gets serialized
 static uint8_t retrok_down[RETROK_LAST] = {0}; // for repeat tracking
@@ -341,11 +365,22 @@ void core_input_update(void)
 	bool warm_boot = false;
 	bool cold_boot = false;
 	bool statusbar = false;
-	// onscreen keyboard state
-	int osk_stick = 0;
-	int osk_button[4] = {0,0,0,0};
+	bool pause = false;
+	bool osk_on = false;
+	bool osk_shot = false;
+	bool osk_button[9] = {false,false,false,false,false,false,false,false,false};
 
 	input_poll_cb();
+
+	// TODO if osk is up to what extent do we need to block inputs:
+	// off -> send 0 instead of osk_new
+	// pause -> block all inputs except pause/unpause only (don't update joy, don't send keys/mouse)
+	// osk-one-shot -> block all inputs except osk (don't update joy, don't send keys/mouse)
+	// osk -> block all osk assigned axes/buttons but pass everything else
+	// TODO probabably want to buffer joy_fire/joy_stick and only update the hatari-readable variables at the end of the poll (if not paused, etc)
+	//      most of this can be handled by zeroing out everything not wanted after the poll
+	//      physical mouse click events should probably be obeyed and sent as events always, but not controller ones
+	//      physical keyboard events should probably be obeted and sent as events always, but not controller ones
 
 	// clear all temporary state
 	for (int i=0; i<JOY_PORTS; ++i)
@@ -364,6 +399,9 @@ void core_input_update(void)
 		static int debug_b[12];
 		bool debug_pad = false;
 		#endif
+
+		// TODO is it possible to skip unconnected devices? does retrorach have this ability?
+		// probably not... ideally it should report something if there is nothing mapped to an entire pad
 
 		int stick_threshold;
 		int j = core_joy_port_map[i];
@@ -399,10 +437,10 @@ void core_input_update(void)
 
 			if (core_oskey_map[i][CORE_INPUT_OSKEY_MOVE] == (k+1))
 			{
-				if (ax <= -stick_threshold) osk_stick |= JOY_STICK_L;
-				if (ax >=  stick_threshold) osk_stick |= JOY_STICK_R;
-				if (ay <= -stick_threshold) osk_stick |= JOY_STICK_U;
-				if (ay >=  stick_threshold) osk_stick |= JOY_STICK_D;
+				if (ax <= -stick_threshold) osk_button[OSK_L] = true;
+				if (ax >=  stick_threshold) osk_button[OSK_R] = true;
+				if (ay <= -stick_threshold) osk_button[OSK_U] = true;
+				if (ay >=  stick_threshold) osk_button[OSK_D] = true;
 			}
 			#if CORE_INPUT_DEBUG
 			debug_ax[k] = ax;
@@ -577,7 +615,7 @@ void core_input_update(void)
 				const int m = core_button_map[i][k];
 
 				// on-screen keyboard button mappings
-				for (int l=0; l<4; ++l)
+				for (int l=0; l<5; ++l)
 				{
 					if (m == core_oskey_map[i][l]) osk_button[l] = 1;
 				}
@@ -628,16 +666,16 @@ void core_input_update(void)
 						vm_r = true;
 						break;
 					case 5: // On-Screen Keyboard
-						// TODO
+						osk_on = true;
 						break;
 					case 6: // On-Screen Keyboard One-Shot
-						// TODO
+						osk_shot = true;
 						break;
 					case 7: // Select Floppy Drive
 						drive_swap = true;
 						break;
 					case 8: // Help Screen
-						// TODO
+						pause = true;
 						break;
 					case 9: // STE Button A
 						if (j < JOY_PORTS)
@@ -778,6 +816,11 @@ void core_input_update(void)
 		}
 	}
 
+	// TODO
+	// i think this is where we cancel most buttons, transfer joy_fire etc. state, etc.
+	// based on core_osk_mode
+	// never cancel osk
+
 	// auxiliary buttons
 
 	// select drive
@@ -794,7 +837,36 @@ void core_input_update(void)
 	if (statusbar && !AUX(STATUSBAR)) config_toggle_statusbar();
 	AUX_SET(statusbar,STATUSBAR);
 
-	(void)osk_button; // TODO suppress unused variable error?
+	// pause/help toggle
+	if (pause && !AUX(PAUSE))
+	{
+		if      (core_osk_mode == CORE_OSK_OFF  ) core_osk_mode = CORE_OSK_PAUSE;
+		else if (core_osk_mode == CORE_OSK_PAUSE) core_osk_mode = CORE_OSK_OFF;
+		//retro_log(RETRO_LOG_DEBUG,"pause toggle: %d\n",core_osk_mode);
+	}
+	AUX_SET(pause,PAUSE);
+
+	// osk onset
+	if (osk_on && !AUX(OSK_ON) && (core_osk_mode == CORE_OSK_OFF))
+		core_osk_mode = CORE_OSK_KEY;
+	AUX_SET(osk_on,OSK_ON);
+	if (osk_shot && !AUX(OSK_SHOT) && (core_osk_mode == CORE_OSK_OFF || core_osk_mode == CORE_OSK_KEY))
+		core_osk_mode = CORE_OSK_KEY_SHOT;
+	AUX_SET(osk_shot,OSK_SHOT);
+
+	uint32_t osk_new = aux_buttons & AUX_OSK_ALL;
+	AUX_SET(osk_button[OSK_CONFIRM],OSK_CONFIRM);
+	AUX_SET(osk_button[OSK_CANCEL ],OSK_CANCEL);
+	AUX_SET(osk_button[OSK_SHIFT  ],OSK_SHIFT); // TODO remove
+	AUX_SET(osk_button[OSK_POS    ],OSK_POS);
+	AUX_SET(osk_button[OSK_MOVE   ],OSK_MOVE); // TODO remove
+	AUX_SET(osk_button[OSK_U      ],OSK_U);
+	AUX_SET(osk_button[OSK_D      ],OSK_D);
+	AUX_SET(osk_button[OSK_L      ],OSK_L);
+	AUX_SET(osk_button[OSK_R      ],OSK_R);
+	osk_new = (osk_new ^ aux_buttons) & osk_new; // OSK buttons pressed this frame
+	if (core_osk_mode >= CORE_OSK_KEY)
+		core_osk_input(osk_new);
 
 	#if CORE_INPUT_DEBUG
 	if (core_input_debug)

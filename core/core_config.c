@@ -390,6 +390,20 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{NULL,NULL}
 		}, "0"
 	},
+	{
+		"hatarib_pause_osk", "Pause Screen Display", NULL,
+		"",
+		NULL, "video",
+		{
+			{"2","Help and Information"},
+			//{"5","Boink Ball"},
+			//{"4","Bouncing PAUSE"},
+			//{"3","Pause Icon"},
+			{"1","Darken"},
+			{"0","No Display"},
+			{NULL,NULL}
+		}, "2"		
+	},
 	//
 	// Audio
 	//
@@ -528,7 +542,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	},
 	{
 		"hatarib_prefetch", "CPU Prefetch Emulation", NULL,
-		"Causes restart!! Uses more CPU power, more accurate.",
+		"Causes restart!! Uses more CPU power, more accurate, commonly needed.",
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
 	},
@@ -578,7 +592,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{"5","On-Screen Keyboard"}, \
 		{"6","On-Screen Keyboard One-Shot"}, \
 		{"7","Select Floppy Drive"}, \
-		{"8","Help Screen"}, \
+		{"8","Help Screen / Pause"}, \
 		{"9","STE Button A"}, \
 		{"10","STE Button B"}, \
 		{"11","STE Button C"}, \
@@ -971,6 +985,7 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_borders") newparam.Screen.bAllowOverscan = vi;
 	CFG_INT("hatarib_statusbar") { newparam.Screen.bShowStatusbar = (vi==1); newparam.Screen.bShowDriveLed = (vi==2); }
 	CFG_INT("hatarib_aspect") { if (core_video_aspect_mode != vi) { core_video_aspect_mode = vi; core_video_changed = true; } }
+	CFG_INT("hatarib_pause_osk") core_pause_osk = vi;
 	CFG_INT("hatarib_samplerate") newparam.Sound.nPlaybackFreq = vi;
 	CFG_INT("hatarib_ymmix") newparam.Sound.YmVolumeMixing = vi;
 	CFG_INT("hatarib_lpf") newparam.Sound.YmLpf = vi;
