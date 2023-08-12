@@ -604,7 +604,6 @@ static bool Screen_SetSDLVideoSize(int width, int height, int bitdepth, bool bFo
 		core_video_update(sdlscrn->pixels, sdlscrn->w, sdlscrn->h, sdlscrn->pitch, STRes);
 		if (SDL_MUSTLOCK(sdlscrn))
 			core_error_msg("Screen display may fail: sdlscrn SWSURFACE has MUSTLOCK");
-
 	#endif
 
 		Screen_SetTextureScale(width, height, win_width, win_height, true);

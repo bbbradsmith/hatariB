@@ -160,8 +160,8 @@ Otherwise there are minor changes to the CMake build files, marked with a commen
 * **hatari/src/falcon/nvram.c**
   * NVRAM file should only save/load when using TT or Falcon mode.
   * Redirect file to system/hatarib.nvram
-* **hatar
-
+* **hatari/src/sdl-gui/sdlgui.c
+  * Create direct access to GUI box draw to use for hatariB pause overlays.
 
 `SDL_Init` and `SDL_Quit` almost all use of the SDL library have been suppressed. There are some remaining uses of the SDL libraries but I do not believe any of them require Init. These include:
 * SDL ending defines and utilities (e.g. `SDL_SwapLE16`) which are used throughout.

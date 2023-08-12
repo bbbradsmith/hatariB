@@ -18,6 +18,7 @@ extern bool core_video_changed;
 extern bool core_option_soft_reset;
 extern bool core_serialize_write; // current serialization direction
 extern int core_crashtime;
+extern bool core_show_welcome;
 extern void core_signal_alert(const char* alertmsg); // onscreen notifications
 
 // core_file.c
@@ -156,7 +157,7 @@ extern int core_oskey_map[4][5];
 // core_osk.c
 extern void core_osk_input(uint32_t osk_new); // bitfield of new OSK button presses (sent by core_input_poll)
 extern void core_osk_render(void* video_buffer, int w, int h, int pitch); // call to render overlay over video_buffer
-extern void core_osk_restore(void); // call to restore overlay
+extern void core_osk_restore(void* video_buffer, int w, int h, int pitch); // call to restore buffer before overlay
 
 extern int core_pause_osk; // pause screen appearance setting
 

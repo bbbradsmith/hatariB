@@ -89,10 +89,12 @@ uint8_t* core_rom_mem_pointer = NULL;
 int core_crashtime = 10;
 int core_crash_frames = 0; // reset to 0 whenever CORE_RUNFLAG_HALT
 bool core_option_soft_reset = false;
+bool core_show_welcome = true;
 
 // internal
 
 bool content_override_set = false;
+bool core_video_restore = false;
 
 uint32_t blank_screen[320*200] = { 0 }; // safety buffer in case frame was never been provided
 
@@ -682,6 +684,7 @@ RETRO_API void retro_init(void)
 	core_audio_samplerate = core_audio_samplerate_new;
 	core_video_changed = false;
 	core_rate_changed = false;
+	core_video_restore = false;
 
 	core_audio_hold_remain = 0;
 	core_audio_last[0] = 0;
@@ -764,6 +767,16 @@ RETRO_API void retro_reset(void)
 
 RETRO_API void retro_run(void)
 {
+	// undo overlay
+	//   would have done this directly after video_cb,
+	//   but RetroArch seems to display what is given at video_cb time only when running,
+	//   but when in menus or paused (p) it displays the contents of the buffer at exit of retro_run instead?
+	if (core_runflags & CORE_RUNFLAG_OSK)
+	{
+		core_osk_restore(core_video_buffer,core_video_w,core_video_h,core_video_pitch);
+		core_video_restore = false;
+	}
+
 	// handle any pending configuration updates
 	core_config_update(false);
 
@@ -825,7 +838,7 @@ RETRO_API void retro_run(void)
 		}
 	}
 
-	// send video
+	// update video nature
 	if (core_rate_changed)
 	{
 		retro_log(RETRO_LOG_INFO,"core_rate_changed\n");
@@ -846,14 +859,13 @@ RETRO_API void retro_run(void)
 
 	// draw overlay
 	if (core_runflags & CORE_RUNFLAG_OSK)
+	{
 		core_osk_render(core_video_buffer,core_video_w,core_video_h,core_video_pitch);
+		core_video_restore = true;
+	}
 
 	// send video
 	video_cb(core_video_buffer,core_video_w,core_video_h,core_video_pitch);
-
-	// undo overlay
-	if (core_runflags & CORE_RUNFLAG_OSK)
-		core_osk_restore();
 
 	// fill audio if pause
 	if (core_runflags & (CORE_RUNFLAG_PAUSE | CORE_RUNFLAG_HALT))

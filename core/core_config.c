@@ -392,17 +392,22 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	},
 	{
 		"hatarib_pause_osk", "Pause Screen Display", NULL,
-		"",
+		"The help screen is displayed at pause by default, but there are alternatives.",
 		NULL, "video",
 		{
 			{"2","Help and Information"},
-			//{"5","Boink Ball"},
-			//{"4","Bouncing PAUSE"},
-			//{"3","Pause Icon"},
-			{"1","Darken"},
-			{"0","No Display"},
+			{"3","Bouncing Box"},
+			{"4","Snow"},
+			{"0","Darken"},
+			{"1","No Display"},
 			{NULL,NULL}
 		}, "2"		
+	},
+	{
+		"hatarib_show_welcome", "Show Welcome Message", NULL,
+		"At startup the status bar shows a welcome message for 5 seconds, if enabled.",
+		NULL, "video",
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
 	},
 	//
 	// Audio
@@ -439,8 +444,8 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		NULL, "audio",
 		{
 			{"0","None"},
-			{"1","STF Lowpass"},
-			{"2","Piecewise Selective Lowpass"},
+			{"1","Hatari STF"},
+			{"2","Hatari STE/Falcon"},
 			{"3","Clean Lowpass"},
 			{NULL,NULL}
 		}, "3"
@@ -1029,6 +1034,7 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_statusbar") { newparam.Screen.bShowStatusbar = (vi==1); newparam.Screen.bShowDriveLed = (vi==2); }
 	CFG_INT("hatarib_aspect") { if (core_video_aspect_mode != vi) { core_video_aspect_mode = vi; core_video_changed = true; } }
 	CFG_INT("hatarib_pause_osk") core_pause_osk = vi;
+	CFG_INT("hatarib_show_welcome") core_show_welcome = vi;
 	CFG_INT("hatarib_samplerate") newparam.Sound.nPlaybackFreq = vi;
 	CFG_INT("hatarib_ymmix") newparam.Sound.YmVolumeMixing = vi;
 	CFG_INT("hatarib_lpf") newparam.Sound.YmLpf = vi;

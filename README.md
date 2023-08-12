@@ -96,9 +96,6 @@ Development notes: [DEVELOP.md](DEVELOP.md)
 
 Remaining tasks before ready for public testing:
 * On-screen keyboard.
-* Help screen. (paused, dimmed, with text on top)
-* Pause screen (paused, optionally dimmed, no text)
-* Have funnelled Log_AlertDlg to onscreen notifications. Try to disable any that are too frequent or already diagnosed.
 * Help screen should mention licenses, GPLv2, Miniz MIT, etc.
 * Input seems to get "stuck" sometimes, not sure of the cause. Mouse buttons stop working or can't stop firing, etc. can't seem to remedy it when it happens except doing a reset. Added CORE_INPUT_DEBUG=1 which adds a debug log option if it comes up again... remember to set to 0 for release.
 * Relocate the vscode project out of the ignored "secrets" folder, it's worth preserving on github too, just clean up the absolute paths and stuff (maybe c:\msys64 is acceptable tho).
@@ -123,6 +120,8 @@ The GPL v2 license was inherited from the Hatari project. The Hatari source code
 This project also incorporates header files from [Libretro](https://github.com/libretro/), under a compatible permissive license.
 
 This project includes [EmuTOS](https://emutos.sourceforge.io/) binaries as built-in available TOS BIOS images, under the GPL v2 license.
+
+The [miniz](https://github.com/richgel999/miniz) library used for ZIP file decompression is included, under the MIT license.
 
 ## Authors
 

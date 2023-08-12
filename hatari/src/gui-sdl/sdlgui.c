@@ -30,7 +30,11 @@ const char SDLGui_fileid[] = "Hatari sdlgui.c";
 # define Dprintf(a)
 #endif
 
+#ifndef __LIBRETRO__
 static SDL_Surface *pSdlGuiScrn;            /* Pointer to the actual main SDL screen surface */
+#else
+SDL_Surface *pSdlGuiScrn; // make public
+#endif
 static SDL_Surface *pSmallFontGfx = NULL;   /* The small font graphics */
 static SDL_Surface *pBigFontGfx = NULL;     /* The big font graphics */
 static SDL_Surface *pFontGfx = NULL;        /* The actual font graphics */
@@ -347,12 +351,16 @@ static void SDLGui_DrawEditField(const SGOBJ *edlg, int objnum)
 }
 
 
+#ifdef __LIBRETRO__
+extern void SDLGui_DirectBox(int x, int y, int w, int h, int offset, bool focused, bool selected);
+#endif
 /*-----------------------------------------------------------------------*/
 /**
  * Draw a dialog box object.
  */
 static void SDLGui_DrawBox(const SGOBJ *bdlg, int objnum)
 {
+#ifndef __LIBRETRO__
 	SDL_Rect rect;
 	int x, y, w, h, offset;
 	Uint32 color, upleftc, downrightc;
@@ -361,6 +369,9 @@ static void SDLGui_DrawBox(const SGOBJ *bdlg, int objnum)
 		color = colors.focus;
 	else
 		color = colors.midgrey;
+#else
+	int x, y, w, h, offset;
+#endif
 
 	x = bdlg[objnum].x*sdlgui_fontwidth;
 	y = bdlg[objnum].y*sdlgui_fontheight;
@@ -373,6 +384,7 @@ static void SDLGui_DrawBox(const SGOBJ *bdlg, int objnum)
 	w = bdlg[objnum].w*sdlgui_fontwidth;
 	h = bdlg[objnum].h*sdlgui_fontheight;
 
+#ifndef __LIBRETRO__
 	if (bdlg[objnum].state & SG_SELECTED)
 	{
 		upleftc = colors.darkgrey;
@@ -383,6 +395,7 @@ static void SDLGui_DrawBox(const SGOBJ *bdlg, int objnum)
 		upleftc = colors.lightgrey;
 		downrightc = colors.darkgrey;
 	}
+#endif
 
 	/* The root box should be bigger than the screen, so we disable the offset there: */
 	if (objnum != 0)
@@ -390,6 +403,19 @@ static void SDLGui_DrawBox(const SGOBJ *bdlg, int objnum)
 	else
 		offset = 0;
 
+#ifdef __LIBRETRO__
+	SDLGui_DirectBox(x,y,w,h,offset,bdlg[objnum].state & SG_FOCUSED,bdlg[objnum].state & SG_SELECTED);
+}
+
+// making the box draw more directly available
+void SDLGui_DirectBox(int x, int y, int w, int h, int offset, bool focused, bool selected)
+{
+	SDL_Rect rect;
+	Uint32 color = focused ? colors.focus : colors.midgrey;
+	Uint32 upleftc = selected ? colors.darkgrey : colors.lightgrey;
+	Uint32 downrightc = selected ? colors.lightgrey : colors.darkgrey;
+
+#endif
 	/* Draw background: */
 	rect.x = x;
 	rect.y = y;

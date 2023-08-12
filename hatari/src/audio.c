@@ -262,6 +262,7 @@ void Audio_SetOutputAudioFreq(int nNewFrequency)
 		}
 	}
 
+#ifndef __LIBRETRO__
 	/* Apply YM2149 C10 low pass filter ? (except if forced to NONE) */
 	if ( YM2149_LPF_Filter != YM2149_LPF_FILTER_NONE )
 	{
@@ -270,6 +271,7 @@ void Audio_SetOutputAudioFreq(int nNewFrequency)
 		else
 			YM2149_LPF_Filter = YM2149_LPF_FILTER_PWM;
 	}
+#endif
 }
 
 

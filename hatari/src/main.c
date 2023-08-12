@@ -901,6 +901,9 @@ static void Main_LoadInitialConfig(void)
 #endif
 }
 
+#ifdef __LIBRETRO__
+extern bool core_show_welcome;
+#endif
 /*-----------------------------------------------------------------------*/
 /**
  * Set TOS etc information and initial help message
@@ -941,7 +944,7 @@ static void Main_StatusbarSetup(void)
 	{
 		char message[60];
 #ifdef __LIBRETRO__
-		snprintf(message, sizeof(message), "Press Scroll-Lock for Keyboard and Mouse focus.");
+		snprintf(message, sizeof(message), "Welcome to HatariB! Press START for help.");
 #else
 		snprintf(message, sizeof(message), "Press %s%s for Options, %s%s for mouse grab toggle",
 			 keys[0].mod ? "AltGr+": "", keys[0].name,
@@ -952,6 +955,9 @@ static void Main_StatusbarSetup(void)
 			if (keys[i].name)
 				free(keys[i].name);
 		}
+#ifdef __LIBRETRO__
+		if (core_show_welcome)
+#endif
 		Statusbar_AddMessage(message, 5000);
 	}
 	/* update information loaded by Main_Init() */
