@@ -478,6 +478,46 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{{"0","Off"},{"1","On"},{NULL,NULL}}, "0"
 	},
 	{
+		"hatarib_cpu", "CPU", NULL,
+		"Causes restart!! 68000 family CPU type.",
+		NULL, "advanced",
+		{
+			{"-1","Auto"},
+			{"0","68000"},
+			{"1","68010"},
+			{"2","68020"},
+			{"3","68030"},
+			{"4","68040"},
+			{"5","68060"}, // no 68050 eh?
+			{NULL,NULL}
+		}, "-1",
+	},
+	{
+		"hatarib_cpu_clock", "CPU Clock Rate", NULL,
+		"CPU speed.",
+		NULL, "advanced",
+		{
+			{"-1","Auto"},
+			{"8","8 MHz"},
+			{"16","16 MHz"},
+			{"32","32 MHz"},
+			{NULL,NULL}
+		}, "-1",
+	},
+	{
+		"hatarib_fpu", "FPU", NULL,
+		"Causes restart!! Floating point unit used with the CPU.",
+		NULL, "advanced",
+		{
+			{"-1","Auto"},
+			{"0","None"},
+			{"68881","68881"},
+			{"68882","68882"},
+			{"68040","Internal"},
+			{NULL,NULL}
+		}, "-1",
+	},
+	{
 		"hatarib_patchtos","Patch TOS for Fast Boot", NULL,
 		"Boot slightly faster for some known TOS ROMs.",
 		NULL, "advanced",
@@ -923,6 +963,9 @@ void core_config_read_newparam()
 		{
 			newparam.System.nDSPType = DSP_TYPE_EMU;
 		}
+		CFG_INT("hatarib_cpu") if (vi>=0) newparam.System.nCpuLevel = vi;
+		CFG_INT("hatarib_cpu_clock") if (vi>=0) newparam.System.nCpuFreq = vi;
+		CFG_INT("hatarib_fpu") if (vi>=0) newparam.System.n_FPUType = vi;
 	}
 	CFG_INT("hatarib_memory") newparam.Memory.STRamSize_KB = vi;
 	CFG_STR("hatarib_cartridge")
@@ -993,6 +1036,9 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_driveb") { newparam.DiskImage.EnableDriveB = vi; core_disk_enable_b = vi; }
 	CFG_INT("hatarib_drivesingle") { newparam.DiskImage.DriveA_NumberOfHeads = newparam.DiskImage.DriveB_NumberOfHeads = vi; }
 	CFG_INT("hatarib_readonly_floppy") newparam.DiskImage.nWriteProtection = vi;
+	//CFG_INT("hatarib_cpu") // handle within machine
+	//CFG_INT("hatarib_cpu_clock") // handle within machine
+	//CFG_INT("hatarib_fpu") // handle within macine
 	CFG_INT("hatarib_patchtos") newparam.System.bFastBoot = vi;
 	CFG_INT("hatarib_crashtime") core_crashtime = vi;
 	CFG_INT("hatarib_blitter_st") newparam.System.bBlitter = vi;
@@ -1027,7 +1073,11 @@ void core_config_read_newparam()
 		CFG_INT_PAD(i,"oskey_move"   ) core_oskey_map[i][CORE_INPUT_OSKEY_MOVE   ] = vi; // stick
 	}
 
-	// preserve floppy disk paths which change every time a disk is inserted (prevents ejection due to the filename going empty)
+	// preserve parameters that change during emulation
+	// will nCpuFreq changing at runtime cause any config change to reset? do we need a "preserve if option changed" for this?
+	// what if TOS version changed cpu type or machine type?
+	// maybe we need a "boot" setting for them and apply it IF a reset is happening... but then we need to check reset twice during config change??
+	// we don't want to modify the user's settings directly like Hatari expects to
 	memcpy(newparam.DiskImage.szDiskFileName[0],ConfigureParams.DiskImage.szDiskFileName[0],sizeof(newparam.DiskImage.szDiskFileName[0]));
 	memcpy(newparam.DiskImage.szDiskFileName[1],ConfigureParams.DiskImage.szDiskFileName[1],sizeof(newparam.DiskImage.szDiskFileName[1]));
 }
