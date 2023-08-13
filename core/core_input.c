@@ -595,8 +595,8 @@ void core_input_update(void)
 					RETROK_RSHIFT,
 					RETROK_LALT,
 					RETROK_CAPSLOCK,
-					RETROK_F11, // (Help)
-					RETROK_F12, // (Undo)
+					RETROK_PRINT, // (Help)
+					RETROK_END, // (Undo)
 					RETROK_INSERT,
 					RETROK_HOME,
 					RETROK_PAGEUP, // (Left Paren)

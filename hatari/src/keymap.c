@@ -115,7 +115,11 @@ static uint8_t Keymap_SymbolicToStScanCode(const SDL_Keysym* pKeySym)
 #endif
 	 case SDLK_CARET: code = 0x2B; break;
 	 case SDLK_UNDERSCORE: code = 0x0C; break;
+#ifndef __LIBRETRO__
 	 case SDLK_BACKQUOTE: code = 0x52; break;
+#else
+	 case SDLK_BACKQUOTE: code = 0x29; break;
+#endif
 	 case SDLK_a: code = 0x1E; break;
 	 case SDLK_b: code = 0x30; break;
 	 case SDLK_c: code = 0x2E; break;

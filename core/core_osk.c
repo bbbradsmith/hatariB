@@ -108,8 +108,8 @@ const struct OSKey OSK_ROW1_QWERTY[] = {
 	{"=+",2,RETROK_EQUALS,0},
 	{"`~",2,RETROK_BACKQUOTE,0},
 	{"Bck",3,RETROK_BACKSPACE,0},
-	{"Hlp",3,RETROK_F11,0}, // (Help)
-	{"Und",3,RETROK_F12,0}, // (Undo)
+	{"Hlp",3,RETROK_PRINT,0}, // (Help)
+	{"Und",3,RETROK_END,0}, // (Undo)
 	{"(",2,RETROK_PAGEUP,0}, // (Left Paren)
 	{")",2,RETROK_PAGEDOWN,0}, // (Right Paren)
 	{"/",2,RETROK_KP_DIVIDE,0},
