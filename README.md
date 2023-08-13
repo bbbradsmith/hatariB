@@ -111,13 +111,11 @@ Development notes: [DEVELOP.md](DEVELOP.md)
   * If the on-screen keyboard confirm/cancel buttons aren't mapped to dedicated keys, you might end up suddenly holding the underlying button when the keyboard closes.
 
 Remaining tasks before ready for public testing:
-* Set CORE_INPUT_DEBUG=0 for release.
 * Relocate the vscode project out of the ignored "secrets" folder, it's worth preserving on github too, just clean up the absolute paths and stuff (maybe c:\msys64 is acceptable tho).
 * Clean up DEVELOP.md dependency list, give the specific libraries needed. (I think zlib/make is probably not needed by action setup too, inherent in cmake, and zlib should be ucrt64 specific.)
 * reconsider the "hatari_libretro_... naming convention for a few things, should probably just be called "core"
 
 Optional tasks:
-* On-screen keyboard languages?
 * Investigate Libretro MIDI interface. I wonder if I could play MIDI Maze against my real ST?
 * See if a MinGW 32-bit auto-build is reasonable? Might provide a stepping stone to other targets, and provide additional compile checks.
 * Can savestate restore be more lightweight? What takes so much CPU time? Are there any lingering spurious disk accesses?

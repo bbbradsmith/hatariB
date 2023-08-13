@@ -6,7 +6,7 @@
 #define   CORE_ARRAY_SIZE(a_)   (sizeof(a_)/sizeof(a_[0]))
 
 // adds a config option to dump all input polling to the log every frame
-#define CORE_INPUT_DEBUG   1
+#define CORE_INPUT_DEBUG   0
 
 // core.c
 extern retro_environment_t environ_cb;
