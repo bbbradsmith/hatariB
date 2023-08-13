@@ -672,6 +672,7 @@ RETRO_API void retro_init(void)
 	// initialize other modules
 	core_input_init();
 	core_disk_init();
+	core_osk_init();
 
 	// for trace debugging (requires -DENABLE_TRACING=1)
 	//Log_SetTraceOptions("cpu_disasm");

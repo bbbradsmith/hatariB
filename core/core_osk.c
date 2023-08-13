@@ -10,9 +10,15 @@ extern SDL_Surface* sdlscrn;
 extern SDL_Surface* pSdlGuiScrn;
 extern void SDLGui_DirectBox(int x, int y, int w, int h, int offset, bool focused, bool selected);
 
-int core_pause_osk = 2; // help screen default
+int32_t core_osk_layout = 0;
 int32_t core_osk_mode = CORE_OSK_OFF;
-bool core_osk_init = false; // true when first entered pause/osk
+int core_pause_osk = 2; // help screen default
+bool core_osk_begin = false; // true when first entered pause/osk
+
+static int core_osk_layout_set = -1; //use to know when to rebuild keyboard
+int32_t core_osk_pos_x;
+int32_t core_osk_pos_y;
+uint8_t core_osk_pos_display;
 
 void* screen = NULL;
 void* screen_copy = NULL;
@@ -44,6 +50,149 @@ const char* const HELPTEXT[] = {
 	"",
 	"https://github.com/bbbradsmith/hatariB/",
 	"https://hatari.tuxfamily.org/",
+};
+
+//
+// Keyboard layouts
+//
+
+// modifier keys 
+#define OSK_MOD_CTRL   1
+#define OSK_MOD_ALT    2
+#define OSK_MOD_SHL    3
+#define OSK_MOD_SHR    4
+
+
+// grid of 45 x 6 keys, any visible key is minimum 2 grid points
+// at smallest resolution characters are 5px wide, and the 2 grid key takes 14 pixels:
+//   2+5+5+1+1 = left edge + character + character + right edge + space
+struct OSKey
+{
+	const char* name; // 2 or 4 characters, NULL for an empty space
+	int cells; // 1 for space, 2+ for key, 0 marks end of row
+	int key; // retro_key
+	int mod; // 0 unless this is a toggle-able modifier
+};
+
+const struct OSKey OSK_ROW0_QWERTY[] = {
+	{0,1,0,0},
+	{"F1",3,RETROK_F1,0},
+	{"F2",3,RETROK_F2,0},
+	{"F3",3,RETROK_F3,0},
+	{"F4",3,RETROK_F4,0},
+	{"F5",3,RETROK_F5,0},
+	{"F6",3,RETROK_F6,0},
+	{"F7",3,RETROK_F7,0},
+	{"F8",3,RETROK_F8,0},
+	{"F9",3,RETROK_F9,0},
+	{"F10",3,RETROK_F10,0},
+	{0,0,0,0}};
+const struct OSKey OSK_ROW1_QWERTY[] = {
+	{"Es",2,RETROK_ESCAPE,0},
+	{"1",2,RETROK_1,0},
+	{"2",2,RETROK_2,0},
+	{"3",2,RETROK_3,0},
+	{"4",2,RETROK_4,0},
+	{"5",2,RETROK_5,0},
+	{"6",2,RETROK_6,0},
+	{"7",2,RETROK_7,0},
+	{"8",2,RETROK_8,0},
+	{"9",2,RETROK_9,0},
+	{"0",2,RETROK_0,0},
+	{"-",2,RETROK_MINUS,0},
+	{"=",2,RETROK_EQUALS,0},
+	{"`~",2,RETROK_BACKQUOTE,0},
+	{"Bck",3,RETROK_BACKSPACE,0},
+	{"Hlp",3,RETROK_F11,0}, // (Help)
+	{"Und",3,RETROK_F12,0}, // (Undo)
+	{"(",2,RETROK_PAGEUP,0}, // (Left Paren)
+	{")",2,RETROK_PAGEDOWN,0}, // (Right Paren)
+	{"/",2,RETROK_KP_DIVIDE,0},
+	{"*",2,RETROK_KP_MULTIPLY,0},
+	{0,0,0,0}};
+const struct OSKey OSK_ROW2_QWERTY[] = {
+	{"Tab",3,RETROK_TAB,0},
+	{"Q",2,RETROK_q,0},
+	{"W",2,RETROK_w,0},
+	{"E",2,RETROK_e,0},
+	{"R",2,RETROK_r,0},
+	{"T",2,RETROK_t,0},
+	{"Y",2,RETROK_y,0},
+	{"U",2,RETROK_u,0},
+	{"I",2,RETROK_i,0},
+	{"O",2,RETROK_o,0},
+	{"P",2,RETROK_p,0},
+	{"[",2,RETROK_LEFTBRACKET,0},
+	{"]",2,RETROK_RIGHTBRACKET,0},
+	{0,2,0,0},
+	{"Dl",2,RETROK_DELETE,0},
+	{"In",2,RETROK_INSERT,0},
+	{"\x1",2,RETROK_UP,0},
+	{"Hm",2,RETROK_HOME,0},
+	{"7",2,RETROK_KP7,0},
+	{"8",2,RETROK_KP8,0},
+	{"9",2,RETROK_KP9,0},
+	{"-",2,RETROK_KP_MINUS,0},
+	{0,0,0,0}};
+const struct OSKey OSK_ROW3_QWERTY[] = {
+	{"Ctrl",4,RETROK_LCTRL,0},
+	{"A",2,RETROK_a,0},
+	{"S",2,RETROK_s,0},
+	{"D",2,RETROK_d,0},
+	{"F",2,RETROK_f,0},
+	{"G",2,RETROK_g,0},
+	{"H",2,RETROK_h,0},
+	{"J",2,RETROK_j,0},
+	{"K",2,RETROK_k,0},
+	{"L",2,RETROK_l,0},
+	{";",2,RETROK_SEMICOLON,0},
+	{"'\"",2,RETROK_QUOTE,0},
+	{"Ret",3,RETROK_RETURN,0},
+	{"\\",2,RETROK_BACKSLASH,0},
+	{"\x4",2,RETROK_LEFT,0},
+	{"\x2",2,RETROK_DOWN,0},
+	{"\x3",2,RETROK_RIGHT,0},
+	{"4",2,RETROK_KP4,0},
+	{"5",2,RETROK_KP5,0},
+	{"6",2,RETROK_KP6,0},
+	{"+",2,RETROK_KP_PLUS,0},
+	{0,0,0,0}};
+const struct OSKey OSK_ROW4_QWERTY[] = {
+	{"Shift",5,RETROK_LSHIFT,0},
+	{"Z",2,RETROK_z,0},
+	{"X",2,RETROK_x,0},
+	{"C",2,RETROK_c,0},
+	{"V",2,RETROK_v,0},
+	{"B",2,RETROK_b,0},
+	{"N",2,RETROK_n,0},
+	{"M",2,RETROK_m,0},
+	{",<",2,RETROK_COMMA,0},
+	{".>",2,RETROK_PERIOD,0},
+	{"/?",2,RETROK_SLASH,0},
+	{"Shift",5,RETROK_RSHIFT,0},
+	{0,7,0,0},
+	{"1",2,RETROK_KP1,0},
+	{"2",2,RETROK_KP2,0},
+	{"3",2,RETROK_KP3,0},
+	{0,0,0,0}};
+const struct OSKey OSK_ROW5_QWERTY[] = {
+	{0,2,0,0},
+	{"Alt",4,RETROK_LALT,0},
+	{"",18,RETROK_z,0},
+	{"Caps",4,RETROK_x,0},
+	{0,9,0,0},
+	{"0",4,RETROK_KP0,0},
+	{".",2,RETROK_KP_PERIOD,0},
+	{"En",2,RETROK_KP_ENTER,0},
+	{0,0,0,0}};
+
+static const struct OSKey* osk_row[6] = {
+	OSK_ROW0_QWERTY,
+	OSK_ROW1_QWERTY,
+	OSK_ROW2_QWERTY,
+	OSK_ROW3_QWERTY,
+	OSK_ROW4_QWERTY,
+	OSK_ROW5_QWERTY,
 };
 
 //
@@ -107,10 +256,42 @@ static inline void draw_box(int x, int y, int w, int h, Uint32 c)
 // on-screen keyboard
 //
 
+static void rebuild_keyboard(void)
+{
+	// TODO reinit osk_row, built the mapping grid, etc.
+	core_osk_layout_set = core_osk_layout;
+}
+
+extern Uint32 Screen_GetGenConvHeight(void);
+
 static void render_keyboard(void)
 {
-	// TODO just indicate with darken for now
-	screen_darken(screen_h*1/4,screen_h*3/4);
+	int gw = sdlgui_fontwidth + 2;
+	int gh = sdlgui_fontheight + 5;
+
+	int x0 = (screen_w - (45 * gw)) / 2;
+	int y0 = !core_osk_pos_display ? 2 : (Screen_GetGenConvHeight() - ((6 * gh) + 1));
+
+	screen_darken(y0-2,y0+(6*gh+1));
+	if (core_osk_layout_set != core_osk_layout) rebuild_keyboard();
+	for (int r=0; r<6; ++r)
+	{
+		int x = x0;
+		int y = y0 + (r * (sdlgui_fontheight+5));
+		for(const struct OSKey* k = osk_row[r]; k->cells > 0; ++k)
+		{
+			int w = k->cells * (sdlgui_fontwidth + 2);
+			int h = 5 + sdlgui_fontheight;
+			if (k->name)
+			{
+				//retro_log(RETRO_LOG_DEBUG,"osk: '%s',%d,%d,%d,%d\n",k->name,x,y,w,h);
+				// TODO focused/selected flags
+				SDLGui_DirectBox(x,y,w-1,h-1,0,false,false);
+				SDLGui_Text(x+2,y+2,k->name);
+			}
+			x += w;
+		}
+	}
 }
 
 //
@@ -165,7 +346,7 @@ static void render_pause(void)
 			const int bh = sdlgui_fontheight * 3;
 			const int pw = screen_w - bw;
 			const int ph = screen_h - bh;
-			if (bpx < 0 || bpx > pw || core_osk_init)
+			if (bpx < 0 || bpx > pw || core_osk_begin)
 			{
 				bpx = rand() % (pw-2) + 1;
 				dx = (rand() & 2) - 1;
@@ -201,7 +382,7 @@ static void render_pause(void)
 			static float sf;
 			static int si;
 			static Uint32 white = 0;
-			if (fw != screen_w || fh != screen_h || core_osk_init) // reinitialize
+			if (fw != screen_w || fh != screen_h || core_osk_begin) // reinitialize
 			{
 				white = SDL_MapRGB(sdlscrn->format,255,255,255);
 				fw = screen_w;
@@ -244,11 +425,17 @@ static void render_pause(void)
 void core_osk_input(uint32_t osk_new)
 {
 	if (core_osk_mode < CORE_OSK_KEY) return; // pause menu does not take input
-	if (core_osk_init) return; // don't take inputs on init frame (cancel/confirm could be same as buttons that raise osk)
+	if (core_osk_begin) return; // don't take inputs on init frame (cancel/confirm could be same as buttons that raise osk)
 
 	// TODO just be able to cancel keyboard for now
 	if (osk_new)
 	{
+		// make sure keyboard layout matches before doing anything
+		if (core_osk_layout_set != core_osk_layout) rebuild_keyboard();
+
+		// toggle display position
+		if (osk_new & AUX_OSK_POS) core_osk_pos_display ^= 1;
+
 		core_debug_hex("osk_new: ",osk_new);
 		if (osk_new & AUX_OSK_CANCEL) core_osk_mode = CORE_OSK_OFF;
 	}
@@ -303,7 +490,7 @@ void core_osk_render(void* video_buffer, int w, int h, int pitch)
 	else
 		render_pause();
 	
-	core_osk_init = false;
+	core_osk_begin = false;
 }
 
 void core_osk_restore(void* video_buffer, int w, int h, int pitch)
@@ -321,5 +508,18 @@ void core_osk_serialize(void)
 	// pause screen static state doesn't matter, no impact on emulation
 	// but the on-screen keyboard state does, and needs its status restored
 	core_serialize_int32(&core_osk_mode);
-	// TODO seralize OSK state
+	core_serialize_int32(&core_osk_layout);
+	core_serialize_int32(&core_osk_pos_x);
+	core_serialize_int32(&core_osk_pos_y);
+	core_serialize_uint8(&core_osk_pos_display);
+	// TODO mods
 }
+
+void core_osk_init()
+{
+	core_osk_layout_set = -1; // reinitialize layout
+	core_osk_pos_x = 10; // start on space bar?
+	core_osk_pos_y = 5;
+	core_osk_pos_display = 0; // top
+}
+

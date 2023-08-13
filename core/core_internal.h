@@ -172,9 +172,11 @@ extern void core_osk_input(uint32_t osk_new); // bitfield of new OSK button pres
 extern void core_osk_render(void* video_buffer, int w, int h, int pitch); // call to render overlay over video_buffer
 extern void core_osk_restore(void* video_buffer, int w, int h, int pitch); // call to restore buffer before overlay
 extern void core_osk_serialize();
+extern void core_osk_init();
 
 extern int core_pause_osk; // pause screen appearance setting
-extern bool core_osk_init; // set true when pause/osk is toggled on
+extern bool core_osk_begin; // set true when pause/osk is toggled on
+extern int32_t core_osk_layout;
 
 #define CORE_OSK_OFF        0
 #define CORE_OSK_PAUSE      1

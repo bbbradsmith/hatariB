@@ -79,6 +79,13 @@ Development notes: [DEVELOP.md](DEVELOP.md)
   * *EmuTOS 192uk* may be slightly more compatible with *ST* software, but provides fewer features. With a colour monitor it starts up in 50hz by default.
   * *EmuTOS 192us* is similar to *192uk* but instead starts in 60hz.
   * Most other TOS files are only compatible with certain machines.
+* On-Screen Keyboard
+  * An on-screen keyboard can be used to simulate using the Atari's keyboard from your gamepad.
+  * Press L1 to raise the on-screen keyboard, select a key with the d-pad, and press L1 again to press the key. Press R1 to close the keyboard.
+  * Press L2 to raise the keyboard in one-shot mode, which pauses emulation and will resume immediately when you press L1 or R2.
+  * To alternate between a top and bottom keyboard position, press X.
+  * Modifier keys like Shift, Control, Alt are toggled instead of a single press, allowing you to hold the modifier while you press another key. When you close the keyboard, all modifiers will be released.
+  * The keyboard language layout can be chosen in the *Input > On-Screen Keyboard Language* core option.
 * Accuracy:
   * Some of the default core options are chosen to favour lower CPU usage, and faster load times, but these can be adjusted.
   * *System > Fast Floppy* gives artificially faster disk access, on by default.
@@ -105,8 +112,8 @@ Development notes: [DEVELOP.md](DEVELOP.md)
 
 Remaining tasks before ready for public testing:
 * On-screen keyboard.
-* Help screen should mention licenses, GPLv2, Miniz MIT, etc.
-* Input seems to get "stuck" sometimes, not sure of the cause. Mouse buttons stop working or can't stop firing, etc. can't seem to remedy it when it happens except doing a reset. Added CORE_INPUT_DEBUG=1 which adds a debug log option if it comes up again... remember to set to 0 for release.
+* On-screen keyboard languages?
+* Set CORE_INPUT_DEBUG=0 for release.
 * Relocate the vscode project out of the ignored "secrets" folder, it's worth preserving on github too, just clean up the absolute paths and stuff (maybe c:\msys64 is acceptable tho).
 * Clean up DEVELOP.md dependency list, give the specific libraries needed. (I think zlib/make is probably not needed by action setup too, inherent in cmake, and zlib should be ucrt64 specific.)
 * reconsider the "hatari_libretro_... naming convention for a few things, should probably just be called "core"
@@ -116,6 +123,10 @@ Optional tasks:
 * See if a MinGW 32-bit auto-build is reasonable? Might provide a stepping stone to other targets, and provide additional compile checks.
 * Can savestate restore be more lightweight? What takes so much CPU time? Are there any lingering spurious disk accesses?
 * Remove miniz dependency by modifying hatari/src/unzip.c to operate on an in-memory buffer.
+* RS232 emulation?
+* Printer emulation?
+* Can inaccessible Debugger features be removed from build for better efficiency?
+* Status pause screen variant with Floppies, TOS, etc. info?
 
 ## History
 

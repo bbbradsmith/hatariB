@@ -862,7 +862,7 @@ void core_input_update(void)
 		if (core_osk_mode == CORE_OSK_OFF  )
 		{
 			core_osk_mode = CORE_OSK_PAUSE;
-			core_osk_init = true;
+			core_osk_begin = true;
 		}
 		else if (core_osk_mode == CORE_OSK_PAUSE)
 		{
@@ -874,13 +874,13 @@ void core_input_update(void)
 	if (osk_on && !AUX(OSK_ON) && (core_osk_mode == CORE_OSK_OFF))
 	{
 		core_osk_mode = CORE_OSK_KEY;
-		core_osk_init = true;
+		core_osk_begin = true;
 	}
 	AUX_SET(osk_on,OSK_ON);
 	if (osk_shot && !AUX(OSK_SHOT) && (core_osk_mode == CORE_OSK_OFF))
 	{
 		core_osk_mode = CORE_OSK_KEY_SHOT;
-		core_osk_init = true;
+		core_osk_begin = true;
 	}
 	AUX_SET(osk_shot,OSK_SHOT);
 
