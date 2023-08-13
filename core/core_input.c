@@ -66,6 +66,9 @@ static int32_t vmouse_x, vmouse_y; // virtual mouse state
 static int32_t mod_state;
 static int32_t aux_buttons; // last state of auxiliary buttons
 static uint8_t joy_autofire[4];
+uint8_t osk_press_mod;
+int32_t osk_press_key;
+int32_t osk_press_time;
 
 // input state that is temporary
 static int32_t joy_fire[JOY_PORTS];
@@ -280,6 +283,9 @@ void core_input_serialize(void)
 	core_serialize_int32(&vmouse_y);
 	core_serialize_int32(&mod_state);
 	core_serialize_int32(&aux_buttons);
+	core_serialize_uint8(&osk_press_mod);
+	core_serialize_int32(&osk_press_key);
+	core_serialize_int32(&osk_press_time);
 }
 
 void core_input_set_environment(retro_environment_t cb)
@@ -306,6 +312,9 @@ void core_input_init(void)
 		joy_stick[i] = 0;
 	}
 	for (int i=0; i<4; ++i) joy_autofire[i] = 0;
+	osk_press_mod = 0;
+	osk_press_key = 0;
+	osk_press_time = 0;
 }
 
 void core_input_update(void)
@@ -738,6 +747,21 @@ void core_input_update(void)
 				debug_ax[2] / 0x1000,
 				debug_ay[2] / 0x1000);
 		#endif
+	}
+
+	// apply osk presses
+	if (osk_press_mod && ((osk_press_time > 0) || (core_osk_mode >= CORE_OSK_KEY)))
+	{
+		if (osk_press_mod & OSK_PRESS_CTRL) core_input_keyboard_joy(RETROK_LCTRL);
+		if (osk_press_mod & OSK_PRESS_ALT ) core_input_keyboard_joy(RETROK_LALT);
+		if (osk_press_mod & OSK_PRESS_SHL ) core_input_keyboard_joy(RETROK_LSHIFT);
+		if (osk_press_mod & OSK_PRESS_SHR ) core_input_keyboard_joy(RETROK_RSHIFT);
+	}
+	if (osk_press_time > 0)
+	{
+		--osk_press_time;
+		if (osk_press_key > 0 && osk_press_key < RETROK_LAST)
+			core_input_keyboard_joy(osk_press_key);
 	}
 
 	// unstick any hanging keys

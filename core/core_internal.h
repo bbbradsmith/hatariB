@@ -124,6 +124,14 @@ extern int core_stick_threshold;
 extern int core_mouse_speed;
 extern int core_mouse_dead;
 
+#define OSK_PRESS_CTRL   0x01
+#define OSK_PRESS_ALT    0x02
+#define OSK_PRESS_SHL    0x04
+#define OSK_PRESS_SHR    0x08
+extern uint8_t osk_press_mod; // bitfield to press mod (if time or keyboard is open)
+extern int32_t osk_press_key; // active key, applied if time
+extern int32_t osk_press_time;
+
 // input mapping index
 
 extern int core_joy_port_map[4];
@@ -177,6 +185,7 @@ extern void core_osk_init();
 extern int core_pause_osk; // pause screen appearance setting
 extern bool core_osk_begin; // set true when pause/osk is toggled on
 extern int32_t core_osk_layout;
+extern int32_t core_osk_press_len; // frames to press key
 
 #define CORE_OSK_OFF        0
 #define CORE_OSK_PAUSE      1

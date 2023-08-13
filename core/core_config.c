@@ -345,8 +345,39 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		}, "5"
 	},
 	{
-		"hatarib_osk_layout", "On-Screen Keyboard Language", NULL,
-		"",
+		"hatarib_osk_press_len", "On-Screen Keyboard Press Time", NULL,
+		"How many frames to apply a button press from the on-scren keyboard",
+		NULL, "input",
+		{
+			{"1","1"},
+			{"2","2"},
+			{"3","3"},
+			{"4","4"},
+			{"5","5"},
+			{"6","6"},
+			{"7","7"},
+			{"8","8"},
+			{"9","9"},
+			{"10","10"},
+			{"15","15"},
+			{"20","20"},
+			{"25","25"},
+			{"30","30"},
+			{"35","35"},
+			{"40","40"},
+			{"45","45"},
+			{"50","50"},
+			{"55","55"},
+			{"60","60"},
+			{"65","65"},
+			{"70","70"},
+			{"71","71"},
+			{NULL,NULL},
+		}, "5"
+	},
+	{
+		"hatarib_osk_layout", "On-Screen Keyboard Layout", NULL,
+		"Choose a layout for the on-screen keyboard.",
 		NULL,"input",
 		{
 			{"0","QWERTY"},
@@ -1041,6 +1072,7 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_mouse_speed") core_mouse_speed = vi;
 	CFG_INT("hatarib_mouse_deadzone") core_mouse_dead = vi;
 	CFG_INT("hatarib_osk_layout") core_osk_layout = vi;
+	CFG_INT("hatarib_osk_press_len") core_osk_press_len = vi;
 	CFG_INT("hatarib_lowres2x") newparam.Screen.bLowResolutionDouble = vi;
 	CFG_INT("hatarib_borders") newparam.Screen.bAllowOverscan = vi;
 	CFG_INT("hatarib_statusbar") { newparam.Screen.bShowStatusbar = (vi==1); newparam.Screen.bShowDriveLed = (vi==2); }

@@ -12,13 +12,13 @@ extern void SDLGui_DirectBox(int x, int y, int w, int h, int offset, bool focuse
 
 int32_t core_osk_layout = 0;
 int32_t core_osk_mode = CORE_OSK_OFF;
+int32_t core_osk_press_len = 5;
 int core_pause_osk = 2; // help screen default
 bool core_osk_begin = false; // true when first entered pause/osk
 
 int32_t core_osk_pos_r;
 int32_t core_osk_pos_c;
 uint8_t core_osk_pos_display;
-bool core_osk_mod[5];
 
 void* screen = NULL;
 void* screen_copy = NULL;
@@ -31,19 +31,12 @@ unsigned int screen_p = 0;
 #define OSK_ROWS    6
 #define OSK_COLS   45
 
-// modifier keys 
-#define OSK_MOD_NONE   0
-#define OSK_MOD_CTRL   1
-#define OSK_MOD_ALT    2
-#define OSK_MOD_SHL    3
-#define OSK_MOD_SHR    4
-
 struct OSKey // key information for a 45x6 grid
 {
 	const char* name; // NULL for an empty space
 	int cells; // cell width (normam small key is 2 wide), 0 marks end of row
-	int key; // retro_key
-	int mod; // 0 unless this is a toggle-able modifier
+	int32_t key; // retro_key
+	uint8_t mod; // 0 unless this is a toggle-able modifier
 };
 
 static int core_osk_layout_set = -1; //use to know when to rebuild keyboard
@@ -101,18 +94,18 @@ const struct OSKey OSK_ROW0_QWERTY[] = {
 	{0,0,0,0}};
 const struct OSKey OSK_ROW1_QWERTY[] = {
 	{"Es",2,RETROK_ESCAPE,0},
-	{"1",2,RETROK_1,0},
-	{"2",2,RETROK_2,0},
-	{"3",2,RETROK_3,0},
-	{"4",2,RETROK_4,0},
-	{"5",2,RETROK_5,0},
-	{"6",2,RETROK_6,0},
-	{"7",2,RETROK_7,0},
-	{"8",2,RETROK_8,0},
-	{"9",2,RETROK_9,0},
-	{"0",2,RETROK_0,0},
-	{"-",2,RETROK_MINUS,0},
-	{"=",2,RETROK_EQUALS,0},
+	{"1!",2,RETROK_1,0},
+	{"2@",2,RETROK_2,0},
+	{"3#",2,RETROK_3,0},
+	{"4$",2,RETROK_4,0},
+	{"5%",2,RETROK_5,0},
+	{"6^",2,RETROK_6,0},
+	{"7&",2,RETROK_7,0},
+	{"8*",2,RETROK_8,0},
+	{"9(",2,RETROK_9,0},
+	{"0)",2,RETROK_0,0},
+	{"-_",2,RETROK_MINUS,0},
+	{"=+",2,RETROK_EQUALS,0},
 	{"`~",2,RETROK_BACKQUOTE,0},
 	{"Bck",3,RETROK_BACKSPACE,0},
 	{"Hlp",3,RETROK_F11,0}, // (Help)
@@ -134,8 +127,8 @@ const struct OSKey OSK_ROW2_QWERTY[] = {
 	{"I",2,RETROK_i,0},
 	{"O",2,RETROK_o,0},
 	{"P",2,RETROK_p,0},
-	{"[",2,RETROK_LEFTBRACKET,0},
-	{"]",2,RETROK_RIGHTBRACKET,0},
+	{"[{",2,RETROK_LEFTBRACKET,0},
+	{"]}",2,RETROK_RIGHTBRACKET,0},
 	{0,2,0,0},
 	{"Dl",2,RETROK_DELETE,0},
 	{"In",2,RETROK_INSERT,0},
@@ -147,7 +140,7 @@ const struct OSKey OSK_ROW2_QWERTY[] = {
 	{"-",2,RETROK_KP_MINUS,0},
 	{0,0,0,0}};
 const struct OSKey OSK_ROW3_QWERTY[] = {
-	{"Ctrl",4,RETROK_LCTRL,OSK_MOD_CTRL},
+	{"Ctrl",4,RETROK_LCTRL,OSK_PRESS_CTRL},
 	{"A",2,RETROK_a,0},
 	{"S",2,RETROK_s,0},
 	{"D",2,RETROK_d,0},
@@ -157,10 +150,10 @@ const struct OSKey OSK_ROW3_QWERTY[] = {
 	{"J",2,RETROK_j,0},
 	{"K",2,RETROK_k,0},
 	{"L",2,RETROK_l,0},
-	{";",2,RETROK_SEMICOLON,0},
+	{";:",2,RETROK_SEMICOLON,0},
 	{"'\"",2,RETROK_QUOTE,0},
 	{"Ret",3,RETROK_RETURN,0},
-	{"\\",2,RETROK_BACKSLASH,0},
+	{"\\|",2,RETROK_BACKSLASH,0},
 	{"\x4",2,RETROK_LEFT,0},
 	{"\x2",2,RETROK_DOWN,0},
 	{"\x3",2,RETROK_RIGHT,0},
@@ -170,7 +163,7 @@ const struct OSKey OSK_ROW3_QWERTY[] = {
 	{"+",2,RETROK_KP_PLUS,0},
 	{0,0,0,0}};
 const struct OSKey OSK_ROW4_QWERTY[] = {
-	{"Shift",5,RETROK_LSHIFT,OSK_MOD_SHL},
+	{"Shift",5,RETROK_LSHIFT,OSK_PRESS_SHL},
 	{"Z",2,RETROK_z,0},
 	{"X",2,RETROK_x,0},
 	{"C",2,RETROK_c,0},
@@ -181,7 +174,7 @@ const struct OSKey OSK_ROW4_QWERTY[] = {
 	{",<",2,RETROK_COMMA,0},
 	{".>",2,RETROK_PERIOD,0},
 	{"/?",2,RETROK_SLASH,0},
-	{"Shift",5,RETROK_RSHIFT,OSK_MOD_SHR},
+	{"Shift",5,RETROK_RSHIFT,OSK_PRESS_SHR},
 	{0,7,0,0},
 	{"1",2,RETROK_KP1,0},
 	{"2",2,RETROK_KP2,0},
@@ -189,9 +182,9 @@ const struct OSKey OSK_ROW4_QWERTY[] = {
 	{0,0,0,0}};
 const struct OSKey OSK_ROW5_QWERTY[] = {
 	{0,2,0,0},
-	{"Alt",4,RETROK_LALT,OSK_MOD_ALT},
-	{"",18,RETROK_z,0},
-	{"Caps",4,RETROK_x,0},
+	{"Alt",4,RETROK_LALT,OSK_PRESS_ALT},
+	{"",18,RETROK_SPACE,0},
+	{"Caps",4,RETROK_CAPSLOCK,0},
 	{0,9,0,0},
 	{"0",4,RETROK_KP0,0},
 	{".",2,RETROK_KP_PERIOD,0},
@@ -319,7 +312,9 @@ static void render_keyboard(void)
 			if (osk_row[r][k].name)
 			{
 				bool focused = row_focused && (k == focus_k);
-				bool selected = core_osk_mod[osk_row[r][k].mod];
+				bool selected =
+					(osk_press_mod & osk_row[r][k].mod) || // modifier toggled
+					((osk_press_time > 0 ) && (osk_row[r][k].key == osk_press_key));// or currently active
 				SDLGui_DirectBox(x,y,w-1,gh-1,0,focused,selected);
 				SDLGui_Text(x+2,y+2,osk_row[r][k].name);
 			}
@@ -337,7 +332,9 @@ static void input_keyboard(uint32_t key)
 
 	if (key & AUX_OSK_CANCEL)
 	{
-		// TODO apply modifiers if in one-shot
+		osk_press_key = 0;
+		if (core_osk_mode == CORE_OSK_KEY_SHOT) // allow one-shot cancel to press modifiers
+			osk_press_time = core_osk_press_len;
 		core_osk_mode = CORE_OSK_OFF;
 		return;
 	}
@@ -348,17 +345,18 @@ static void input_keyboard(uint32_t key)
 		int k = osk_grid[r][c];
 		if (k >= 0 && osk_row[r][k].mod)
 		{
-			core_osk_mod[osk_row[r][k].mod] = !core_osk_mod[osk_row[r][k].mod];
-			// TODO apply mod key now?
+			osk_press_mod ^= osk_row[r][k].mod;
 		}
-		else if (core_osk_mode == CORE_OSK_KEY)
+		else
 		{
-			// TODO apply keys
-		}
-		else if (core_osk_mode == CORE_OSK_KEY_SHOT)
-		{
-			// TODO apply keys and mods
-			core_osk_mode = CORE_OSK_OFF;
+			// activate the key
+			osk_press_key = osk_row[r][k].key;
+			osk_press_time = core_osk_press_len;
+			if (core_osk_mode == CORE_OSK_KEY_SHOT) // one-shot exist on activation
+			{
+				core_osk_mode = CORE_OSK_OFF;
+				return;
+			}
 		}
 	}
 
@@ -562,7 +560,15 @@ static void render_pause(void)
 void core_osk_input(uint32_t osk_new)
 {
 	if (core_osk_mode < CORE_OSK_KEY) return; // pause menu does not take input
-	if (core_osk_begin) return; // don't take inputs on init frame (cancel/confirm could be same as buttons that raise osk)
+	if (core_osk_begin)
+	{
+		// don't take inputs on init frame (cancel/confirm could be same as buttons that raise osk)
+		// reset the keypresses and modifiers
+		osk_press_mod = 0;
+		osk_press_key = 0;
+		osk_press_time = 0;
+		return;
+	}
 	if (osk_new) input_keyboard(osk_new);
 }
 
@@ -634,10 +640,10 @@ void core_osk_serialize(void)
 	// but the on-screen keyboard state does, and needs its status restored
 	core_serialize_int32(&core_osk_mode);
 	core_serialize_int32(&core_osk_layout);
+	core_serialize_int32(&core_osk_press_len);
 	core_serialize_int32(&core_osk_pos_c);
 	core_serialize_int32(&core_osk_pos_r);
 	core_serialize_uint8(&core_osk_pos_display);
-	// TODO mods
 }
 
 void core_osk_init()
@@ -646,6 +652,4 @@ void core_osk_init()
 	core_osk_pos_r = 5;
 	core_osk_pos_c = 10; // start on space bar?
 	core_osk_pos_display = 0; // top
-	for (int i=0; i>5; ++i) core_osk_mod[i] = 0;
 }
-
