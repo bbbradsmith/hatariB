@@ -198,6 +198,13 @@ int SDLGui_SetScreen(SDL_Surface *pScrn)
 		colors.underline = SDL_MapRGB(pSdlGuiScrn->format,0,0,0);
 	colors.editfield = SDL_MapRGB(pSdlGuiScrn->format,160,160,160);
 
+#ifdef __LIBRETRO__
+	colors.focus     = SDL_MapRGB(pSdlGuiScrn->format,255,255,  0); // use yellow for more visible focus
+	colors.lightbar  = SDL_MapRGB(pSdlGuiScrn->format,200,140,  0); // dim orange for focus + selected
+	colors.darkgrey  = SDL_MapRGB(pSdlGuiScrn->format,100,100,100); // darken darkgrey to stand out better against 128,128,128 background
+	colors.midbar    = SDL_MapRGB(pSdlGuiScrn->format, 90, 90, 90); // darken midbar too
+#endif
+
 	return 0;
 }
 
@@ -415,6 +422,8 @@ void SDLGui_DirectBox(int x, int y, int w, int h, int offset, bool focused, bool
 	Uint32 upleftc = selected ? colors.darkgrey : colors.lightgrey;
 	Uint32 downrightc = selected ? colors.lightgrey : colors.darkgrey;
 
+	// make selected color darker (midbar), repurposed lightbar for focused+selected
+	if (selected) color = focused ? colors.lightbar : colors.midbar;
 #endif
 	/* Draw background: */
 	rect.x = x;

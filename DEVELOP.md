@@ -164,6 +164,7 @@ Otherwise there are minor changes to the CMake build files, marked with a commen
   * Redirect file to system/hatarib.nvram
 * **hatari/src/sdl-gui/sdlgui.c
   * Create direct access to GUI box draw to use for hatariB pause overlays.
+  * Adjusted colours for focus/selected for the on-screen keyboard overlay.
 
 `SDL_Init` and `SDL_Quit` almost all use of the SDL library have been suppressed. There are some remaining uses of the SDL libraries but I do not believe any of them require Init. These include:
 * SDL ending defines and utilities (e.g. `SDL_SwapLE16`) which are used throughout.

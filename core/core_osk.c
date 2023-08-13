@@ -15,10 +15,10 @@ int32_t core_osk_mode = CORE_OSK_OFF;
 int core_pause_osk = 2; // help screen default
 bool core_osk_begin = false; // true when first entered pause/osk
 
-static int core_osk_layout_set = -1; //use to know when to rebuild keyboard
-int32_t core_osk_pos_x;
-int32_t core_osk_pos_y;
+int32_t core_osk_pos_r;
+int32_t core_osk_pos_c;
 uint8_t core_osk_pos_display;
+bool core_osk_mod[5];
 
 void* screen = NULL;
 void* screen_copy = NULL;
@@ -27,6 +27,32 @@ unsigned int screen_copy_size = 0;
 unsigned int screen_w = 0;
 unsigned int screen_h = 0;
 unsigned int screen_p = 0;
+
+#define OSK_ROWS    6
+#define OSK_COLS   45
+
+// modifier keys 
+#define OSK_MOD_NONE   0
+#define OSK_MOD_CTRL   1
+#define OSK_MOD_ALT    2
+#define OSK_MOD_SHL    3
+#define OSK_MOD_SHR    4
+
+struct OSKey // key information for a 45x6 grid
+{
+	const char* name; // NULL for an empty space
+	int cells; // cell width (normam small key is 2 wide), 0 marks end of row
+	int key; // retro_key
+	int mod; // 0 unless this is a toggle-able modifier
+};
+
+static int core_osk_layout_set = -1; //use to know when to rebuild keyboard
+static const struct OSKey* osk_row[OSK_ROWS];
+static int osk_grid[OSK_ROWS][OSK_COLS]; // mappings to osk_row entries, -1 for empty space
+
+//
+// Help text
+//
 
 // make sure this fits on the 320x200 screen (low res, no doubling, no borders, no statusbar)
 const char* const HELPTEXT[] = {
@@ -55,24 +81,10 @@ const char* const HELPTEXT[] = {
 //
 // Keyboard layouts
 //
-
-// modifier keys 
-#define OSK_MOD_CTRL   1
-#define OSK_MOD_ALT    2
-#define OSK_MOD_SHL    3
-#define OSK_MOD_SHR    4
-
-
-// grid of 45 x 6 keys, any visible key is minimum 2 grid points
-// at smallest resolution characters are 5px wide, and the 2 grid key takes 14 pixels:
+// grid of 45 x 6 keys, a normal small key is 2 cells wide
+// at smallest resolution characters are 5px wide, and the 2-cell key takes 14 pixels:
 //   2+5+5+1+1 = left edge + character + character + right edge + space
-struct OSKey
-{
-	const char* name; // 2 or 4 characters, NULL for an empty space
-	int cells; // 1 for space, 2+ for key, 0 marks end of row
-	int key; // retro_key
-	int mod; // 0 unless this is a toggle-able modifier
-};
+//
 
 const struct OSKey OSK_ROW0_QWERTY[] = {
 	{0,1,0,0},
@@ -135,7 +147,7 @@ const struct OSKey OSK_ROW2_QWERTY[] = {
 	{"-",2,RETROK_KP_MINUS,0},
 	{0,0,0,0}};
 const struct OSKey OSK_ROW3_QWERTY[] = {
-	{"Ctrl",4,RETROK_LCTRL,0},
+	{"Ctrl",4,RETROK_LCTRL,OSK_MOD_CTRL},
 	{"A",2,RETROK_a,0},
 	{"S",2,RETROK_s,0},
 	{"D",2,RETROK_d,0},
@@ -158,7 +170,7 @@ const struct OSKey OSK_ROW3_QWERTY[] = {
 	{"+",2,RETROK_KP_PLUS,0},
 	{0,0,0,0}};
 const struct OSKey OSK_ROW4_QWERTY[] = {
-	{"Shift",5,RETROK_LSHIFT,0},
+	{"Shift",5,RETROK_LSHIFT,OSK_MOD_SHL},
 	{"Z",2,RETROK_z,0},
 	{"X",2,RETROK_x,0},
 	{"C",2,RETROK_c,0},
@@ -169,7 +181,7 @@ const struct OSKey OSK_ROW4_QWERTY[] = {
 	{",<",2,RETROK_COMMA,0},
 	{".>",2,RETROK_PERIOD,0},
 	{"/?",2,RETROK_SLASH,0},
-	{"Shift",5,RETROK_RSHIFT,0},
+	{"Shift",5,RETROK_RSHIFT,OSK_MOD_SHR},
 	{0,7,0,0},
 	{"1",2,RETROK_KP1,0},
 	{"2",2,RETROK_KP2,0},
@@ -177,7 +189,7 @@ const struct OSKey OSK_ROW4_QWERTY[] = {
 	{0,0,0,0}};
 const struct OSKey OSK_ROW5_QWERTY[] = {
 	{0,2,0,0},
-	{"Alt",4,RETROK_LALT,0},
+	{"Alt",4,RETROK_LALT,OSK_MOD_ALT},
 	{"",18,RETROK_z,0},
 	{"Caps",4,RETROK_x,0},
 	{0,9,0,0},
@@ -186,13 +198,17 @@ const struct OSKey OSK_ROW5_QWERTY[] = {
 	{"En",2,RETROK_KP_ENTER,0},
 	{0,0,0,0}};
 
-static const struct OSKey* osk_row[6] = {
+static const struct OSKey* const OSK_ROWS_QWERTY[OSK_ROWS] = {
 	OSK_ROW0_QWERTY,
 	OSK_ROW1_QWERTY,
 	OSK_ROW2_QWERTY,
 	OSK_ROW3_QWERTY,
 	OSK_ROW4_QWERTY,
 	OSK_ROW5_QWERTY,
+};
+
+static const struct OSKey* const * const OSK_LAYOUTS[] = {
+	OSK_ROWS_QWERTY
 };
 
 //
@@ -258,11 +274,27 @@ static inline void draw_box(int x, int y, int w, int h, Uint32 c)
 
 static void rebuild_keyboard(void)
 {
-	// TODO reinit osk_row, built the mapping grid, etc.
+	// select layout
+	for (int r=0; r<OSK_ROWS; ++r)
+		osk_row[r] = OSK_LAYOUTS[core_osk_layout][r];
 	core_osk_layout_set = core_osk_layout;
+
+	// rebuild grid
+	for (int r=0; r<6; ++r)
+	{
+		int c = 0;
+		for (int k=0; (osk_row[r][k].cells > 0) && (c < OSK_COLS); ++k)
+		{
+			int ki = osk_row[r][k].name ? k : -1; // unnamed keys use -1 for empty space
+			for (int i=0; (i < osk_row[r][k].cells) && (c < OSK_COLS); ++i, ++c)
+				osk_grid[r][c] = ki;
+		}
+		for (; c < OSK_COLS; ++c) // fill empty to end of row
+			osk_grid[r][c] = -1;
+	}
 }
 
-extern Uint32 Screen_GetGenConvHeight(void);
+extern Uint32 Screen_GetGenConvHeight(void); // hatari/src/screen.c
 
 static void render_keyboard(void)
 {
@@ -274,24 +306,129 @@ static void render_keyboard(void)
 
 	screen_darken(y0-2,y0+(6*gh+1));
 	if (core_osk_layout_set != core_osk_layout) rebuild_keyboard();
+
+	int focus_k = osk_grid[core_osk_pos_r][core_osk_pos_c];
 	for (int r=0; r<6; ++r)
 	{
 		int x = x0;
-		int y = y0 + (r * (sdlgui_fontheight+5));
-		for(const struct OSKey* k = osk_row[r]; k->cells > 0; ++k)
+		int y = y0 + (r * gh);
+		bool row_focused = (r == core_osk_pos_r);
+		for (int k=0; osk_row[r][k].cells > 0; ++k)
 		{
-			int w = k->cells * (sdlgui_fontwidth + 2);
-			int h = 5 + sdlgui_fontheight;
-			if (k->name)
+			int w = osk_row[r][k].cells * gw;
+			if (osk_row[r][k].name)
 			{
-				//retro_log(RETRO_LOG_DEBUG,"osk: '%s',%d,%d,%d,%d\n",k->name,x,y,w,h);
-				// TODO focused/selected flags
-				SDLGui_DirectBox(x,y,w-1,h-1,0,false,false);
-				SDLGui_Text(x+2,y+2,k->name);
+				bool focused = row_focused && (k == focus_k);
+				bool selected = core_osk_mod[osk_row[r][k].mod];
+				SDLGui_DirectBox(x,y,w-1,gh-1,0,focused,selected);
+				SDLGui_Text(x+2,y+2,osk_row[r][k].name);
 			}
 			x += w;
 		}
 	}
+}
+
+static void input_keyboard(uint32_t key)
+{
+	int c = core_osk_pos_c;
+	int r = core_osk_pos_r;
+
+	if (key & AUX_OSK_POS) core_osk_pos_display ^= 1; // flip display position
+
+	if (key & AUX_OSK_CANCEL)
+	{
+		// TODO apply modifiers if in one-shot
+		core_osk_mode = CORE_OSK_OFF;
+		return;
+	}
+
+	if (key & AUX_OSK_CONFIRM)
+	{
+		// if it's a mod key, toggle it
+		int k = osk_grid[r][c];
+		if (k >= 0 && osk_row[r][k].mod)
+		{
+			core_osk_mod[osk_row[r][k].mod] = !core_osk_mod[osk_row[r][k].mod];
+			// TODO apply mod key now?
+		}
+		else if (core_osk_mode == CORE_OSK_KEY)
+		{
+			// TODO apply keys
+		}
+		else if (core_osk_mode == CORE_OSK_KEY_SHOT)
+		{
+			// TODO apply keys and mods
+			core_osk_mode = CORE_OSK_OFF;
+		}
+	}
+
+	// exit if no motion
+	if (!(key & (AUX_OSK_U | AUX_OSK_D | AUX_OSK_L | AUX_OSK_R))) return;
+
+	// if not on a key, return to the leftmost valid key on grid
+	if (osk_grid[r][c] < 0)
+	{
+		for(c=0; c<OSK_COLS; ++c) if(osk_grid[r][c] > 0) break;
+		if (c >= OSK_COLS) c = 0; // oh no, nothing?
+	}
+
+	int gk = osk_grid[r][c]; // current key
+	// now ready to move
+	if (key & AUX_OSK_L)
+	{
+		// search left until you find a new non-empty key
+		int nc = c-1;
+		for (; (nc >= 0) && (osk_grid[r][nc] == gk || osk_grid[r][nc] < 0); --nc);
+		if (nc >= 0) c = nc;
+	}
+	if (key & AUX_OSK_R)
+	{
+		// search right
+		int nc = c+1;
+		for (; (nc < OSK_COLS) && (osk_grid[r][nc] == gk || osk_grid[r][nc] < 0); ++nc);
+		if (nc < OSK_COLS) c = nc;
+	}
+	if (key & AUX_OSK_U)
+	{
+		// move to the leftmost cell of key first
+		while((c > 0) && (osk_grid[r][c] == osk_grid[r][c-1])) --c;
+		// search up for non-empty key
+		int nr = r-1;
+		for (; (nr >= 0) && (osk_grid[nr][c] < 0); --nr);
+		if (nr >= 0)
+		{
+			r = nr;
+		}
+		else // retry from rightmost side
+		{
+			while((c < (OSK_COLS-1)) && (osk_grid[r][c] == osk_grid[r][c+1])) ++c;
+			nr = r-1;
+			for (; (nr >= 0) && (osk_grid[nr][c] < 0); --nr);
+			if (nr >= 0) r = nr;
+		}
+	}
+	if (key & AUX_OSK_D)
+	{
+		// move to the rightmost cell of key first
+		while((c < (OSK_COLS-1)) && (osk_grid[r][c] == osk_grid[r][c+1])) ++c;
+		// search down
+		int nr = r+1;
+		for (; (nr < OSK_ROWS) && (osk_grid[nr][c] < 0); ++nr);
+		if (nr < OSK_ROWS)
+		{
+			r = nr;
+		}
+		else // retry from leftmost side
+		{
+			while((c > 0) && (osk_grid[r][c] == osk_grid[r][c-1])) --c;
+			nr = r+1;
+			for (; (nr < OSK_ROWS) && (osk_grid[nr][c] < 0); ++nr);
+			if (nr < OSK_ROWS) r = nr;
+		}
+	}
+
+	core_osk_pos_c = c;
+	core_osk_pos_r = r;
 }
 
 //
@@ -426,19 +563,7 @@ void core_osk_input(uint32_t osk_new)
 {
 	if (core_osk_mode < CORE_OSK_KEY) return; // pause menu does not take input
 	if (core_osk_begin) return; // don't take inputs on init frame (cancel/confirm could be same as buttons that raise osk)
-
-	// TODO just be able to cancel keyboard for now
-	if (osk_new)
-	{
-		// make sure keyboard layout matches before doing anything
-		if (core_osk_layout_set != core_osk_layout) rebuild_keyboard();
-
-		// toggle display position
-		if (osk_new & AUX_OSK_POS) core_osk_pos_display ^= 1;
-
-		core_debug_hex("osk_new: ",osk_new);
-		if (osk_new & AUX_OSK_CANCEL) core_osk_mode = CORE_OSK_OFF;
-	}
+	if (osk_new) input_keyboard(osk_new);
 }
 
 void core_osk_render(void* video_buffer, int w, int h, int pitch)
@@ -509,8 +634,8 @@ void core_osk_serialize(void)
 	// but the on-screen keyboard state does, and needs its status restored
 	core_serialize_int32(&core_osk_mode);
 	core_serialize_int32(&core_osk_layout);
-	core_serialize_int32(&core_osk_pos_x);
-	core_serialize_int32(&core_osk_pos_y);
+	core_serialize_int32(&core_osk_pos_c);
+	core_serialize_int32(&core_osk_pos_r);
 	core_serialize_uint8(&core_osk_pos_display);
 	// TODO mods
 }
@@ -518,8 +643,9 @@ void core_osk_serialize(void)
 void core_osk_init()
 {
 	core_osk_layout_set = -1; // reinitialize layout
-	core_osk_pos_x = 10; // start on space bar?
-	core_osk_pos_y = 5;
+	core_osk_pos_r = 5;
+	core_osk_pos_c = 10; // start on space bar?
 	core_osk_pos_display = 0; // top
+	for (int i=0; i>5; ++i) core_osk_mod[i] = 0;
 }
 
