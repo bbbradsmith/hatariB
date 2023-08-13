@@ -65,7 +65,7 @@ const char* const HELPTEXT[] = {
 	"  F11 = Capture/release Mouse",
 	"",
 	"Licenses: Hatari (GPLv2), Libretro API (MIT),",
-	"  EmuTOS (GPLv2), miniz (MIT)",
+	"  EmuTOS (GPLv2)",
 	"",
 	"https://github.com/bbbradsmith/hatariB/",
 	"https://hatari.tuxfamily.org/",

@@ -94,7 +94,11 @@ typedef struct
 	uLong crc32_wait;           /* crc32 we must obtain after decompress all */
 	uLong rest_read_compressed; /* number of byte to be decompressed */
 	uLong rest_read_uncompressed;/*number of byte to be obtained after decomp*/
+#ifndef __LIBRETRO__
 	FILE* file;                 /* io structore of the zipfile */
+#else
+	int file; // dummy member
+#endif
 	uLong compression_method;   /* compression method (0==store) */
 	uLong byte_before_the_zipfile;/* byte before the zipfile, (>0 for sfx)*/
 } file_in_zip_read_info_s;
@@ -104,7 +108,11 @@ typedef struct
 */
 typedef struct
 {
+#ifndef __LIBRETRO__
 	FILE* file;                 /* io structore of the zipfile */
+#else
+	int file; // dummy member
+#endif
 	unz_global_info gi;       /* public global information */
 	uLong byte_before_the_zipfile;/* byte before the zipfile, (>0 for sfx)*/
 	uLong num_file;             /* number of the current file in the zipfile*/
@@ -123,16 +131,54 @@ typedef struct
 } unz_s;
 
 
+#ifdef __LIBRETRO__
+// replacing FILE* based reading with a single global
+const uint8_t* core_zip_data = NULL;
+size_t core_zip_size = 0;
+size_t core_zip_pos = 0;
+static int core_zip_seek(int offset, int mode)
+{
+	switch(mode)
+	{
+	default:
+	case SEEK_SET: core_zip_pos = offset; break;
+	case SEEK_CUR: core_zip_pos += offset; break;
+	case SEEK_END: core_zip_pos = core_zip_size - offset; break;
+	};
+	return 0;
+}
+static int core_zip_read(void  *buffer, size_t size)
+{
+	int result = 1;
+	if ((core_zip_pos + size) > core_zip_size)
+	{
+		if (core_zip_pos > core_zip_size) core_zip_pos = core_zip_size;
+		size = core_zip_size - core_zip_pos;
+		result = 0;
+	}
+	memcpy(buffer,core_zip_data + core_zip_pos, size);
+	core_zip_pos += size;
+	return result;
+}
+#endif
 /* ===========================================================================*/
 /**
  *  Read a byte from a gz_stream; update next_in and avail_in. Return EOF
  *  for end of file.
  *  IN assertion: the stream s has been successfully opened for reading.
  */
+#ifndef __LIBRETRO__
 local int unzlocal_getByte(FILE *fin, int *pi)
+#else
+local int unzlocal_getByte(int fin, int *pi)
+#endif
 {
     unsigned char c;
+#ifndef __LIBRETRO__
     int err = fread(&c, 1, 1, fin);
+#else
+	int err = core_zip_read(&c, 1);
+#endif
     if (err==1)
     {
         *pi = (int)c;
@@ -140,9 +186,11 @@ local int unzlocal_getByte(FILE *fin, int *pi)
     }
     else
     {
+#ifndef __LIBRETRO__
         if (ferror(fin)) 
             return UNZ_ERRNO;
         else
+#endif
             return UNZ_EOF;
     }
 }
@@ -152,7 +200,11 @@ local int unzlocal_getByte(FILE *fin, int *pi)
 /**
  *  Reads a long in LSB order from the given gz_stream. Sets 
  */
+#ifndef __LIBRETRO__
 local int unzlocal_getShort (FILE* fin, uLong *pX)
+#else
+local int unzlocal_getShort (int fin, uLong *pX)
+#endif
 {
     uLong x ;
     int i = 0;
@@ -172,7 +224,11 @@ local int unzlocal_getShort (FILE* fin, uLong *pX)
     return err;
 }
 
+#ifndef __LIBRETRO__
 local int unzlocal_getLong (FILE* fin, uLong *pX)
+#else
+local int unzlocal_getLong (int fin, uLong *pX)
+#endif
 {
     uLong x ;
     int i = 0;
@@ -234,19 +290,27 @@ int ZEXPORT unzStringFileNameCompare (const char* fileName1, const char* fileNam
  * Locate the Central directory of a zipfile (at the end, just before
  *   the global comment)
  */
+#ifndef __LIBRETRO__
 local uLong unzlocal_SearchCentralDir(FILE *fin)
+#else
+local uLong unzlocal_SearchCentralDir(int fin)
+#endif
 {
 	unsigned char* buf;
 	uLong uSizeFile;
 	uLong uBackRead;
 	uLong uMaxBack=0xffff; /* maximum size of global comment */
 	uLong uPosFound=0;
-	
+
+#ifndef __LIBRETRO__
 	if (fseek(fin,0,SEEK_END) != 0)
 		return 0;
 
 
 	uSizeFile = ftell( fin );
+#else
+	uSizeFile = core_zip_size;
+#endif
 	
 	if (uMaxBack>uSizeFile)
 		uMaxBack = uSizeFile;
@@ -268,10 +332,15 @@ local uLong unzlocal_SearchCentralDir(FILE *fin)
 		
 		uReadSize = ((BUFREADCOMMENT+4) < (uSizeFile-uReadPos)) ? 
 		             (BUFREADCOMMENT+4) : (uSizeFile-uReadPos);
+#ifndef __LIBRETRO__
 		if (fseek(fin,uReadPos,SEEK_SET)!=0)
 			break;
 
 		if (fread(buf,(uInt)uReadSize,1,fin)!=1)
+#else
+		core_zip_seek(uReadPos,SEEK_SET);
+		if (core_zip_read(buf,(uInt)uReadSize)!=1)
+#endif
 			break;
 
 		for (i=(int)uReadSize-3; (i--)>0;)
@@ -298,12 +367,23 @@ local uLong unzlocal_SearchCentralDir(FILE *fin)
  *    Else, the return value is a unzFile Handle, usable with other function
  *	   of this unzip package.
  */
+#ifndef __LIBRETRO__
 unzFile ZEXPORT unzOpen (const char *path)
+#else
+extern unzFile ZEXPORT unzOpen (const void* data, unsigned int size)
+#endif
 {
 	unz_s us = { 0 };
 	unz_s *s;
 	uLong central_pos,uL;
+#ifndef __LIBRETRO__
 	FILE * fin ;
+#else
+	int fin = 0;
+	core_zip_data = data;
+	core_zip_size = size;
+	core_zip_pos = 0;
+#endif
 
 	uLong number_disk;          /* number of the current dist, used for 
 								   spanning ZIP, unsupported, always 0*/
@@ -318,16 +398,22 @@ unzFile ZEXPORT unzOpen (const char *path)
 	if (unz_copyright[0]!=' ')
 		return NULL;
 
+#ifndef __LIBRETRO__
 	fin=fopen(path,"rb");
 	if (fin==NULL)
 		return NULL;
+#endif
 
 	central_pos = unzlocal_SearchCentralDir(fin);
 	if (central_pos==0)
 		err=UNZ_ERRNO;
 
+#ifndef __LIBRETRO__
 	if (fseek(fin,central_pos,SEEK_SET)!=0)
 		err=UNZ_ERRNO;
+#else
+	core_zip_seek(central_pos,SEEK_SET);
+#endif
 
 	/* the signature, already checked */
 	if (unzlocal_getLong(fin,&uL)!=UNZ_OK)
@@ -373,7 +459,9 @@ unzFile ZEXPORT unzOpen (const char *path)
 
 	if (err!=UNZ_OK)
 	{
+#ifndef __LIBRETRO__
 		fclose(fin);
+#endif
 		return NULL;
 	}
 
@@ -406,7 +494,9 @@ int ZEXPORT unzClose (unzFile file)
 	if (s->pfile_in_zip_read!=NULL)
 		unzCloseCurrentFile(file);
 
+#ifndef __LIBRETRO__
 	fclose(s->file);
+#endif
 	free(s);
 	return UNZ_OK;
 }
@@ -467,8 +557,12 @@ local int unzlocal_GetCurrentFileInfoInternal (unzFile file,
 	if (file==NULL)
 		return UNZ_PARAMERROR;
 	s=(unz_s*)file;
+#ifndef __LIBRETRO__
 	if (fseek(s->file,s->pos_in_central_dir+s->byte_before_the_zipfile,SEEK_SET)!=0)
 		err=UNZ_ERRNO;
+#else
+	core_zip_seek(s->pos_in_central_dir+s->byte_before_the_zipfile,SEEK_SET);
+#endif
 
 
 	/* we check the magic */
@@ -540,7 +634,11 @@ local int unzlocal_GetCurrentFileInfoInternal (unzFile file,
 			uSizeRead = fileNameBufferSize;
 
 		if ((file_info.size_filename>0) && (fileNameBufferSize>0))
+#ifndef __LIBRETRO__
 			if (fread(szFileName,(uInt)uSizeRead,1,s->file)!=1)
+#else
+			if (core_zip_read(szFileName,(uInt)uSizeRead)!=1)
+#endif
 				err=UNZ_ERRNO;
 		lSeek -= uSizeRead;
 	}
@@ -558,7 +656,11 @@ local int unzlocal_GetCurrentFileInfoInternal (unzFile file,
 
 		if (lSeek!=0)
 		  {
+#ifndef __LIBRETRO__
 			if (fseek(s->file,lSeek,SEEK_CUR)==0)
+#else
+			if (core_zip_seek(lSeek,SEEK_CUR)==0)
+#endif
 			  {
 			    lSeek=0;
 			  } else {
@@ -566,7 +668,11 @@ local int unzlocal_GetCurrentFileInfoInternal (unzFile file,
 			  }
 		  }
 		if ((file_info.size_file_extra>0) && (extraFieldBufferSize>0))
+#ifndef __LIBRETRO__
 			if (fread(extraField,(uInt)uSizeRead,1,s->file)!=1)
+#else
+			if (core_zip_read(extraField,(uInt)uSizeRead)!=1)
+#endif
 				err=UNZ_ERRNO;
 		lSeek += file_info.size_file_extra - uSizeRead;
 	}
@@ -587,7 +693,11 @@ local int unzlocal_GetCurrentFileInfoInternal (unzFile file,
 
 		if (lSeek!=0)
 		  {
+#ifndef __LIBRETRO__
 			if (fseek(s->file,lSeek,SEEK_CUR)==0)
+#else
+			if (core_zip_seek(lSeek,SEEK_CUR)==0)
+#endif
 			  {
 			    lSeek=0;
 			  } else {
@@ -595,7 +705,11 @@ local int unzlocal_GetCurrentFileInfoInternal (unzFile file,
 			  }
 		  }
 		if ((file_info.size_file_comment>0) && (commentBufferSize>0))
+#ifndef __LIBRETRO__
 			if (fread(szComment,(uInt)uSizeRead,1,s->file)!=1)
+#else
+			if (core_zip_read(szComment,(uInt)uSizeRead)!=1)
+#endif
 				err=UNZ_ERRNO;
 		lSeek+=file_info.size_file_comment - uSizeRead;
 	}
@@ -750,9 +864,13 @@ local int unzlocal_CheckCurrentFileCoherencyHeader (unz_s* s, uInt* piSizeVar,
 	*poffset_local_extrafield = 0;
 	*psize_local_extrafield = 0;
 
+#ifndef __LIBRETRO__
 	if (fseek(s->file,s->cur_file_info_internal.offset_curfile +
 								s->byte_before_the_zipfile,SEEK_SET)!=0)
 		return UNZ_ERRNO;
+#else
+	core_zip_seek(s->cur_file_info_internal.offset_curfile + s->byte_before_the_zipfile,SEEK_SET);
+#endif
 
 	if (err==UNZ_OK)
 	  {
@@ -957,12 +1075,18 @@ int ZEXPORT unzReadCurrentFile  (unzFile file, voidp buf, unsigned len)
 				uReadThis = (uInt)pfile_in_zip_read_info->rest_read_compressed;
 			if (uReadThis == 0)
 				return UNZ_EOF;
+#ifndef __LIBRETRO__
 			if (fseek(pfile_in_zip_read_info->file,
 			          pfile_in_zip_read_info->pos_in_zipfile + 
 			             pfile_in_zip_read_info->byte_before_the_zipfile,SEEK_SET)!=0)
 				return UNZ_ERRNO;
 			if (fread(pfile_in_zip_read_info->read_buffer,uReadThis,1,
                          pfile_in_zip_read_info->file)!=1)
+#else
+			core_zip_seek(pfile_in_zip_read_info->pos_in_zipfile + 
+			             pfile_in_zip_read_info->byte_before_the_zipfile,SEEK_SET);
+			if (core_zip_read(pfile_in_zip_read_info->read_buffer,uReadThis)!=1)
+#endif
 				return UNZ_ERRNO;
 			pfile_in_zip_read_info->pos_in_zipfile += uReadThis;
 

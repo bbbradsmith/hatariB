@@ -6,7 +6,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "../miniz/miniz.h"
+#define HAVE_ZLIB_H
+#include "../hatari/src/includes/unzip.h"
 
 #define MAX_DISKS 32
 #define MAX_FILENAME 256
@@ -290,11 +291,12 @@ static bool load_m3u(uint8_t* data, unsigned int size, const char* m3u_path, uns
 	return true;
 }
 
+// load first file from zip
 static bool load_zip(uint8_t* data, unsigned int size, const char* zip_filename, unsigned first_index)
 {
 	static char base[256] = "";
 	static char link[256] = "";
-	mz_zip_archive zip;
+	unzFile zip = NULL;
 
 	// remove data from disks
 	strcpy(disks[first_index].filename,"<zip>");
@@ -319,104 +321,79 @@ static bool load_zip(uint8_t* data, unsigned int size, const char* zip_filename,
 		return false;
 	}
 
-	memset(&zip, 0, sizeof(zip));
-	if (!mz_zip_reader_init_mem(&zip, data, size, 0))
+	zip = unzOpen(data, size);
+	if (zip == NULL)
 	{
-		retro_log(RETRO_LOG_ERROR,"Could not parse ZIP file: %s (%s)\n",zip_filename,mz_zip_get_error_string(mz_zip_get_last_error(&zip)));
+		retro_log(RETRO_LOG_ERROR,"Could not open ZIP file: %s\n",zip_filename);
 		free(data);
 		return false;
 	}
 
-	// get a list of files to include
-	unsigned int file_count = 0;
-	unsigned int file_list[MAX_DISKS];
-	for (unsigned int i=0; i<mz_zip_reader_get_num_files(&zip); ++i)
+	char zip_file_filename[512];
+	unz_file_info zip_file_info;
+	while (true)
 	{
-		mz_zip_archive_file_stat fs;
-		if (!mz_zip_reader_file_stat(&zip, i, &fs))
+		if (UNZ_OK != unzGetCurrentFileInfo(zip, &zip_file_info, zip_file_filename, sizeof(zip_file_filename), NULL, 0, NULL, 0))
 		{
-			retro_log(RETRO_LOG_ERROR,"Could not parse ZIP file info: %s (%s)\n",zip_filename,mz_zip_get_error_string(mz_zip_get_last_error(&zip)));
-			break;
+			retro_log(RETRO_LOG_ERROR,"Could not read file info in ZIP file: %s\n",zip_filename);
+			free(data);
+			return false;
 		}
-		if (fs.m_is_directory) continue;
-		if (has_extension(fs.m_filename,"st\0" "msa\0" "dim\0" "stx\0" "\0"))
+		retro_log(RETRO_LOG_DEBUG,"Zip contains: '%s'\n",zip_file_filename);
+		if (has_extension(zip_file_filename,"st\0" "msa\0" "dim\0" "stx\0" "\0"))
+			break; // found a file
+		if (UNZ_OK != unzGoToNextFile(zip))
 		{
-			retro_log(RETRO_LOG_DEBUG,"Zipped file: %s\n",fs.m_filename);
-			file_list[file_count] = i;
-			++file_count;
-			if (file_count >= MAX_DISKS) break;
+			retro_log(RETRO_LOG_ERROR,"Could not find a disk image in ZIP file: %s\n",zip_filename);
+			free(data);
+			return false;
 		}
+	};
+
+	if (UNZ_OK != unzOpenCurrentFile(zip))
+	{
+		retro_log(RETRO_LOG_ERROR,"Could not open disk image in ZIP file: %s (%s)\n",zip_filename,zip_file_filename);
+		free(data);
+		return false;
 	}
 
-	// sort the files in alphabetical order
-	for (unsigned int i=1; i<file_count; ++i)
+	size_t zsize = zip_file_info.uncompressed_size;
+	uint8_t* zdata = malloc(zsize);
+	if (zdata == NULL)
 	{
-		for (unsigned int j=0; j<i; ++j)
-		{
-			mz_zip_archive_file_stat fsi, fsj;
-			mz_zip_reader_file_stat(&zip, file_list[i], &fsi);
-			mz_zip_reader_file_stat(&zip, file_list[j], &fsj);
-			if (strcasecmp(fsi.m_filename,fsj.m_filename) < 0)
-			{
-				unsigned int swap = file_list[j];
-				file_list[j] = file_list[i];
-				file_list[i] = swap;
-			}
-		}
+		retro_log(RETRO_LOG_ERROR,"Out of memory reading disk image from ZIP file: %s (%s)\n",zip_filename,zip_file_filename);
+		free(data);
+		return false;
 	}
 
-	// extract the files
-	bool first = true;
-	for (unsigned int i=0; i<file_count; ++i)
+	if (zsize != unzReadCurrentFile(zip, zdata, zsize))
 	{
-		// prepare filename (remove any directories, add base prefix)
-		mz_zip_archive_file_stat fs;
-		if (!mz_zip_reader_file_stat(&zip, file_list[i], &fs))
-		{
-			retro_log(RETRO_LOG_ERROR,"Could not reparse ZIP file info: %s (%s)\n",zip_filename,mz_zip_get_error_string(mz_zip_get_last_error(&zip)));
-			break;
-		}
-		strcpy_trunc(link,base,sizeof(link));
-		int e = strlen(fs.m_filename);
-		for(;e>0;--e)
-		{
-			if (fs.m_filename[e-1] == '/' || fs.m_filename[e-1] == '\\') break;
-		}
-		strcat_trunc(link,fs.m_filename+e,sizeof(link));
-
-		// extract data
-		size_t zsize = 0;
-		void* zdata = mz_zip_reader_extract_to_heap(&zip, file_list[i], &zsize, 0);
-		if (zdata == NULL)
-		{
-			retro_log(RETRO_LOG_ERROR,"Could not extract ZIP file: %s (%s)\n",link,mz_zip_get_error_string(mz_zip_get_last_error(&zip)));
-			break;
-		}
-
-		struct retro_game_info info;
-		memset(&info,0,sizeof(info));
-		info.path = link;
-		info.data = zdata;
-		info.size = zsize;
-		info.meta = NULL;
-		int index = first_index;
-		if (first)
-		{
-			first = false;
-		}
-		else // add new indices after the first one
-		{
-			index = get_num_images();
-			if (!add_image_index())
-			{
-				retro_log(RETRO_LOG_ERROR,"Too many disks loaded, stopping ZIP before: %s\n",link);
-				break;
-			}
-		}
-		// add the file
-		replace_image_index(index, &info);
+		retro_log(RETRO_LOG_ERROR,"Error reading disk image from ZIP file: %s (%s)\n",zip_filename,zip_file_filename);
+		free(zdata);
+		free(data);
+		return false;
 	}
 
+	unzCloseCurrentFile(zip);
+	unzClose(zip);
+
+	strcpy_trunc(link,base,sizeof(link));
+	int e = strlen(zip_file_filename);
+	for(;e>0;--e)
+	{
+		if (zip_file_filename[e-1] == '/' || zip_file_filename[e-1] == '\\') break;
+	}
+	strcat_trunc(link,zip_file_filename+e,sizeof(link));
+
+	struct retro_game_info info;
+	memset(&info,0,sizeof(info));
+	info.path = link;
+	info.data = zdata;
+	info.size = zsize;
+	info.meta = NULL;
+	replace_image_index(first_index, &info);
+
+	free(zdata);
 	free(data);
 	return true;
 }

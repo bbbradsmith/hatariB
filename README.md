@@ -125,11 +125,12 @@ Optional tasks:
 * Investigate Libretro MIDI interface. I wonder if I could play MIDI Maze against my real ST?
 * See if a MinGW 32-bit auto-build is reasonable? Might provide a stepping stone to other targets, and provide additional compile checks.
 * Can savestate restore be more lightweight? What takes so much CPU time? Are there any lingering spurious disk accesses?
-* Remove miniz dependency by modifying hatari/src/unzip.c to operate on an in-memory buffer.
 * RS232 emulation?
 * Printer emulation?
 * Can inaccessible Debugger features be removed from build for better efficiency?
 * Status pause screen variant with Floppies, TOS, etc. info?
+* IPF support, figure out library issues. There seems to be a MAME IPF reader?
+* GZ support?
 
 ## History
 
@@ -145,8 +146,6 @@ This project also incorporates header files from [Libretro](https://github.com/l
 
 This project includes [EmuTOS](https://emutos.sourceforge.io/) binaries as built-in available TOS BIOS images, under the GPL v2 license.
 
-The [miniz](https://github.com/richgel999/miniz) library used for ZIP file decompression is included, under the MIT license.
-
 ## Authors
 
 This Libretro core was begun by [Brad Smith](https://github.com/bbbradsmith).
@@ -156,4 +155,3 @@ Authors of incorporated works:
 * [EmuTOS](https://raw.githubusercontent.com/emutos/emutos/master/doc/authors.txt)
 * [libretro.h](https://github.com/libretro/libretro-common/blob/7edbfaf17baffa1b8a00231762aa7ead809711b5/include/libretro.h)
 * [libretro_sdl_keymap.h](https://github.com/libretro/RetroArch/blob/b4143882245edd737c7e7c522b25e32f8d1f64ad/input/input_keymaps.c#L607)
-* [miniz](https://github.com/richgel999/miniz/)

@@ -13,8 +13,7 @@ SOURCES = \
 	core/core_input.c \
 	core/core_disk.c \
 	core/core_config.c \
-	core/core_osk.c \
-	core/core_miniz.c
+	core/core_osk.c
 OBJECTS = $(SOURCES:%.c=$(BD)%.o)
 HATARILIBS= \
 	hatari/build/src/libcore.a \
