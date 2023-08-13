@@ -123,6 +123,7 @@ extern int core_autofire;
 extern int core_stick_threshold;
 extern int core_mouse_speed;
 extern int core_mouse_dead;
+extern uint8_t retrok_down[RETROK_LAST];
 
 #define OSK_PRESS_CTRL   0x01
 #define OSK_PRESS_ALT    0x02

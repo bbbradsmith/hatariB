@@ -314,7 +314,8 @@ static void render_keyboard(void)
 				bool focused = row_focused && (k == focus_k);
 				bool selected =
 					(osk_press_mod & osk_row[r][k].mod) || // modifier toggled
-					((osk_press_time > 0 ) && (osk_row[r][k].key == osk_press_key));// or currently active
+					retrok_down[osk_row[r][k].key]; // show all keys pressed by any means
+					//((osk_press_time > 0 ) && (osk_row[r][k].key == osk_press_key)); // or only show the OSK-pressed ones
 				SDLGui_DirectBox(x,y,w-1,gh-1,0,focused,selected);
 				SDLGui_Text(x+2,y+2,osk_row[r][k].name);
 			}

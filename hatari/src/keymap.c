@@ -615,9 +615,6 @@ static bool IsKeyTranslatable(SDL_Keycode symkey)
 	case SDLK_NUMLOCKCLEAR:
 #ifdef __LIBRETRO__
 	case SDLK_SCROLLLOCK:
-	case SDLK_F11:
-	case SDLK_F12:
-	case SDLK_F13:
 #endif
 		return false;
 	}

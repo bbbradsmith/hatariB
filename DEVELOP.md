@@ -119,12 +119,12 @@ Otherwise there are minor changes to the CMake build files, marked with a commen
   * Override some of the default options.
   * Don't use SDL_NumJoysticks.
 * **hatari/src/keymap.c**
-  * Block Scroll Lock, F11, F12, F13 from generating keypresses.
+  * Block Scroll Lock from generating keypresses (probably not possible in RetroArch anyway).
   * Disable all Hatari shortcut keys.
   * Disable Hatari key to joystick mappings.
-  * Provide modifier key state instead of `SDL_GetModState`.
+  * Provide modifier key state instead of `SDL_GetModState`. (Eventually just removed it, it's only for num-lock.)
   * Disable Num Lock condition for keypad use (Atari ST has no num-lock).
-  * Fix broken mappings for `-_` `[{` and `]}` keys.
+  * Fix broken mappings for `-_`, `[{`, `]}` and `~` keys.
 * **hatari/src/change.c**
   * Signal screen change when Low Resolution pixel doubling option changes.
   * Save/Reload NvRam when machine changes, only if TT or Falcon.

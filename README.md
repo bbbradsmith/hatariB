@@ -41,7 +41,14 @@ Development notes: [DEVELOP.md](DEVELOP.md)
   * RetroArch
     * Scroll-Lock - Game Focus mode captures mouse, and full host keyboard input.
     * F11 - Captures or releases the mouse.
-  * All assignments can be configured in the core options. Buttons can be assigned to press keys, or perform other actions besides the default.
+  * Keyboard
+    * Atari ST special keys
+      * F11 - Home
+      * F12, End - Undo
+      * Page Up - Numpad (
+      * Page Down - Numpad )
+    * Other keys map directly to a standard keyboard, but Game Focus mode (Scroll-Lock) may be neeed to access keys normally assigned to RetroArch hotkeys.
+  * All gamepad assignments can be configured in the core options. Buttons can be assigned to press keys, or perform other actions besides the default.
 * File formats:
   * Floppy disk: ST, MSA, DIM, STX
   * Muli-disk: M3U, M3U8, ZIP

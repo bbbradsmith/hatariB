@@ -61,11 +61,11 @@
 #define OSK_INPUT_COUNT   7
 
 // input state that gets serialized
-static uint8_t retrok_down[RETROK_LAST] = {0}; // for repeat tracking
 static int32_t vmouse_x, vmouse_y; // virtual mouse state
 static int32_t mod_state;
 static int32_t aux_buttons; // last state of auxiliary buttons
 static uint8_t joy_autofire[4];
+uint8_t retrok_down[RETROK_LAST] = {0}; // for repeat tracking
 uint8_t osk_press_mod;
 int32_t osk_press_key;
 int32_t osk_press_time;
