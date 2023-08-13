@@ -399,7 +399,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{"3","Bouncing Box"},
 			{"4","Snow"},
 			{"0","Darken"},
-			{"1","No Display"},
+			{"1","No Indicator"},
 			{NULL,NULL}
 		}, "2"		
 	},
@@ -791,11 +791,9 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	{ "hatarib_pad" padnum "_rstick", "Pad " padnum " Right Analog Stick", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_STICK(), "2" }, /* mouse */ \
 	{ "hatarib_pad" padnum "_oskey_confirm", "Pad " padnum " On-Screen Key Confirm", NULL, NULL, NULL, "pad" padnum, \
-		OPTION_OSKEY_BUTTON(), "2" }, /* b */ \
+		OPTION_OSKEY_BUTTON(), "7" }, /* l1 */ \
 	{ "hatarib_pad" padnum "_oskey_cancel", "Pad " padnum " On-Screen Key Cancel", NULL, NULL, NULL, "pad" padnum, \
-		OPTION_OSKEY_BUTTON(), "1" }, /* a */ \
-	{ "hatarib_pad" padnum "_oskey_shift", "Pad " padnum " On-Screen Key Shift-Lock", NULL, NULL, NULL, "pad" padnum, \
-		OPTION_OSKEY_BUTTON(), "4" }, /* y */ \
+		OPTION_OSKEY_BUTTON(), "8" }, /* r1 */ \
 	{ "hatarib_pad" padnum "_oskey_pos", "Pad " padnum " On-Screen Key Position", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_OSKEY_BUTTON(), "3" }, /* x */ \
 	{ "hatarib_pad" padnum "_oskey_move", "Pad " padnum " On-Screen Key Cursor", NULL, NULL, NULL, "pad" padnum, \
@@ -1074,7 +1072,6 @@ void core_config_read_newparam()
 		CFG_INT_PAD(i,"rstick") core_stick_map[ i][CORE_INPUT_STICK_R      ] = vi;
 		CFG_INT_PAD(i,"oskey_confirm") core_oskey_map[i][CORE_INPUT_OSKEY_CONFIRM] = vi; // buttons
 		CFG_INT_PAD(i,"oskey_cancel" ) core_oskey_map[i][CORE_INPUT_OSKEY_CANCEL ] = vi;
-		CFG_INT_PAD(i,"oskey_shift"  ) core_oskey_map[i][CORE_INPUT_OSKEY_SHIFT  ] = vi;
 		CFG_INT_PAD(i,"oskey_pos"    ) core_oskey_map[i][CORE_INPUT_OSKEY_POS    ] = vi;
 		CFG_INT_PAD(i,"oskey_move"   ) core_oskey_map[i][CORE_INPUT_OSKEY_MOVE   ] = vi; // stick
 	}

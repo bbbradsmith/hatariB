@@ -527,6 +527,7 @@ static bool core_serialize(bool write)
 	// core state
 	core_serialize_uint8(&core_runflags);
 	core_input_serialize();
+	core_osk_serialize();
 	//retro_log(RETRO_LOG_DEBUG,"core_serialize header: %d <= %d\n",snapshot_pos,SNAPSHOT_HEADER_SIZE);
 	if (snapshot_pos > SNAPSHOT_HEADER_SIZE)
 		retro_log(RETRO_LOG_ERROR,"core_serialize header too large! %d > %d\n",snapshot_pos,SNAPSHOT_HEADER_SIZE);

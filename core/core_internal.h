@@ -149,20 +149,35 @@ extern int core_button_map[4][12];
 
 #define CORE_INPUT_OSKEY_CONFIRM   0
 #define CORE_INPUT_OSKEY_CANCEL    1
-#define CORE_INPUT_OSKEY_SHIFT     2
-#define CORE_INPUT_OSKEY_POS       3
-#define CORE_INPUT_OSKEY_MOVE      4
-extern int core_oskey_map[4][5];
+#define CORE_INPUT_OSKEY_POS       2
+#define CORE_INPUT_OSKEY_MOVE      3
+// note that 0-2 are buttons, 3 is an axis selection
+#define CORE_INPUT_OSKEY_BUTTONS   3
+#define CORE_INPUT_OSKEY_TOTAL     4
+extern int core_oskey_map[4][CORE_INPUT_OSKEY_TOTAL];
 
 // core_osk.c
+
+// for core_osk_input (also used in core_input.c to store these aux_buttons)
+#define AUX_OSK_U        0x00010000
+#define AUX_OSK_D        0x00020000
+#define AUX_OSK_L        0x00040000
+#define AUX_OSK_R        0x00080000
+#define AUX_OSK_CONFIRM  0x00100000
+#define AUX_OSK_CANCEL   0x00200000
+#define AUX_OSK_POS      0x00400000
+#define AUX_OSK_ALL      0x00FF0000
+
 extern void core_osk_input(uint32_t osk_new); // bitfield of new OSK button presses (sent by core_input_poll)
 extern void core_osk_render(void* video_buffer, int w, int h, int pitch); // call to render overlay over video_buffer
 extern void core_osk_restore(void* video_buffer, int w, int h, int pitch); // call to restore buffer before overlay
+extern void core_osk_serialize();
 
 extern int core_pause_osk; // pause screen appearance setting
+extern bool core_osk_init; // set true when pause/osk is toggled on
 
 #define CORE_OSK_OFF        0
 #define CORE_OSK_PAUSE      1
 #define CORE_OSK_KEY        2
 #define CORE_OSK_KEY_SHOT   3
-extern int core_osk_mode;
+extern int32_t core_osk_mode;

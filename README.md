@@ -30,11 +30,18 @@ Development notes: [DEVELOP.md](DEVELOP.md)
   * Select - Select drive A or B
   * Start - Help screen
   * L1 - On-screen keyboard
-  * R1 - On-screen keyboard one-shot (pauses emulation, resumes at keypress)
+  * R1 - On-screen keyboard one-shot (pauses emulation, resumes at confirm/cancel)
   * L2, R2 - Unassigned
   * L3 - Space key
   * R3 - Return key
-  * These can be configured in the core options.
+  * On-screen keyboard
+    * L1 - Confirm
+    * L2 - Cancel
+    * X - Toggle Position
+  * RetroArch
+    * Scroll-Lock - Game Focus mode captures mouse, and full host keyboard input.
+    * F11 - Captures or releases the mouse.
+  * All assignments can be configured in the core options. Buttons can be assigned to press keys, or perform other actions besides the default.
 * File formats:
   * Floppy disk: ST, MSA, DIM, STX
   * Muli-disk: M3U, M3U8, ZIP
@@ -93,6 +100,8 @@ Development notes: [DEVELOP.md](DEVELOP.md)
   * For some invalid combinations of TOS + Machine, Hatari will automatically change the machine with a notice. In this state, changing any option in the config menu will reset the system. Haven't figured out the best way to fix this because Hatari was designed to modify your stored settings directly in this case.
   * Changing any core option will also reset CPU speed, which could be a problem for Falcon that can change it at runtime (does anyone know a good software test case?), same settings modification issue as above.
   * There may be other run-state like these stored directly as configuration modifications that will be clobbered by core options changes. Still evaluating the scope of this problem. (I don't want the core secretly changing settings without the user knowing.)
+  * Restoring a savestate, or using netplay/run-ahead into the pause or one-shot keyboard will have an outdated/blank background until unpaused, as Hatari can't rebuild the image until it runs a frame. We might consider fixing this by adding the framebuffer to the savestate, though it would significantly increase the data size.
+  * If the on-screen keyboard confirm/cancel buttons aren't mapped to dedicated keys, you might end up suddenly holding the underlying button when the keyboard closes.
 
 Remaining tasks before ready for public testing:
 * On-screen keyboard.
@@ -106,6 +115,7 @@ Optional tasks:
 * Investigate Libretro MIDI interface. I wonder if I could play MIDI Maze against my real ST?
 * See if a MinGW 32-bit auto-build is reasonable? Might provide a stepping stone to other targets, and provide additional compile checks.
 * Can savestate restore be more lightweight? What takes so much CPU time? Are there any lingering spurious disk accesses?
+* Remove miniz dependency by modifying hatari/src/unzip.c to operate on an in-memory buffer.
 
 ## History
 

@@ -11,7 +11,8 @@ extern SDL_Surface* pSdlGuiScrn;
 extern void SDLGui_DirectBox(int x, int y, int w, int h, int offset, bool focused, bool selected);
 
 int core_pause_osk = 2; // help screen default
-int core_osk_mode = CORE_OSK_OFF;
+int32_t core_osk_mode = CORE_OSK_OFF;
+bool core_osk_init = false; // true when first entered pause/osk
 
 void* screen = NULL;
 void* screen_copy = NULL;
@@ -21,21 +22,25 @@ unsigned int screen_w = 0;
 unsigned int screen_h = 0;
 unsigned int screen_p = 0;
 
+// make sure this fits on the 320x200 screen (low res, no doubling, no borders, no statusbar)
 const char* const HELPTEXT[] = {
 	"hatariB: a Libretro core for Atari ST family emulation,",
 	"  an adaptation of Hatari by Brad Smith.",
 	"",
 	"Default Controls:",
-	"  D-Pad or Left-Stick, B, A = Joystick, Fire, Auto",
-	"  Right-Stick, Y, X = Mouse, Left, Right",
+	"  D-Pad or Left-Stick, B, A = Joystick, Fire, Auto Fire",
+	"  Right-Stick, Y, X = Mouse, Left Button, Right Button",
 	"  L1, R1 = On-Screen Keyboard, One-Shot Keyboard",
 	"  L3, R3 (Stick-Click) = Space, Return",
 	"  Select, Start = Select Floppy Drive, Help",
-	"  Scroll-Lock = Game Focus mode to capture Keyboard",
+	"Onscreen Keyboard:",
+	"  L1, R1, X = Confirm, Cancel, Toggle Position",
+	"Physical Keyboard and Mouse:",
+	"  Scroll-Lock = Game Focus to capture Keyboard/Mouse",
 	"  F11 = Capture/release Mouse",
-	""
-	"Licenses: Hatari (GPLv2), Libretro (MIT)",
-	"          EmuTOS (GPLv2), miniz (MIT)",
+	"",
+	"Licenses: Hatari (GPLv2), Libretro API (MIT),",
+	"  EmuTOS (GPLv2), miniz (MIT)",
 	"",
 	"https://github.com/bbbradsmith/hatariB/",
 	"https://hatari.tuxfamily.org/",
@@ -104,8 +109,8 @@ static inline void draw_box(int x, int y, int w, int h, Uint32 c)
 
 static void render_keyboard(void)
 {
-	screen_darken(0,screen_h/2);
-	// TODO
+	// TODO just indicate with darken for now
+	screen_darken(screen_h*1/4,screen_h*3/4);
 }
 
 //
@@ -115,17 +120,15 @@ static void render_keyboard(void)
 static void render_pause(void)
 {
 
-	// No Display
-	if (core_pause_osk == 1) return;
-
-	// otherwise they always darken the screen
-	screen_darken(0,screen_h);
+	// No Indicator does not darken the screen, but the rest do
+	if (core_pause_osk != 1)
+		screen_darken(0,screen_h);
 
 	switch (core_pause_osk)
 	{
 	default:
 	case 0: // Darken
-	case 1: // No Display (not possible)
+	case 1: // No Indicator (not possible)
 		break;
 	case 2: // Help
 		{
@@ -162,7 +165,7 @@ static void render_pause(void)
 			const int bh = sdlgui_fontheight * 3;
 			const int pw = screen_w - bw;
 			const int ph = screen_h - bh;
-			if (bpx < 0 || bpx > pw)
+			if (bpx < 0 || bpx > pw || core_osk_init)
 			{
 				bpx = rand() % (pw-2) + 1;
 				dx = (rand() & 2) - 1;
@@ -186,7 +189,7 @@ static void render_pause(void)
 		{
 			// Inspired by the ZSNES snow
 			// and by Downfall from ST Format 42
-			#define SNOWFLAKES   64
+			#define SNOWFLAKES   128
 			static int fw = 0;
 			static int fh = 0;
 			static float fwf;
@@ -198,7 +201,7 @@ static void render_pause(void)
 			static float sf;
 			static int si;
 			static Uint32 white = 0;
-			if (fw != screen_w || fh != screen_h) // reinitialize
+			if (fw != screen_w || fh != screen_h || core_osk_init) // reinitialize
 			{
 				white = SDL_MapRGB(sdlscrn->format,255,255,255);
 				fw = screen_w;
@@ -241,11 +244,13 @@ static void render_pause(void)
 void core_osk_input(uint32_t osk_new)
 {
 	if (core_osk_mode < CORE_OSK_KEY) return; // pause menu does not take input
+	if (core_osk_init) return; // don't take inputs on init frame (cancel/confirm could be same as buttons that raise osk)
 
-	// TODO just cancel keyboard for now
+	// TODO just be able to cancel keyboard for now
 	if (osk_new)
 	{
-		if (core_osk_mode >= CORE_OSK_KEY) core_osk_mode = CORE_OSK_OFF;
+		core_debug_hex("osk_new: ",osk_new);
+		if (osk_new & AUX_OSK_CANCEL) core_osk_mode = CORE_OSK_OFF;
 	}
 }
 
@@ -297,6 +302,8 @@ void core_osk_render(void* video_buffer, int w, int h, int pitch)
 		render_keyboard();
 	else
 		render_pause();
+	
+	core_osk_init = false;
 }
 
 void core_osk_restore(void* video_buffer, int w, int h, int pitch)
@@ -307,4 +314,12 @@ void core_osk_restore(void* video_buffer, int w, int h, int pitch)
 
 	if (screen && screen_copy)
 		memcpy(screen, screen_copy, screen_size);
+}
+
+void core_osk_serialize(void)
+{
+	// pause screen static state doesn't matter, no impact on emulation
+	// but the on-screen keyboard state does, and needs its status restored
+	core_serialize_int32(&core_osk_mode);
+	// TODO seralize OSK state
 }
