@@ -14,13 +14,15 @@ Incorporated sources:
 
 ## Prerequisites
 
-This has been built and tested with MSYS2 UCRT64. The following tools are required:
+This has been built and tested with MSYS2 UCRT64. The following packages are required:
 
-* gcc
+* gcc (mingw-w64-ucrt-x86_64-gcc)
 * make
-* cmake
-* SDL2
-* zlib
+* cmake (mingw-w64-ucrt-x86_64-cmake)
+* SDL2 (mingw-w64-ucrt-x86_64-SDL2)
+* zlib (mingw-w64-ucrt-x86_64-zlib)
+
+
 
 ## Changes to Hatari
 
@@ -93,8 +95,8 @@ Otherwise there are minor changes to the CMake build files, marked with a commen
   * Make `bCaptureError` externally accessible to check for errors after restore.
   * Disable some `Log_AlertDlg`s to prevent spam.
 * **hatari/src/hatari-glue.c**
-  * Add `hatari_libretro_save_state` and `hatari_libretro_restore_state` to execute savestates between `retro_run` calls.
-  * Add `hatari_libretro_flush_audio` to reset audio queue when needed.
+  * Add `core_save_state` and `core_restore_state` to execute savestates between `retro_run` calls.
+  * Add `core_flush_audio` to reset audio queue when needed.
 * **hatari/src/tos.c**
   * Allow built-in TOS bios (EmuTOS).
   * Use core_file to load the TOS image.

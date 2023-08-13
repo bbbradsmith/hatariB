@@ -154,24 +154,24 @@ bool savestate_restore_finish (void)
 
 
 #ifdef __LIBRETRO__
-extern int hatari_libretro_save_state(void);
-extern int hatari_libretro_restore_state(void);
-extern void hatari_libretro_flush_audio(void);
+extern int core_save_state(void);
+extern int core_restore_state(void);
+extern void core_flush_audio(void);
 extern int Reset_Cold(void);
 extern void Sound_Update( Uint64 CPU_Clock);
 extern int bCaptureError;
-void hatari_libretro_flush_audio(void)
+void core_flush_audio(void)
 {
 	// flush audio up until now
 	Sound_Update ( CyclesGlobalClockCounter );
 }
-int hatari_libretro_save_state(void)
+int core_save_state(void)
 {
 	// when m68k_go_frame exits we are at approximately the same place save_state would be called normally
 	// calling save_state directly instead of using MemorySnapshot_Capture
 	return save_state(NULL, NULL);
 }
-int hatari_libretro_restore_state(void)
+int core_restore_state(void)
 {
 	int result = 0;
 	// set a flag to restore at the next loop and quit the loop
@@ -213,7 +213,7 @@ int hatari_libretro_restore_state(void)
 	core_init_return = true;
 	m68k_go_frame();
 	core_init_return = false;
-	hatari_libretro_flush_audio();
+	core_flush_audio();
 	return result;
 }
 #endif

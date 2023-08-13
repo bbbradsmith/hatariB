@@ -41,10 +41,10 @@ static int initial_image;
 //
 
 // floppy.c
-extern bool hatari_libretro_floppy_insert(int drive, const char* filename, void* data, unsigned int size, void* extra_data, unsigned int extra_size);
-extern void hatari_libretro_floppy_eject(int drive);
-extern const char* hatari_libretro_floppy_inserted(int drive);
-extern void hatari_libretro_floppy_changed(int drive);
+extern bool core_floppy_insert(int drive, const char* filename, void* data, unsigned int size, void* extra_data, unsigned int extra_size);
+extern void core_floppy_eject(int drive);
+extern const char* core_floppy_inserted(int drive);
+extern void core_floppy_changed(int drive);
 //
 // Utilities
 //
@@ -65,8 +65,8 @@ void disks_clear()
 	}
 	image_count = 0;
 	// Hatari ejects both disks
-	hatari_libretro_floppy_eject(0);
-	hatari_libretro_floppy_eject(1);
+	core_floppy_eject(0);
+	core_floppy_eject(1);
 }
 
 //
@@ -84,7 +84,7 @@ static bool set_eject_state_drive(bool ejected, int d)
 		if (image_insert[d])
 		{
 			image_insert[d] = false;
-			hatari_libretro_floppy_eject(d); // Hatari eject
+			core_floppy_eject(d); // Hatari eject
 		}
 		return true;
 	}
@@ -96,7 +96,7 @@ static bool set_eject_state_drive(bool ejected, int d)
 	if (image_insert[o] && (image_index[o] == image_index[d]))
 	{
 		image_insert[o] = false;
-		hatari_libretro_floppy_eject(o); // Hatari eject
+		core_floppy_eject(o); // Hatari eject
 	}
 
 	// fail if no disk
@@ -106,7 +106,7 @@ static bool set_eject_state_drive(bool ejected, int d)
 	if (disks[image_index[d]].data == NULL) return false;
 
 	// now ready to insert
-	if (!hatari_libretro_floppy_insert(d, disks[image_index[d]].filename,
+	if (!core_floppy_insert(d, disks[image_index[d]].filename,
 		disks[image_index[d]].data, disks[image_index[d]].size,
 		disks[image_index[d]].extra_data, disks[image_index[d]].extra_size))
 	{
@@ -697,7 +697,7 @@ void core_disk_reindex(void)
 	// after loading a savesate, remap the loaded disks to the ones we have in core_disk
 	for (int d=0; d<2; ++d)
 	{
-		const char* infile = hatari_libretro_floppy_inserted(d);
+		const char* infile = core_floppy_inserted(d);
 		if (!infile)
 		{
 			image_insert[d] = false;
@@ -725,7 +725,7 @@ void core_disk_reindex(void)
 					// since we've already established a valid save file exists.
 					// We mark this drive's contents as changed so it will be saved
 					// at the next eject/close.
-					hatari_libretro_floppy_changed(d);
+					core_floppy_changed(d);
 					//retro_log(RETRO_LOG_DEBUG,"Savestate marks floppy contents changed: %s\n",disks[i].filename);
 				}
 			}
@@ -736,7 +736,7 @@ void core_disk_reindex(void)
 				// do a save test for possible modifications
 				if (core_disk_save_exists(infile)) // note this doesn't work for STX because it wants an overlay instead
 				{
-					hatari_libretro_floppy_changed(d);
+					core_floppy_changed(d);
 					//retro_log(RETRO_LOG_DEBUG,"Savestate marks uncached floppy contents changed: %s\n",infile);
 				}
 			}

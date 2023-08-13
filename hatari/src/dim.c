@@ -71,7 +71,7 @@ Uint8 *DIM_ReadDisk(int Drive, const char *pszFileName, long *pImageSize, int *p
 #ifndef __LIBRETRO__
 	pDimFile = File_Read(pszFileName, pImageSize, NULL);
 #else
-	pDimFile = hatari_libretro_floppy_file_read(pszFileName, pImageSize, false);
+	pDimFile = core_floppy_file_read(pszFileName, pImageSize, false);
 #endif
 	if (pDimFile)
 	{

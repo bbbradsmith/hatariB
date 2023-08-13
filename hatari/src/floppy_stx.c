@@ -340,7 +340,7 @@ Uint8 *STX_ReadDisk(int Drive, const char *pszFileName, long *pImageSize, int *p
 #ifndef __LIBRETRO__
 	pSTXFile = File_Read(pszFileName, pImageSize, NULL);
 #else
-	pSTXFile = hatari_libretro_floppy_file_read(pszFileName, pImageSize, false);
+	pSTXFile = core_floppy_file_read(pszFileName, pImageSize, false);
 #endif
 	if (!pSTXFile)
 	{
@@ -624,7 +624,7 @@ static bool	STX_LoadSaveFile ( int Drive , const char *FilenameSave )
 #ifndef __LIBRETRO__
 	SaveFileBuffer = File_Read ( FilenameSave, &SaveFileSize, NULL );
 #else
-	SaveFileBuffer = hatari_libretro_floppy_file_read( FilenameSave, &SaveFileSize, true );
+	SaveFileBuffer = core_floppy_file_read( FilenameSave, &SaveFileSize, true );
 #endif
 	if (!SaveFileBuffer)
 	{
@@ -884,7 +884,7 @@ bool	STX_Insert ( int Drive , const char *FilenameSTX , Uint8 *pImageBuffer , lo
 #ifndef __LIBRETRO__
 	  && ( File_Exists ( FilenameSave ) ) )
 #else
-	  && ( core_disk_enable_save && hatari_libretro_floppy_file_extra() ) )
+	  && ( core_disk_enable_save && core_floppy_file_extra() ) )
 #endif
 	{
 		Log_Printf ( LOG_INFO , "STX : STX_Insert drive=%d file=%s buf=%p size=%ld load wd1172 %s\n" , Drive , FilenameSTX , pImageBuffer , ImageSize , FilenameSave );

@@ -71,9 +71,9 @@ extern int TOS_DefaultLanguage(void);
 extern int Reset_Warm(void);
 extern int Reset_Cold(void);
 extern void UAE_Set_Quit_Reset ( bool hard );
-extern void hatari_libretro_flush_audio(void);
-extern int hatari_libretro_save_state(void);
-extern int hatari_libretro_restore_state(void);
+extern void core_flush_audio(void);
+extern int core_save_state(void);
+extern int core_restore_state(void);
 
 //
 // Available to Hatari
@@ -536,8 +536,8 @@ static bool core_serialize(bool write)
 
 	// hatari state
 	result = 0;
-	if (write) result = hatari_libretro_save_state();
-	else       result = hatari_libretro_restore_state();
+	if (write) result = core_save_state();
+	else       result = core_restore_state();
 
 	// update core_disk to match changes to the inserted disks
 	if (!write) core_disk_reindex();
@@ -826,7 +826,7 @@ RETRO_API void retro_run(void)
 	if (!(core_runflags & (CORE_RUNFLAG_HALT | CORE_RUNFLAG_PAUSE)))
 	{
 		m68k_go_frame();
-		hatari_libretro_flush_audio();
+		core_flush_audio();
 	}
 	else if (core_crashtime && ((core_runflags & (CORE_RUNFLAG_HALT | CORE_RUNFLAG_PAUSE)) == CORE_RUNFLAG_HALT))
 	{

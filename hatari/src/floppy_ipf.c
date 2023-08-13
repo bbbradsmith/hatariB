@@ -289,7 +289,7 @@ Uint8 *IPF_ReadDisk(int Drive, const char *pszFileName, long *pImageSize, int *p
 #ifndef __LIBRETRO__
 	pIPFFile = File_Read(pszFileName, pImageSize, NULL);
 #else
-	pIPFFile = hatari_libretro_floppy_file_read(pszFileName, pImageSize, false);
+	pIPFFile = core_floppy_file_read(pszFileName, pImageSize, false);
 #endif
 	if (!pIPFFile)
 	{

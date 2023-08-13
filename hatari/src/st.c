@@ -65,7 +65,7 @@ Uint8 *ST_ReadDisk(int Drive, const char *pszFileName, long *pImageSize, int *pI
 #ifndef __LIBRETRO__
 	pStFile = File_Read(pszFileName, pImageSize, NULL);
 #else
-	pStFile = hatari_libretro_floppy_file_read(pszFileName, pImageSize, false);
+	pStFile = core_floppy_file_read(pszFileName, pImageSize, false);
 #endif
 	if (!pStFile)
 	{

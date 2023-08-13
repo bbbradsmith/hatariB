@@ -526,17 +526,17 @@ int	Floppy_DriveTransitionUpdateState ( int Drive )
 
 
 #ifdef __LIBRETRO__
-extern bool hatari_libretro_floppy_insert(int drive, const char* filename, void* data, unsigned int size, void* extra_data, unsigned int extra_size);
-extern void hatari_libretro_floppy_eject(int drive);
-extern Uint8* hatari_libretro_floppy_file_read(const char *pszFileName, long *pFileSize, bool extra);
-extern const char* hatari_libretro_floppy_inserted(int drive);
-extern void hatari_libretro_floppy_changed(int drive);
+extern bool core_floppy_insert(int drive, const char* filename, void* data, unsigned int size, void* extra_data, unsigned int extra_size);
+extern void core_floppy_eject(int drive);
+extern Uint8* core_floppy_file_read(const char *pszFileName, long *pFileSize, bool extra);
+extern const char* core_floppy_inserted(int drive);
+extern void core_floppy_changed(int drive);
 static void* floppy_data[2] = {NULL,NULL};
 static void* floppy_extra_data[2] = {NULL,NULL};
 static unsigned int floppy_size[2] = {0,0};
 static unsigned int floppy_extra_size[2] = {0,0};
 static int floppy_read_drive = 0;
-extern bool hatari_libretro_floppy_insert(int drive, const char* filename, void* data, unsigned int size, void* extra_data, unsigned int extra_size)
+extern bool core_floppy_insert(int drive, const char* filename, void* data, unsigned int size, void* extra_data, unsigned int extra_size)
 {
 	floppy_data[drive] = data;
 	floppy_size[drive] = size;
@@ -545,18 +545,18 @@ extern bool hatari_libretro_floppy_insert(int drive, const char* filename, void*
 	Floppy_SetDiskFileName(drive, filename, NULL);
 	return Floppy_InsertDiskIntoDrive(drive);
 }
-void hatari_libretro_floppy_eject(int drive)
+void core_floppy_eject(int drive)
 {
 	Floppy_EjectDiskFromDrive(drive);
 	Floppy_SetDiskFileNameNone(drive);
 	floppy_data[drive] = NULL;
 	floppy_size[drive] = 0;
 }
-bool hatari_libretro_floppy_file_extra(void)
+bool core_floppy_file_extra(void)
 {
 	return floppy_extra_data[floppy_read_drive] != NULL;
 }
-Uint8* hatari_libretro_floppy_file_read(const char *pszFileName, long *pFileSize, bool extra)
+Uint8* core_floppy_file_read(const char *pszFileName, long *pFileSize, bool extra)
 {
 	// replaces File_Read
 	// does not handle gz or zip files
@@ -571,12 +571,12 @@ Uint8* hatari_libretro_floppy_file_read(const char *pszFileName, long *pFileSize
 	if (pFileSize) *pFileSize = (long)size;
 	return data_out;
 }
-const char* hatari_libretro_floppy_inserted(int drive)
+const char* core_floppy_inserted(int drive)
 {
 	if (!EmulationDrives[drive].bDiskInserted) return NULL;
 	return ConfigureParams.DiskImage.szDiskFileName[drive];
 }
-void hatari_libretro_floppy_changed(int drive)
+void core_floppy_changed(int drive)
 {
 	EmulationDrives[drive].bContentsChanged = true;
 }

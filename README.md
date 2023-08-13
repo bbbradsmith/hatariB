@@ -120,7 +120,6 @@ Development notes: [DEVELOP.md](DEVELOP.md)
 Remaining tasks before ready for public testing:
 * Relocate the vscode project out of the ignored "secrets" folder, it's worth preserving on github too, just clean up the absolute paths and stuff (maybe c:\msys64 is acceptable tho).
 * Clean up DEVELOP.md dependency list, give the specific libraries needed. (I think zlib/make is probably not needed by action setup too, inherent in cmake, and zlib should be ucrt64 specific.)
-* reconsider the "hatari_libretro_... naming convention for a few things, should probably just be called "core"
 
 Optional tasks:
 * Investigate Libretro MIDI interface. I wonder if I could play MIDI Maze against my real ST?
