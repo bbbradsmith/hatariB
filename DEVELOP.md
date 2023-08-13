@@ -123,6 +123,8 @@ Otherwise there are minor changes to the CMake build files, marked with a commen
   * Disable all Hatari shortcut keys.
   * Disable Hatari key to joystick mappings.
   * Provide modifier key state instead of `SDL_GetModState`.
+  * Disable Num Lock condition for keypad use (Atari ST has no num-lock).
+  * Fix broken mappings for `-_` `[{` and `]}` keys.
 * **hatari/src/change.c**
   * Signal screen change when Low Resolution pixel doubling option changes.
   * Save/Reload NvRam when machine changes, only if TT or Falcon.

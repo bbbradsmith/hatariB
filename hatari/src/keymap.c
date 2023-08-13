@@ -78,7 +78,11 @@ static uint8_t Keymap_SymbolicToStScanCode(const SDL_Keysym* pKeySym)
 	 case SDLK_ASTERISK: code = 0x66; break;
 	 case SDLK_PLUS: code = 0x1B; break;
 	 case SDLK_COMMA: code = 0x33; break;
+#ifndef __LIBRETRO__
 	 case SDLK_MINUS: code = 0x35; break;
+#else
+	 case SDLK_MINUS: code = 0x0C; break; // hatari has this wrong?
+#endif
 	 case SDLK_PERIOD: code = 0x34; break;
 	 case SDLK_SLASH: code = 0x35; break;
 	 case SDLK_0: code = 0x0B; break;
@@ -98,9 +102,17 @@ static uint8_t Keymap_SymbolicToStScanCode(const SDL_Keysym* pKeySym)
 	 case SDLK_GREATER : code = 0x34; break;
 	 case SDLK_QUESTION: code = 0x35; break;
 	 case SDLK_AT: code = 0x28; break;
+#ifndef __LIBRETRO__	 
 	 case SDLK_LEFTBRACKET: code = 0x63; break;
+#else
+	 case SDLK_LEFTBRACKET: code = 0x1A; break; // hatari has this wrong?
+#endif
 	 case SDLK_BACKSLASH: code = 0x2B; break;     /* Might be 0x60 for UK keyboards */
+#ifndef __LIBRETRO__	 
 	 case SDLK_RIGHTBRACKET: code = 0x64; break;
+#else
+	 case SDLK_RIGHTBRACKET: code = 0x1B; break; // hatari has this wrong?
+#endif
 	 case SDLK_CARET: code = 0x2B; break;
 	 case SDLK_UNDERSCORE: code = 0x0C; break;
 	 case SDLK_BACKQUOTE: code = 0x52; break;
@@ -353,7 +365,8 @@ static uint8_t Keymap_GetKeyPadScanCode(const SDL_Keysym* pKeySym)
 #ifndef __LIBRETRO__
 	if (SDL_GetModState() & KMOD_NUM)
 #else
-	if (core_input_mod_state() & KMOD_NUM)
+	// Atari ST has no num-lock concept
+	//if (core_input_mod_state() & KMOD_NUM)
 #endif
 	{
 		switch (pKeySym->sym)
@@ -370,6 +383,7 @@ static uint8_t Keymap_GetKeyPadScanCode(const SDL_Keysym* pKeySym)
 		 default:  break;
 		}
 	}
+#ifndef __LIBRETRO__
 	else
 	{
 		switch (pKeySym->sym)
@@ -386,6 +400,7 @@ static uint8_t Keymap_GetKeyPadScanCode(const SDL_Keysym* pKeySym)
 		 default:  break;
 		}
 	}
+#endif
 	return ST_NO_SCANCODE;
 }
 

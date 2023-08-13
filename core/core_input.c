@@ -213,7 +213,8 @@ void core_input_keyboard_event(bool down, unsigned keycode, uint32_t character, 
 	event.key.keysym.scancode = SDL_GetScancodeFromKey(event.key.keysym.sym);
 	event.key.keysym.mod = 0;
 	// NUMLOCK is the only mod state that Hatari uses (for: Keymap_GetKeyPadScanCode)
-	if (key_modifiers & RETROKMOD_NUMLOCK  ) event.key.keysym.mod |= KMOD_NUM;
+	// but I have disabled it because Atari ST has no numlock
+	//if (key_modifiers & RETROKMOD_NUMLOCK  ) event.key.keysym.mod |= KMOD_NUM;
 	//if (key_modifiers & RETROKMOD_CAPSLOCK ) event.key.keysym.mod |= KMOD_CAPS;
 	//if (key_modifiers & RETROKMOD_SCROLLOCK) event.key.keysym.mod |= KMOD_SCROLL;
 	//if (retrok_down[RETROK_LSHIFT]) event.key.keysym.mod |= KMOD_LSHIFT;
@@ -247,8 +248,9 @@ void core_input_keyboard_event_callback(bool down, unsigned keycode, uint32_t ch
 void core_input_keyboard_unstick() // release any keys that don't currently match state
 {
 	// NUMLOCK is the only mod state that Hatari uses (for: Keymap_GetKeyPadScanCode)
+	// but I have disabled it because Atari ST has no numlock
 	uint16_t mod = 0;
-	if (mod_state & KMOD_NUM   ) mod |= RETROKMOD_NUMLOCK;
+	//if (mod_state & KMOD_NUM   ) mod |= RETROKMOD_NUMLOCK;
 	//if (mod_state & KMOD_CAPS  ) mod |= RETROKMOD_CAPSLOCK;
 	//if (mod_state & KMOD_SCROLL) mod |= RETROKMOD_SCROLLOCK;
 
@@ -271,7 +273,9 @@ void core_input_keyboard_unstick() // release any keys that don't currently matc
 void core_input_keyboard_joy(int keycode)
 {
 	retrok_joy[keycode] = 1;
-	if (!retrok_down[keycode]) core_input_keyboard_event(true, keycode, 0, (mod_state & KMOD_NUM) ? RETROKMOD_NUMLOCK : 0);
+	// numlock disabled (Atari ST has no numlock)
+	//if (!retrok_down[keycode]) core_input_keyboard_event(true, keycode, 0, (mod_state & KMOD_NUM) ? RETROKMOD_NUMLOCK : 0);
+	if (!retrok_down[keycode]) core_input_keyboard_event(true, keycode, 0, 0);
 }
 
 void core_input_serialize(void)
