@@ -1146,8 +1146,14 @@ STX_MAIN_STRUCT	*STX_BuildStruct ( Uint8 *pFileBuffer , int Debug )
 			pStxMain->ImagingTool  , pStxMain->Reserved_1 , pStxMain->TracksCount , pStxMain->Revision ,
 			pStxMain->Reserved_2 );
 
+#ifndef __LIBRETRO__
 	pStxMain->WarnedWriteSector = false;
 	pStxMain->WarnedWriteTrack = false;
+#else
+	// suppress alert about the STX overlay, this isn't an issue with how the Libretro core saves elsewhere
+	pStxMain->WarnedWriteSector = true;
+	pStxMain->WarnedWriteTrack = true;
+#endif
 
 	pStxTrack = malloc ( sizeof ( STX_TRACK_STRUCT ) * pStxMain->TracksCount );
 	if ( !pStxTrack )

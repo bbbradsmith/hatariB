@@ -143,6 +143,7 @@ Otherwise there are minor changes to the CMake build files, marked with a commen
 * **hatari/src/floppy_stx.c**
   * Load floppy image from memory instead of from file.
   * Use core interfaces to save modified floppies to saves/ folder.
+  * Disable unnecessary`Log_AlertDlg` warning that STX files save to overlay.
 * **hatari/src/midi.c**
   * Suppress unused-variable warnings due to `ENABLE_TRACING`.
 * **hatari/src/gemdos.c**
