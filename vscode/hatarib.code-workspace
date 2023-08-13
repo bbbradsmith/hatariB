@@ -1,0 +1,48 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../core"
+		},
+		{
+			"path": "../libretro"
+		},
+		{
+			"path": "../hatari/src"
+		},
+		{
+			"path": '../info"
+		},
+		{
+			"path": ".."
+		}
+	],
+	"settings": {
+		"files.exclude": {
+			"**/*.lnk": true,
+			"**/*.zip": true,
+			"build/": true,
+			"hatari-2.4.1_windows64/": true,
+			"hatari-2.4.1.src/": true,
+			"core/": true,
+			"hatari/": true,
+			"libretro/": true,
+			"info/": true,
+			"vscode/": true,
+			"secrets/": true,
+		},
+		"explorer.sortOrder": "type",
+		"files.associations": {
+			"*.h": "c",
+		},
+		"powershell.cwd": ".",
+		"workbench.colorCustomizations":{
+			"statusBar.background": "#101010",
+			"statusBar.foreground": "#FFFFFF",
+			"statusBar.debuggingBackground": "#202020",
+			"statusBar.debuggingForeground": "#FFFFFF"
+		}
+	},
+}

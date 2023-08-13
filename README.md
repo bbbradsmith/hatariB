@@ -58,6 +58,8 @@ Development notes: [DEVELOP.md](DEVELOP.md)
   * TOS, Cartridge, and Hard disk files should be placed in *system/hatarib/*.
   * When loading multiple disks, the best method is to use M3U playlists to specify all needed disks at once during *Load Content*. Information: [M3U file tutorial](https://docs.retroachievements.org/Multi-Disc-Games-Tutorial/).
   * *Load New Disk* can add additional disks while running, but has several caveats, especially regarding savestates. See below.
+  * The first two disks of an M3U list will be loaded into drive A and B at startup, 
+  * Libretro only has an interface for one disk drive, but you can use the Select button to switch between whether the Disc Control menu currently shows drive A or drive B.
 * Hard Disks:
   * *GemDOS* type hard disks can select a subdirectory within *system/hatarib/* to use as a simulated drive.
   * A *GemDOS* folder can represent multiple paritions by having its base directory contain only single-letter folder names representing drive letters. *C/*, *D/*, etc.
@@ -117,11 +119,7 @@ Development notes: [DEVELOP.md](DEVELOP.md)
   * Restoring a savestate, or using netplay/run-ahead into the pause or one-shot keyboard will have an outdated/blank background until unpaused, as Hatari can't rebuild the image until it runs a frame. We might consider fixing this by adding the framebuffer to the savestate, though it would significantly increase the data size.
   * If the on-screen keyboard confirm/cancel buttons aren't mapped to dedicated keys, you might end up suddenly holding the underlying button when the keyboard closes.
 
-Remaining tasks before ready for public testing:
-* Relocate the vscode project out of the ignored "secrets" folder, it's worth preserving on github too, just clean up the absolute paths and stuff (maybe c:\msys64 is acceptable tho).
-* Clean up DEVELOP.md dependency list, give the specific libraries needed. (I think zlib/make is probably not needed by action setup too, inherent in cmake, and zlib should be ucrt64 specific.)
-
-Optional tasks:
+Possible Future Tasks:
 * Investigate Libretro MIDI interface. I wonder if I could play MIDI Maze against my real ST?
 * See if a MinGW 32-bit auto-build is reasonable? Might provide a stepping stone to other targets, and provide additional compile checks.
 * Can savestate restore be more lightweight? What takes so much CPU time? Are there any lingering spurious disk accesses?

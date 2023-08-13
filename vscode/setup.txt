@@ -1,0 +1,15 @@
+1. Create a symlink to hatariB in your MSYS2 home folder (C:\msys64\home\username)
+  mklink hatariB /D C:\path_to_hatariB
+2. Create a test_core.bat that copies the built files
+  del C:\Users\username\Documents\RetroArch\cores\hatarib.dll
+  copy ..\build\hatarib.dll C:\Users\username\Documents\RetroArch\cores
+  @IF ERRORLEVEL 1 GOTO error
+  copy ..\info\*.* C:\Users\username\Documents\RetroArch\info /y
+  start C:\Users\username\Documents\RetroArch\retroarch.exe -L C:\Users\username\Documents\RetroArch\cores\hatarib.dll
+  @echo.
+  @echo Build successful!
+  @GOTO end
+  :error
+  @echo.
+  @echo Build error!
+  :end

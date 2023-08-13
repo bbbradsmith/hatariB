@@ -1,0 +1,19 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "build_and_run",
+			"type": "PowerShell",
+			"request": "launch",
+			"script": "clear ; ./build_and_run.bat",
+			"cwd": "${cwd}",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"panel": "new",
+				"showReuseMessage": false,
+				"clear": true
+			},
+		}
+	]
+}

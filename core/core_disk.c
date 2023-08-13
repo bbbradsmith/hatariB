@@ -527,6 +527,7 @@ static bool replace_image_index(unsigned index, const struct retro_game_info* ga
 	{
 		return load_zip(disks[index].data, disks[index].size, path, index);
 	}
+	// TODO gz?
 
 	if (path == NULL)
 	{
@@ -724,7 +725,6 @@ void core_disk_reindex(void)
 void core_disk_drive_toggle(void)
 {
 	drive = drive ^ 1;
-	// TODO if no B drive, drive = 0
 
 	struct retro_message_ext msg;
 	msg.msg = drive ? "Drive B: selected" : "Drive A: selected";
