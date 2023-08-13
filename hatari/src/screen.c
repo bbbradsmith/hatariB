@@ -103,6 +103,7 @@ static int genconv_width_req, genconv_height_req, genconv_bpp;
 static bool Screen_DrawFrame(bool bForceFlip);
 
 #ifdef __LIBRETRO__
+static void Screen_ClearScreen(void); // forward declaration
 // these should be initialized
 SDL_Window *sdlWindow = NULL;
 static SDL_Renderer *sdlRenderer = NULL;
@@ -743,6 +744,9 @@ static void Screen_SetSTResolution(bool bForceChange)
 		STScreenRect.y = 0;
 		STScreenRect.w = sdlscrn->w;
 		STScreenRect.h = sdlscrn->h - Statusbar_GetHeight();
+#ifdef __LIBRETRO__
+		Screen_ClearScreen(); // refresh to palette 0 because that looks better than black when emulation is paused
+#endif
 	}
 
 	if (!bRGBTableInSync)
@@ -923,7 +927,11 @@ void Screen_SetFullUpdate(void)
  */
 static void Screen_ClearScreen(void)
 {
+#ifndef __LIBRETRO__
 	SDL_FillRect(sdlscrn, &STScreenRect, SDL_MapRGB(sdlscrn->format, 0, 0, 0));
+#else
+	SDL_FillRect(sdlscrn, &STScreenRect, STRGBPalette[0]); // use palette 0 because it looks better while emulation is paused
+#endif
 }
 
 

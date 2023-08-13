@@ -70,6 +70,7 @@ Otherwise there are minor changes to the CMake build files, marked with a commen
   * Use SDL software rendering to support all 3 pixel formats allowed by Libretro.
   * Don't SDL_Quit on error.
   * Add option for low resolution pixel doubling.
+  * Clear to current ST palette 0 instead of black (looks nicer while palette is paused).
 * **hatari/src/resolution.c**
   * Don't use SDL_GetDesktopDisplayMode to get resolution.
 * **hatari/src/video.c**
