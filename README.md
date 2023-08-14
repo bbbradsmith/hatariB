@@ -121,7 +121,6 @@ Development notes: [DEVELOP.md](DEVELOP.md)
 
 Possible Future Tasks:
 * Investigate Libretro MIDI interface. I wonder if I could play MIDI Maze against my real ST?
-* See if a MinGW 32-bit auto-build is reasonable? Might provide a stepping stone to other targets, and provide additional compile checks.
 * Can savestate restore be more lightweight? What takes so much CPU time? Are there any lingering spurious disk accesses?
 * RS232 emulation?
 * Printer emulation?
