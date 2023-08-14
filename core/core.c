@@ -711,7 +711,7 @@ RETRO_API void retro_get_system_info(struct retro_system_info *info)
 	retro_log(RETRO_LOG_INFO,"retro_get_system_info()\n");
 	memset(info, 0, sizeof(*info));
 	info->library_name = "hatariB";
-	info->library_version = "v0 experimental prototype";
+	info->library_version = "v0.0 preliminary test " __DATE__ " " __TIME__;
 	info->valid_extensions = CORE_FILE_EXTENSIONS;
 	info->need_fullpath = false;
 	info->block_extract = false;

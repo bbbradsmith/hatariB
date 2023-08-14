@@ -69,6 +69,7 @@ const char* const HELPTEXT[] = {
 	"",
 	"https://github.com/bbbradsmith/hatariB/",
 	"https://hatari.tuxfamily.org/",
+	__DATE__ " " __TIME__,
 };
 
 //
