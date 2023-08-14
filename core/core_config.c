@@ -4,8 +4,8 @@
 #include "../hatari/src/includes/main.h"
 #include "../hatari/src/includes/configuration.h"
 
-static CNF_PARAMS defparam; // TODO copy this during setup
-static CNF_PARAMS newparam; // TODO copy default to this then modify during apply
+static CNF_PARAMS defparam;
+static CNF_PARAMS newparam;
 
 // system/hatarib/ file scane used to populate arrays in CORE_OPTION_DEF below
 #define MAX_OPTION_FILES   100

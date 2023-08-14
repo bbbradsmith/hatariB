@@ -13,7 +13,7 @@
 			"path": "../hatari/src"
 		},
 		{
-			"path": '../info"
+			"path": "../info"
 		},
 		{
 			"path": ".."
@@ -24,8 +24,6 @@
 			"**/*.lnk": true,
 			"**/*.zip": true,
 			"build/": true,
-			"hatari-2.4.1_windows64/": true,
-			"hatari-2.4.1.src/": true,
 			"core/": true,
 			"hatari/": true,
 			"libretro/": true,

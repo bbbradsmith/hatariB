@@ -184,7 +184,7 @@ static bool load_m3u(uint8_t* data, unsigned int size, const char* m3u_path, uns
 	static char link[2048] = "";
 	static char line[2048] = "";
 
-	// remove data from disks
+	// remove data from disks (take ownership of *data)
 	strcpy(disks[first_index].filename,"<m3u>");
 	disks[first_index].data = NULL;
 	disks[first_index].size = 0;
@@ -218,6 +218,7 @@ static bool load_m3u(uint8_t* data, unsigned int size, const char* m3u_path, uns
 	unsigned int p = 0;
 	unsigned int lp = 0;
 	bool first = true;
+	bool result = false;
 	while (p <= size)
 	{
 		char c = 10;
@@ -259,21 +260,25 @@ static bool load_m3u(uint8_t* data, unsigned int size, const char* m3u_path, uns
 				info.size = 0;
 				info.meta = "<m3u>"; // use this to block recursive m3u
 				int index = first_index;
-				if (first)
-				{
-					first = false;
-				}
-				else // add new indices after the first one
-				{
+				if (!first) // add new indices after the first one
+				{ 
 					index = get_num_images();
 					if (!add_image_index())
 					{
 						retro_log(RETRO_LOG_ERROR,"Too many disks loaded, stopping M3U before: %s\n",link);
+						result = false;
 						break;
 					}
 				}
 				// load the file
-				replace_image_index(index, &info);
+				bool file_result = replace_image_index(index, &info);
+				//
+				if (first)
+				{
+					result = file_result;
+					first = false;
+				}
+				else if (!file_result) result = false;
 			}
 			// ready for next line
 			lp = 0;
@@ -288,7 +293,7 @@ static bool load_m3u(uint8_t* data, unsigned int size, const char* m3u_path, uns
 	}
 
 	free(data);
-	return true;
+	return result;
 }
 
 // load first file from zip
@@ -298,7 +303,7 @@ static bool load_zip(uint8_t* data, unsigned int size, const char* zip_filename,
 	static char link[256] = "";
 	unzFile zip = NULL;
 
-	// remove data from disks
+	// remove data from disks (take ownership of *data)
 	strcpy(disks[first_index].filename,"<zip>");
 	disks[first_index].data = NULL;
 	disks[first_index].size = 0;
@@ -391,11 +396,101 @@ static bool load_zip(uint8_t* data, unsigned int size, const char* zip_filename,
 	info.data = zdata;
 	info.size = zsize;
 	info.meta = NULL;
-	replace_image_index(first_index, &info);
-
+	bool result = replace_image_index(first_index, &info);
 	free(zdata);
+
 	free(data);
-	return true;
+	return result;
+}
+
+static bool load_gz(uint8_t* data, unsigned int size, const char* gz_filename, unsigned first_index)
+{
+	static char link[256] = "";
+
+	// remove data from disks (take ownership of *data)
+	strcpy(disks[first_index].filename,"<gz>");
+	disks[first_index].data = NULL;
+	disks[first_index].size = 0;
+	disks[first_index].saved = false;
+
+	// strip .gz from filename
+	strcpy_trunc(link,gz_filename,sizeof(link));
+	{
+		int fnl = strlen(link);
+		if (fnl >= 3)
+			link[fnl-3] = 0;
+	}
+	if(has_extension(link,"m3u\0" "m3u8\0" "\0"))
+	{
+		retro_log(RETRO_LOG_ERROR,"Cannot load m3u contained in gz: '%s'\n",gz_filename);
+		free(data);
+		return false;
+	}
+
+	size_t zsize = 2*1024*1024; // assume up to 2MB by default, realloc later if needed
+	uint8_t* zdata = malloc(zsize);
+	if (zdata == NULL)
+	{
+		retro_log(RETRO_LOG_ERROR,"Could not load_gz, out of memory (%d bytes): '%s'\n",gz_filename,(int)zsize);
+		free(data);
+		return false;
+	}
+
+	z_stream zs;
+	zs.next_in = (Bytef*)data;
+	zs.avail_in = size;
+	zs.total_out = 0;
+	zs.zalloc = Z_NULL;
+	zs.zfree = Z_NULL;
+	if(inflateInit2(&zs,(16+MAX_WBITS)) != Z_OK)
+	{
+		retro_log(RETRO_LOG_ERROR,"Could not load_gz, inflateInit2 failure: '%s'\n",gz_filename);
+		free(data);
+		return false;
+	}
+	while (true)
+	{
+		if (zs.total_out >= zsize) // file is bigger, keep growing
+		{
+			zsize *= 2;
+			uint8_t* zdata2 = realloc(zdata, zsize);
+			if (zdata2 == NULL)
+			{
+				retro_log(RETRO_LOG_ERROR,"Could not load_gz, out of memory (%d bytes): '%s'\n",gz_filename,(int)zsize);
+				inflateEnd(&zs);
+				free(zdata);
+				free(data);
+				return false;
+			}
+			zdata = zdata2;
+		}
+		zs.next_out = zdata + zs.total_out;
+		zs.avail_out = zsize - zs.total_out;
+		int result = inflate(&zs,Z_SYNC_FLUSH);
+		if (result == Z_STREAM_END) break;
+		if (result != Z_OK)
+		{
+			retro_log(RETRO_LOG_ERROR,"Could not load_gz, inflate error: '%s'\n",gz_filename);
+			inflateEnd(&zs);
+			free(zdata);
+			free(data);
+			return false;
+		}
+	}
+	zsize = zs.total_out;
+	inflateEnd(&zs);
+	free(data);
+
+	struct retro_game_info info;
+	memset(&info,0,sizeof(info));
+	info.path = link;
+	info.data = zdata;
+	info.size = zsize;
+	info.meta = NULL;
+	bool result = replace_image_index(first_index, &info);
+	free(zdata);
+
+	return result;
 }
 
 static bool replace_image_index(unsigned index, const struct retro_game_info* game)
@@ -490,9 +585,9 @@ static bool replace_image_index(unsigned index, const struct retro_game_info* ga
 		}
 	}
 
-	if (disks[index].data == NULL)
+	if (disks[index].data == NULL) // no save, load the data
 	{
-		if (game->data)
+		if (game->data) // supplied by libretro, make a copy
 		{
 			disks[index].data = malloc(game->size);
 			if (disks[index].data == NULL)
@@ -503,11 +598,17 @@ static bool replace_image_index(unsigned index, const struct retro_game_info* ga
 			disks[index].size = game->size;
 			memcpy(disks[index].data,game->data,game->size);
 		}
-		else
+		else // try to load it ourselves
 		{
 			// Load New Disk does not obey need_fullpath, so we may need to manually load the file.
 			// This also takes care of fetching file links from an M3U list.
 			disks[index].data = core_read_file(game->path,&disks[index].size);
+		}
+		if (disks[index].data == NULL) // we still don't have it
+		{
+			strcpy(disks[index].filename,"<Not Found>");
+			disks[index].size = 0;
+			return false;
 		}
 	}
 
@@ -527,7 +628,10 @@ static bool replace_image_index(unsigned index, const struct retro_game_info* ga
 	{
 		return load_zip(disks[index].data, disks[index].size, path, index);
 	}
-	// TODO gz?
+	else if (ext && !strcasecmp(ext,"gz"))
+	{
+		return load_gz(disks[index].data, disks[index].size, path, index);
+	}
 
 	if (path == NULL)
 	{

@@ -1,7 +1,7 @@
 # Software Information
 display_name = "hatariB"
 authors = "Brad Smith"
-supported_extensions = "st|msa|dim|stx|m3u|m3u8|zip"
+supported_extensions = "st|msa|dim|stx|m3u|m3u8|zip|gz"
 corename = "hatariB"
 license = "GPLv2"
 display_version = "v0 experimental prototype"

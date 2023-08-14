@@ -33,11 +33,11 @@
 #define DEBUG_RETRO_SET_ENVIRONMENT   0
 
 // make sure this matches ../info/hatarib.info
-static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|m3u|m3u8|zip";
+static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|m3u|m3u8|zip|gz";
 // IPF/RAW/CRT support requires CAPSLIB which has licensing issues for Libretro.
 // See: https://github.com/libretro/hatari/issues/4
 // See also: https://github.com/mamedev/mame/blob/master/src/lib/formats/ipf_dsk.cpp
-//static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|ipf|raw|ctr|m3u|m3u8|zip";
+//static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|ipf|raw|ctr|m3u|m3u8|zip|gz";
 
 // serialization quirks
 const uint64_t QUIRKS = RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT;
@@ -609,7 +609,7 @@ RETRO_API void retro_set_environment(retro_environment_t cb)
 		};
 		if (content_override_set || cb(RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE, (void*)CONTENT_OVERRIDE))
 		{
-			retro_log(RETRO_LOG_INFO,"SET_CONTENT_INFO_OVERRIDE requested need_fullpath\n");
+			retro_log(RETRO_LOG_DEBUG,"SET_CONTENT_INFO_OVERRIDE requested need_fullpath\n");
 			content_override_set = true; // seems to fail if called twice?
 		}
 		else

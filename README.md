@@ -128,7 +128,6 @@ Possible Future Tasks:
 * Can inaccessible Debugger features be removed from build for better efficiency?
 * Status pause screen variant with Floppies, TOS, etc. info?
 * IPF support, figure out library issues. There seems to be a MAME IPF reader?
-* GZ support?
 
 ## History
 

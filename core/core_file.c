@@ -164,8 +164,8 @@ uint8_t* core_read_file(const char* filename, unsigned int* size_out)
 		struct retro_vfs_file_handle* f = retro_vfs->open(filename,RETRO_VFS_FILE_ACCESS_READ,0);
 		if (f == NULL)
 		{
-			retro_log(RETRO_LOG_ERROR,"core_read_file (VFS) not found: %s\n",filename);
-			return NULL;
+			retro_log(RETRO_LOG_DEBUG,"core_read_file (VFS) not found: %s\n",filename);
+			return NULL; // note: not necessarily an error
 		}
 		rs = retro_vfs->size(f);
 		if (rs < 0)
@@ -189,8 +189,8 @@ uint8_t* core_read_file(const char* filename, unsigned int* size_out)
 		FILE* f = fopen(filename,"rb");
 		if (f == NULL)
 		{
-			retro_log(RETRO_LOG_ERROR,"core_read_file not found: %s\n",filename);
-			return NULL;
+			retro_log(RETRO_LOG_DEBUG,"core_read_file not found: %s\n",filename);
+			return NULL; // note: not necessarily an error
 		}
 		fseek(f,0,SEEK_END);
 		size = (unsigned int)ftell(f);
