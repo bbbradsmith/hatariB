@@ -8,7 +8,9 @@ A [Libretro](https://www.libretro.com/) core integrating the [Hatari](https://ha
 
 This is intended as an alternative or replacement for the older [Libretro Hatari Core](https://github.com/libretro/hatari).
 
-This is a work in progress. Once it has had some initial testing, I would like to submit it to Libretro.
+This is a new project in the initial testing phase. Eventually I would like to submit it to Libretro.
+
+If you notice any problems or have feedback, please [create a Github issue](https://github.com/bbbradsmith/hatariB/issues).
 
 Emulator: [Hatari 2.4.1](https://git.tuxfamily.org/hatari/hatari.git/tag/?id=v2.4.1) 2022-08-03
 
@@ -20,7 +22,7 @@ Development notes: [DEVELOP.md](DEVELOP.md)
   * [Hatari Online Manual](https://hatari.tuxfamily.org/doc/manual.html)
 * Supported platforms:
   * Windows 64-bit
-  * If you'd like to help set up other platforms, please [create a Github issue](https://github.com/bbbradsmith/hatariB/issues) to dicuss it.
+  * If you'd like to help set up other platforms, please [create a Github issue](https://github.com/bbbradsmith/hatariB/issues) to discuss it.
 * Default controls:
   * Left Stick and D-Pad - Joystick
   * Right Stick - Mouse
@@ -128,6 +130,7 @@ Possible Future Tasks:
 * Printer emulation?
 * IPF support, figure out library issues. There seems to be a MAME IPF reader?
 * Keyboard languages and layouts? Need to know a bit more about how to test this. Think about host keyboard vs. simulated keyboard, etc.
+* Look for Log cases where Hatari changes CFG (most of these are in tos.c) and turn them into a halt instead of automatically changing system. Setting CPU speed should probably only be applied at cold boot? (Put a "requires restart" notice on it.)
 
 ## History
 
