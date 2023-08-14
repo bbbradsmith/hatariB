@@ -1,5 +1,7 @@
+GIT_SHORTHASH = "$(shell git rev-parse --short HEAD)"
+
 CC=gcc
-CFLAGS=-g -O2 -Wall -Werror -D__LIBRETRO__ -Ihatari/build
+CFLAGS=-g -O2 -Wall -Werror -D__LIBRETRO__ -DSHORTHASH=\"$(GIT_SHORTHASH)\" -Ihatari/build
 LDFLAGS=-shared -g -Wall -Werror
 CMAKEFLAGS=-DENABLE_SMALL_MEM=0 -DENABLE_TRACING=0
 # for tracing debug:
