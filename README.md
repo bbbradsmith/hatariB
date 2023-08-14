@@ -50,8 +50,8 @@ Development notes: [DEVELOP.md](DEVELOP.md)
     * Other keys map directly to a standard keyboard, but Game Focus mode (Scroll-Lock) may be neeed to access keys normally assigned to RetroArch hotkeys.
   * All gamepad assignments can be configured in the core options. Buttons can be assigned to press keys, or perform other actions besides the default.
 * File formats:
-  * Floppy disk: ST, MSA, DIM, STX
-  * Muli-disk: M3U, M3U8, ZIP
+  * Floppy disk: ST, MSA, DIM, STX (can be inside ZIP or GZ)
+  * Muli-disk: M3U, M3U8
   * TOS ROM: TOS, IMG, ROM, BIN
   * Cartridge: IMG, ROM, BIN, CART
   * Hard disk: (no standard file extensions)
@@ -118,13 +118,14 @@ Development notes: [DEVELOP.md](DEVELOP.md)
   * There may be other run-state like these stored directly as configuration modifications that will be clobbered by core options changes. Still evaluating the scope of this problem. (I don't want the core secretly changing settings without the user knowing.)
   * Restoring a savestate, or using netplay/run-ahead into the pause or one-shot keyboard will have an outdated/blank background until unpaused, as Hatari can't rebuild the image until it runs a frame. We might consider fixing this by adding the framebuffer to the savestate, though it would significantly increase the data size.
   * If the on-screen keyboard confirm/cancel buttons aren't mapped to dedicated keys, you might end up suddenly holding the underlying button when the keyboard closes.
+  * The Floppy Disk List pause screen won't display unicode filenames correctly.
+  * You can use Load New Disk or M3U playlists
 
 Possible Future Tasks:
 * Investigate Libretro MIDI interface. I wonder if I could play MIDI Maze against my real ST?
 * Can savestate restore be more lightweight? What takes so much CPU time? Are there any lingering spurious disk accesses?
 * RS232 emulation?
 * Printer emulation?
-* Status pause screen variant with Floppies, TOS, etc. info?
 * IPF support, figure out library issues. There seems to be a MAME IPF reader?
 * Keyboard languages and layouts? Need to know a bit more about how to test this. Think about host keyboard vs. simulated keyboard, etc.
 

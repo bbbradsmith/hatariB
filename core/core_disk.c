@@ -163,7 +163,7 @@ static bool set_image_index(unsigned index)
 	return true;
 }
 
-static unsigned get_num_images(void)
+unsigned get_num_images(void)
 {
 	//retro_log(RETRO_LOG_DEBUG,"get_num_images()\n");
 	return image_count;
@@ -675,7 +675,7 @@ static bool get_image_path(unsigned index, char* path, size_t len)
 	return true;
 }
 
-static bool get_image_label(unsigned index, char* label, size_t len)
+bool get_image_label(unsigned index, char* label, size_t len)
 {
 	//retro_log(RETRO_LOG_DEBUG,"get_image_label(%d,%p,%d)\n",index,label,(int)len);
 	if (index >= MAX_DISKS) return false;

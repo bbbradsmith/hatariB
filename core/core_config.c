@@ -441,8 +441,9 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		NULL, "video",
 		{
 			{"2","Help and Information"},
-			{"3","Bouncing Box"},
-			{"4","Snow"},
+			{"3","Floppy Disk List"},
+			{"4","Bouncing Box"},
+			{"5","Snow"},
 			{"0","Darken"},
 			{"1","No Indicator"},
 			{NULL,NULL}

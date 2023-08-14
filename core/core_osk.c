@@ -447,7 +447,7 @@ static void render_pause(void)
 	case 0: // Darken
 	case 1: // No Indicator (not possible)
 		break;
-	case 2: // Help
+	case 2: // Help and Information
 		{
 			static int tw = -1;
 			static const int th = CORE_ARRAY_SIZE(HELPTEXT);
@@ -472,7 +472,57 @@ static void render_pause(void)
 				SDLGui_Text(tx,ty+(sdlgui_fontheight*i),HELPTEXT[i]);
 		}
 		break;
-	case 3: // Bouncing Box
+	case 3: // Floppy Disk List
+		{
+			static char label[128] = "";
+			static const char* HEADER = "Loaded Floppy Disk Images:";
+			static const char* NONE = "(NONE)";
+			int tw = strlen(HEADER);
+			int mw = (screen_w / sdlgui_fontwidth) - 3; // characters that fit on screen
+			if (mw > (sizeof(label)-1)) mw = sizeof(label)-1; // character that fit in label
+			int n = get_num_images();
+			int mh = (screen_h / sdlgui_fontheight) - 3;
+			if (n > mh) n = mh; // had intended to leave this uncapped, but SDL's clipping seems to fail mysteriously if I don't?
+			// get text width
+			for (int i=0; i<n; ++i)
+			{
+				label[0] = 0;
+				get_image_label(i,label,mw);
+				int l = strlen(label) + 1; // +1 for left indent
+				if (l > tw) tw = l;
+			}
+			// make box
+			tw += 2; // +2 for box sides
+			int th = (n < 1) ? 4 : (n + 3); // +3 for HEADER and box top/bottom
+			int tx = (screen_w - (sdlgui_fontwidth * tw)) / 2;
+			int ty = (screen_h - (sdlgui_fontheight * th)) / 2;
+			if (ty < 0) ty = 0; // always keep the top onscreen
+			tw *= sdlgui_fontwidth;
+			th *= sdlgui_fontheight;
+			SDLGui_DirectBox(tx,ty,tw,th,0,false,false);
+			// draw lines
+			int y = ty + sdlgui_fontheight;
+			for (int i=-1; i<n || i<1; ++i)
+			{
+				int x = tx + sdlgui_fontwidth;
+				const char* t = HEADER;
+				if (i >= 0)
+				{
+					x += sdlgui_fontwidth;
+					if (i < n)
+					{
+						label[0] = 0;
+						get_image_label(i,label,mw);
+						t = label;
+					}
+					else t = NONE;
+				}
+				SDLGui_Text(x,y,t);
+				y += sdlgui_fontheight;
+			}
+		}
+		break;
+	case 4: // Bouncing Box
 		{
 			static int bpx = -1;
 			static int bpy = -1;
@@ -502,7 +552,7 @@ static void render_pause(void)
 			SDLGui_Text(bpx+sdlgui_fontwidth,bpy+sdlgui_fontheight,"hatariB");
 		}
 		break;
-	case 4: // Snow
+	case 5: // Snow
 		{
 			// Inspired by the ZSNES snow
 			// and by Downfall from ST Format 42

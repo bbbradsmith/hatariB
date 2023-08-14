@@ -85,6 +85,9 @@ extern void core_disk_reindex(void); // call after loading a savestate to rebuil
 extern void core_disk_drive_toggle(void);
 extern void core_disk_drive_reinsert(void); // used after cold reboot
 
+extern unsigned get_num_images(void);
+extern bool get_image_label(unsigned index, char* label, size_t len);
+
 // simple file save, as a complete buffer
 // after saving, the image cached in core_disk.c will be updated (if the file is cached),
 // and if core_owns_data it will just take over the pointer instead of copying it.
