@@ -55,7 +55,7 @@ Development notes: [DEVELOP.md](DEVELOP.md)
   * TOS ROM: TOS, IMG, ROM, BIN
   * Cartridge: IMG, ROM, BIN, CART
   * Hard disk: (no standard file extensions)
-  * TOS, Cartridge, and Hard disk files should be placed in *system/hatarib/*.
+  * TOS, Cartridge, and Hard disk files should be placed in **system/hatarib/**.
   * When loading multiple disks, the best method is to use M3U playlists to specify all needed disks at once during *Load Content*. Information: [M3U file tutorial](https://docs.retroachievements.org/Multi-Disc-Games-Tutorial/).
   * *Load New Disk* can add additional disks while running, but has several caveats, especially regarding savestates. See below.
   * The first two disks of an M3U list will be loaded into drive A and B at startup, 
@@ -119,7 +119,7 @@ Development notes: [DEVELOP.md](DEVELOP.md)
   * Restoring a savestate, or using netplay/run-ahead into the pause or one-shot keyboard will have an outdated/blank background until unpaused, as Hatari can't rebuild the image until it runs a frame. We might consider fixing this by adding the framebuffer to the savestate, though it would significantly increase the data size.
   * If the on-screen keyboard confirm/cancel buttons aren't mapped to dedicated keys, you might end up suddenly holding the underlying button when the keyboard closes.
   * The Floppy Disk List pause screen won't display unicode filenames correctly.
-  * You can use Load New Disk or M3U playlists
+  * You can use Load New Disk or M3U playlists to load the same floppy multiple times, or multiple floppies with the same name. This mostly works okay, but a savestate restore might be unable to identify which of them was actually inserted.
 
 Possible Future Tasks:
 * Investigate Libretro MIDI interface. I wonder if I could play MIDI Maze against my real ST?
