@@ -243,8 +243,8 @@ void core_debug_bin(const char* data, int len, int offset)
 // TODO threw in some basic numbers I found, but need to double check and calculate for myself.
 //   NTSC/PAL should be computable by their pixel clock timings vs. other known systems.
 //   Is Atari monitor really 5/6, is monochrome really 1/1? Though, they were also adjustable.
-#define RESOLUTION_MAX 2
-static const double PIXEL_ASPECT_RATIO[4][RESOLUTION_MAX+2] = {
+#define RESOLUTION_COUNT 4
+static const double PIXEL_ASPECT_RATIO[4][RESOLUTION_COUNT] = {
 	//  low,   med,  high, default
 	{ 1./1., 1./1., 1./1., 1./1. }, // square pixels
 	{ 5./6., 5./6., 1./1., 5./6. }, // Atari monitor
@@ -270,13 +270,11 @@ void core_video_update(void* data, int w, int h, int pitch, int resolution)
 	if (w != core_video_w) { core_video_w = w; core_video_changed = true; }
 	if (h != core_video_h) { core_video_h = h; core_video_changed = true; }
 	core_video_pitch = pitch;
-	if (resolution > RESOLUTION_MAX) resolution = RESOLUTION_MAX;
-	if (core_video_resolution != resolution || core_video_changed)
+	if (resolution >= RESOLUTION_COUNT) resolution = RESOLUTION_COUNT-1;
+	if (core_video_resolution != resolution)
 	{
 		core_video_changed = true;
 		core_video_resolution = resolution;
-		double par = PIXEL_ASPECT_RATIO[core_video_aspect_mode][resolution];
-		core_video_aspect = (par * core_video_w) / (double)core_video_h;
 	}
 }
 
@@ -723,6 +721,12 @@ RETRO_API void retro_get_system_av_info(struct retro_system_av_info *info)
 
 	core_video_fps = core_video_fps_new;
 	core_audio_samplerate = core_audio_samplerate_new;
+
+	// update aspect ratio
+	{
+		double par = PIXEL_ASPECT_RATIO[core_video_aspect_mode][core_video_resolution];
+		core_video_aspect = (par * core_video_w) / (double)core_video_h;
+	}
 
 	info->geometry.base_width = core_video_w;
 	info->geometry.base_height = core_video_h;
