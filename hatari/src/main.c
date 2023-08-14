@@ -944,7 +944,7 @@ static void Main_StatusbarSetup(void)
 	{
 		char message[60];
 #ifdef __LIBRETRO__
-		snprintf(message, sizeof(message), "Welcome to HatariB! Press START for help.");
+		snprintf(message, sizeof(message), "Welcome to hatariB! Press START for help.");
 #else
 		snprintf(message, sizeof(message), "Press %s%s for Options, %s%s for mouse grab toggle",
 			 keys[0].mod ? "AltGr+": "", keys[0].name,

@@ -652,5 +652,5 @@ void core_osk_init()
 	core_osk_layout_set = -1; // reinitialize layout
 	core_osk_pos_r = 5;
 	core_osk_pos_c = 10; // start on space bar?
-	core_osk_pos_display = 0; // top
+	core_osk_pos_display = 1; // bottom by default
 }

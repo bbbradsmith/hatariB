@@ -124,9 +124,9 @@ Possible Future Tasks:
 * Can savestate restore be more lightweight? What takes so much CPU time? Are there any lingering spurious disk accesses?
 * RS232 emulation?
 * Printer emulation?
-* Can inaccessible Debugger features be removed from build for better efficiency?
 * Status pause screen variant with Floppies, TOS, etc. info?
 * IPF support, figure out library issues. There seems to be a MAME IPF reader?
+* Keyboard languages and layouts? Need to know a bit more about how to test this. Think about host keyboard vs. simulated keyboard, etc.
 
 ## History
 

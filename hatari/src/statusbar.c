@@ -268,15 +268,29 @@ static void Statusbar_OverlayInit(const SDL_Surface *surf)
 	int h;
 	/* led size/pos needs to be re-calculated in case screen changed */
 	h = surf->h / 50;
+#ifndef __LIBRETRO__
 	OverlayLedRect.w = 2*h;
 	OverlayLedRect.h = h;
 	OverlayLedRect.x = surf->w - 5*h/2;
+#else
+	// make it twice as big
+	OverlayLedRect.w = 4*h;
+	OverlayLedRect.h = 2*h;
+	OverlayLedRect.x = surf->w - 9*h/2;
+#endif
 	OverlayLedRect.y = h/2;
 	/* free previous restore surface if it's incompatible */
 	if (OverlayUnderside &&
+#ifndef __LIBRETRO__
 	    OverlayUnderside->w == OverlayLedRect.w &&
 	    OverlayUnderside->h == OverlayLedRect.h &&
 	    OverlayUnderside->format->BitsPerPixel == surf->format->BitsPerPixel)
+#else
+	// logic was backwards
+	    (OverlayUnderside->w != OverlayLedRect.w ||
+	    OverlayUnderside->h != OverlayLedRect.h ||
+	    OverlayUnderside->format->BitsPerPixel != surf->format->BitsPerPixel))
+#endif
 	{
 		SDL_FreeSurface(OverlayUnderside);
 		OverlayUnderside = NULL;
