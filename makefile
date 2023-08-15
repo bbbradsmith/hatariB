@@ -10,6 +10,9 @@ CC=gcc
 CFLAGS=-O2 -Wall -Werror -fPIC -D__LIBRETRO__ -DSHORTHASH=\"$(SHORTHASH)\" -Ihatari/build
 LDFLAGS=-shared -Wall -Werror -static-libgcc
 CMAKEFLAGS= \
+	-DCMAKE_DISABLE_FIND_PACKAGE_PNG=1 \
+	-DCMAKE_DISABLE_FIND_PACKAGE_PortMidi=1 \
+	-DCMAKE_DISABLE_FIND_PACKAGE_CapsImage=1 \
 	-DENABLE_SMALL_MEM=0
 CMAKEBUILDFLAGS= -j
 
@@ -69,7 +72,7 @@ $(BD)core/%.o: core/%.c
 
 hatarilib: directories
 	(cd hatari/build && cmake .. $(CMAKEFLAGS))
-	(cd hatari/build && cmake --build . $(CMAKE_BUILD_FLAGS))
+	(cd hatari/build && cmake --build . $(CMAKEBUILDFLAGS))
 
 clean:
 	rm -f -r $(BD)
