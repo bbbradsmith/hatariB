@@ -104,6 +104,7 @@ jobs:
       - name: Setup MacOS
         run: |
           brew install make cmake gcc zlib sdl2
+          brew link sdl2
       - name: Build hatariB
         run: |
           export CC=gcc
