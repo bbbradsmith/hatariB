@@ -107,7 +107,7 @@ jobs:
           brew link sdl2
       - name: Build hatariB
         run: |
-          export CC=gcc
+          export CC=/opt/homebrew/bin/gcc
           gmake
       - name: Prepare Artifact
         run: |
