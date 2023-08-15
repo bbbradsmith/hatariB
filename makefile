@@ -8,7 +8,7 @@ CMAKEFLAGS=-DENABLE_SMALL_MEM=0 -DENABLE_TRACING=0
 #CMAKEFLAGS=-DENABLE_SMALL_MEM=0 -DENABLE_TRACING=1
 
 BD=build/
-CORE=$(BD)hatarib.dll
+CORE=$(BD)hatarib
 SOURCES = \
 	core/core.c \
 	core/core_file.c \
