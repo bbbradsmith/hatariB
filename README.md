@@ -5,8 +5,7 @@ A [Libretro](https://www.libretro.com/) core integrating the [Hatari](https://ha
 * Stable Build:
   * not yet available
 * Unstable Build:
-  * [Windows 64-bit hatariB](https://nightly.link/bbbradsmith/hatariB/workflows/win64/main)
-  * [Windows 32-bit hatariB](https://nightly.link/bbbradsmith/hatariB/workflows/win32/main)
+  * [Download](https://nightly.link/bbbradsmith/hatariB/workflows/build/main)
 * Recent Builds:
   * [Github Actions](https://github.com/bbbradsmith/hatariB/actions)
 

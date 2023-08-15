@@ -69,15 +69,6 @@ jobs:
           name: hatarib-win32-${{ env.BUILD_TAG }}
           path: artifact/
 
-  build-fail-test:
-    name: "What does a failure look like?"
-    runs-on: ubuntu-latest
-    steps:
-      - name: Fail me but not others
-        shell: pwsh
-        run: |
-          make some nonexistent target
-
   build-ubuntu:
     name: Ubuntu
     runs-on: ubuntu-latest
