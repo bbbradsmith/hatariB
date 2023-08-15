@@ -109,6 +109,7 @@ jobs:
         run: |
           export CC=/usr/local/bin/gcc-13
           export CMAKEFLAGS=-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13
+          export C_INCLUDE_PATH=/usr/local/include
           gmake
       - name: Prepare Artifact
         run: |
