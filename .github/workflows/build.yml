@@ -71,6 +71,7 @@ jobs:
 
   build-fail-test:
     name: "What does a failure look like?"
+    runs-on: ubuntu-latest
     steps:
       - name: Fail me but not others
         shell: pwsh
