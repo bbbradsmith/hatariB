@@ -29,11 +29,13 @@ Changes to the C source code are all contained in `__LIBRETRO__` defines. This i
 
 Otherwise there are minor changes to the CMake build files, marked with a comment that beings with: `# hatariB`
 
+* **hatari/CMakeLists.txt**
+  * Add `-fpic` compiler option to generate relocatable code for shared object use.
+  * Removed `HAVE_STATVFS` check because we use the Libretro VFS instead.
 * **hatari/src/CMakeLists.txt**
   * Disabled `hatari` exectuable build target, added `core` library target with `__LIBRETRO__` define.
   * `set_target_properties(hatari PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)`
   * `add_library(core ${SOURCES})`
-  * `target_compile_definitions(core PUBLIC __LIBRETRO__)`
   * Removed `HAVE_STATVFS` check because we use the Libretro VFS instead.
 * **hatari/src/cpu/CMakeLists.txt**
 * **hatari/src/debug/CMakeLists.txt**
