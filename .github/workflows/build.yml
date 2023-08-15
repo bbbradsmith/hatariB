@@ -103,15 +103,11 @@ jobs:
         uses: actions/checkout@v3
       - name: Setup MacOS
         run: |
-          brew install make cmake gcc zlib sdl2
+          brew install make cmake gcc@13 zlib sdl2
           brew link sdl2
       - name: Build hatariB
         run: |
-          ls /usr/local/bin
-          export CC=/usr/local/bin/gcc
-          export CMAKE_C_COMPILER=/usr/local/bin/gcc
-          /usr/local/bin/gcc --version
-          ls -l /usr/local/bin/gcc
+          export CC=/usr/local/bin/gcc-13
           gmake
       - name: Prepare Artifact
         run: |
