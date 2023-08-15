@@ -758,7 +758,7 @@ RETRO_API void retro_reset(void)
 {
 	// core reset cancels OSK and pause
 	core_osk_mode = CORE_OSK_OFF;
-	core_runflags &= ~(CORE_RUNFLAG_PAUSE || CORE_RUNFLAG_OSK);
+	core_runflags &= ~(CORE_RUNFLAG_PAUSE | CORE_RUNFLAG_OSK);
 	// also generates a reset, cold if requested or needed because of halt
 	if (core_runflags & CORE_RUNFLAG_HALT || !core_option_soft_reset) // halt always needs a cold reset
 	{
