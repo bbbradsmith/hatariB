@@ -2,9 +2,13 @@
 
 A [Libretro](https://www.libretro.com/) core integrating the [Hatari](https://hatari.tuxfamily.org/) emulation of Atari ST, STE, TT, and Falcon computers.
 
-* Stable Build: not yet available
-* Unstable Build: [Windows 64-bit hatariB](https://nightly.link/bbbradsmith/hatariB/workflows/win64/main)
-* Recent Builds: [Github Actions](https://github.com/bbbradsmith/hatariB/actions)
+* Stable Build:
+  * not yet available
+* Unstable Build:
+  * [Windows 64-bit hatariB](https://nightly.link/bbbradsmith/hatariB/workflows/win64/main)
+  * [Windows 32-bit hatariB](https://nightly.link/bbbradsmith/hatariB/workflows/win32/main)
+* Recent Builds:
+  * [Github Actions](https://github.com/bbbradsmith/hatariB/actions)
 
 This is intended as an alternative or replacement for the older [Libretro Hatari Core](https://github.com/libretro/hatari).
 
@@ -22,6 +26,7 @@ Development notes: [DEVELOP.md](DEVELOP.md)
   * [Hatari Online Manual](https://hatari.tuxfamily.org/doc/manual.html)
 * Supported platforms:
   * Windows 64-bit
+  * Windows 32-bit
   * If you'd like to help set up other platforms, please [create a Github issue](https://github.com/bbbradsmith/hatariB/issues) to discuss it.
 * Default controls:
   * Left Stick and D-Pad - Joystick
