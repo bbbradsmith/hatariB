@@ -26,7 +26,7 @@ else
 endif
 
 ifneq ($(VERBOSE_CMAKE),0)
-	CMAKEFLAGS += --verbose
+	CMAKEFLAGS += --trace
 	CMAKEBUILDFLAGS += --verbose
 endif
 
