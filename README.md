@@ -27,6 +27,7 @@ Development notes: [DEVELOP.md](DEVELOP.md)
   * Windows 64-bit
   * Windows 32-bit
   * Ubuntu
+  * MacOS
 * Default controls:
   * Left Stick and D-Pad - Joystick
   * Right Stick - Mouse
