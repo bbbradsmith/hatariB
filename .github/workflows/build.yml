@@ -37,7 +37,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: hatarib-win64-${{ env.BUILD_TAG }}
+          name: hatarib-win64--${{ env.BUILD_TAG }}
           path: artifact/
 
   build-win32:
@@ -66,7 +66,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: hatarib-win32-${{ env.BUILD_TAG }}
+          name: hatarib-win32--${{ env.BUILD_TAG }}
           path: artifact/
 
   build-ubuntu:
@@ -92,7 +92,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: hatarib-ubuntu-${{ env.BUILD_TAG }}
+          name: hatarib-ubuntu--${{ env.BUILD_TAG }}
           path: artifact/
 
   build-macos:
@@ -105,7 +105,7 @@ jobs:
         run: |
           brew install make cmake gcc zlib sdl2
       - name: Build hatariB
-        run: make
+        run: gmake
       - name: Prepare Artifact
         run: |
           mkdir artifact
@@ -117,5 +117,5 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: hatarib-macos-${{ env.BUILD_TAG }}
+          name: hatarib-macos--${{ env.BUILD_TAG }}
           path: artifact/
