@@ -1,7 +1,7 @@
 # enables debug symbols, CPU trace logging
 DEBUG = 0
 
-# enables verbose cmake build for diagnosing the command line
+# enables verbose cmake for diagnosing the make step, and the cmak build command lines
 VERBOSE_CMAKE = 1
 
 SHORTHASH = "$(shell git rev-parse --short HEAD)"
@@ -26,6 +26,7 @@ else
 endif
 
 if $(VERBOSE_CMAKE)
+	CMAKEFLAGS += --verbose
 	CMAKEBUILDFLAGS += --verbose
 endif
 
