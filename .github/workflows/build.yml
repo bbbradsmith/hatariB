@@ -108,7 +108,7 @@ jobs:
       - name: Build hatariB
         run: |
           export CC=/usr/local/bin/gcc-13
-          export CMAKE_C_COMPILER=/usr/local/bin/gcc-13
+          export CMAKE_FLAGS=-DCMAKE_C_COMPILER='/usr/local/bin/gcc-13'
           gmake
       - name: Prepare Artifact
         run: |
