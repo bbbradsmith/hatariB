@@ -219,8 +219,8 @@ check_struct_has_member("struct dirent" d_type dirent.h HAVE_DIRENT_D_TYPE)
 # Other CFLAGS:
 # #############
 
-# hatariB - Use fpic to generate relocateable code for shared objects
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fpic")
+# hatariB - Use -fPIC to generate relocateable code for shared objects
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 
 # GCC/Clang stack/pointer debugging (~2x slowdown)
 if(ENABLE_ASAN)

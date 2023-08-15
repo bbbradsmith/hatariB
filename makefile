@@ -1,14 +1,16 @@
 GIT_SHORTHASH = "$(shell git rev-parse --short HEAD)"
 
 CC=gcc
-CFLAGS=-O2 -Wall -Werror -D__LIBRETRO__ -DSHORTHASH=\"$(GIT_SHORTHASH)\" -Ihatari/build
+CFLAGS=-O2 -Wall -Werror -fPIC -D__LIBRETRO__ -DSHORTHASH=\"$(GIT_SHORTHASH)\" -Ihatari/build
 LDFLAGS=-shared -Wall -Werror -static-libgcc
 CMAKEFLAGS=-DENABLE_SMALL_MEM=0 -DENABLE_TRACING=0
 # for tracing debug:
 #CMAKEFLAGS=-DENABLE_SMALL_MEM=0 -DENABLE_TRACING=1
 
+override SO_SUFFIX=.dll
+
 BD=build/
-CORE=$(BD)hatarib
+CORE=$(BD)hatarib$(SO_SUFFIX)
 SOURCES = \
 	core/core.c \
 	core/core_file.c \
@@ -44,7 +46,7 @@ $(BD)core/%.o: core/%.c
 
 hatarilib: directories
 	(cd hatari/build && cmake .. $(CMAKEFLAGS))
-	(cd hatari/build && cmake --build . -j)
+	(cd hatari/build && cmake --build . -j --trace)
 
 clean:
 	rm -f -r $(BD)
