@@ -76,7 +76,7 @@ jobs:
       - name: Fail me but not others
         shell: pwsh
         run: |
-          return -1
+          make some nonexistent target
 
   build-ubuntu:
     name: Ubuntu
