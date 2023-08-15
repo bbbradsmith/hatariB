@@ -110,6 +110,7 @@ jobs:
           export CC=/opt/homebrew/bin/gcc
           export CMAKE_C_COMPILER=/opt/homebrew/bin/gcc
           /opt/homebrew/bin/gcc --version
+          ls -l /opt/homebrew/bin/gcc
           gmake
       - name: Prepare Artifact
         run: |
