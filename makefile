@@ -17,7 +17,7 @@ CMAKEFLAGS= \
 	-DENABLE_SMALL_MEM=0
 CMAKEBUILDFLAGS= -j
 
-if $(DEBUG)
+ifneq ($(DEBUG),0)
 	CFLAGS += -g
 	LDFLAGS += -g
 	CMAKEFLAGS += -DENABLE_TRACING=1
@@ -25,7 +25,7 @@ else
 	CMAKEFLAGS += -DENABLE_TRACING=0
 endif
 
-if $(VERBOSE_CMAKE)
+ifneq ($(VERBOSE_CMAKE),0)
 	CMAKEFLAGS += --verbose
 	CMAKEBUILDFLAGS += --verbose
 endif
