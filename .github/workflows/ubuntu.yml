@@ -1,4 +1,4 @@
-name: Win64 Build
+name: Ubuntu Build
 on:
   push:
     branches: [ "main" ]
@@ -8,24 +8,21 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Files
         uses: actions/checkout@v3
-      - name: Setup MSYS2
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: UCRT64
-          install: make mingw-w64-ucrt-x86_64-zlib mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-SDL2
+      - name: Setup Ubuntu
+        run: |
+          sudo apt-get update
+          sudo apt-get install make cmake gcc libzlib libsld2
       - name: Build hatariB
-        shell: msys2 {0}
         run: make
       - name: Prepare Artifact
-        shell: pwsh
         run: |
             mkdir artifact
             mkdir artifact/cores
-            copy build/*.dll artifact/cores
+            copy build/*.so artifact/cores
             mkdir artifact/info
             copy info/*.* artifact/info
             echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $env:GITHUB_ENV

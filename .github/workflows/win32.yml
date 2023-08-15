@@ -11,7 +11,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout Files
-        uses: actions/checkout@v3       
+        uses: actions/checkout@v3
       - name: Setup MSYS2
         uses: msys2/setup-msys2@v2
         with:
