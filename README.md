@@ -27,7 +27,7 @@ Development notes: [DEVELOP.md](DEVELOP.md)
 * Supported platforms:
   * Windows 64-bit
   * Windows 32-bit
-  * If you'd like to help set up other platforms, please [create a Github issue](https://github.com/bbbradsmith/hatariB/issues) to discuss it.
+  * Ubuntu
 * Default controls:
   * Left Stick and D-Pad - Joystick
   * Right Stick - Mouse

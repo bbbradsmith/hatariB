@@ -21,8 +21,6 @@ This has been built and tested with MSYS2 UCRT64. The following packages are req
 * SDL2 (mingw-w64-ucrt-x86_64-SDL2)
 * zlib (mingw-w64-ucrt-x86_64-zlib)
 
-
-
 ## Changes to Hatari
 
 Changes to the C source code are all contained in `__LIBRETRO__` defines. This is important for merging future versions. None of the original code has been modified or deleted, only disabled within `#ifdef` blocks.

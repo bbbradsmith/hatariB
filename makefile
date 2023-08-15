@@ -7,7 +7,11 @@ CMAKEFLAGS=-DENABLE_SMALL_MEM=0 -DENABLE_TRACING=0
 # for tracing debug:
 #CMAKEFLAGS=-DENABLE_SMALL_MEM=0 -DENABLE_TRACING=1
 
-SO_SUFFIX=.dll
+ifeq ($(OS),Windows_NT)
+	SO_SUFFIX=.dll
+else
+	SO_SUFFIX=.so
+endif
 
 BD=build/
 CORE=$(BD)hatarib$(SO_SUFFIX)
