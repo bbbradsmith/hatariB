@@ -107,9 +107,8 @@ jobs:
           brew link sdl2
       - name: Build hatariB
         run: |
-          ls /usr/local/bin
           export CC=/usr/local/bin/gcc-13
-          expoer CMAKE_C_COMPILER=/usr/local/bin/gcc-13
+          export CMAKE_C_COMPILER=/usr/local/bin/gcc-13
           gmake
       - name: Prepare Artifact
         run: |
