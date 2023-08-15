@@ -5,6 +5,9 @@ on:
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -29,5 +32,5 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: hatarib-${{ env.BUILD_TAG }}
+          name: hatarib-ubuntu-${{ env.BUILD_TAG }}
           path: artifact/
