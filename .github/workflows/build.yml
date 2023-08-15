@@ -104,12 +104,12 @@ jobs:
       - name: Setup MacOS
         run: |
           brew install make cmake gcc@13 zlib sdl2
-          brew link sdl2
       - name: Build hatariB
         run: |
           export CC=/usr/local/bin/gcc-13
           export CMAKEFLAGS=-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13
           export C_INCLUDE_PATH=/usr/local/include
+          export LIBRARY_PATH=/usr/local/lib
           gmake
       - name: Prepare Artifact
         run: |
