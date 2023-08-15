@@ -25,7 +25,7 @@ jobs:
             cp build/*.so artifact/cores
             mkdir artifact/info
             cp info/*.* artifact/info
-            echo BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S") >> $env:GITHUB_ENV
+            echo "BUILD_TAG=$(git log -1 --format=\"%ad--%h\" --date=format-local:\"%Y-%m-%d-%H%M%S\")" >> $env:GITHUB_ENV
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
