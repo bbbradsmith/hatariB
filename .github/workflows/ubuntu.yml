@@ -15,7 +15,7 @@ jobs:
       - name: Setup Ubuntu
         run: |
           sudo apt-get update
-          sudo apt-get install make cmake gcc libzlib libsld2
+          sudo apt-get install make cmake gcc zlib1g-dev libsld2-dev
       - name: Build hatariB
         run: make
       - name: Prepare Artifact
