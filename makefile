@@ -46,7 +46,7 @@ $(BD)core/%.o: core/%.c
 
 hatarilib: directories
 	(cd hatari/build && cmake .. $(CMAKEFLAGS))
-	(cd hatari/build && cmake --build . -j --verbose)
+	(cd hatari/build && cmake --build . -j)
 
 clean:
 	rm -f -r $(BD)
