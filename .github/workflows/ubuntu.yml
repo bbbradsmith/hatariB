@@ -22,9 +22,9 @@ jobs:
         run: |
             mkdir artifact
             mkdir artifact/cores
-            copy build/*.so artifact/cores
+            cp build/*.so artifact/cores
             mkdir artifact/info
-            copy info/*.* artifact/info
+            cp info/*.* artifact/info
             echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $env:GITHUB_ENV
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
