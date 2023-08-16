@@ -13,6 +13,8 @@ include(CheckStructHasMember)
 include(CheckCCompilerFlag)
 include(DistClean)
 include(CheckTypeSize)
+# hatariB - CheckSymbolExists is needed too? how is this not already included?
+inclue(CheckSymbolExists)
 
 # Set build type to "Release" if user did not specify any build type yet
 # Other possible values: Debug, Release, RelWithDebInfo and MinSizeRel
