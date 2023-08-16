@@ -104,17 +104,16 @@ jobs:
       - name: Setup MacOS
         run: |
           brew install make cmake gcc@13 zlib sdl2
-          sudo xcode-select --switch /Applications/Xcode.app
         # brew's gcc has to be a specific version, make sure to update 13 above and below if upgrading
-        # xcode-select resolves 'was built for newer macOS version' linker warnings (are they important?)
-        # note 
       - name: Build hatariB
         run: |
+        CMAKE_OSX_DEPLOYMENT_TARGET
           export OS=MacOS
           export CC=/usr/local/bin/gcc-13
-          export CMAKEFLAGS=-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13
+          export CMAKEFLAGS=-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -CMAKE_OSX_DEPLOYMENT_TARGET=10.13
           export C_INCLUDE_PATH=/usr/local/include
           export LIBRARY_PATH=/usr/local/lib
+          export CFLAGS=-mmacosx-version-min=10.13
           gmake
       - name: Prepare Artifact
         run: |
