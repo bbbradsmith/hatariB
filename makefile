@@ -7,8 +7,8 @@ VERBOSE_CMAKE = 0
 SHORTHASH = "$(shell git rev-parse --short HEAD)"
 
 CC ?= gcc
-CFLAGS +=-O2 -Wall -Werror -fPIC -D__LIBRETRO__ -DSHORTHASH=\"$(SHORTHASH)\" -Ihatari/build
-LDFLAGS +=-shared -Wall -Werror -static-libgcc
+CFLAGS += -O2 -Wall -Werror -fPIC -D__LIBRETRO__ -DSHORTHASH=\"$(SHORTHASH)\" -Ihatari/build
+LDFLAGS += -shared -Wall -Werror -static-libgcc
 CMAKEFLAGS += \
 	-DCMAKE_DISABLE_FIND_PACKAGE_Readline=1 \
 	-DCMAKE_DISABLE_FIND_PACKAGE_X11=1 \

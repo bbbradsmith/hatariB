@@ -107,7 +107,6 @@ jobs:
         # brew's gcc has to be a specific version, make sure to update 13 above and below if upgrading
       - name: Build hatariB
         run: |
-        CMAKE_OSX_DEPLOYMENT_TARGET
           export OS=MacOS
           export CC=/usr/local/bin/gcc-13
           export CMAKEFLAGS=-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -CMAKE_OSX_DEPLOYMENT_TARGET=10.13
