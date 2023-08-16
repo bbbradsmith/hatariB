@@ -2,7 +2,7 @@
 DEBUG = 0
 
 # enables verbose cmake for diagnosing the make step, and the cmak build command lines
-VERBOSE_CMAKE = 1
+VERBOSE_CMAKE = 0
 
 SHORTHASH = "$(shell git rev-parse --short HEAD)"
 
@@ -10,6 +10,7 @@ CC ?= gcc
 CFLAGS +=-O2 -Wall -Werror -fPIC -D__LIBRETRO__ -DSHORTHASH=\"$(SHORTHASH)\" -Ihatari/build
 LDFLAGS +=-shared -Wall -Werror -static-libgcc
 CMAKEFLAGS += \
+	-DCMAKE_DISABLE_FIND_PACKAGE_X11=1 \
 	-DCMAKE_DISABLE_FIND_PACKAGE_PNG=1 \
 	-DCMAKE_DISABLE_FIND_PACKAGE_PortMidi=1 \
 	-DCMAKE_DISABLE_FIND_PACKAGE_CapsImage=1 \
@@ -31,6 +32,8 @@ endif
 
 ifeq ($(OS),Windows_NT)
 	SO_SUFFIX=.dll
+else ifeq ($(OS),MacOS)
+	SO_SUFFIX=.dylib
 else
 	SO_SUFFIX=.so
 endif
