@@ -320,7 +320,8 @@ configure_file(${CMAKE_SOURCE_DIR}/cmake/config-cmake.h
 
 add_subdirectory(src)
 add_subdirectory(doc)
-add_subdirectory(tests)
+# hatariB -- disabling tests which require the stand-alone executable to be built
+#add_subdirectory(tests)
 add_subdirectory(tools)
 
 include(FindPythonInterp)
