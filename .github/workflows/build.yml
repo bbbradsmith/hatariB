@@ -118,7 +118,7 @@ jobs:
         run: |
           mkdir artifact
           mkdir artifact/cores
-          cp build/*.so artifact/cores
+          cp build/*.dylib artifact/cores
           mkdir artifact/info
           cp info/*.* artifact/info
           echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $GITHUB_ENV
