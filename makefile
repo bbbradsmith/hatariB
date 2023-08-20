@@ -64,7 +64,7 @@ HATARILIBS = \
 ifneq ($(OS),MacOS)
 	HATARILIBS += -lSDL2
 else
-	HATARILIBS += -F/Library/Frameworks -framework SDL2
+	HATARILIBS += -framework SDL2
 endif
 
 default: $(CORE)
