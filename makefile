@@ -49,7 +49,7 @@ SOURCES = \
 	core/core_config.c \
 	core/core_osk.c
 OBJECTS = $(SOURCES:%.c=$(BD)%.o)
-HATARILIBS= \
+HATARILIBS = \
 	hatari/build/src/libcore.a \
 	hatari/build/src/falcon/libFalcon.a \
 	hatari/build/src/cpu/libUaeCpu.a \
@@ -57,9 +57,15 @@ HATARILIBS= \
 	hatari/build/src/libFloppy.a \
 	hatari/build/src/debug/libDebug.a \
 	hatari/build/src/libcore.a \
-	-lSDL2 \
 	-lz
 # note: libcore is linked twice to allow other hatari internal libraries to resolve references within it.
+
+# MacOS has to include SDL2 as a framework instead of a library
+ifneq ($(OS),MacOS)
+	HATARILIBS += -lSDL2
+else
+	HATARILIBS += -framework SDL2
+endif
 
 default: $(CORE)
 
