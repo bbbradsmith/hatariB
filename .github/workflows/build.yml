@@ -103,8 +103,8 @@ jobs:
         uses: actions/checkout@v3
       - name: Setup MacOS
         run: |
-          brew install -vd make cmake gcc@13 zlib
-          sudo cp -rv macos/SDL2.framework /Library/Frameworks
+          sudo cp -r macos/SDL2.framework /Library/Frameworks
+          brew install make cmake gcc@13 zlib
         # brew's gcc has to be a specific version, make sure to update 13 above and below if upgrading
       - name: Build hatariB
         run: |
