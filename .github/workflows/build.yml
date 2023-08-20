@@ -26,6 +26,8 @@ jobs:
         shell: msys2 {0}
         run: |
           echo $0
+          echo $SHELL
+          git rev-parse --short HEAD
           make
       - name: Prepare Artifact
         shell: pwsh
