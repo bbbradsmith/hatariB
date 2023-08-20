@@ -64,8 +64,7 @@ HATARILIBS = \
 ifneq ($(OS),MacOS)
 	HATARILIBS += -lSDL2
 else
-	CFLAGS += -I$(SDL2_INCLUDE_PATH)
-	CORELDFLAGS += -F$(SDL2_FRAMEWORK_PATH) -framework SDL2
+	HATARILIBS += -F$(SDL2_FRAMEWORK_PATH) -framework SDL2
 endif
 
 default: $(CORE)
@@ -76,10 +75,10 @@ directories:
 	mkdir -p hatari/build
 
 $(CORE): directories hatarilib $(OBJECTS)
-	$(CC) -o $(CORE) $(LDFLAGS) $(CORELDFLAGS) $(OBJECTS) $(HATARILIBS)
+	$(CC) -o $(CORE) $(LDFLAGS) $(OBJECTS) $(HATARILIBS)
 
 $(BD)core/%.o: core/%.c
-	$(CC) -o $@ $(CFLAGS) $(CORECFLAGS) -c $< 
+	$(CC) -o $@ $(CFLAGS) -c $< 
 
 hatarilib: directories
 	(cd hatari/build && cmake .. $(CMAKEFLAGS))
