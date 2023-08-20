@@ -70,6 +70,7 @@ I'm hoping to remove the SDL dylib requirement in the future. RetroArch provides
       * Page Down - Numpad )
     * Other keys map directly to a standard keyboard, but Game Focus mode (Scroll-Lock) may be neeed to access keys normally assigned to RetroArch hotkeys.
   * All gamepad assignments can be configured in the core options. Buttons can be assigned to press keys, or perform other actions besides the default.
+  * If you don't like pressing the stick up to jump, you can assign a button to *Joystick Up* in the *Retropad* core options.
 * File formats:
   * Floppy disk: ST, MSA, DIM, STX (can be inside ZIP or GZ)
   * Muli-disk: M3U, M3U8

@@ -684,16 +684,20 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{"6","On-Screen Keyboard One-Shot"}, \
 		{"7","Select Floppy Drive"}, \
 		{"8","Help Screen / Pause"}, \
-		{"9","STE Button A"}, \
-		{"10","STE Button B"}, \
-		{"11","STE Button C"}, \
-		{"12","STE Button Option"}, \
-		{"13","STE Button Pause"}, \
-		{"14","Soft Reset"}, \
-		{"15","Hard Reset"}, \
-		{"16","Toggle Status Bar"}, \
-		{"17","Key Space"}, \
-		{"18","Key Return"}, \
+		{"9","Joystick Up"}, \
+		{"10","Joystick Down"}, \
+		{"11","Joystick Left"}, \
+		{"12","Joystick Right"}, \
+		{"13","STE Button A"}, \
+		{"14","STE Button B"}, \
+		{"15","STE Button C"}, \
+		{"16","STE Button Option"}, \
+		{"17","STE Button Pause"}, \
+		{"18","Soft Reset"}, \
+		{"19","Hard Reset"}, \
+		{"20","Toggle Status Bar"}, \
+		{"21","Key Space"}, \
+		{"22","Key Return"}, \
 		{"","Key Up"}, \
 		{"","Key Down"}, \
 		{"","Key Left"}, \
@@ -829,9 +833,9 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	{ "hatarib_pad" padnum "_r2", "Pad " padnum " R2", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_BUTTON(), "0" }, /* none */ \
 	{ "hatarib_pad" padnum "_l3", "Pad " padnum " L3", NULL, NULL, NULL, "pad" padnum, \
-		OPTION_PAD_BUTTON(), "17" }, /* key space */ \
+		OPTION_PAD_BUTTON(), "21" }, /* key space */ \
 	{ "hatarib_pad" padnum "_r3", "Pad " padnum " R3", NULL, NULL, NULL, "pad" padnum, \
-		OPTION_PAD_BUTTON(), "18" }, /* key return */ \
+		OPTION_PAD_BUTTON(), "22" }, /* key return */ \
 	{ "hatarib_pad" padnum "_lstick", "Pad " padnum " Left Analog Stick", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_STICK(), "1" }, /* joystick */ \
 	{ "hatarib_pad" padnum "_rstick", "Pad " padnum " Right Analog Stick", NULL, NULL, NULL, "pad" padnum, \

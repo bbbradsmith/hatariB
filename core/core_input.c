@@ -523,7 +523,7 @@ void core_input_update(void)
 				#endif
 				static const int BUTTON_KEY[] = // must match options in core_config.c
 				{
-					RETROK_SPACE, // 17
+					RETROK_SPACE, // 21
 					RETROK_RETURN,
 					RETROK_UP,
 					RETROK_DOWN,
@@ -616,10 +616,10 @@ void core_input_update(void)
 					RETROK_KP6,
 					RETROK_KP7,
 					RETROK_KP8,
-					RETROK_KP9, // 110
+					RETROK_KP9, // 114
 				};
 				#define BUTTON_KEY_COUNT   (sizeof(BUTTON_KEY)/sizeof(BUTTON_KEY[0]))
-				#define BUTTON_KEY_START   17
+				#define BUTTON_KEY_START   21
 
 				const int m = core_button_map[i][k];
 
@@ -693,32 +693,44 @@ void core_input_update(void)
 					case 8: // Help Screen
 						pause = true;
 						break;
-					case 9: // STE Button A
+					case 9: // Joystick Up
+						if (j < JOY_PORTS) vjoy_stick[j] |= JOY_STICK_U;
+						break;
+					case 10: // Joystick Down
+						if (j < JOY_PORTS) vjoy_stick[j] |= JOY_STICK_D;
+						break;
+					case 11: // Joystick Left
+						if (j < JOY_PORTS) vjoy_stick[j] |= JOY_STICK_L;
+						break;
+					case 12: // Joystick Right
+						if (j < JOY_PORTS) vjoy_stick[j] |= JOY_STICK_R;
+						break;
+					case 13: // STE Button A
 						if (j < JOY_PORTS)
 						{
 							vjoy_stick[j] |= JOY_STICK_F;
 							vjoy_fire[j] |= JOY_FIRE_A;
 						}
 						break;
-					case 10: // STE Button B
+					case 14: // STE Button B
 						if (j < JOY_PORTS) vjoy_fire[j] |= JOY_FIRE_B;
 						break;
-					case 11: // STE Button C
+					case 15: // STE Button C
 						if (j < JOY_PORTS) vjoy_fire[j] |= JOY_FIRE_C;
 						break;
-					case 12: // STE Button Option
+					case 16: // STE Button Option
 						if (j < JOY_PORTS) vjoy_fire[j] |= JOY_FIRE_OPT;
 						break;
-					case 13: // STE Button Pause
+					case 17: // STE Button Pause
 						if (j < JOY_PORTS) vjoy_fire[j] |= JOY_FIRE_PAUSE;
 						break;
-					case 14: // Soft Reset
+					case 18: // Soft Reset
 						warm_boot = true;
 						break;
-					case 15: // Hard Reset
+					case 19: // Hard Reset
 						cold_boot = true;
 						break;
-					case 16: // Toggle Statusbar
+					case 20: // Toggle Statusbar
 						statusbar = true;
 						break;
 					}
