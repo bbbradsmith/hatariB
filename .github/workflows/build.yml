@@ -104,8 +104,8 @@ jobs:
       - name: Setup MacOS
         run: |
           brew install -vd make cmake gcc@13 zlib sdl2
-          find SDL2.framework
           locate SDL2.framework
+          find / SDL2.framework
         # brew's gcc has to be a specific version, make sure to update 13 above and below if upgrading
       - name: Build hatariB
         run: |
