@@ -50,6 +50,8 @@ typedef struct
   char szCartridgeImageFileName[FILENAME_MAX];
 #ifdef __LIBRETRO__
   int nBuiltinTos;
+  int nEmuTosRegion;
+  int nEmuTosFramerate;
 #endif  
 } CNF_ROM;
 

@@ -86,6 +86,14 @@ bool Change_DoNeedReset(CNF_PARAMS *current, CNF_PARAMS *changed)
 	if (strcmp(changed->Rom.szTosImageFileName, current->Rom.szTosImageFileName))
 		return true;
 
+#ifdef __LIBRETRO__
+	// Did change other TOS configurations
+	if (current->Rom.nBuiltinTos != changed->Rom.nBuiltinTos
+	    || current->Rom.nEmuTosRegion != changed->Rom.nEmuTosRegion
+	    || current->Rom.nEmuTosFramerate != changed->Rom.nEmuTosFramerate)
+		return true;
+#endif
+
 	/* Did change ACSI hard disk image? */
 	for (i = 0; i < MAX_ACSI_DEVS; i++)
 	{

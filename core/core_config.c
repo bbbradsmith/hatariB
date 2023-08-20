@@ -206,7 +206,8 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{"4","IDE (Auto)"},
 			{"5","IDE (Byte Swap Off)"},
 			{"6","IDE (Byte Swap On)"},
-			{NULL,NULL},}, "0"
+			{NULL,NULL},
+		}, "0"
 	},
 	{
 		"hatarib_hardboot", "Hard Disk Boot", NULL,
@@ -219,6 +220,39 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		"Write protect the hard disk folder or image.",
 		NULL, "system",
 		{{"0","Off"},{"1","On"},{"2","Auto"},{NULL,NULL}}, "1"
+	},
+	{
+		"hatarib_emutos_region", "EmuTOS Region", NULL,
+		"Causes restart!! For EmuTOS ROMs this can override the default framerate."
+		" EmuTOS 1024k can choose a default region, which sets language, keyboard and framerate together.",
+		NULL, "system",
+		{
+			{"-1","Default"},
+			{"-2","NTSC 60 Hz"},
+			{"-3","PAL 50 Hz"},
+			{"0","USA (NTSC)"},
+			{"1","Germany"},
+			{"2","France"},
+			{"3","United Kingdom"},
+			{"4","Spain"},
+			{"5","Italy"},
+			{"6","Sweden"},
+			{"7","Switzerland (French)"},
+			{"8","Swizterland (German)"},
+			{"9","Turkey"},
+			{"10","Finland"},
+			{"11","Norway"},
+			{"12","Denmark"},
+			{"13","Saudi Arabia"},
+			{"14","Netherlands"},
+			{"15","Czech Republic"},
+			{"16","Hungary"},
+			{"17","Poland"},
+			{"19","Russia"},
+			{"31","Greece"},
+			{"127","Multilanguage"},
+			{NULL,NULL},
+		}, "0"
 	},
 	//
 	// Input
@@ -1066,6 +1100,12 @@ void core_config_read_newparam()
 	}
 	CFG_INT("hatarib_hardboot") newparam.HardDisk.bBootFromHardDisk = vi;
 	CFG_INT("hatarib_hard_readonly") { newparam.HardDisk.nWriteProtection = vi; core_hard_readonly = vi; }
+	CFG_INT("hatarib_emutos_region")
+	{
+		if (vi >= 0) newparam.Rom.nEmuTosRegion = vi;
+		if (vi == -2) newparam.Rom.nEmuTosFramerate = 0; // NTSC 60 Hz
+		if (vi == -3) newparam.Rom.nEmuTosFramerate = 1; // PAL 50 Hz
+	}
 	CFG_INT("hatarib_joy1_port") core_joy_port_map[0] = vi;
 	CFG_INT("hatarib_joy2_port") core_joy_port_map[1] = vi;
 	CFG_INT("hatarib_joy3_port") core_joy_port_map[2] = vi;

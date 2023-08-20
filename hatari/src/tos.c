@@ -1281,6 +1281,22 @@ int TOS_InitImage(void)
 			   (osconf & 1) ? "PAL" : "NTSC");
 	}
 
+#ifdef __LIBRETRO__
+	// allowing more direct EmuTOS country/framerate override
+	// Note: EmuTOS 1024k will override framerate if the region is set.
+	if (bIsEmuTOS)
+	{
+		Uint16 newconf = osconf;
+		if (ConfigureParams.Rom.nEmuTosRegion >= 0)
+			newconf = (newconf && 0xFF01) | ((ConfigureParams.Rom.nEmuTosRegion << 1) & 0x00FE);
+		if (ConfigureParams.Rom.nEmuTosFramerate >= 1)
+			newconf = (newconf && 0xFFFE) | (ConfigureParams.Rom.nEmuTosFramerate     & 0x0001);
+		if (newconf != osconf)
+			STMemory_WriteWord(TosAddress+0x1C, newconf);
+		osconf = newconf;
+	}
+#endif
+
 	/*
 	 * patch some values into the "Draw logo" patch.
 	 * Needs to be called after final VDI resolution has been determined.
