@@ -1,14 +1,46 @@
-GIT_SHORTHASH = "$(shell git rev-parse --short HEAD)"
+# enables debug symbols, CPU trace logging
+DEBUG = 0
 
-CC=gcc
-CFLAGS=-O2 -Wall -Werror -D__LIBRETRO__ -DSHORTHASH=\"$(GIT_SHORTHASH)\" -Ihatari/build
-LDFLAGS=-shared -Wall -Werror -static-libgcc
-CMAKEFLAGS=-DENABLE_SMALL_MEM=0 -DENABLE_TRACING=0
-# for tracing debug:
-#CMAKEFLAGS=-DENABLE_SMALL_MEM=0 -DENABLE_TRACING=1
+# enables verbose cmake for diagnosing the make step, and the cmak build command lines
+VERBOSE_CMAKE = 0
+
+SHORTHASH = "$(shell git rev-parse --short HEAD)"
+
+CC ?= gcc
+CFLAGS += -O2 -Wall -Werror -fPIC -D__LIBRETRO__ -DSHORTHASH=\"$(SHORTHASH)\" -Ihatari/build
+LDFLAGS += -shared -Wall -Werror -static-libgcc
+CMAKEFLAGS += \
+	-DCMAKE_DISABLE_FIND_PACKAGE_Readline=1 \
+	-DCMAKE_DISABLE_FIND_PACKAGE_X11=1 \
+	-DCMAKE_DISABLE_FIND_PACKAGE_PNG=1 \
+	-DCMAKE_DISABLE_FIND_PACKAGE_PortMidi=1 \
+	-DCMAKE_DISABLE_FIND_PACKAGE_CapsImage=1 \
+	-DENABLE_SMALL_MEM=0
+CMAKEBUILDFLAGS += -j
+
+ifneq ($(DEBUG),0)
+	CFLAGS += -g
+	LDFLAGS += -g
+	CMAKEFLAGS += -DENABLE_TRACING=1
+else
+	CMAKEFLAGS += -DENABLE_TRACING=0
+endif
+
+ifneq ($(VERBOSE_CMAKE),0)
+	CMAKEFLAGS += --trace
+	CMAKEBUILDFLAGS += --verbose
+endif
+
+ifeq ($(OS),Windows_NT)
+	SO_SUFFIX=.dll
+else ifeq ($(OS),MacOS)
+	SO_SUFFIX=.dylib
+else
+	SO_SUFFIX=.so
+endif
 
 BD=build/
-CORE=$(BD)hatarib.dll
+CORE=$(BD)hatarib$(SO_SUFFIX)
 SOURCES = \
 	core/core.c \
 	core/core_file.c \
@@ -44,7 +76,7 @@ $(BD)core/%.o: core/%.c
 
 hatarilib: directories
 	(cd hatari/build && cmake .. $(CMAKEFLAGS))
-	(cd hatari/build && cmake --build . -j)
+	(cd hatari/build && cmake --build . $(CMAKEBUILDFLAGS))
 
 clean:
 	rm -f -r $(BD)

@@ -14,7 +14,9 @@ set(SOURCES
 # Disk image code is shared with the hmsa tool, so we put it into a library:
 add_library(Floppy createBlankImage.c dim.c msa.c st.c zip.c)
 
-# When building for macOS, define specific sources for gui and resources
+if(0) # hatariB - remove platform specific gui code
+
+# When building for macOS, define specific sources for gui and resource
 if(ENABLE_OSX_BUNDLE)
 	set(GUIOSX_SOURCES
 	    gui-osx/AlertHooks.m gui-osx/PrefsController.m gui-osx/Shared.m
@@ -43,6 +45,8 @@ if(WIN32)
 		    "${CMAKE_EXE_LINKER_FLAGS} -mwindows -Wl,--as-needed -lssp")
 	endif(CMAKE_COMPILER_IS_GNUCC)
 endif(WIN32)
+
+endif(0) # hatariB - remove platform specific gui code
 
 include_directories(includes debug falcon
 		    ${CMAKE_BINARY_DIR} ${SDL2_INCLUDE_DIR} cpu)
@@ -77,6 +81,8 @@ add_subdirectory(debug)
 add_subdirectory(falcon)
 add_subdirectory(gui-sdl)
 add_subdirectory(cpu)
+
+if(0) # hatariB - remove platform specific gui code
 
 # When building for macOS, add specific sources
 if(ENABLE_OSX_BUNDLE)
@@ -204,8 +210,9 @@ else()
 	endif(TOS_IMG_FILE)
 endif(ENABLE_OSX_BUNDLE)
 
-# hatariB - disable exectuable build, add core library target, add __LIBRETRO__ define
-set_target_properties(hatari PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
+endif(0) # hatariB - remove platform specific gui code
+
+# hatariB - removed exectuable build, addded core library target, add __LIBRETRO__ define
 add_library(core ${SOURCES})
 target_compile_definitions(core PUBLIC __LIBRETRO__)
 target_compile_definitions(Floppy PUBLIC __LIBRETRO__)

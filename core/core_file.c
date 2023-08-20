@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/stat.h>
 #include <dirent.h>
 #include "../hatari/src/includes/main.h"
@@ -202,7 +203,7 @@ uint8_t* core_read_file(const char* filename, unsigned int* size_out)
 			fclose(f);
 			return NULL;
 		}
-		fread(d,1,size,f);
+		(void)!fread(d,1,size,f); // (void)! suppresses warn_unused_result
 		fclose(f);
 	}
 	if (size_out) *size_out = size;

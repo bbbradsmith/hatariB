@@ -21,20 +21,21 @@ This has been built and tested with MSYS2 UCRT64. The following packages are req
 * SDL2 (mingw-w64-ucrt-x86_64-SDL2)
 * zlib (mingw-w64-ucrt-x86_64-zlib)
 
-
-
 ## Changes to Hatari
 
 Changes to the C source code are all contained in `__LIBRETRO__` defines. This is important for merging future versions. None of the original code has been modified or deleted, only disabled within `#ifdef` blocks.
 
 Otherwise there are minor changes to the CMake build files, marked with a comment that beings with: `# hatariB`
 
-* **hatari/src/CMakeLists.txt**
-  * Disabled `hatari` exectuable build target, added `core` library target with `__LIBRETRO__` define.
-  * `set_target_properties(hatari PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)`
-  * `add_library(core ${SOURCES})`
-  * `target_compile_definitions(core PUBLIC __LIBRETRO__)`
+* **hatari/CMakeLists.txt**
+  * Add `-fPIC` compiler option to generate relocatable code for shared object use.
   * Removed `HAVE_STATVFS` check because we use the Libretro VFS instead.
+  * Disable `ALERT_HOOKS` not needed for MacOS build without GUI.
+  * Disable `tests` which require an executable version of Hatari to be built.
+* **hatari/src/CMakeLists.txt**
+  * Removed OS-specific libraries, and `hatari` executable build target.
+  * Added `core` library target with `__LIBRETRO__` define.
+  * `add_library(core ${SOURCES})`
 * **hatari/src/cpu/CMakeLists.txt**
 * **hatari/src/debug/CMakeLists.txt**
 * **hatari/src/falcon/CMakeLists.txt**
@@ -48,7 +49,6 @@ Otherwise there are minor changes to the CMake build files, marked with a commen
 
 * **hatari/src/includes/main.h**
   * Added common include `../../core/core.h` to give quick common access to hatariB core.
-  * Added `SDL2/` prefix to SDL header include.
 * **hatari/src/main.c**
   * Split `main` into `main_init`, and `main_deinit`.
   * Skip `Win_OpenCon` and `setenv`.

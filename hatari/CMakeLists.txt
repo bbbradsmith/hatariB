@@ -13,6 +13,8 @@ include(CheckStructHasMember)
 include(CheckCCompilerFlag)
 include(DistClean)
 include(CheckTypeSize)
+# hatariB - CheckSymbolExists is needed too? how is this not already included?
+include(CheckSymbolExists)
 
 # Set build type to "Release" if user did not specify any build type yet
 # Other possible values: Debug, Release, RelWithDebInfo and MinSizeRel
@@ -170,12 +172,14 @@ if(PKG_CONFIG_FOUND)
 			ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif(PKG_CONFIG_FOUND)
 
+if (0) # hatariB -- ALERT_HOOKS are OS gui not needed by libretro core
 if(ENABLE_OSX_BUNDLE)
 	# Use OSX native alert windows
 	add_definitions(-DALERT_HOOKS=1)
 	# We still want to use our SDLMain.m with SDL2
 	add_definitions(-DSDL_MAIN_NEEDED=1)
 endif(ENABLE_OSX_BUNDLE)
+endif(0) # hatariB -- ALERT_HOOKS are OS gui not needed by libretro core
 
 if(MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
@@ -218,6 +222,9 @@ check_struct_has_member("struct dirent" d_type dirent.h HAVE_DIRENT_D_TYPE)
 # #############
 # Other CFLAGS:
 # #############
+
+# hatariB - Use -fPIC to generate relocateable code for shared objects
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 
 # GCC/Clang stack/pointer debugging (~2x slowdown)
 if(ENABLE_ASAN)
@@ -317,7 +324,8 @@ configure_file(${CMAKE_SOURCE_DIR}/cmake/config-cmake.h
 
 add_subdirectory(src)
 add_subdirectory(doc)
-add_subdirectory(tests)
+# hatariB -- disabling tests which require the stand-alone executable to be built
+#add_subdirectory(tests)
 add_subdirectory(tools)
 
 include(FindPythonInterp)

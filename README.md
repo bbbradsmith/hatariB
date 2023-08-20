@@ -5,8 +5,7 @@ A [Libretro](https://www.libretro.com/) core integrating the [Hatari](https://ha
 * Stable Build:
   * not yet available
 * Unstable Build:
-  * [Windows 64-bit hatariB](https://nightly.link/bbbradsmith/hatariB/workflows/win64/main)
-  * [Windows 32-bit hatariB](https://nightly.link/bbbradsmith/hatariB/workflows/win32/main)
+  * [Download](https://nightly.link/bbbradsmith/hatariB/workflows/build/main)
 * Recent Builds:
   * [Github Actions](https://github.com/bbbradsmith/hatariB/actions)
 
@@ -27,7 +26,8 @@ Development notes: [DEVELOP.md](DEVELOP.md)
 * Supported platforms:
   * Windows 64-bit
   * Windows 32-bit
-  * If you'd like to help set up other platforms, please [create a Github issue](https://github.com/bbbradsmith/hatariB/issues) to discuss it.
+  * Ubuntu
+  * MacOS (see note below)
 * Default controls:
   * Left Stick and D-Pad - Joystick
   * Right Stick - Mouse
@@ -127,6 +127,11 @@ Development notes: [DEVELOP.md](DEVELOP.md)
   * If the on-screen keyboard confirm/cancel buttons aren't mapped to dedicated keys, you might end up suddenly holding the underlying button when the keyboard closes.
   * The Floppy Disk List pause screen won't display unicode filenames correctly.
   * You can use Load New Disk or M3U playlists to load the same floppy multiple times, or multiple floppies with the same name. This mostly works okay, but a savestate restore might be unable to identify which of them was actually inserted.
+* MacOS:
+  * This platform is a bit harder to set up, and currently requires a few extra steps.
+    * After downloading the core, right click on `cores/hatarib.dylib` and open it, you will have to allow it to have permission to run.
+    * Download `libSDL2.dylib` [here](https://github.com/OutOfOrder/SDL2-Binaries/tree/master/osx), rename it to `libSDL2-2.0.0.dylib` and then copy it to `/usr/local/opt/sdl2/lib/`? Again, right click on it and open it to allow permissions.
+    * Once this is done it seems to open correctly in RetroArch. I think a longer term solution will require getting rid of the SDL2 dynamic linking requirement, w
 
 Possible Future Tasks:
 * Investigate Libretro MIDI interface. I wonder if I could play MIDI Maze against my real ST?
@@ -136,6 +141,7 @@ Possible Future Tasks:
 * IPF support, figure out library issues. There seems to be a MAME IPF reader?
 * Keyboard languages and layouts? Need to know a bit more about how to test this. Think about host keyboard vs. simulated keyboard, etc.
 * Look for Log cases where Hatari changes CFG (most of these are in tos.c) and turn them into a halt instead of automatically changing system. Setting CPU speed should probably only be applied at cold boot? (Put a "requires restart" notice on it.)
+* Remove SDL2 dynamic linking requirement. Import only the subset of SDL2 needed for this integration into this project and build it directly in.
 
 ## History
 
