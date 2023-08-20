@@ -116,7 +116,7 @@ jobs:
           export CMAKEFLAGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DSDL2_INCLUDE_DIR=~/Library/Frameworks/SDL2.framework/include/SDL2"
           export C_INCLUDE_PATH=/usr/local/include
           export LIBRARY_PATH=/usr/local/lib
-          export CFLAGS=-mmacosx-version-min=10.13 -I~/Library/Frameworks/SDL2.framework/include
+          export CFLAGS="-mmacosx-version-min=10.13 -I~/Library/Frameworks/SDL2.framework/include"
           export SDL2_FRAMEWORK_PATH=~/Library/Frameworks
           gmake
       - name: Prepare Artifact
