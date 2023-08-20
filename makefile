@@ -4,7 +4,7 @@ DEBUG = 0
 # enables verbose cmake for diagnosing the make step, and the cmak build command lines
 VERBOSE_CMAKE = 0
 
-SHORTHASH = "$(shell git rev-parse --short HEAD)"
+SHORTHASH = "$(shell git rev-parse --short HEAD || unknown)"
 
 CC ?= gcc
 CFLAGS += -O2 -Wall -Werror -fPIC -D__LIBRETRO__ -DSHORTHASH=\"$(SHORTHASH)\" -Ihatari/build

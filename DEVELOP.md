@@ -15,8 +15,9 @@ Incorporated sources:
 
 This has been built and tested with MSYS2 UCRT64. The following packages are required:
 
-* gcc (mingw-w64-ucrt-x86_64-gcc)
+* git
 * make
+* gcc (mingw-w64-ucrt-x86_64-gcc)
 * cmake (mingw-w64-ucrt-x86_64-cmake)
 * SDL2 (mingw-w64-ucrt-x86_64-SDL2)
 * zlib (mingw-w64-ucrt-x86_64-zlib)
