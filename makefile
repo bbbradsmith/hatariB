@@ -2,7 +2,7 @@
 DEBUG = 0
 
 # enables verbose cmake for diagnosing the make step, and the cmak build command lines
-VERBOSE_CMAKE = 0
+VERBOSE_CMAKE = 1
 
 SHORTHASH = "$(shell git rev-parse --short HEAD || unknown)"
 
@@ -64,7 +64,8 @@ HATARILIBS = \
 ifneq ($(OS),MacOS)
 	HATARILIBS += -lSDL2
 else
-	HATARILIBS += -framework SDL2
+	CFLAGS += -framework SDL2
+	LDLAGS += -framework SDL2
 endif
 
 default: $(CORE)
