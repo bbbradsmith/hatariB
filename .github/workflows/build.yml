@@ -103,18 +103,18 @@ jobs:
         uses: actions/checkout@v3
       - name: Setup MacOS
         run: |
-          sudo cp -rv macos/SDL2.framework /home
+          sudo cp -rv macos/SDL2.framework ~/Library/Frameworks
           brew install make cmake gcc@13 zlib
         # brew's gcc has to be a specific version, make sure to update 13 above and below if upgrading
       - name: Build hatariB
         run: |
           export OS=MacOS
           export CC=/usr/local/bin/gcc-13
-          export CMAKEFLAGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DSDL2_SEARCH_PATHS=/home"
+          export CMAKEFLAGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DSDL2_SEARCH_PATHS=~/Library/Frameworks"
           export C_INCLUDE_PATH=/usr/local/include
           export LIBRARY_PATH=/usr/local/lib
           export CFLAGS=-mmacosx-version-min=10.13
-          export SDL2_PATH=/home
+          export SDL2_PATH=~/Library/Frameworks
           gmake
       - name: Prepare Artifact
         run: |
