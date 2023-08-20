@@ -2,6 +2,11 @@
 
 A [Libretro](https://www.libretro.com/) core integrating the [Hatari](https://hatari.tuxfamily.org/) emulation of Atari ST, STE, TT, and Falcon computers.
 
+* Supported platforms:
+  * Windows 64-bit
+  * Windows 32-bit
+  * Ubuntu
+  * MacOS
 * Stable Build:
   * not yet available
 * Unstable Build:
@@ -19,15 +24,24 @@ Emulator: [Hatari 2.4.1](https://git.tuxfamily.org/hatari/hatari.git/tag/?id=v2.
 
 Development notes: [DEVELOP.md](DEVELOP.md)
 
+## Installation
+
+The build artifact ZIP files contain a `core/` and `info/` folder. The core folder contains the hatariB core object, and the info folder contains metadata that allows RetroArch to know its associated file types.
+
+On Windows, if using RetroArch's portable *Download* version instead of the installer, you can simply copy the core and info files into the RetroArch folder and it will merge into those folders.
+
+If installed, or on other platforms, you may need to locate the needed core and info folders. You can find these in RetroArch's *Settings > Directories* menu under *Cores* and *Core Info*.
+
+On MacOS, there are some extra requirements:
+* After downloading the core, right click on `cores/hatarib.dylib` and open it, here you can give it permission to run.
+* Download `libSDL2.dylib` [here](https://github.com/OutOfOrder/SDL2-Binaries/tree/master/osx), rename it to `libSDL2-2.0.0.dylib` and then copy it to `/usr/local/opt/sdl2/lib/`? Again, right click on it and open it, then allow permissions.
+
+I'm hoping to remove the SDL dylib requirement in the future. RetroArch provides SDL2 automatically on Windows and Linux, but the MacOS version seems unable to do so.
+
 ## Notes
 
 * Hatari Manual:
   * [Hatari Online Manual](https://hatari.tuxfamily.org/doc/manual.html)
-* Supported platforms:
-  * Windows 64-bit
-  * Windows 32-bit
-  * Ubuntu
-  * MacOS (see note below)
 * Default controls:
   * Left Stick and D-Pad - Joystick
   * Right Stick - Mouse
@@ -88,8 +102,8 @@ Development notes: [DEVELOP.md](DEVELOP.md)
   * The TT and Falcon machines have a small non-volatile RAM (NVRAM) that stores system settings. This is saved to **system/hatarib.nvram** when the content is closed.
 * TOS ROMs:
   * The TOS ROM can be chosen in the core option *Sstem > TOS ROM*.
-  * The default TOS ROM is *system/tos.img*, but *[EmuTOS 1024k](https://emutos.sourceforge.io/)* is provided as a free substitute.
-  * Additional TOS ROMs can be supplied in *system/hatarib/*, up to a limit of 100 files.
+  * The default TOS ROM is **system/tos.img**, but *[EmuTOS 1024k](https://emutos.sourceforge.io/)* is provided as a free substitute.
+  * Additional TOS ROMs can be supplied in **system/hatarib/**, up to a limit of 100 files.
   * *EmuTOS* is compatible with most software, but not all. In most incompatibility cases it will show a "Panic" message at boot.
   * *EmuTOS 1024k* is the default, with a full feature set, and univeral support for all emulated machine types.
   * *EmuTOS 192uk* may be slightly more compatible with *ST* software, but provides fewer features. With a colour monitor it starts up in 50hz by default.
@@ -119,23 +133,17 @@ Development notes: [DEVELOP.md](DEVELOP.md)
   * Hard Disk modifications are written directly to their source files, and are not included in savestates.
   * If you increase the size of memory, you should close and restart the core before using savestates, to allow RetroArch to update the savestate size.
 * Quirks:
-  * We cannot delete directories in a GemDOS hard disk, because of [a bug in the RetroArch virtual file system](https://github.com/libretro/RetroArch/issues/15578) that affects windows only. This will likely be fixed in the future by an update to RetroArch. There's a working fallback if the VFS isn't provided by the host, but this isn't something easily accessible by the user, and the VFS provides other advantages so it should not be turned off. You can work around this by deleting the folder on your host computer instead.
   * For some invalid combinations of TOS + Machine, Hatari will automatically change the machine with a notice. In this state, changing any option in the config menu will reset the system. Haven't figured out the best way to fix this because Hatari was designed to modify your stored settings directly in this case.
   * Changing any core option will also reset CPU speed, which could be a problem for Falcon that can change it at runtime (does anyone know a good software test case?), same settings modification issue as above.
   * There may be other run-state like these stored directly as configuration modifications that will be clobbered by core options changes. Still evaluating the scope of this problem. (I don't want the core secretly changing settings without the user knowing.)
   * Restoring a savestate, or using netplay/run-ahead into the pause or one-shot keyboard will have an outdated/blank background until unpaused, as Hatari can't rebuild the image until it runs a frame. We might consider fixing this by adding the framebuffer to the savestate, though it would significantly increase the data size.
   * If the on-screen keyboard confirm/cancel buttons aren't mapped to dedicated keys, you might end up suddenly holding the underlying button when the keyboard closes.
-  * The Floppy Disk List pause screen won't display unicode filenames correctly.
-  * You can use Load New Disk or M3U playlists to load the same floppy multiple times, or multiple floppies with the same name. This mostly works okay, but a savestate restore might be unable to identify which of them was actually inserted.
-* MacOS:
-  * This platform is a bit harder to set up, and currently requires a few extra steps.
-    * After downloading the core, right click on `cores/hatarib.dylib` and open it, you will have to allow it to have permission to run.
-    * Download `libSDL2.dylib` [here](https://github.com/OutOfOrder/SDL2-Binaries/tree/master/osx), rename it to `libSDL2-2.0.0.dylib` and then copy it to `/usr/local/opt/sdl2/lib/`? Again, right click on it and open it to allow permissions.
-    * Once this is done it seems to open correctly in RetroArch. I think a longer term solution will require getting rid of the SDL2 dynamic linking requirement, w
+  * The *Floppy Disk List* pause screen won't display unicode filenames correctly.
+  * You can use *Load New Disk* or M3U playlists to load the same floppy multiple times, or multiple floppies with the same name. This mostly works okay, but a savestate restore might be unable to identify which of them was actually inserted.
 
 Possible Future Tasks:
 * Investigate Libretro MIDI interface. I wonder if I could play MIDI Maze against my real ST?
-* Can savestate restore be more lightweight? What takes so much CPU time? Are there any lingering spurious disk accesses?
+* Can savestate restore be more lightweight? What takes so much CPU time? Are there any lingering spurious disk accesses? Also, I think netplay efficiency may rely on stable data positions, so double check this to see if structures are moving around from frame to frame (I suspect it only really changes at disk insert/eject).
 * RS232 emulation?
 * Printer emulation?
 * IPF support, figure out library issues. There seems to be a MAME IPF reader?
