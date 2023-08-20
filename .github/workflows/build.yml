@@ -104,18 +104,21 @@ jobs:
       - name: Setup MacOS
         run: |
           mkdir -p ~/Library/Frameworks/SDL2.framework
+          mkdir -p ~/Library/Frameworks/SDL2.framework/include/SDL2
           cp -rv macos/SDL2.framework ~/Library/Frameworks
+          cp -rv macos/SDL2.framework/Versions/A/Headers/*.* ~/Library/Frameworks/SDL2.framework/include/SDL2
           brew install make cmake gcc@13 zlib
         # brew's gcc has to be a specific version, make sure to update 13 above and below if upgrading
       - name: Build hatariB
         run: |
           export OS=MacOS
           export CC=/usr/local/bin/gcc-13
-          export CMAKEFLAGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DSDL2_INCLUDE_DIR=~/Library/Frameworks/SDL2.framework/Versions/A/Headers"
+          export CMAKEFLAGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DSDL2_INCLUDE_DIR=~/Library/Frameworks/SDL2.framework/include"
           export C_INCLUDE_PATH=/usr/local/include
           export LIBRARY_PATH=/usr/local/lib
           export CFLAGS=-mmacosx-version-min=10.13
-          export SDL2_PATH=~/Library/Frameworks
+          export SDL2_INCLUDE_PATH=~/Library/Framworkd/SDL2.framework/include
+          export SDL2_FRAMEWORK_PATH=~/Library/Frameworks
           gmake
       - name: Prepare Artifact
         run: |
