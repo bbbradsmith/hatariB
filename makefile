@@ -64,8 +64,8 @@ HATARILIBS = \
 ifneq ($(OS),MacOS)
 	HATARILIBS += -lSDL2
 else
-	CFLAGS += -F~/Library/Frameworks -framework SDL2
-	LDLAGS += -F~/Library/Frameworks -framework SDL2
+	CFLAGS += -Fmacos -framework SDL2
+	LDLAGS += -Fmacos -framework SDL2
 endif
 
 default: $(CORE)
