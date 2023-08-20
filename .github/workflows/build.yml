@@ -111,7 +111,7 @@ jobs:
         run: |
           export OS=MacOS
           export CC=/usr/local/bin/gcc-13
-          export CMAKEFLAGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DSDL2_SEARCH_PATHS=~/Library/Frameworks"
+          export CMAKEFLAGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DSDL2_INCLUDE_DIR=~/Library/Frameworks/SDL2.framework/Versions/A/Headers"
           export C_INCLUDE_PATH=/usr/local/include
           export LIBRARY_PATH=/usr/local/lib
           export CFLAGS=-mmacosx-version-min=10.13
