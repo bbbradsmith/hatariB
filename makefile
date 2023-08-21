@@ -10,7 +10,7 @@ SHORTHASH = "$(shell git rev-parse --short HEAD || unknown)"
 ZLIB_INCLUDE = $(PWD)/zlib_build/include
 SDL2_INCLUDE = $(PWD)/SDL/build/include/SDL2
 ZLIB_LIB = $(PWD)/zlib_build/lib/libz.a
-SDL2_LIB = $(PWD)/SDL/build/lib/libSLD2.a
+SDL2_LIB = $(PWD)/SDL/build/lib/libSDL2.a
 SDL2_LINK = $(shell $(PWD)/SDL/build/bin/sdl2-config --static-libs)
 ZLIB_LINK = $(ZLIB_LIB)
 # sdl2-config is less than ideal, designed for EXE rather than DLL,
@@ -88,6 +88,13 @@ full:
 	$(MAKE) -f makefile.sdl clean
 	$(MAKE) clean
 	$(MAKE) -f makefile.zlib
+	$(MAKE) -f makefile.sdl
+	$(MAKE) default
+
+# to test a reconfiguration of SDL only
+sdlreconfig:
+	$(MAKE) -f makefile.sdl clean
+	$(MAKE) clean
 	$(MAKE) -f makefile.sdl
 	$(MAKE) default
 
