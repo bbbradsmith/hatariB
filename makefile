@@ -7,12 +7,12 @@ VERBOSE_CMAKE = 0
 SHORTHASH = "$(shell git rev-parse --short HEAD || unknown)"
 
 # static libraries
-ZLIB_INCLUDE = $(PWD)/zlib
+ZLIB_INCLUDE = $(PWD)/zlib_build/include
 SDL2_INCLUDE = $(PWD)/SDL/build/include
-ZLIB_LIB = $(PWD)/zlib/libz.a
+ZLIB_LIB = $(PWD)/zlib_build/lib/libz.a
 SDL2_LIB = $(PWD)/SDL/build/lib/libSLD2.a
 SDL2_LINK = $(shell $(PWD)/SDL/build/bin/sdl2-config --static-libs)
-ZLIB_LINK = $(PWD)/zlib/libz.a
+ZLIB_LINK = $(ZLIB_LIB)
 
 CC ?= gcc
 CFLAGS += \

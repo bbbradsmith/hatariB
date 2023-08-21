@@ -1,12 +1,16 @@
-default: zlib/libz.a
+ZLIB_BUILD = $(PWD)/zlib_build
+
+default: $(ZLIB_BUILD)/libz.a
 
 submodules:
 	git submodule init
 	git submodule update
 
-zlib/libz.a: submodules
-	cd zlib && ./configure
-	cd zlib && make static
+$(ZLIB_BUILD)/libz.a: submodules
+	mkdir -p $(ZLIB_BUILD)
+	cd zlib_build && ../zlib/configure --static --prefix=$(ZLIB_BUILD)
+	cd zlib_build && make static
+	cd zlib_build && make install
 
 clean:
 	rm -f -r zlib
