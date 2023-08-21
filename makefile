@@ -4,6 +4,9 @@ DEBUG = 0
 # enables verbose cmake for diagnosing the make step, and the cmak build command lines
 VERBOSE_CMAKE = 0
 
+# override to link SDL2 in a different way
+SDL2_LINK = -lSDL2
+
 SHORTHASH = "$(shell git rev-parse --short HEAD || unknown)"
 
 CC ?= gcc
@@ -31,6 +34,14 @@ ifneq ($(VERBOSE_CMAKE),0)
 	CMAKEBUILDFLAGS += --verbose
 endif
 
+ifeq ($(OS),Windows_NT)
+	SO_SUFFIX=.dll
+else ifeq ($(OS),MacOS)
+	SO_SUFFIX=.dylib
+else
+	SO_SUFFIX=.so
+endif
+
 BD=build/
 CORE=$(BD)hatarib$(SO_SUFFIX)
 SOURCES = \
@@ -49,18 +60,9 @@ HATARILIBS = \
 	hatari/build/src/libFloppy.a \
 	hatari/build/src/debug/libDebug.a \
 	hatari/build/src/libcore.a \
-	-lSDL2 \
-	-lz
+	-lz \
+	$(SDL2_LINK)
 # note: libcore is linked twice to allow other hatari internal libraries to resolve references within it.
-
-ifeq ($(OS),Windows_NT)
-	SO_SUFFIX=.dll
-else ifeq ($(OS),MacOS)
-	SO_SUFFIX=.dylib
-	HATARILIBS += $(SDL2_STATIC_LIBS)
-else
-	SO_SUFFIX=.so
-endif
 
 default: $(CORE)
 

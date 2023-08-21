@@ -27,7 +27,7 @@ jobs:
           mkdir build
           cd build
           CC=$PWD/../build-scripts/gcc-fat.sh
-          ../configure --disable-shared --prefix=$(pwd)
+          ../configure --disable-shared --prefix=$(pwd) --enable-audio=no --enable-joystick=no --enable-haptic=no --enable-hidapi=no --enable-sensor=no --enable-power=no --enable-filesystem=no --enable-timers=no --enable-file=no
           make
           make install
           # produced:
@@ -41,7 +41,7 @@ jobs:
           export CMAKEFLAGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DSDL2_INCLUDE_DIR=$(PWD)/SDL/build/include/SDL2 -DSDL2_LIBRARY=$(PWD)/SDL/build/lib/libSDL2.a"
           export C_INCLUDE_PATH=$(PWD)/SDL/build/include
           export LIBRARY_PATH=$(PWD)/SDL/build/lib
-          export SDL2_STATIC_LIBS=$(SDL/build/bin/sdl2-config --static-libs)
+          export SDL2_LINK=$(SDL/build/bin/sdl2-config --static-libs)
           gmake
       - name: Prepare Artifact
         run: |
