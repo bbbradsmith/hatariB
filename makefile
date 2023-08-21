@@ -13,6 +13,8 @@ ZLIB_LIB = $(PWD)/zlib_build/lib/libz.a
 SDL2_LIB = $(PWD)/SDL/build/lib/libSLD2.a
 SDL2_LINK = $(shell $(PWD)/SDL/build/bin/sdl2-config --static-libs)
 ZLIB_LINK = $(ZLIB_LIB)
+# sdl2-config is less than ideal, designed for EXE rather than DLL,
+# it adds -lSDLmain etc. but it seems the best way to get the mac dependencies right
 
 CC ?= gcc
 CFLAGS += \
