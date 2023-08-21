@@ -201,7 +201,7 @@ void Statusbar_EnableHDLed(drive_led_t state)
 #ifndef __LIBRETRO__
 	Led[DRIVE_LED_HD].expire = SDL_GetTicks() + 1000/2;
 #else
-	Led[DRIVE_LED_HD].expire = 30; // frames to remain onscreen
+	Led[DRIVE_LED_HD].expire = 25; // frames to remain onscreen
 #endif
 	Led[DRIVE_LED_HD].state = state;
 }
@@ -507,7 +507,7 @@ void Statusbar_AddMessage(const char *msg, Uint32 msecs)
 #ifndef __LIBRETRO__
 		item->timeout = msecs;
 #else
-		item->timeout = msecs / 55; // apprxomiate number of frames
+		item->timeout = (msecs * 55) / 1000; // apprxomiate number of frames
 #endif
 	}
 	else
@@ -516,7 +516,7 @@ void Statusbar_AddMessage(const char *msg, Uint32 msecs)
 #ifndef __LIBRETRO__
 		item->timeout = 2500;
 #else
-		item->timeout = 2500 / 55;
+		item->timeout = (2500 * 55) / 1000;
 #endif
 	}
 	item->shown = false;
@@ -752,7 +752,7 @@ static SDL_Rect* Statusbar_ShowMessage(SDL_Surface *surf, Uint32 ticks)
 		if (MessageList->expire > ticks)
 #else
 		--MessageList->expire;
-		if (MessageList->expire < 1)
+		if (MessageList->expire > 0)
 #endif
 		{
 			/* not timed out yet */
