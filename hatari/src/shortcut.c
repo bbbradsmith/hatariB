@@ -284,6 +284,10 @@ static void ShortCut_InsertDisk(int drive)
 
 	}
 	Main_UnPauseEmulation();
+#else
+	(void)selname;
+	(void)zip_path;
+	(void)tmpname;
 #endif
 }
 
