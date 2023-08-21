@@ -31,14 +31,6 @@ ifneq ($(VERBOSE_CMAKE),0)
 	CMAKEBUILDFLAGS += --verbose
 endif
 
-ifeq ($(OS),Windows_NT)
-	SO_SUFFIX=.dll
-else ifeq ($(OS),MacOS)
-	SO_SUFFIX=.dylib
-else
-	SO_SUFFIX=.so
-endif
-
 BD=build/
 CORE=$(BD)hatarib$(SO_SUFFIX)
 SOURCES = \
@@ -49,7 +41,7 @@ SOURCES = \
 	core/core_config.c \
 	core/core_osk.c
 OBJECTS = $(SOURCES:%.c=$(BD)%.o)
-HATARILIBS= \
+HATARILIBS = \
 	hatari/build/src/libcore.a \
 	hatari/build/src/falcon/libFalcon.a \
 	hatari/build/src/cpu/libUaeCpu.a \
@@ -60,6 +52,15 @@ HATARILIBS= \
 	-lSDL2 \
 	-lz
 # note: libcore is linked twice to allow other hatari internal libraries to resolve references within it.
+
+ifeq ($(OS),Windows_NT)
+	SO_SUFFIX=.dll
+else ifeq ($(OS),MacOS)
+	SO_SUFFIX=.dylib
+	HATARILIBS += $(SDL2_STATIC_LIBS)
+else
+	SO_SUFFIX=.so
+endif
 
 default: $(CORE)
 
