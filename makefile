@@ -39,8 +39,6 @@ else
 	SO_SUFFIX=.so
 endif
 
-SDL2_LIBRARY = -lSDL2
-
 BD=build/
 CORE=$(BD)hatarib$(SO_SUFFIX)
 SOURCES = \
@@ -59,8 +57,8 @@ HATARILIBS= \
 	hatari/build/src/libFloppy.a \
 	hatari/build/src/debug/libDebug.a \
 	hatari/build/src/libcore.a \
-	-lz \
-	$(SDL2_LIBRARY)
+	-lSDL2 \
+	-lz
 # note: libcore is linked twice to allow other hatari internal libraries to resolve references within it.
 
 default: $(CORE)

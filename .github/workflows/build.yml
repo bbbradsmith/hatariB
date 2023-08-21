@@ -26,7 +26,7 @@ jobs:
           cd SDL
           mkdir build
           cd build
-          CC=$PWD/../build-scripts/clang-fat.sh
+          CC=$PWD/../build-scripts/gcc-fat.sh
           ../configure --disable-shared --prefix=$(pwd)
           make
           make install
@@ -40,7 +40,7 @@ jobs:
           export CFLAGS=-mmacosx-version-min=10.13
           export CMAKEFLAGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DSDL2_INCLUDE_DIR=$(PWD)/SDL/build/include/SDL2 -DSDL2_LIBRARY=$(PWD)/SDL/build/lib/libSDL2.a"
           export C_INCLUDE_PATH=$(PWD)/SDL/build/include
-          export SDL2_LIBRARY=$(PWD)/SDL/build/lib/libSDL2.a
+          export LIBRARY_PATH=$(PWD)/SDL/build/lib
           gmake
       - name: Prepare Artifact
         run: |
