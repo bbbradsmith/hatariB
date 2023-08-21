@@ -9,7 +9,7 @@ submodules:
 
 $(ZLIB_BUILD)/libz.a: submodules
 	mkdir -p $(ZLIB_BUILD)
-	cd zlib_build && setenv CFLAGS="$(CFLAGS)" && ../zlib/configure --static --prefix=$(ZLIB_BUILD)
+	cd zlib_build && export CFLAGS="$(CFLAGS)" && ../zlib/configure --static --prefix=$(ZLIB_BUILD)
 	cd zlib_build && make static
 	cd zlib_build && make install
 
