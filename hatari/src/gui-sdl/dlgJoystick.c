@@ -6,6 +6,7 @@
 */
 const char DlgJoystick_fileid[] = "Hatari dlgJoystick.c";
 
+#ifndef __LIBRETRO__
 #include "main.h"
 #include "configuration.h"
 #include "dialog.h"
@@ -273,3 +274,4 @@ void Dialog_JoyDlg(void)
 
 	DlgJoystick_WriteValuesToConf(nActJoy);
 }
+#endif

@@ -2,7 +2,7 @@
 DEBUG = 0
 
 # enables verbose cmake for diagnosing the make step, and the cmake build command lines (1 = build steps, 2 = cmake trace)
-VERBOSE_CMAKE = 1
+VERBOSE_CMAKE = 0
 
 SHORTHASH = "$(shell git rev-parse --short HEAD || unknown)"
 
@@ -10,7 +10,7 @@ SHORTHASH = "$(shell git rev-parse --short HEAD || unknown)"
 ZLIB_INCLUDE = $(PWD)/zlib_build/include
 SDL2_INCLUDE = $(PWD)/SDL/build/include/SDL2
 ZLIB_LIB = $(PWD)/zlib_build/lib/libz.a
-SDL2_LIB = $(PWD)/SDL/build/lib/libSLD2.a
+SDL2_LIB = $(PWD)/SDL/build/lib/libSDL2.a
 SDL2_LINK = $(shell $(PWD)/SDL/build/bin/sdl2-config --static-libs)
 ZLIB_LINK = $(ZLIB_LIB)
 # sdl2-config is less than ideal, designed for EXE rather than DLL,
@@ -83,11 +83,19 @@ HATARILIBS = \
 
 default: $(CORE)
 
+# clean and rebuild everything (including static libs)
 full:
 	$(MAKE) -f makefile.zlib clean
 	$(MAKE) -f makefile.sdl clean
 	$(MAKE) clean
 	$(MAKE) -f makefile.zlib
+	$(MAKE) -f makefile.sdl
+	$(MAKE) default
+
+# to test a reconfiguration of SDL only
+sdlreconfig:
+	$(MAKE) -f makefile.sdl clean
+	$(MAKE) clean
 	$(MAKE) -f makefile.sdl
 	$(MAKE) default
 

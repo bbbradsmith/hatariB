@@ -198,7 +198,11 @@ int Statusbar_GetHeight(void)
 void Statusbar_EnableHDLed(drive_led_t state)
 {
 	/* leds are shown for 1/2 sec after enabling */
+#ifndef __LIBRETRO__
 	Led[DRIVE_LED_HD].expire = SDL_GetTicks() + 1000/2;
+#else
+	Led[DRIVE_LED_HD].expire = 30; // frames to remain onscreen
+#endif
 	Led[DRIVE_LED_HD].state = state;
 }
 
@@ -500,12 +504,20 @@ void Statusbar_AddMessage(const char *msg, Uint32 msecs)
 
 	if (msecs)
 	{
+#ifndef __LIBRETRO__
 		item->timeout = msecs;
+#else
+		item->timeout = msecs / 55; // apprxomiate number of frames
+#endif
 	}
 	else
 	{
 		/* show items by default for 2.5 secs */
+#ifndef __LIBRETRO__
 		item->timeout = 2500;
+#else
+		item->timeout = 2500 / 55;
+#endif
 	}
 	item->shown = false;
 }
@@ -736,7 +748,12 @@ static SDL_Rect* Statusbar_ShowMessage(SDL_Surface *surf, Uint32 ticks)
 			/* last/default message newer expires */
 			return NULL;
 		}
+#ifndef __LIBRETRO__
 		if (MessageList->expire > ticks)
+#else
+		--MessageList->expire;
+		if (MessageList->expire < 1)
+#endif
 		{
 			/* not timed out yet */
 			return NULL;
@@ -751,7 +768,12 @@ static SDL_Rect* Statusbar_ShowMessage(SDL_Surface *surf, Uint32 ticks)
 	MessageList->shown = true;
 	if (MessageList->timeout && !MessageList->expire)
 	{
+#ifndef __LIBRETRO__
 		MessageList->expire = ticks + MessageList->timeout;
+#else
+		MessageList->expire = MessageList->timeout;
+		(void)ticks;
+#endif
 	}
 	return Statusbar_DrawMessage(surf, MessageList->msg);
 }
@@ -841,7 +863,9 @@ static void Statusbar_OverlayDrawLed(SDL_Surface *surf, Uint32 color)
  */
 static SDL_Rect* Statusbar_OverlayDraw(SDL_Surface *surf)
 {
+#ifndef __LIBRETRO__
 	Uint32 currentticks = SDL_GetTicks();
+#endif
 	int i;
 
 	if (bRecordingYM || bRecordingWav || bRecordingAvi)
@@ -852,11 +876,23 @@ static SDL_Rect* Statusbar_OverlayDraw(SDL_Surface *surf)
 	{
 		if (Led[i].state)
 		{
+#ifndef __LIBRETRO__
 			if (Led[i].expire && Led[i].expire < currentticks)
 			{
 				Led[i].state = LED_STATE_OFF;
 				continue;
 			}
+#else
+			if (Led[i].expire > 0)
+			{
+				--Led[i].expire;
+				if (Led[i].expire <= 0)
+				{
+					Led[i].state = LED_STATE_OFF;
+					continue;
+				}
+			}
+#endif
 			Statusbar_OverlayDrawLed(surf, LedColor[ Led[i].state ]);
 			break;
 		}
@@ -930,17 +966,32 @@ SDL_Rect* Statusbar_Update(SDL_Surface *surf, bool do_update)
 #endif
 	assert(surf->h == ScreenHeight + StatusbarHeight);
 
+#ifndef __LIBRETRO__
 	currentticks = SDL_GetTicks();
+#else
+	currentticks = 0; // TODO need to resolve whatever ShowMessage needs for this
+#endif
 	last_rect = Statusbar_ShowMessage(surf, currentticks);
 	updates = last_rect ? 1 : 0;
 
 	rect = LedRect;
 	for (i = 0; i < MAX_DRIVE_LEDS; i++)
 	{
+#ifndef __LIBRETRO__
 		if (Led[i].expire && Led[i].expire < currentticks)
 		{
 			Led[i].state = LED_STATE_OFF;
 		}
+#else
+		if (Led[i].expire > 0)
+		{
+			--Led[i].expire;
+			if (Led[i].expire <= 0)
+			{
+				Led[i].state = LED_STATE_OFF;
+			}
+		}
+#endif
 		if (Led[i].state == Led[i].oldstate)
 		{
 			continue;

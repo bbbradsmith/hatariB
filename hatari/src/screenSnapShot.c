@@ -249,10 +249,12 @@ void ScreenSnapShot_SaveScreen(void)
 	}
 #endif
 	sprintf(szFileName,"%s/grab%4.4d.bmp", Paths_GetScreenShotDir(), nScreenShots);
+#ifndef __LIBRETRO__
 	if (SDL_SaveBMP(sdlscrn, szFileName))
 		fprintf(stderr, "Screen dump failed!\n");
 	else
 		fprintf(stderr, "Screen dump saved to: %s\n", szFileName);
+#endif
 
 	free(szFileName);
 }
@@ -278,7 +280,9 @@ void ScreenSnapShot_SaveToFile(const char *szFileName)
 #endif
 	if (File_DoesFileExtensionMatch(szFileName, ".bmp"))
 	{
+#ifndef __LIBRETRO__
 		success = SDL_SaveBMP(sdlscrn, szFileName) == 0;
+#endif
 	}
 	else
 	{

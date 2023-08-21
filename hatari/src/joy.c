@@ -72,7 +72,11 @@ static Uint16 nSteJoySelect;
  */
 const char *Joy_GetName(int id)
 {
+#ifndef __LIBRETRO__
 	return SDL_JoystickName(sdlJoystick[id]);
+#else
+	return "Retropad";
+#endif
 }
 
 /**
@@ -80,10 +84,14 @@ const char *Joy_GetName(int id)
  */
 int Joy_GetMaxId(void)
 {
+#ifndef __LIBRETRO__
 	int count = SDL_NumJoysticks();
 	if (count > JOYSTICK_COUNT)
 		count = JOYSTICK_COUNT;
 	return count - 1;
+#else
+	return 4;
+#endif
 }
 
 /**

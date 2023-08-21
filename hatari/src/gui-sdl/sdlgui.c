@@ -69,7 +69,11 @@ static SDL_Surface *SDLGui_LoadXBM(int w, int h, const Uint8 *pXbmBits)
 	bitmap = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 8, 0, 0, 0, 0);
 	if (bitmap == NULL)
 	{
+#ifndef __LIBRETRO__
 		Log_Printf(LOG_ERROR, "SDLGui: failed to allocate bitmap: %s", SDL_GetError());
+#else
+		core_error_msg("SDLGui: failed to allocate bitmap (SDLGui_LoadXBM)");
+#endif
 		return NULL;
 	}
 
@@ -623,6 +627,10 @@ static void SDLGui_DrawPopupButton(const SGOBJ *pdlg, int objnum)
  */
 static void SDLGui_EditField(SGOBJ *dlg, int objnum)
 {
+#ifdef __LIBRETRO__
+	(void)dlg;
+	(void)objnum;
+#else
 	size_t cursorPos;                   /* Position of the cursor in the edit field */
 	int blinkState = 0;                 /* Used for cursor blinking */
 	int bStopEditing = false;           /* true if user wants to exit the edit field */
@@ -728,6 +736,7 @@ static void SDLGui_EditField(SGOBJ *dlg, int objnum)
 	while (!bStopEditing);
 
 	SDL_StopTextInput();
+#endif
 }
 
 
@@ -1096,6 +1105,7 @@ static int SDLGui_HandleShortcut(SGOBJ *dlg, int key)
  */
 static void SDLGui_ScaleMouseButtonCoordinates(SDL_MouseButtonEvent *bev)
 {
+#ifndef __LIBRETRO__
 	int win_width, win_height;
 
 	if (bInFullScreen)
@@ -1104,6 +1114,9 @@ static void SDLGui_ScaleMouseButtonCoordinates(SDL_MouseButtonEvent *bev)
 	SDL_GetWindowSize(sdlWindow, &win_width, &win_height);
 	bev->x = bev->x * pSdlGuiScrn->w / win_width;
 	bev->y = bev->y * pSdlGuiScrn->h / win_height;
+#else
+	(void)bev;
+#endif
 }
 
 /*-----------------------------------------------------------------------*/
@@ -1126,6 +1139,22 @@ static void SDLGui_ScaleMouseButtonCoordinates(SDL_MouseButtonEvent *bev)
  */
 int SDLGui_DoDialogExt(SGOBJ *dlg, bool (*isEventOut)(SDL_EventType), SDL_Event *pEventOut, int current_object)
 {
+#ifdef __LIBRETRO__
+	(void)dlg;
+	(void)isEventOut;
+	(void)pEventOut;
+	(void)current_object;
+	(void)SDLGui_ScaleMouseButtonCoordinates;
+	(void)SDLGui_HandleShortcut;
+	(void)SDLGui_FocusNext;
+	(void)SDLGui_RemoveFocus;
+	(void)SDLGui_SetShortcuts;
+	(void)SDLGui_DebugPrintDialog;
+	(void)SDLGui_SearchState;
+	(void)SDLGui_SearchFlags;
+	(void)SDLGui_FindObj;
+	return SDLGUI_QUIT;
+#else
 	int oldbutton = SDLGUI_NOTFOUND;
 	int retbutton = SDLGUI_NOTFOUND;
 	int i, j, b, value, obj;
@@ -1466,6 +1495,7 @@ int SDLGui_DoDialogExt(SGOBJ *dlg, bool (*isEventOut)(SDL_EventType), SDL_Event 
 
 	Dprintf(("EXIT - ret: %d\n", retbutton));
 	return retbutton;
+#endif
 }
 
 /*-----------------------------------------------------------------------*/

@@ -6,6 +6,7 @@
 */
 const char DlgKeyboard_fileid[] = "Hatari dlgKeyboard.c";
 
+#ifndef __LIBRETRO__
 #include <unistd.h>
 
 #include "main.h"
@@ -291,3 +292,4 @@ void Dialog_KeyboardDlg(void)
 
 	ConfigureParams.Keyboard.bDisableKeyRepeat = (keyboarddlg[DLGKEY_DISREPEAT].state & SG_SELECTED);
 }
+#endif

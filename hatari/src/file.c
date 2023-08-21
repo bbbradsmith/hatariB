@@ -455,6 +455,7 @@ bool File_QueryOverwrite(const char *pszFileName)
 	char *szString;
 	bool ret = true;
 
+#ifndef __LIBRETRO__
 	/* Try and find if file exists */
 	if (File_Exists(pszFileName))
 	{
@@ -468,6 +469,10 @@ bool File_QueryOverwrite(const char *pszFileName)
 		ret = DlgAlert_Query(szString);
 		free(szString);
 	}
+#else
+	(void)fmt;
+	(void)szString;
+#endif
 	return ret;
 }
 

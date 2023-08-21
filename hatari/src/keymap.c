@@ -749,13 +749,21 @@ void Keymap_SimulateCharacter(char asckey, bool press)
 
 int Keymap_GetKeyFromName(const char *name)
 {
+#ifndef __LIBRETRO__
 	return SDL_GetKeyFromName(name);
+#else
+	return 0;
+#endif
 }
 
 const char *Keymap_GetKeyName(int keycode)
 {
+#ifndef __LIBRETRO__
 	if (!keycode)
 		return "";
 
 	return SDL_GetKeyName(keycode);
+#else
+	return "";
+#endif
 }

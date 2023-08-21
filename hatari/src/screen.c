@@ -134,7 +134,9 @@ void SDL_UpdateRects(SDL_Surface *screen, int numrects, SDL_Rect *rects)
 	}
 	else
 	{
+#ifndef __LIBRETRO__
 		SDL_UpdateWindowSurfaceRects(sdlWindow, rects, numrects);
+#endif
 	}
 }
 
@@ -296,7 +298,9 @@ static void Screen_FreeSDL2Resources(void)
 {
 	if (sdlTexture)
 	{
+#ifndef __LIBRETRO__
 		SDL_DestroyTexture(sdlTexture);
+#endif
 		sdlTexture = NULL;
 	}
 	if (sdlscrn)
@@ -310,7 +314,9 @@ static void Screen_FreeSDL2Resources(void)
 	}
 	if (sdlRenderer)
 	{
+#ifndef __LIBRETRO__
 		SDL_DestroyRenderer(sdlRenderer);
+#endif
 		sdlRenderer = NULL;
 	}
 }
@@ -366,6 +372,7 @@ void Screen_SetTextureScale(int width, int height, int win_width, int win_height
 	DEBUGPRINT(("%dx%d / %dx%d -> scale = %g, Render Scale Quality = %c\n",
 		    win_width, win_height, width, height, scale, quality));
 
+#ifndef __LIBRETRO__
 	if (bForce || quality != prev_quality)
 	{
 		char hint[2] = { quality, 0 };
@@ -395,6 +402,11 @@ void Screen_SetTextureScale(int width, int height, int win_width, int win_height
 			exit(-3);
 		}
 	}
+#else
+	(void)pfmt;
+	(void)quality;
+	(void)prev_quality;
+#endif
 }
 
 
@@ -611,15 +623,17 @@ static bool Screen_SetSDLVideoSize(int width, int height, int bitdepth, bool bFo
 	}
 	else
 	{
+#ifndef __LIBRETRO__
 		sdlscrn = SDL_GetWindowSurface(sdlWindow);
+#endif
 		bIsSoftwareRenderer = true;
 	}
 
 	/* Exit if we can not open a screen */
 	if (!sdlscrn)
 	{
-		fprintf(stderr, "ERROR: Could not set video mode:\n %s\n", SDL_GetError() );
 #ifndef __LIBRETRO__
+		fprintf(stderr, "ERROR: Could not set video mode:\n %s\n", SDL_GetError() );
 		SDL_Quit();
 #endif
 		exit(-2);
@@ -793,7 +807,9 @@ static void Screen_ChangeResolution(bool bForceChange)
 		Screen_SetSTResolution(bForceChange);
 	}
 
+#ifndef __LIBRETRO__
 	SDL_SetRelativeMouseMode(bInFullScreen || bGrabMouse);
+#endif
 }
 
 
@@ -969,6 +985,7 @@ static void Screen_Refresh(void)
  */
 void Screen_EnterFullScreen(void)
 {
+#ifndef __LIBRETRO__
 	bool bWasRunning;
 
 	if (!bInFullScreen)
@@ -1007,6 +1024,10 @@ void Screen_EnterFullScreen(void)
 		}
 		SDL_SetRelativeMouseMode(true);  /* Grab mouse pointer in fullscreen */
 	}
+#else
+	(void)Screen_Refresh;
+	(void)Screen_UseGenConvScreen;
+#endif
 }
 
 
@@ -1016,6 +1037,7 @@ void Screen_EnterFullScreen(void)
  */
 void Screen_ReturnFromFullScreen(void)
 {
+#ifndef __LIBRETRO__
 	bool bWasRunning;
 
 	if (bInFullScreen)
@@ -1058,6 +1080,7 @@ void Screen_ReturnFromFullScreen(void)
 			SDL_SetRelativeMouseMode(false);
 		}
 	}
+#endif
 }
 
 

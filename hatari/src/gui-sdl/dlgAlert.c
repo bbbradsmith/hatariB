@@ -18,6 +18,7 @@
  */
 const char DlgAlert_fileid[] = "Hatari dlgAlert.c";
 
+#ifndef __LIBRETRO__
 #include <string.h>
 
 #include "main.h"
@@ -231,3 +232,4 @@ int DlgAlert_Query(const char *text)
 
 	return DlgAlert_ShowDlg(text);
 }
+#endif

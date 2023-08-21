@@ -130,6 +130,7 @@ static Uint32 Main_GetTicks(void)
 
 static Sint64	Time_GetTicks ( void )
 {
+#ifndef __LIBRETRO__
 	Sint64	ticks_micro;
 
 #if HAVE_GETTIMEOFDAY
@@ -141,6 +142,9 @@ static Sint64	Time_GetTicks ( void )
 #endif
 
 	return ticks_micro;
+#else
+	return 0;
+#endif
 }
 
 
@@ -188,7 +192,12 @@ bool Main_PauseEmulation(bool visualize)
 	{
 		if (nFirstMilliTick)
 		{
+#ifndef __LIBRETRO__
 			int interval = Main_GetTicks() - nFirstMilliTick;
+#else
+			(void)Main_GetTicks;
+			int interval = 0;
+#endif
 			static float previous;
 			float current;
 
@@ -250,11 +259,13 @@ void Main_RequestQuit(int exitval)
 		bQuitProgram = true;
 		MemorySnapShot_Capture(ConfigureParams.Memory.szAutoSaveFileName, false);
 	}
+#ifndef __LIBRETRO__
 	else if (ConfigureParams.Log.bConfirmQuit)
 	{
 		bQuitProgram = false;	/* if set true, dialog exits */
 		bQuitProgram = DlgAlert_Query("All unsaved data will be lost.\nDo you really want to quit?");
 	}
+#endif
 	else
 	{
 		bQuitProgram = true;
@@ -365,12 +376,14 @@ void Main_WaitOnVbl(void)
 	    || BenchmarkMode )
 
 	{
+#ifndef __LIBRETRO__
 		if ( ( ConfigureParams.System.bFastForward == true )
 		  || ( BenchmarkMode == true ) )
 		{
 			if (!nFirstMilliTick)
 				nFirstMilliTick = Main_GetTicks();
 		}
+#endif
 		if (nFrameSkips < ConfigureParams.Screen.nFrameSkips)
 		{
 			nFrameSkips += 1;
@@ -469,7 +482,7 @@ static void Main_CheckForAccurateDelays(void)
  */
 void Main_WarpMouse(int x, int y, bool restore)
 {
-#ifdef __LIBRETRO__
+#ifndef __LIBRETRO__
 	if (!(restore || ConfigureParams.Screen.bMouseWarp))
 		return;
 
@@ -482,6 +495,7 @@ void Main_WarpMouse(int x, int y, bool restore)
 	(void)x;
 	(void)y;
 	(void)restore;
+	(void)bAllowMouseWarp;
 #endif
 }
 
@@ -706,10 +720,14 @@ void Main_EventHandler(void)
  */
 void Main_SetTitle(const char *title)
 {
+#ifndef __LIBRETRO__
 	if (title)
 		SDL_SetWindowTitle(sdlWindow, title);
 	else
 		SDL_SetWindowTitle(sdlWindow, PROG_NAME);
+#else
+	(void)title;
+#endif
 }
 
 /*-----------------------------------------------------------------------*/
@@ -910,6 +928,7 @@ extern bool core_show_welcome;
  */
 static void Main_StatusbarSetup(void)
 {
+#ifndef __LIBRETRO__
 	struct {
 		const int id;
 		bool mod;
@@ -943,20 +962,19 @@ static void Main_StatusbarSetup(void)
 	if (named)
 	{
 		char message[60];
-#ifdef __LIBRETRO__
-		snprintf(message, sizeof(message), "Welcome to hatariB! Press START for help.");
-#else
 		snprintf(message, sizeof(message), "Press %s%s for Options, %s%s for mouse grab toggle",
 			 keys[0].mod ? "AltGr+": "", keys[0].name,
 			 keys[1].mod ? "AltGr+": "", keys[1].name);
-#endif
 		for (i = 0; i < ARRAY_SIZE(keys); i++)
 		{
 			if (keys[i].name)
 				free(keys[i].name);
 		}
-#ifdef __LIBRETRO__
-		if (core_show_welcome)
+#else
+	if (core_show_welcome)
+	{
+		char message[60];
+		snprintf(message, sizeof(message), "Welcome to hatariB! Press START for help.");
 #endif
 		Statusbar_AddMessage(message, 5000);
 	}
