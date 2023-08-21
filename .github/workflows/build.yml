@@ -123,6 +123,7 @@ jobs:
           export CC=/usr/local/bin/gcc-13
           export CFLAGS=-mmacosx-version-min=10.13
           make -f makefile.zlib
+          export CC = $(PWD)/SDL/build-scripts/clang-fat.sh
           make -f makefile.sdl
       - name: Build hatariB
         run: |

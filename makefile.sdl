@@ -1,4 +1,3 @@
-CC = $(PWD)/SDL/build-scripts/gcc-fat.sh
 SDL_PREFIX = $(PWD)/SDL/build
 
 default: sdl
