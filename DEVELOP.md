@@ -186,7 +186,7 @@ Otherwise there are minor changes to the CMake build files, marked with a commen
 
 ## SDL2 Usage
 
-The SDL library is not initialized. Aside from some type definitions, it is mostly only needed to software-render the status bar, and onscreen keyboard. This is the short list of SDL functions used:
+The SDL library is not initialized. Aside from some type definitions, it is mostly only needed to software-render the status bar, and onscreen keyboard. Only the video submodule is needed. This is the short list of SDL functions used:
 * SDL_FillRect
 * SDL_MapRGB
 * SDL_FreeSurface
