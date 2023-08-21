@@ -4,6 +4,9 @@ DEBUG = 0
 # enables verbose cmake for diagnosing the make step, and the cmak build command lines
 VERBOSE_CMAKE = 0
 
+# override to link SDL2 in a different way
+SDL2_LINK = -lSDL2
+
 SHORTHASH = "$(shell git rev-parse --short HEAD || unknown)"
 
 CC ?= gcc
@@ -49,7 +52,7 @@ SOURCES = \
 	core/core_config.c \
 	core/core_osk.c
 OBJECTS = $(SOURCES:%.c=$(BD)%.o)
-HATARILIBS= \
+HATARILIBS = \
 	hatari/build/src/libcore.a \
 	hatari/build/src/falcon/libFalcon.a \
 	hatari/build/src/cpu/libUaeCpu.a \
@@ -57,8 +60,8 @@ HATARILIBS= \
 	hatari/build/src/libFloppy.a \
 	hatari/build/src/debug/libDebug.a \
 	hatari/build/src/libcore.a \
-	-lSDL2 \
-	-lz
+	-lz \
+	$(SDL2_LINK)
 # note: libcore is linked twice to allow other hatari internal libraries to resolve references within it.
 
 default: $(CORE)

@@ -102,17 +102,34 @@ jobs:
       - name: Checkout Files
         uses: actions/checkout@v3
       - name: Setup MacOS
-        run: |
-          brew install make cmake gcc@13 zlib sdl2
+        run: brew install make cmake gcc@13 zlib
         # brew's gcc has to be a specific version, make sure to update 13 above and below if upgrading
+      - name: Build SDL2 static library
+        run: |
+          git clone --depth 1 --branch release-2.28.2 https://github.com/libsdl-org/SDL.git
+          cd SDL
+          mkdir build
+          cd build
+          CC=$PWD/../build-scripts/gcc-fat.sh
+          ../configure --disable-shared --prefix=$(pwd) \
+            --enable-audio=no --enable-power=no --enable-filesystem=no --enable-timers=no --enable-file=no \
+            --enable-joystick=no --enable-haptic=no --enable-hidapi=no --enable-sensor=no \
+            --enable-video-cocoa=no --enable-video-metal=no --enable-video-opengl=no --enable-video-opengles2=no --enable-video-vulkan=no \
+            --enable-system-iconv=no --enable-misc=no --enable-locale=no
+          make
+          make install
+          # produced:
+          # SDL/build/include/SDL2/*.h
+          # SDL/build/lib/libSDL2.a
       - name: Build hatariB
         run: |
           export OS=MacOS
           export CC=/usr/local/bin/gcc-13
-          export CMAKEFLAGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13"
-          export C_INCLUDE_PATH=/usr/local/include
-          export LIBRARY_PATH=/usr/local/lib
           export CFLAGS=-mmacosx-version-min=10.13
+          export CMAKEFLAGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DSDL2_INCLUDE_DIR=$(PWD)/SDL/build/include/SDL2 -DSDL2_LIBRARY=$(PWD)/SDL/build/lib/libSDL2.a"
+          export C_INCLUDE_PATH=$(PWD)/SDL/build/include
+          export LIBRARY_PATH=$(PWD)/SDL/build/lib
+          export SDL2_LINK=$(SDL/build/bin/sdl2-config --static-libs)
           gmake
       - name: Prepare Artifact
         run: |
