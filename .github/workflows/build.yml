@@ -35,10 +35,10 @@ jobs:
           # what have we got?
           echo SDL2 installed, contents:
           cd include
-          echo ls -r include/
-          ls -r incude/
-          echo sl -r lib/
-          ls -r lib/
+          echo ls -r include
+          ls -r include
+          echo sl -r lib
+          ls -r lib
           echo end of contents
           cd ../..
           # build hatariB
