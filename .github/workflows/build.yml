@@ -34,11 +34,7 @@ jobs:
           make install
           # what have we got?
           echo SDL2 installed, contents:
-          cd include
-          echo ls -r include
-          ls -r include
-          echo sl -r lib
-          ls -r lib
+          ls -R
           echo end of contents
           cd ../..
           # build hatariB
