@@ -144,7 +144,6 @@ Possible Future Tasks:
 * Printer emulation?
 * IPF support, figure out library issues. There seems to be a MAME IPF reader?
 * Keyboard languages and layouts? Need to know a bit more about how to test this. Think about host keyboard vs. simulated keyboard, etc. EmuTOS can set German and 'Q' will still map to 'Q' in Hatari, though keys like - = etc may change, so probably the on-screen keyboard remaps can still use the same letter semantics at least, but the Atari-specific keys probably just need a new description.
-* Remove SDL2 dynamic linking requirement. Import only the subset of SDL2 needed for this integration into this project and build it directly in.
 
 ## History
 
