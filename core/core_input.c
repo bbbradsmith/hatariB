@@ -210,7 +210,8 @@ void core_input_keyboard_event(bool down, unsigned keycode, uint32_t character, 
 	event.key.state = down ? SDL_PRESSED : SDL_RELEASED;
 	event.key.repeat = ((down && retrok_down[keycode]) || (!down && !retrok_down[keycode]));
 	event.key.keysym.sym = retrok_to_sdl[keycode];
-	event.key.keysym.scancode = SDL_GetScancodeFromKey(event.key.keysym.sym);
+	// keysym.scancode is not used (and SDL_keyboard is not initialized)
+	//event.key.keysym.scancode = SDL_GetScancodeFromKey(event.key.keysym.sym);
 	event.key.keysym.mod = 0;
 	// NUMLOCK is the only mod state that Hatari uses (for: Keymap_GetKeyPadScanCode)
 	// but I have disabled it because Atari ST has no numlock

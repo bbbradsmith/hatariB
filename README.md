@@ -35,6 +35,7 @@ If installed, or on other platforms, you may need to locate the needed core and 
 On MacOS, there are some extra requirements:
 * After downloading the core, right click on `cores/hatarib.dylib` and open it, here you can give it permission to run.
 * Download `libSDL2.dylib` [here](https://github.com/OutOfOrder/SDL2-Binaries/tree/master/osx), rename it to `libSDL2-2.0.0.dylib` and then copy it to `/usr/local/opt/sdl2/lib/`? Again, right click on it and open it, then allow permissions.
+* On MacOS the cores and info folders are likely at `Users/[username]/Library/Application Support/RetroArch`.
 
 I'm hoping to remove the SDL dylib requirement in the future. RetroArch provides SDL2 automatically on Windows and Linux, but the MacOS version seems unable to do so.
 

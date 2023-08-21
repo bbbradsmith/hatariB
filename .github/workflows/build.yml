@@ -31,7 +31,7 @@ jobs:
             --enable-audio=no --enable-power=no --enable-filesystem=no --enable-timers=no --enable-file=no \
             --enable-joystick=no --enable-haptic=no --enable-hidapi=no --enable-sensor=no \
             --enable-video-cocoa=no --enable-video-metal=no --enable-video-opengl=no --enable-video-opengles2=no --enable-video-vulkan=no \
-            --enable-system-iconv=no
+            --enable-system-iconv=no --enable-misc=no
           make
           make install
           # produced:
