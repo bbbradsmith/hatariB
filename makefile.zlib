@@ -1,5 +1,6 @@
 ZLIB_BUILD = $(PWD)/zlib_build
-CFLAGS = -fPIC
+CFLAGS += -fPIC
+# -fPIC needed to link into a shared object
 
 default: $(ZLIB_BUILD)/libz.a
 
