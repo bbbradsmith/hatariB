@@ -195,6 +195,7 @@ bool Main_PauseEmulation(bool visualize)
 #ifndef __LIBRETRO__
 			int interval = Main_GetTicks() - nFirstMilliTick;
 #else
+			(void)Main_GetTicks;
 			int interval = 0;
 #endif
 			static float previous;
