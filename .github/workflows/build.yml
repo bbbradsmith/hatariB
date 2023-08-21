@@ -32,19 +32,17 @@ jobs:
           ../configure --disable-shared --prefix=$(pwd)
           make
           make install
-          # what have we got?
-          echo SDL2 installed, contents:
-          ls -R
-          echo end of contents
-          cd ../..
+          # produced:
+          # SDL/build/include/SDL2/*.h
+          # SDL/build/lib/libSDL2.a
           # build hatariB
           export OS=MacOS
           export CC=/usr/local/bin/gcc-13
           export CFLAGS=-mmacosx-version-min=10.13
-          export CMAKEFLAGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13"
-          export C_INCLUDE_PATH=/usr/local/include
-          export LIBRARY_PATH=/usr/local/lib
-          #gmake
+          export CMAKEFLAGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DSDL2_INCLUDE_DIR=$(PWD)/SDL/build/include/SDL2"
+          export C_INCLUDE_PATH=$(PWD)/SDL/build/include
+          export LIBRARY_PATH=$(PWD)/SDL/build/lib
+          gmake
       - name: Prepare Artifact
         run: |
           mkdir artifact
