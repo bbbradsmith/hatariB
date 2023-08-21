@@ -18,7 +18,7 @@ ZLIB_LINK = $(ZLIB_LIB)
 
 CC ?= gcc
 CFLAGS += \
-	-O2 -Wall -Werror -fPIC \
+	-O3 -Wall -Werror -fPIC \
 	-D__LIBRETRO__ -DSHORTHASH=\"$(SHORTHASH)\" \
 	-Ihatari/build -I$(SDL2_INCLUDE)
 LDFLAGS += \
