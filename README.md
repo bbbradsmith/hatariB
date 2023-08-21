@@ -132,9 +132,6 @@ On MacOS, there are some extra requirements:
   * Hard Disk modifications are written directly to their source files, and are not included in savestates.
   * If you increase the size of memory, you should close and restart the core before using savestates, to allow RetroArch to update the savestate size.
 * Quirks:
-  * For some invalid combinations of TOS + Machine, Hatari will automatically change the machine with a notice. In this state, changing any option in the config menu will reset the system. Haven't figured out the best way to fix this because Hatari was designed to modify your stored settings directly in this case.
-  * Changing any core option will also reset CPU speed, which could be a problem for Falcon that can change it at runtime (does anyone know a good software test case?), same settings modification issue as above.
-  * There may be other run-state like these stored directly as configuration modifications that will be clobbered by core options changes. Still evaluating the scope of this problem. (I don't want the core secretly changing settings without the user knowing.)
   * Restoring a savestate, or using netplay/run-ahead into the pause or one-shot keyboard will have an outdated/blank background until unpaused, as Hatari can't rebuild the image until it runs a frame. We might consider fixing this by adding the framebuffer to the savestate, though it would significantly increase the data size.
   * If the on-screen keyboard confirm/cancel buttons aren't mapped to dedicated keys, you might end up suddenly holding the underlying button when the keyboard closes.
   * The *Floppy Disk List* pause screen won't display unicode filenames correctly.
@@ -147,7 +144,6 @@ Possible Future Tasks:
 * Printer emulation?
 * IPF support, figure out library issues. There seems to be a MAME IPF reader?
 * Keyboard languages and layouts? Need to know a bit more about how to test this. Think about host keyboard vs. simulated keyboard, etc. EmuTOS can set German and 'Q' will still map to 'Q' in Hatari, though keys like - = etc may change, so probably the on-screen keyboard remaps can still use the same letter semantics at least, but the Atari-specific keys probably just need a new description.
-* Look for Log cases where Hatari changes CFG (most of these are in tos.c) and turn them into a halt instead of automatically changing system. Setting CPU speed should probably only be applied at cold boot? (Put a "requires restart" notice on it.)
 * Remove SDL2 dynamic linking requirement. Import only the subset of SDL2 needed for this integration into this project and build it directly in.
 
 ## History

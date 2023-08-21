@@ -105,6 +105,7 @@ extern bool core_disk_enable_save;
 // core_config.c
 extern void core_config_set_environment(retro_environment_t cb); // call after core_disk_set_environment (which scans system folder for TOS etc)
 extern void core_config_apply(void);
+extern void core_config_reset(void);
 extern void config_toggle_statusbar(void);
 
 // core_input.c

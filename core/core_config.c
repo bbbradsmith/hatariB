@@ -579,7 +579,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	},
 	{
 		"hatarib_cpu_clock", "CPU Clock Rate", NULL,
-		"CPU speed.",
+		"CPU speed at boot.",
 		NULL, "advanced",
 		{
 			{"-1","Auto"},
@@ -1040,7 +1040,7 @@ void core_config_read_newparam()
 		static const int CPUFREQ[]  = { 8, 8, 8, 8,32,16 };
 		newparam.System.nMachineType = vi;
 		newparam.System.nCpuLevel = CPULEVEL[vi];
-		newparam.System.nCpuFreq = CPUFREQ[vi];
+		newparam.System.nBootCpuFreq = CPUFREQ[vi];
 		if (vi == MACHINE_TT)
 		{
 			newparam.System.bCompatibleFPU = true;
@@ -1051,7 +1051,7 @@ void core_config_read_newparam()
 			newparam.System.nDSPType = DSP_TYPE_EMU;
 		}
 		CFG_INT("hatarib_cpu") if (vi>=0) newparam.System.nCpuLevel = vi;
-		CFG_INT("hatarib_cpu_clock") if (vi>=0) newparam.System.nCpuFreq = vi;
+		CFG_INT("hatarib_cpu_clock") if (vi>=0) newparam.System.nBootCpuFreq = vi;
 		CFG_INT("hatarib_fpu") if (vi>=0) newparam.System.n_FPUType = vi;
 	}
 	CFG_INT("hatarib_memory") newparam.Memory.STRamSize_KB = vi;
@@ -1169,12 +1169,9 @@ void core_config_read_newparam()
 	}
 
 	// preserve parameters that change during emulation
-	// will nCpuFreq changing at runtime cause any config change to reset? do we need a "preserve if option changed" for this?
-	// what if TOS version changed cpu type or machine type?
-	// maybe we need a "boot" setting for them and apply it IF a reset is happening... but then we need to check reset twice during config change??
-	// we don't want to modify the user's settings directly like Hatari expects to
 	memcpy(newparam.DiskImage.szDiskFileName[0],ConfigureParams.DiskImage.szDiskFileName[0],sizeof(newparam.DiskImage.szDiskFileName[0]));
 	memcpy(newparam.DiskImage.szDiskFileName[1],ConfigureParams.DiskImage.szDiskFileName[1],sizeof(newparam.DiskImage.szDiskFileName[1]));
+	newparam.System.nCpuFreq = ConfigureParams.System.nCpuFreq;
 }
 
 void config_toggle_statusbar(void)
@@ -1329,5 +1326,14 @@ void core_config_apply(void)
 {
 	core_config_read_newparam();
 	bool reset = Change_DoNeedReset(&ConfigureParams, &newparam);
+	if (reset) // boot configurations that need to be applied at reset
+	{
+		newparam.System.nCpuFreq = newparam.System.nBootCpuFreq;
+	}
 	Change_CopyChangedParamsToConfiguration(&ConfigureParams, &newparam, reset);
+}
+
+void core_config_reset(void) // boot configurations that need to be applied at reset
+{
+	ConfigureParams.System.nCpuFreq = ConfigureParams.System.nBootCpuFreq;
 }

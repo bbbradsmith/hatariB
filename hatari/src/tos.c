@@ -837,6 +837,7 @@ static void TOS_CheckSysConfig(void)
 	    || (TosVersion == 0x0162 && ConfigureParams.System.nCpuLevel != 0))
 	{
 		Log_AlertDlg(LOG_ERROR, "TOS versions 1.06 and 1.62 are for Atari STE only.\n"
+#ifndef __LIBRETRO__
 		             " ==> Switching to STE mode now.\n");
 		IoMem_UnInit();
 		ConfigureParams.System.nMachineType = MACHINE_STE;
@@ -845,10 +846,14 @@ static void TOS_CheckSysConfig(void)
 		IoMem_Init();
 		Configuration_ChangeCpuFreq ( 8 );
 		ConfigureParams.System.nCpuLevel = 0;
+#else
+		);
+#endif
 	}
 	else if ((TosVersion & 0x0f00) == 0x0300 && !Config_IsMachineTT())
 	{
 		Log_AlertDlg(LOG_ERROR, "TOS versions 3.0x are for Atari TT only.\n"
+#ifndef __LIBRETRO__
 		             " ==> Switching to TT mode now.\n");
 		IoMem_UnInit();
 		ConfigureParams.System.nMachineType = MACHINE_TT;
@@ -857,11 +862,15 @@ static void TOS_CheckSysConfig(void)
 		IoMem_Init();
 		Configuration_ChangeCpuFreq ( 32 );
 		ConfigureParams.System.nCpuLevel = 3;
+#else
+		);
+#endif
 	}
 	else if (((TosVersion & 0x0f00) == 0x0400 || TosVersion == 0x0207)
 	         && !Config_IsMachineFalcon())
 	{
 		Log_AlertDlg(LOG_ERROR, "TOS version %x.%02x is for Atari Falcon only.\n"
+#ifndef __LIBRETRO__
 		             " ==> Switching to Falcon mode now.\n",
 		             TosVersion >> 8, TosVersion & 0xff);
 		Ide_UnInit();
@@ -877,12 +886,16 @@ static void TOS_CheckSysConfig(void)
 		Ide_Init();
 		Configuration_ChangeCpuFreq ( 16 );
 		ConfigureParams.System.nCpuLevel = 3;
+#else
+		, TosVersion >> 8, TosVersion & 0xff);
+#endif
 	}
 	else if (TosVersion <= 0x0104 &&
 	         (ConfigureParams.System.nCpuLevel > 0 || !Config_IsMachineST()))
 	{
 		Log_AlertDlg(LOG_ERROR, "TOS versions <= 1.4 work only in\n"
 		             "ST mode and with a 68000 CPU.\n"
+#ifndef __LIBRETRO__
 		             " ==> Switching to ST mode with 68000 now.\n");
 		IoMem_UnInit();
 		ConfigureParams.System.nMachineType = MACHINE_ST;
@@ -891,12 +904,16 @@ static void TOS_CheckSysConfig(void)
 		IoMem_Init();
 		Configuration_ChangeCpuFreq ( 8 );
 		ConfigureParams.System.nCpuLevel = 0;
+#else
+		);
+#endif
 	}
 	else if (TosVersion < 0x0300 &&
 		 (Config_IsMachineTT() ||
 		  (Config_IsMachineFalcon() && TosVersion != 0x0207)))
 	{
 		Log_AlertDlg(LOG_ERROR, "This TOS version does not work in TT/Falcon mode.\n"
+#ifndef __LIBRETRO__
 		             " ==> Switching to STE mode now.\n");
 		IoMem_UnInit();
 		ConfigureParams.System.nMachineType = MACHINE_STE;
@@ -905,20 +922,31 @@ static void TOS_CheckSysConfig(void)
 		IoMem_Init();
 		Configuration_ChangeCpuFreq ( 8 );
 		ConfigureParams.System.nCpuLevel = 0;
+#else
+		);
+#endif
 	}
 	else if ((TosVersion & 0x0f00) == 0x0400 && ConfigureParams.System.nCpuLevel < 2)
 	{
 		Log_AlertDlg(LOG_ERROR, "TOS versions 4.x require a CPU >= 68020.\n"
+#ifndef __LIBRETRO__
 		             " ==> Switching to 68020 mode now.\n");
 		ConfigureParams.System.nCpuLevel = 2;
+#else
+		);
+#endif
 	}
 	else if ((TosVersion & 0x0f00) == 0x0300 &&
 	         (ConfigureParams.System.nCpuLevel < 2 || ConfigureParams.System.n_FPUType == FPU_NONE))
 	{
 		Log_AlertDlg(LOG_ERROR, "TOS versions 3.0x require a CPU >= 68020 with FPU.\n"
+#ifndef __LIBRETRO__
 		             " ==> Switching to 68030 mode with FPU now.\n");
 		ConfigureParams.System.nCpuLevel = 3;
 		ConfigureParams.System.n_FPUType = FPU_68882;
+#else
+		);
+#endif
 	}
 
 	/* TOS version triggered changes? */
@@ -1243,7 +1271,9 @@ int TOS_InitImage(void)
 			/* Warn user */
 			Log_AlertDlg(LOG_ERROR, "To use extended VDI resolutions, you must select a TOS >= 1.02.");
 			/* And select non VDI */
+#ifndef __LIBRETRO__
 			bUseVDIRes = ConfigureParams.Screen.bUseExtVdiResolutions = false;
+#endif
 		}
 		else
 		{

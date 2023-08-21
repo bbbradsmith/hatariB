@@ -807,6 +807,7 @@ RETRO_API void retro_run(void)
 	// though this will result in a black screen until unpaused and allowed to render
 	if (core_runflags & CORE_RUNFLAG_RESET)
 	{
+		core_config_reset(); // can apply boot parameters (e.g. CPU Freq)
 		bool cold = core_runflags & CORE_RUNFLAG_RESET_COLD;
 		core_signal_alert(cold ? "Cold Boot" : "Warm Boot");
 		m68k_go_quit();

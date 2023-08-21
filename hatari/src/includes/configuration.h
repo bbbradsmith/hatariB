@@ -393,6 +393,9 @@ typedef struct
 {
   int nCpuLevel;
   int nCpuFreq;
+#ifdef __LIBRETRO__
+  int nBootCpuFreq;
+#endif
   bool bCompatibleCpu;            /* Prefetch mode */
   MACHINETYPE nMachineType;
   bool bBlitter;                  /* TRUE if Blitter is enabled */
