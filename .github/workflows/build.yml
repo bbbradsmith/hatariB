@@ -36,6 +36,7 @@ jobs:
           # SDL/build/include/SDL2/*.h
           # SDL/build/lib/libSDL2.a
           # build hatariB
+          cd ../..
           export OS=MacOS
           export CC=/usr/local/bin/gcc-13
           export CFLAGS=-mmacosx-version-min=10.13
