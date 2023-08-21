@@ -34,10 +34,7 @@ If installed, or on other platforms, you may need to locate the needed core and 
 
 On MacOS, there are some extra requirements:
 * After downloading the core, right click on `cores/hatarib.dylib` and open it, here you can give it permission to run.
-* Download `libSDL2.dylib` [here](https://github.com/OutOfOrder/SDL2-Binaries/tree/master/osx), rename it to `libSDL2-2.0.0.dylib` and then copy it to `/usr/local/opt/sdl2/lib/`? Again, right click on it and open it, then allow permissions.
 * On MacOS the cores and info folders are likely at `Users/[username]/Library/Application Support/RetroArch`.
-
-I'm hoping to remove the SDL dylib requirement in the future. RetroArch provides SDL2 automatically on Windows and Linux, but the MacOS version seems unable to do so.
 
 ## Notes
 
@@ -163,9 +160,13 @@ This project is licensed under the [GNU General Public License Version 2](LICENS
 
 The GPL v2 license was inherited from the Hatari project. The Hatari source code is incorporated here, in the [hatari/](hatari/) folder with minimal modifications, outlined in the [development notes](DEVELOP.md).
 
-This project also incorporates header files from [Libretro](https://github.com/libretro/), under a compatible permissive license.
-
 This project includes [EmuTOS](https://emutos.sourceforge.io/) binaries as built-in available TOS BIOS images, under the GPL v2 license.
+
+This project incorporates header files from [Libretro](https://github.com/libretro/), under a compatible permissive license.
+
+This project includes or dynamically links with [SDL2](https://www.libsdl.org/) under the [zlib license](https://www.libsdl.org/license.php).
+
+This project includes or dynamically links with [zlib](https://zlib.net/) under the [zlib license](https://zlib.net/zlib_license.html).
 
 ## Authors
 
@@ -176,3 +177,5 @@ Authors of incorporated works:
 * [EmuTOS](https://raw.githubusercontent.com/emutos/emutos/master/doc/authors.txt)
 * [libretro.h](https://github.com/libretro/libretro-common/blob/7edbfaf17baffa1b8a00231762aa7ead809711b5/include/libretro.h)
 * [libretro_sdl_keymap.h](https://github.com/libretro/RetroArch/blob/b4143882245edd737c7e7c522b25e32f8d1f64ad/input/input_keymaps.c#L607)
+* [SDL2](https://www.libsdl.org/credits.php)
+* [zlib](https://zlib.net/)
