@@ -504,12 +504,20 @@ void Statusbar_AddMessage(const char *msg, Uint32 msecs)
 
 	if (msecs)
 	{
+#ifndef __LIBRETRO__
 		item->timeout = msecs;
+#else
+		item->timeout = msecs / 55; // apprxomiate number of frames
+#endif
 	}
 	else
 	{
 		/* show items by default for 2.5 secs */
+#ifndef __LIBRETRO__
 		item->timeout = 2500;
+#else
+		item->timeout = 2500 / 55;
+#endif
 	}
 	item->shown = false;
 }
@@ -740,7 +748,12 @@ static SDL_Rect* Statusbar_ShowMessage(SDL_Surface *surf, Uint32 ticks)
 			/* last/default message newer expires */
 			return NULL;
 		}
+#ifndef __LIBRETRO__
 		if (MessageList->expire > ticks)
+#else
+		--MessageList->expire;
+		if (MessageList->expire < 1)
+#endif
 		{
 			/* not timed out yet */
 			return NULL;
@@ -755,7 +768,12 @@ static SDL_Rect* Statusbar_ShowMessage(SDL_Surface *surf, Uint32 ticks)
 	MessageList->shown = true;
 	if (MessageList->timeout && !MessageList->expire)
 	{
+#ifndef __LIBRETRO__
 		MessageList->expire = ticks + MessageList->timeout;
+#else
+		MessageList->expire = MessageList->timeout;
+		(void)ticks;
+#endif
 	}
 	return Statusbar_DrawMessage(surf, MessageList->msg);
 }

@@ -262,6 +262,7 @@ static void ShortCut_InsertDisk(int drive)
 	else
 		tmpname = ConfigureParams.DiskImage.szDiskImageDirectory;
 
+#ifndef __LIBRETRO__
 	Main_PauseEmulation(true);
 	selname = SDLGui_FileSelect("Floppy image:", tmpname, &zip_path, false);
 	if (selname)
@@ -283,6 +284,7 @@ static void ShortCut_InsertDisk(int drive)
 
 	}
 	Main_UnPauseEmulation();
+#endif
 }
 
 
