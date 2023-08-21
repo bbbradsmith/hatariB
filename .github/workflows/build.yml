@@ -109,16 +109,15 @@ jobs:
         run: |
           export CC=/usr/local/bin/gcc-13
           export CFLAGS=-mmacosx-version-min=10.13
-          # build SDL static library
-          mkdir SDL2
-          cd SDL2
+          # build SDL2 static library
           git clone --depth 1 --branch release-2.28.2 https://github.com/libsdl-org/SDL.git
-          ls
+          cd SDL
           mkdir build
           cd build
           ../configure --disable-shared --prefix=$(pwd)
           make
           make install
+          cd ../..
           # build hatariB
           export OS=MacOS
           export CMAKEFLAGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13"
