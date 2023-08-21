@@ -40,7 +40,7 @@ jobs:
           export OS=MacOS
           export CC=/usr/local/bin/gcc-13
           export CFLAGS=-mmacosx-version-min=10.13
-          export CMAKEFLAGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DSDL2_INCLUDE_DIR=$(PWD)/SDL/build/include/SDL2"
+          export CMAKEFLAGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DSDL2_INCLUDE_DIR=$(PWD)/SDL/build/include/SDL2 -DSDL2_LIBRARY=$(PWD)/SDL/build/lib/libSDL2.a"
           export C_INCLUDE_PATH=$(PWD)/SDL/build/include
           export LIBRARY_PATH=$(PWD)/SDL/build/lib
           gmake
