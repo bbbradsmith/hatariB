@@ -107,8 +107,18 @@ jobs:
         # brew's gcc has to be a specific version, make sure to update 13 above and below if upgrading
       - name: Build hatariB
         run: |
-          export OS=MacOS
           export CC=/usr/local/bin/gcc-13
+          # build SDL static library
+          mkdir SDL2
+          cd SDL2
+          git clone --depth 1 --branch release-2.28.2 https://github.com/libsdl-org/SDL.git
+          mkdir build
+          cd build
+          ../configure --disable-shared --prefix=$(pwd)
+          make
+          make install
+          # build hatariB
+          export OS=MacOS
           export CMAKEFLAGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13"
           export C_INCLUDE_PATH=/usr/local/include
           export LIBRARY_PATH=/usr/local/lib
