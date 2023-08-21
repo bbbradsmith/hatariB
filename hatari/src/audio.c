@@ -201,7 +201,9 @@ void Audio_UnInit(void)
 		/* Stop */
 		Audio_EnableAudio(false);
 
+#ifndef __LIBRETRO__
 		SDL_CloseAudio();
+#endif
 
 		bSoundWorking = false;
 	}
@@ -214,7 +216,9 @@ void Audio_UnInit(void)
  */
 void Audio_Lock(void)
 {
+#ifndef __LIBRETRO__
 	SDL_LockAudio();
+#endif
 }
 
 
@@ -224,7 +228,9 @@ void Audio_Lock(void)
  */
 void Audio_Unlock(void)
 {
+#ifndef __LIBRETRO__
 	SDL_UnlockAudio();
+#endif
 }
 
 
@@ -284,13 +290,17 @@ void Audio_EnableAudio(bool bEnable)
 	if (bEnable && !bPlayingBuffer)
 	{
 		/* Start playing */
+#ifndef __LIBRETRO__
 		SDL_PauseAudio(false);
+#endif
 		bPlayingBuffer = true;
 	}
 	else if (!bEnable && bPlayingBuffer)
 	{
 		/* Stop from playing */
+#ifndef __LIBRETRO__
 		SDL_PauseAudio(true);
+#endif
 		bPlayingBuffer = false;
 	}
 }

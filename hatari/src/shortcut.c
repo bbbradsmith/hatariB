@@ -49,7 +49,11 @@ static void ShortCut_FullScreen(void)
 	 * To avoid that we're going back and forth between fullscreen mode and
 	 * windowed mode in this case, we have to ignore full screen shortcut
 	 * events that happen too often. */
+#ifndef __LIBRETRO__
 	cur_ticks = SDL_GetTicks();
+#else
+	cur_ticks = 0;
+#endif
 	if (cur_ticks - last_ticks < 200)
 		return;
 	last_ticks = cur_ticks;
@@ -85,7 +89,9 @@ static void ShortCut_MouseGrab(void)
 	/* If we are in windowed mode, toggle the mouse cursor mode now: */
 	if (!bInFullScreen)
 	{
+#ifndef __LIBRETRO__
 		SDL_SetRelativeMouseMode(bGrabMouse);
+#endif
 	}
 }
 
@@ -196,13 +202,17 @@ static void ShortCut_BossKey(void)
 
 	if (bGrabMouse)
 	{
+#ifndef __LIBRETRO__
 		SDL_SetRelativeMouseMode(false);
+#endif
 		bGrabMouse = false;
 	}
 	Main_PauseEmulation(true);
 
 	/* Minimize Window and give up processing to next one! */
+#ifndef __LIBRETRO__
 	SDL_MinimizeWindow(sdlWindow);
+#endif
 }
 
 

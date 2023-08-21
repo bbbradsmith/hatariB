@@ -558,6 +558,7 @@ static bool Change_Options(int argc, const char *argv[])
 	ConfigureParams.Screen.bFullScreen = bInFullScreen;
 	bOK = Opt_ParseParameters(argc, argv);
 
+#ifndef __LIBRETRO__
 	/* Check if reset is required and ask user if he really wants to continue */
 	if (bOK && Change_DoNeedReset(&current, &ConfigureParams)
 	    && current.Log.nAlertDlgLogLevel > LOG_FATAL) {
@@ -566,6 +567,7 @@ static bool Change_Options(int argc, const char *argv[])
 				     "Apply changes now and reset "
 				     "the emulator?");
 	}
+#endif
 	/* Copy details to configuration */
 	if (bOK) {
 		Change_CopyChangedParamsToConfiguration(&current, &ConfigureParams, false);

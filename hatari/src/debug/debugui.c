@@ -1166,7 +1166,9 @@ void DebugUI(debug_reason_t reason)
 	 * this is invoked from.  E.g. returning from fullscreen
 	 * enables grab if that was enabled on windowed mode.
 	 */
+#ifndef __LIBRETRO__
 	SDL_SetRelativeMouseMode(false);
+#endif
 
 	DebugUI_Init();
 

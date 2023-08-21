@@ -8,6 +8,7 @@
 */
 const char DlgMain_fileid[] = "Hatari dlgMain.c";
 
+#ifndef __LIBRETRO__
 #include "main.h"
 #include "configuration.h"
 #include "dialog.h"
@@ -177,3 +178,4 @@ int Dialog_MainDlg(bool *bReset, bool *bLoadedSnapshot)
 
 	return (retbut == MAINDLG_OK);
 }
+#endif

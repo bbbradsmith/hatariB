@@ -8,6 +8,7 @@
 */
 const char DlgFileSelect_fileid[] = "Hatari dlgFileSelect.c";
 
+#ifndef __LIBRETRO__
 #include <SDL.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -1130,3 +1131,4 @@ bool SDLGui_FileConfSelect(const char *title, char *dlgname, char *confname, int
 	}
 	return false;
 }
+#endif
