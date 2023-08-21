@@ -184,7 +184,16 @@ Otherwise there are minor changes to the CMake build files, marked with a commen
   * Double size of LED light.
   * Fix LED render corruption after resolution change.
 
-`SDL_Init` and `SDL_Quit` almost all use of the SDL library have been suppressed. There are some remaining uses of the SDL libraries but I do not believe any of them require Init. These include:
-* SDL ending defines and utilities (e.g. `SDL_SwapLE16`) which are used throughout.
-* `SDL_CreateRGBSurface` to create `SDL_SWSURFACE` only. I do not believe this relies on `INIT_VIDEO` (which would have the collateral of `INIT_EVENTS` etc.).
-* `statusbar.c` and `gui-dsl/sdlgui.c` draw to the surface, using `SDL_FillRect`, `SDL_BlitSurface`, `SDL_LockSurface`, etc. which I believe are all fine without `INIT_VIDEO`.
+## SDL2 Usage
+
+The SDL library is not initialized. Aside from some type definitions, it is mostly only needed to software-render the status bar, and onscreen keyboard. This is the short list of SDL functions used:
+* SDL_FillRect
+* SDL_MapRGB
+* SDL_FreeSurface
+* SDL_CreateRGBSurface
+* SDL_LockSurface
+* SDL_UnlockSurface
+* SDL_UpperBlit
+* SDL_SetPaletteColors
+* SDL_SetColorKey
+* SDL_strlcpy
