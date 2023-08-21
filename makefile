@@ -83,6 +83,14 @@ HATARILIBS = \
 
 default: $(CORE)
 
+full:
+	$(MAKE) -f makefile.zlib clean
+	$(MAKE) -f makefile.sdl clean
+	$(MAKE) clean
+	$(MAKE) -f makefile.zlib
+	$(MAKE) -f makefile.sdl
+	$(MAKE) default
+
 directories:
 	mkdir -p $(BD)
 	mkdir -p $(BD)core

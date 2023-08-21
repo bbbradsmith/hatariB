@@ -26,6 +26,8 @@ Before running make to build hatariB, build the static libraries for zlib and SD
 * make -f makefile.zlib
 * make -f makefile.sdl
 
+All of these makefiles also have a `clean` target which will delete their build directories, and `make full` will clean all and rebuild all.
+
 ## Changes to Hatari
 
 Changes to the C source code are all contained in `__LIBRETRO__` defines. This is important for merging future versions. None of the original code has been modified or deleted, only disabled within `#ifdef` blocks.
