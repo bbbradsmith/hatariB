@@ -28,8 +28,8 @@ jobs:
           cd build
           CC=$PWD/../build-scripts/gcc-fat.sh
           ../configure --disable-shared --prefix=$(pwd) \
-            --enable-audio=no --enable-power=no --enable-timers=no \
-            --enable-joystick=no --enable-haptic=no --enable-hidapi=no --enable-sensor=no \
+            --enable-audio=no \
+            --enable-joystick=no --enable-hidapi=no \
             --enable-video-cocoa=no --enable-video-metal=no --enable-video-opengl=no --enable-video-opengles2=no --enable-video-vulkan=no
           make
           make install
