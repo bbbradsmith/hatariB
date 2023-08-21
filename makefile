@@ -93,8 +93,8 @@ $(BD)core/%.o: core/%.c
 	$(CC) -o $@ $(CFLAGS) -c $< 
 
 hatarilib: directories
-	(cd hatari/build && CFLAGS="$(CFLAGS)" && cmake .. $(CMAKEFLAGS))
-	(cd hatari/build && CFLAGS="$(CFLAGS)" && cmake --build . $(CMAKEBUILDFLAGS))
+	(cd hatari/build && export CFLAGS="$(CFLAGS)" && cmake .. $(CMAKEFLAGS))
+	(cd hatari/build && export CFLAGS="$(CFLAGS)" && cmake --build . $(CMAKEBUILDFLAGS))
 
 clean:
 	rm -f -r $(BD)
