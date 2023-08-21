@@ -7,9 +7,11 @@ This is intended as reference documentation for future maintenance of this proje
 Incorporated sources:
 
 * [hatari/](https://git.tuxfamily.org/hatari/hatari.git/tag/?id=v2.4.1) 2.4.1 2022-08-03
+* [emutos/](https://emutos.sourceforge.io/) 1.2.1 2022-08-16
 * [libretro/libretro.h](https://github.com/libretro/libretro-common/blob/7edbfaf17baffa1b8a00231762aa7ead809711b5/include/libretro.h) 24a9210 2023-07-16
 * [libretro/libretro_sdl_keymap.h](https://github.com/libretro/RetroArch/blob/b4143882245edd737c7e7c522b25e32f8d1f64ad/input/input_keymaps.c#L607) 9ca5c5e 2023-07-08
-* [emutos/](https://emutos.sourceforge.io/) 1.2.1 2022-08-16
+* [SDL2](https://github.com/libsdl-org/SDL/releases/tag/release-2.28.2) 2.28.2 2023-08-02
+* [zlib](https://github.com/madler/zlib/releases/tag/v1.3) 1.3 2023-08-18
 
 ## Prerequisites
 
@@ -19,8 +21,10 @@ This has been built and tested with MSYS2 UCRT64. The following packages are req
 * make
 * gcc (mingw-w64-ucrt-x86_64-gcc)
 * cmake (mingw-w64-ucrt-x86_64-cmake)
-* SDL2 (mingw-w64-ucrt-x86_64-SDL2)
-* zlib (mingw-w64-ucrt-x86_64-zlib)
+
+Before running make to build hatariB, build the static libraries for zlib and SDL2:
+* make -f makefile.zlib
+* make -f makefile.sdl
 
 ## Changes to Hatari
 

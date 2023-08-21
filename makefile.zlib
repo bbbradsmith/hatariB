@@ -1,0 +1,12 @@
+default: zlib/libz.a
+
+submodules:
+	git submodule init
+	git submodule update
+
+zlib/libz.a: submodules
+	cd zlib && ./configure
+	cd zlib && make static
+
+clean:
+	rm -f -r zlib

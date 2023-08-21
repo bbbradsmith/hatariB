@@ -4,15 +4,29 @@ DEBUG = 0
 # enables verbose cmake for diagnosing the make step, and the cmak build command lines
 VERBOSE_CMAKE = 0
 
-# override to link SDL2 in a different way
-SDL2_LINK = -lSDL2
-
 SHORTHASH = "$(shell git rev-parse --short HEAD || unknown)"
 
+# static libraries
+ZLIB_INCLUDE = $(PWD)/zlib
+SDL2_INCLUDE = $(PWD)/SDL/build/include
+ZLIB_LIB = $(PWD)/zlib/libz.a
+SDL2_LIB = $(PWD)/SDL/build/lib/libSLD2.a
+SDL2_LINK = $(shell $(PWD)/SDL/build/bin/sdl2-config --static-libs)
+ZLIB_LINK = $(PWD)/zlib/libz.a
+
 CC ?= gcc
-CFLAGS += -O2 -Wall -Werror -fPIC -D__LIBRETRO__ -DSHORTHASH=\"$(SHORTHASH)\" -Ihatari/build
-LDFLAGS += -shared -Wall -Werror -static-libgcc
+CFLAGS += \
+	-O2 -Wall -Werror -fPIC \
+	-D__LIBRETRO__ -DSHORTHASH=\"$(SHORTHASH)\" \
+	-Ihatari/build -I$(SDL2_INCLUDE)
+LDFLAGS += \
+	-shared -Wall -Werror -static-libgcc
+
 CMAKEFLAGS += \
+	-DZLIB_INCLUDE_DIR=$(ZLIB_INCLUDE) \
+	-DZLIB_LIBRARY=$(ZLIB_LIB) \
+	-DSDL2_INCLUDE_DIR=$(SDL2_INCLUDE)/SDL2 \
+	-DSDL2_LIBRARY=$(SDL2_LIB) \
 	-DCMAKE_DISABLE_FIND_PACKAGE_Readline=1 \
 	-DCMAKE_DISABLE_FIND_PACKAGE_X11=1 \
 	-DCMAKE_DISABLE_FIND_PACKAGE_PNG=1 \
@@ -60,8 +74,7 @@ HATARILIBS = \
 	hatari/build/src/libFloppy.a \
 	hatari/build/src/debug/libDebug.a \
 	hatari/build/src/libcore.a \
-	-lz \
-	$(SDL2_LINK)
+	$(ZLIB_LINK) $(SDL2_LINK)
 # note: libcore is linked twice to allow other hatari internal libraries to resolve references within it.
 
 default: $(CORE)
