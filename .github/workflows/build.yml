@@ -11,90 +11,6 @@ concurrency:
 
 jobs:
 
-  build-win64:
-    name: Win64
-    runs-on: windows-latest
-    steps:
-      - name: Checkout Files
-        uses: actions/checkout@v3
-      - name: Setup MSYS2
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: UCRT64
-          install: git make mingw-w64-ucrt-x86_64-zlib mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-SDL2
-      - name: Build hatariB
-        shell: msys2 {0}
-        run: make
-      - name: Prepare Artifact
-        shell: pwsh
-        run: |
-          mkdir artifact
-          mkdir artifact/cores
-          copy build/*.dll artifact/cores
-          mkdir artifact/info
-          copy info/*.* artifact/info
-          echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $env:GITHUB_ENV
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: hatarib-win64--${{ env.BUILD_TAG }}
-          path: artifact/
-
-  build-win32:
-    name: Win32
-    runs-on: windows-latest
-    steps:
-      - name: Checkout Files
-        uses: actions/checkout@v3
-      - name: Setup MSYS2
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW32
-          install: git make mingw-w64-i686-zlib mingw-w64-i686-gcc mingw-w64-i686-cmake mingw-w64-i686-SDL2
-      - name: Build hatariB
-        shell: msys2 {0}
-        run: make
-      - name: Prepare Artifact
-        shell: pwsh
-        run: |
-          mkdir artifact
-          mkdir artifact/cores
-          copy build/*.dll artifact/cores
-          mkdir artifact/info
-          copy info/*.* artifact/info
-          echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $env:GITHUB_ENV
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: hatarib-win32--${{ env.BUILD_TAG }}
-          path: artifact/
-
-  build-ubuntu:
-    name: Ubuntu
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Files
-        uses: actions/checkout@v3
-      - name: Setup Ubuntu
-        run: |
-          sudo apt-get update
-          sudo apt-get install make cmake gcc zlib1g-dev libsdl2-dev
-      - name: Build hatariB
-        run: make
-      - name: Prepare Artifact
-        run: |
-          mkdir artifact
-          mkdir artifact/cores
-          cp build/*.so artifact/cores
-          mkdir artifact/info
-          cp info/*.* artifact/info
-          echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $GITHUB_ENV
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: hatarib-ubuntu--${{ env.BUILD_TAG }}
-          path: artifact/
-
   build-macos:
     name: MacOS
     runs-on: macos-latest
@@ -116,6 +32,10 @@ jobs:
           ../configure --disable-shared --prefix=$(pwd)
           make
           make install
+          # what have we got?
+          echo SDL2 installed, contents:
+          ls -r
+          echo end of contents
           cd ../..
           # build hatariB
           export OS=MacOS
@@ -124,7 +44,7 @@ jobs:
           export CMAKEFLAGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13"
           export C_INCLUDE_PATH=/usr/local/include
           export LIBRARY_PATH=/usr/local/lib
-          gmake
+          #gmake
       - name: Prepare Artifact
         run: |
           mkdir artifact
