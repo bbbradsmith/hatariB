@@ -164,9 +164,9 @@ This project includes [EmuTOS](https://emutos.sourceforge.io/) binaries as built
 
 This project incorporates header files from [Libretro](https://github.com/libretro/), under a compatible permissive license.
 
-This project includes or dynamically links with [SDL2](https://www.libsdl.org/) under the [zlib license](https://www.libsdl.org/license.php).
+This project includes [SDL2](https://www.libsdl.org/) under the [zlib license](https://www.libsdl.org/license.php).
 
-This project includes or dynamically links with [zlib](https://zlib.net/) under the [zlib license](https://zlib.net/zlib_license.html).
+This project includes [zlib](https://zlib.net/) under the [zlib license](https://zlib.net/zlib_license.html).
 
 ## Authors
 
