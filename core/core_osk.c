@@ -1,7 +1,7 @@
 #include "../libretro/libretro.h"
 #include "core.h"
 #include "core_internal.h"
-#include <SDL2/SDL.h>
+#include <SDL.h>
 #include "../hatari/src/includes/sdlgui.h"
 
 // hatari/src/screen.c

@@ -1,0 +1,18 @@
+ZLIB_BUILD = $(PWD)/zlib_build
+CFLAGS += -fPIC
+# -fPIC needed to link into a shared object
+
+default: $(ZLIB_BUILD)/libz.a
+
+submodules:
+	git submodule init
+	git submodule update
+
+$(ZLIB_BUILD)/libz.a: submodules
+	mkdir -p $(ZLIB_BUILD)
+	cd zlib_build && export CFLAGS="$(CFLAGS)" && ../zlib/configure --static --prefix=$(ZLIB_BUILD)
+	cd zlib_build && make static
+	cd zlib_build && make install
+
+clean:
+	rm -f -r zlib

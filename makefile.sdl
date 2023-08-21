@@ -1,0 +1,36 @@
+SDL_PREFIX = $(PWD)/SDL/build
+CFLAGS += -fPIC
+# -fPIC needed to link into a shared object
+
+default: sdl
+
+submodules:
+	git submodule init
+	git submodule update
+
+sdl: submodules
+	mkdir -p SDL/build
+	export CFLAGS="$(CFLAGS)" && cd SDL/build && ../configure --disable-shared --prefix=$(SDL_PREFIX) \
+		--enable-audio=no --enable-power=no --enable-filesystem=no --enable-timers=no --enable-file=no \
+		--enable-system-iconv=no --enable-misc=no --enable-locale=no \
+		--enable-joystick=no --enable-haptic=no --enable-hidapi=no --enable-sensor=no \
+		--enable-video-wayland=no \
+		--enable-video-rpi=no \
+		--enable-video-x11=no \
+		--enable-video-vivante=no \
+		--enable-video-cocoa=no \
+		--enable-video-metal=no \
+		--enable-render-metal=no \
+		--enable-video-directfb=no \
+		--enable-video-kmsdrm=no \
+		--enable-video-opengl=no \
+		--enable-video-opengles=no \
+		--enable-video-opengles1=no \
+		--enable-video-opengles2=no \
+		--enable-video-vulkan=no \
+		--enable-render-d3d=no
+	cd SDL/build && make -j
+	cd SDL/build && make install
+
+clean:
+	rm -f -r SDL
