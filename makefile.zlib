@@ -1,4 +1,5 @@
 ZLIB_BUILD = $(PWD)/zlib_build
+CFLAGS = -fPIC
 
 default: $(ZLIB_BUILD)/libz.a
 

@@ -8,7 +8,7 @@ SHORTHASH = "$(shell git rev-parse --short HEAD || unknown)"
 
 # static libraries
 ZLIB_INCLUDE = $(PWD)/zlib_build/include
-SDL2_INCLUDE = $(PWD)/SDL/build/include
+SDL2_INCLUDE = $(PWD)/SDL/build/include/SDL2
 ZLIB_LIB = $(PWD)/zlib_build/lib/libz.a
 SDL2_LIB = $(PWD)/SDL/build/lib/libSLD2.a
 SDL2_LINK = $(shell $(PWD)/SDL/build/bin/sdl2-config --static-libs)
@@ -25,7 +25,7 @@ LDFLAGS += \
 CMAKEFLAGS += \
 	-DZLIB_INCLUDE_DIR=$(ZLIB_INCLUDE) \
 	-DZLIB_LIBRARY=$(ZLIB_LIB) \
-	-DSDL2_INCLUDE_DIR=$(SDL2_INCLUDE)/SDL2 \
+	-DSDL2_INCLUDE_DIR=$(SDL2_INCLUDE) \
 	-DSDL2_LIBRARY=$(SDL2_LIB) \
 	-DCMAKE_DISABLE_FIND_PACKAGE_Readline=1 \
 	-DCMAKE_DISABLE_FIND_PACKAGE_X11=1 \

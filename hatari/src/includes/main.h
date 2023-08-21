@@ -14,11 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef __LIBRETRO__
-#include <SDL2/SDL_types.h>
-#else
 #include <SDL_types.h>
-#endif
 #include <stdbool.h>
 #include <math.h>
 
