@@ -277,9 +277,9 @@ static void Statusbar_OverlayInit(const SDL_Surface *surf)
 	OverlayLedRect.h = h;
 	OverlayLedRect.x = surf->w - 5*h/2;
 #else
-	// make it twice as big
+	// make it bigger
 	OverlayLedRect.w = 4*h;
-	OverlayLedRect.h = 2*h;
+	OverlayLedRect.h = (9*h)/5;
 	OverlayLedRect.x = surf->w - 9*h/2;
 #endif
 	OverlayLedRect.y = h/2;
