@@ -21,6 +21,14 @@ extern int core_crashtime;
 extern bool core_show_welcome;
 extern void core_signal_alert(const char* alertmsg); // onscreen notifications
 
+extern bool core_midi_read(uint8_t* data);
+extern bool core_midi_write(uint8_t data);
+
+// bi-directional serialization helpers
+extern void core_serialize_uint8(uint8_t *x);
+extern void core_serialize_int32(int32_t *x);
+extern void core_serialize_uint32(uint32_t *x);
+
 // core_file.c
 extern void strcpy_trunc(char* dest, const char* src, unsigned int len);
 extern void strcat_trunc(char* dest, const char* src, unsigned int len);

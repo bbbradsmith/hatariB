@@ -70,9 +70,6 @@ extern void core_snapshot_close(void);
 extern void core_snapshot_read(char* buf, int len);
 extern void core_snapshot_write(const char* buf, int len);
 extern void core_snapshot_seek(int pos);
-// bi-directional serialization helpers
-extern void core_serialize_uint8(uint8_t *x);
-extern void core_serialize_int32(int32_t *x);
 
 // hatari exports
 extern int main_init(int argc, char *argv[]);

@@ -387,7 +387,71 @@ void core_signal_reset(bool cold) // called by Reset_ST, allows the retro_run lo
 	core_runflags |= cold ? CORE_RUNFLAG_RESET_COLD : CORE_RUNFLAG_RESET_WARM;
 }
 
+//
+// MIDI interface
+//
+
+struct retro_midi_interface* retro_midi = NULL;
+bool midi_needs_flush = false;
+uint32_t midi_delta_time = 0;
+
+static void core_midi_set_environment(retro_environment_t cb)
+{
+	// if we call this a second time after succeeding it seems to fail, so just keep the first one we get
+	static struct retro_midi_interface retro_midi_interface;
+	if (!retro_midi && cb(RETRO_ENVIRONMENT_GET_MIDI_INTERFACE,&retro_midi_interface))
+	{
+		retro_midi = &retro_midi_interface;
+	}
+	if (retro_midi)
+	{
+		retro_log(RETRO_LOG_INFO,"MIDI interface available.\n");
+		retro_log(RETRO_LOG_INFO,"MIDI IN: %s\n",retro_midi->input_enabled() ? "Enabled" : "Disabled");
+		retro_log(RETRO_LOG_INFO,"MIDI OUT: %s\n",retro_midi->output_enabled() ? "Enabled" : "Disabled");
+	}
+	else
+	{
+		retro_midi = NULL;
+		retro_log(RETRO_LOG_INFO,"MIDI interface not available.\n");
+	}
+}
+
+bool core_midi_read(uint8_t* data)
+{
+	//retro_log(RETRO_LOG_DEBUG,"core_midi_read(%p)\n",data);
+	if (retro_midi && retro_midi->input_enabled() && retro_midi->read(data))
+	{
+		//retro_log(RETRO_LOG_DEBUG,"MIDI READ: %02X\n",*data);
+		return true;
+	}
+	return false;
+}
+
+bool core_midi_write(uint8_t data)
+{
+	//retro_log(RETRO_LOG_DEBUG,"core_midi_write(%02X)\n",data);
+	if (retro_midi && retro_midi->output_enabled() && retro_midi->write(data,midi_delta_time))
+	{
+		//retro_log(RETRO_LOG_DEBUG,"MIDI WRITE: %02X (%d ms)\n",data,midi_delta_time);
+		midi_delta_time = 0;
+		midi_needs_flush = true;
+		return true;
+	}
+	midi_delta_time = 0;
+	return false;
+}
+
+static void core_midi_frame()
+{
+	if (midi_needs_flush && retro_midi && retro_midi->output_enabled())
+		retro_midi->flush();
+	midi_needs_flush = false;
+	midi_delta_time += (1000 / core_video_fps);
+}
+
+//
 // memory snapshot simulated file
+//
 
 char* snapshot_buffer = NULL;
 int snapshot_pos = 0;
@@ -488,7 +552,8 @@ static void core_serialize_internal(void* x, size_t size)
 }
 
 void core_serialize_uint8(uint8_t *x) { core_serialize_internal(x,sizeof(uint8_t)); }
-void core_serialize_int32(int32_t*x) { core_serialize_internal(x,sizeof(int32_t)); }
+void core_serialize_int32(int32_t *x) { core_serialize_internal(x,sizeof(int32_t)); }
+void core_serialize_uint32(uint32_t *x) { core_serialize_internal(x,sizeof(uint32_t)); }
 
 static bool core_serialize(bool write)
 {
@@ -524,6 +589,7 @@ static bool core_serialize(bool write)
 
 	// core state
 	core_serialize_uint8(&core_runflags);
+	core_serialize_uint32(&midi_delta_time);
 	core_input_serialize();
 	core_osk_serialize();
 	//retro_log(RETRO_LOG_DEBUG,"core_serialize header: %d <= %d\n",snapshot_pos,SNAPSHOT_HEADER_SIZE);
@@ -598,6 +664,7 @@ RETRO_API void retro_set_environment(retro_environment_t cb)
 	core_input_set_environment(cb);
 	core_disk_set_environment(cb);
 	core_config_set_environment(cb);
+	core_midi_set_environment(cb);
 
 	// M3U/M3U8 need fullpath to find the linked files
 	{
@@ -671,6 +738,7 @@ RETRO_API void retro_init(void)
 	core_input_init();
 	core_disk_init();
 	core_osk_init();
+	midi_delta_time = 0;
 
 	// for trace debugging (requires -DENABLE_TRACING=1)
 	//Log_SetTraceOptions("cpu_disasm");
@@ -902,6 +970,9 @@ RETRO_API void retro_run(void)
 
 	// event queue end of frame
 	core_input_finish();
+
+	// flush midi if needed
+	core_midi_frame();
 }
 
 RETRO_API size_t retro_serialize_size(void)

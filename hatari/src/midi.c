@@ -65,6 +65,11 @@ static void Midi_Host_Close(void);
 static int  Midi_Host_ReadByte(void);
 static bool Midi_Host_WriteByte(Uint8 byte);
 
+#ifdef __LIBRETRO__
+extern bool core_midi_read(uint8_t* data);
+extern void core_midi_write(uint8_t data);
+#endif
+
 #ifndef HAVE_PORTMIDI
 static FILE *pMidiFhIn  = NULL;    /* File handle used for Midi input */
 static FILE *pMidiFhOut = NULL;    /* File handle used for Midi output */
@@ -340,6 +345,7 @@ void Midi_InterruptHandler_Update(void)
  */
 static bool Midi_Host_Open(void)
 {
+#ifndef __LIBRETRO__
 #ifndef HAVE_PORTMIDI
 	int ok;
 	if (ConfigureParams.Midi.sMidiOutFileName[0])
@@ -392,6 +398,7 @@ static bool Midi_Host_Open(void)
 	if (ConfigureParams.Midi.sMidiOutPortName[0])
 		Midi_Host_SwitchPort(ConfigureParams.Midi.sMidiOutPortName, false);
 #endif
+#endif
 
 	return true;
 }
@@ -403,6 +410,7 @@ static bool Midi_Host_Open(void)
  */
 static void Midi_Host_Close(void)
 {
+#ifndef __LIBRETRO__
 #ifndef HAVE_PORTMIDI
 	pMidiFhIn = File_Close(pMidiFhIn);
 	pMidiFhOut = File_Close(pMidiFhOut);
@@ -416,6 +424,7 @@ static void Midi_Host_Close(void)
 	// Can't terminate PM or free descriptor arrays as this gets
 	// called by any write errors and GUI won't then work.
 	// Pm_Terminate();
+#endif
 #endif
 }
 
@@ -577,6 +586,14 @@ static void Midi_LogError(PmError error)
  */
 static int Midi_Host_ReadByte(void)
 {
+#ifdef __LIBRETRO__
+	uint8_t data;
+	if (!core_midi_read(&data))
+		return EOF;
+	else
+		return data;
+	(void)pMidiFhOut;
+#else
 #ifndef HAVE_PORTMIDI
 	if (pMidiFhIn && File_InputAvailable(pMidiFhIn))
 	{
@@ -627,6 +644,7 @@ static int Midi_Host_ReadByte(void)
 	// -- no more midi data
 	return EOF;
 #endif
+#endif
 }
 
 
@@ -635,6 +653,11 @@ static int Midi_Host_ReadByte(void)
  */
 static bool Midi_Host_WriteByte(Uint8 byte)
 {
+#ifdef __LIBRETRO__
+	core_midi_write(byte);
+	return true;
+	(void)pMidiFhIn;
+#else
 #ifndef HAVE_PORTMIDI
 	if (pMidiFhOut)
 	{
@@ -659,6 +682,7 @@ static bool Midi_Host_WriteByte(Uint8 byte)
 #endif
 
 	return false;
+#endif
 }
 
 

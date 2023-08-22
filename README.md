@@ -115,6 +115,8 @@ On MacOS, there are some extra requirements:
   * To alternate between a top and bottom keyboard position, press X.
   * Modifier keys like Shift, Control, Alt are toggled instead of a single press, allowing you to hold the modifier while you press another key. When you close the keyboard, all modifiers will be released.
   * The keyboard language layout can be chosen in the *Input > On-Screen Keyboard Language* core option.
+* MIDI
+  * Libretro has a MIDI interface. I haven't tested it much, but I did get it to play some MIDI notes. It might work?
 * Accuracy:
   * Some of the default core options are chosen to favour lower CPU usage, and faster load times, but these can be adjusted.
   * *System > Fast Floppy* gives artificially faster disk access, on by default.
@@ -138,7 +140,6 @@ On MacOS, there are some extra requirements:
   * You can use *Load New Disk* or M3U playlists to load the same floppy multiple times, or multiple floppies with the same name. This mostly works okay, but a savestate restore might be unable to identify which of them was actually inserted.
 
 Possible Future Tasks:
-* Investigate Libretro MIDI interface. I wonder if I could play MIDI Maze against my real ST?
 * Can savestate restore be more lightweight? What takes so much CPU time? Are there any lingering spurious disk accesses? Also, I think netplay efficiency may rely on stable data positions, so double check this to see if structures are moving around from frame to frame (I suspect it only really changes at disk insert/eject).
 * RS232 emulation?
 * Printer emulation?

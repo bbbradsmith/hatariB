@@ -814,6 +814,7 @@ void Configuration_SetDefault(void)
 	ConfigureParams.System.bFastBoot = true;
 	ConfigureParams.System.bCycleExactCpu = false;
 	ConfigureParams.HardDisk.nWriteProtection = WRITEPROT_ON;
+	ConfigureParams.Midi.bEnableMidi = true;
 #endif
 }
 
