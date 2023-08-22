@@ -406,8 +406,9 @@ static void core_midi_set_environment(retro_environment_t cb)
 	if (retro_midi)
 	{
 		retro_log(RETRO_LOG_INFO,"MIDI interface available.\n");
-		retro_log(RETRO_LOG_INFO,"MIDI IN: %s\n",retro_midi->input_enabled() ? "Enabled" : "Disabled");
-		retro_log(RETRO_LOG_INFO,"MIDI OUT: %s\n",retro_midi->output_enabled() ? "Enabled" : "Disabled");
+		// I don't think these return enabled until the game is loaded?
+		//retro_log(RETRO_LOG_INFO,"MIDI IN: %s\n",retro_midi->input_enabled() ? "Enabled" : "Disabled");
+		//retro_log(RETRO_LOG_INFO,"MIDI OUT: %s\n",retro_midi->output_enabled() ? "Enabled" : "Disabled");
 	}
 	else
 	{
