@@ -342,7 +342,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		"Speed of the mouse when controlled by the analog sticks.",
 		NULL, "input",
 		{
-			{"2","1"}, // 2 is the minimum 1px for d-pad motion with the current factors (32768 * 0.00005 * 0.4 * 2 = ~1.3 >= 1)
+			{"2","1"}, // 2 is very slow
 			{"3","2"},
 			{"4","3"},
 			{"5","4"},
@@ -735,11 +735,13 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{"15","STE Button C"}, \
 		{"16","STE Button Option"}, \
 		{"17","STE Button Pause"}, \
-		{"18","Soft Reset"}, \
-		{"19","Hard Reset"}, \
-		{"20","Toggle Status Bar"}, \
-		{"21","Key Space"}, \
-		{"22","Key Return"}, \
+		{"18","Mouse Speed Slow"}, \
+		{"19","Mouse Speed Fast"}, \
+		{"20","Soft Reset"}, \
+		{"21","Hard Reset"}, \
+		{"22","Toggle Status Bar"}, \
+		{"23","Key Space"}, \
+		{"24","Key Return"}, \
 		{"","Key Up"}, \
 		{"","Key Down"}, \
 		{"","Key Left"}, \
@@ -871,13 +873,13 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	{ "hatarib_pad" padnum "_r1", "Pad " padnum " R1", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_BUTTON(), "6" }, /* on-screen keyboard one-shot */ \
 	{ "hatarib_pad" padnum "_l2", "Pad " padnum " L2", NULL, NULL, NULL, "pad" padnum, \
-		OPTION_PAD_BUTTON(), "0" }, /* none */ \
+		OPTION_PAD_BUTTON(), "18" }, /* mouse slow */ \
 	{ "hatarib_pad" padnum "_r2", "Pad " padnum " R2", NULL, NULL, NULL, "pad" padnum, \
-		OPTION_PAD_BUTTON(), "0" }, /* none */ \
+		OPTION_PAD_BUTTON(), "19" }, /* mouse fast */ \
 	{ "hatarib_pad" padnum "_l3", "Pad " padnum " L3", NULL, NULL, NULL, "pad" padnum, \
-		OPTION_PAD_BUTTON(), "21" }, /* key space */ \
+		OPTION_PAD_BUTTON(), "23" }, /* key space */ \
 	{ "hatarib_pad" padnum "_r3", "Pad " padnum " R3", NULL, NULL, NULL, "pad" padnum, \
-		OPTION_PAD_BUTTON(), "22" }, /* key return */ \
+		OPTION_PAD_BUTTON(), "24" }, /* key return */ \
 	{ "hatarib_pad" padnum "_lstick", "Pad " padnum " Left Analog Stick", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_STICK(), "1" }, /* joystick */ \
 	{ "hatarib_pad" padnum "_rstick", "Pad " padnum " Right Analog Stick", NULL, NULL, NULL, "pad" padnum, \

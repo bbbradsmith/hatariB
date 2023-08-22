@@ -40,7 +40,7 @@ On MacOS, there are some extra requirements:
 
 * Hatari Manual:
   * [Hatari Online Manual](https://hatari.tuxfamily.org/doc/manual.html)
-* Default controls:
+* Controls:
   * Left Stick and D-Pad - Joystick
   * Right Stick - Mouse
   * B - Joystick Fire
@@ -49,8 +49,8 @@ On MacOS, there are some extra requirements:
   * Select - Select drive A or B
   * Start - Help screen
   * L1 - On-screen keyboard
-  * R1 - On-screen keyboard one-shot (pauses emulation, resumes at confirm/cancel)
-  * L2, R2 - Unassigned
+  * R1 - On-screen keyboard one-shot
+  * L2, R2 - Mouse Slow, Fast
   * L3 - Space key
   * R3 - Return key
   * On-screen keyboard
@@ -67,8 +67,22 @@ On MacOS, there are some extra requirements:
       * Page Up - Numpad (
       * Page Down - Numpad )
     * Other keys map directly to a standard keyboard, but Game Focus mode (Scroll-Lock) may be neeed to access keys normally assigned to RetroArch hotkeys.
-  * All gamepad assignments can be configured in the core options. Buttons can be assigned to press keys, or perform other actions besides the default.
-  * If you don't like pressing the stick up to jump, you can assign a button to *Joystick Up* in the *Retropad* core options.
+  * Gamepad buttons can be reassigned in the *Retropad* core options:
+    * *None* - To disable the button.
+    * *Fire* - Joystick fire.
+    * *Auto-Fire* - Automatically repeating joystick fire.
+    * *Mouse Left/Right* - Mouse buttons.
+    * *On-Screen Keyboard* - Raises the on-screen keyboard.
+    * *On-Screen Keyboard One-Shot* - Pauses emulation and raises the on-screen keyboard. Resumes when you confirm/cancel a keypress.
+    * *Select Floppy Drive* - Selects drive A or B to use with the Libretro disk controls.
+    * *Help Screen / Pause* - Pauses emulation and brings up a help screen or other display. You can choose a pause display under *Video > Pause Screen Display*.
+    * *Joystick Up* - For those who don't like up-to-jump controls, you can make it a button.
+    * *Joystick Down/Left/Right* - The other joystick directions can be made into buttons too.
+    * *STE Button A/B/C/Option/Pause* - Buttons for the enhanced STE controller ports.
+    * *Mouse Speed Slow/Fast* - Hold to slow or speed the mouse, useful if you have no analog stick.
+    * *Soft/Hard Reset* - If you need a button to reset the machine.
+    * *Toggle Status Bar* - A quick hide/reveal of the status bar, in case you like it hidden but still want to check it sometimes.
+    * *Key Space/Return/Up/Down...* - Any keyboard key can be assigned to a button.
 * File formats:
   * Floppy disk: ST, MSA, DIM, STX (can be inside ZIP or GZ)
   * Muli-disk: M3U, M3U8

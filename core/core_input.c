@@ -9,6 +9,15 @@
 // Internal input state
 //
 
+// mouse speed calibration
+// fixed point mouse precision pre-scale (so that we can move less than 1 pixel per frame)
+#define MOUSE_PRECISION   256
+const float MOUSE_SPEED_FACTOR = 0.00005; // sets the overall speed meaning of the settings in core_config.c
+const float DPAD_MOUSE_SPEED = 0.3; // scale of d-pad relative to analog max
+// the speed factor of Mouse Speed Slow and Mouse Speed Fast button assignments
+#define MOUSE_MODIFIER_FACTOR   3
+
+// auxiliary input bitfield
 #define AUX_MOUSE_L      0x00000001
 #define AUX_MOUSE_R      0x00000002
 #define AUX_PAUSE        0x00000004
@@ -366,14 +375,16 @@ void core_input_update(void)
 	// accumulated virtual mouse state
 	bool vm_l = false;
 	bool vm_r = false;
-	int vm_x = vmouse_x;
-	int vm_y = vmouse_y;
+	int vm_rx = 0;
+	int vm_ry = 0;
 	// accumulated temporary joystick state
 	int32_t vjoy_fire[JOY_PORTS] = { 0,0,0,0,0,0 };
 	int32_t vjoy_stick[JOY_PORTS] = { 0,0,0,0,0,0 };
 	// accumulated auxiliary button state
 	bool drive_swap = false;
 	bool warm_boot = false;
+	bool mouse_slow = false;
+	bool mouse_fast = false;
 	bool cold_boot = false;
 	bool statusbar = false;
 	bool pause = false;
@@ -473,9 +484,8 @@ void core_input_update(void)
 			case 2: // Mouse
 				{
 					int deadzone = (0x8000 * core_mouse_dead) / 100;
-					const float SPEED_FACTOR = 0.00005;
-					float speed = (float)core_mouse_speed * SPEED_FACTOR * ((float)0x8000 / (float)(0x8000 - deadzone));
-					if (k == CORE_INPUT_STICK_DPAD) speed *= 0.4; // D-Pad needs a slower speed
+					float speed = (float)core_mouse_speed * (float)MOUSE_PRECISION * MOUSE_SPEED_FACTOR * ((float)0x8000 / (float)(0x8000 - deadzone));
+					if (k == CORE_INPUT_STICK_DPAD) speed *= DPAD_MOUSE_SPEED; // D-Pad needs a slower speed
 
 					if (ax < deadzone && ax > -deadzone) ax = 0;
 					else if (ax < 0) ax += deadzone;
@@ -484,8 +494,8 @@ void core_input_update(void)
 					else if (ay < 0) ay += deadzone;
 					else if (ay > 0) ay -= deadzone;
 
-					vm_x += (int)(ax * speed);
-					vm_y += (int)(ay * speed);
+					vm_rx += (int)(ax * speed);
+					vm_ry += (int)(ay * speed);
 				} break;
 			case 3: // Cursor Keys
 				if (!input_paused)
@@ -524,7 +534,7 @@ void core_input_update(void)
 				#endif
 				static const int BUTTON_KEY[] = // must match options in core_config.c
 				{
-					RETROK_SPACE, // 21
+					RETROK_SPACE, // 23
 					RETROK_RETURN,
 					RETROK_UP,
 					RETROK_DOWN,
@@ -617,10 +627,10 @@ void core_input_update(void)
 					RETROK_KP6,
 					RETROK_KP7,
 					RETROK_KP8,
-					RETROK_KP9, // 114
+					RETROK_KP9, // 116
 				};
 				#define BUTTON_KEY_COUNT   (sizeof(BUTTON_KEY)/sizeof(BUTTON_KEY[0]))
-				#define BUTTON_KEY_START   21
+				#define BUTTON_KEY_START   23
 
 				const int m = core_button_map[i][k];
 
@@ -725,13 +735,19 @@ void core_input_update(void)
 					case 17: // STE Button Pause
 						if (j < JOY_PORTS) vjoy_fire[j] |= JOY_FIRE_PAUSE;
 						break;
-					case 18: // Soft Reset
+					case 18: // Mouse Speed Slow
+						mouse_slow = true;
+						break;
+					case 19: //  Mouse Speed Fast
+						mouse_fast = true;
+						break;
+					case 20: // Soft Reset
 						warm_boot = true;
 						break;
-					case 19: // Hard Reset
+					case 21: // Hard Reset
 						cold_boot = true;
 						break;
-					case 20: // Toggle Statusbar
+					case 22: // Toggle Statusbar
 						statusbar = true;
 						break;
 					}
@@ -795,8 +811,8 @@ void core_input_update(void)
 			int pm_y  = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y);
 			vm_l |= pm_l;
 			vm_r |= pm_r;
-			vm_x += pm_x;
-			vm_y += pm_y;
+			vm_rx += pm_x * MOUSE_PRECISION;
+			vm_ry += pm_y * MOUSE_PRECISION;
 			#if CORE_INPUT_DEBUG
 			if (core_input_debug && (pm_l || pm_r || pm_x || pm_y))
 				retro_log(RETRO_LOG_INFO,"M %c%c %3d %3d\n",
@@ -806,6 +822,19 @@ void core_input_update(void)
 			#endif
 		}
 
+		if (mouse_slow)
+		{
+			vm_rx /= MOUSE_MODIFIER_FACTOR;
+			vm_ry /= MOUSE_MODIFIER_FACTOR;
+		}
+		if (mouse_fast)
+		{
+			vm_rx *= MOUSE_MODIFIER_FACTOR;
+			vm_ry *= MOUSE_MODIFIER_FACTOR;
+		}
+		int vm_x = vmouse_x + vm_rx;
+		int vm_y = vmouse_y + vm_ry;
+
 		if ((vm_l && !AUX(MOUSE_L)) || (!vm_l && AUX(MOUSE_L)))
 		{
 			SDL_Event event; memset(&event,0,sizeof(event));
@@ -813,8 +842,8 @@ void core_input_update(void)
 			event.button.button = SDL_BUTTON_LEFT;
 			event.button.state = vm_l ? SDL_PRESSED : SDL_RELEASED;
 			event.button.clicks = 1;
-			event.button.x = vm_x;
-			event.button.y = vm_y;
+			event.button.x = vm_x / MOUSE_PRECISION;
+			event.button.y = vm_y / MOUSE_PRECISION;
 			event_queue_push(&event);
 			AUX_SET(vm_l,MOUSE_L);
 			#if CORE_INPUT_DEBUG
@@ -830,8 +859,8 @@ void core_input_update(void)
 			event.button.button = SDL_BUTTON_RIGHT;
 			event.button.state = vm_r ? SDL_PRESSED : SDL_RELEASED;
 			event.button.clicks = 1;
-			event.button.x = vm_x;
-			event.button.y = vm_y;
+			event.button.x = vm_x / MOUSE_PRECISION;
+			event.button.y = vm_y / MOUSE_PRECISION;
 			event_queue_push(&event);
 			AUX_SET(vm_r,MOUSE_R);
 			#if CORE_INPUT_DEBUG
@@ -847,16 +876,16 @@ void core_input_update(void)
 			event.motion.state = 0;
 			if (AUX(MOUSE_L)) event.motion.state |= SDL_BUTTON_LMASK;
 			if (AUX(MOUSE_R)) event.motion.state |= SDL_BUTTON_RMASK;
-			event.motion.x = vm_x;
-			event.motion.y = vm_y;
-			event.motion.xrel = vm_x - vmouse_x;
-			event.motion.yrel = vm_y - vmouse_y;
+			event.motion.x = vm_x / MOUSE_PRECISION;
+			event.motion.y = vm_y / MOUSE_PRECISION;
+			event.motion.xrel = (vm_x / MOUSE_PRECISION) - (vmouse_x / MOUSE_PRECISION);
+			event.motion.yrel = (vm_y / MOUSE_PRECISION) - (vmouse_y / MOUSE_PRECISION);
 			event_queue_push(&event);
 			vmouse_x = vm_x;
 			vmouse_y = vm_y;
 			#if CORE_INPUT_DEBUG
 			if (core_input_debug)
-				retro_log(RETRO_LOG_INFO,"Mouse Move %3d %3d\n",vm_x,vm_y);
+				retro_log(RETRO_LOG_INFO,"Mouse Move %3d %3d\n",vm_x/MOUSE_PRECISION,vm_y/MOUSE_PRECISION);
 			#endif
 		}
 	}
@@ -947,8 +976,8 @@ void core_input_update(void)
 			joy_fire[1],
 			AUX(MOUSE_L) ? 'L' : '.',
 			AUX(MOUSE_R) ? 'R' : '.',
-			vmouse_x,
-			vmouse_y);
+			vmouse_x/MOUSE_PRECISION,
+			vmouse_y/MOUSE_PRECISION);
 	}
 	#endif
 }

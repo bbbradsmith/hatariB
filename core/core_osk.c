@@ -56,6 +56,7 @@ const char* const HELPTEXT[] = {
 	"  D-Pad or Left-Stick, B, A = Joystick, Fire, Auto Fire",
 	"  Right-Stick, Y, X = Mouse, Left Button, Right Button",
 	"  L1, R1 = On-Screen Keyboard, One-Shot Keyboard",
+	"  L2, R2 = Mouse Slow, Fast",
 	"  L3, R3 (Stick-Click) = Space, Return",
 	"  Select, Start = Select Floppy Drive, Help",
 	"Onscreen Keyboard:",
