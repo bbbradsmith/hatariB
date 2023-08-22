@@ -166,6 +166,9 @@ Possible Future Tasks:
 
 ## History
 
+* hatariB v0.1 - 2023-08-22
+  * First beta test version.
+
 No releases yet. See nightly builds above for a preview.
 
 ## License
