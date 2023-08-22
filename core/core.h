@@ -56,6 +56,7 @@ extern void core_set_samplerate(int rate);
 extern void core_signal_halt(void);
 extern void core_signal_reset(bool cold);
 extern void core_signal_tos_fail(void);
+extern void core_signal_alert(const char* alertmsg); // onscreen notifications
 
 // input translation
 typedef union SDL_Event* core_event_t;

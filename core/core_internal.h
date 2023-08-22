@@ -19,7 +19,6 @@ extern bool core_option_soft_reset;
 extern bool core_serialize_write; // current serialization direction
 extern int core_crashtime;
 extern bool core_show_welcome;
-extern void core_signal_alert(const char* alertmsg); // onscreen notifications
 
 extern bool core_midi_read(uint8_t* data);
 extern bool core_midi_write(uint8_t data);

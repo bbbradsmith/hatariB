@@ -266,7 +266,6 @@ static void corelog_prefix_va(LOGTYPE t, const char* fmt, va_list args)
 	vsnprintf(corelog+o,sizeof(corelog)-o,fmt,args);
 	core_debug_hatari(t <= LOG_ERROR,corelog);
 }
-extern void core_signal_alert(const char* alertmsg);
 #endif
 
 /*-----------------------------------------------------------------------*/
@@ -307,6 +306,7 @@ void Log_Printf(LOGTYPE nType, const char *psFormat, ...)
 	#endif
 	}
 }
+
 
 /*-----------------------------------------------------------------------*/
 /**

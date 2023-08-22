@@ -964,6 +964,7 @@ static void save_file_handle_info(FILE_HANDLE *handle)
 		/* avoid warnings about access to undefined data */
 		offset = 0;
 #ifndef __LIBRETRO__
+		stat("/", &fstat);
 		mtime = fstat.st_mtime;
 #else
 		mtime = 0;
@@ -4598,16 +4599,13 @@ int GemDOS_LoadAndReloc(const char *psPrgName, uint32_t baseaddr, bool bFullBpSe
 	uint32_t nRelOff, nCurrAddr;
 	uint32_t memtop;
 
-core_debug_msg("GemDOS_LoadAndReloc");
 #ifndef __LIBRETRO__
 	prg = File_ReadAsIs(psPrgName, &nFileSize);
 #else
-core_debug_msg("GemDOS_hello?");
 	unsigned int size = 0;
 	prg = core_read_file_system(psPrgName, &size);
 	nFileSize = size;
 #endif
-core_debug_msg("GemDOS_loaded?");
 	if (!prg)
 	{
 		Log_Printf(LOG_ERROR, "Failed to load '%s'.\n", psPrgName);

@@ -1041,7 +1041,7 @@ int main_init(int argc, char *argv[])
 
 	/* Set initial Statusbar information */
 	Main_StatusbarSetup();
-
+	
 	/* Check if SDL_Delay is accurate */
 	Main_CheckForAccurateDelays();
 

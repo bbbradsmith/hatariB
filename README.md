@@ -141,6 +141,7 @@ On MacOS, there are some extra requirements:
 
 Possible Future Tasks:
 * Can savestate restore be more lightweight? What takes so much CPU time? Are there any lingering spurious disk accesses? Also, I think netplay efficiency may rely on stable data positions, so double check this to see if structures are moving around from frame to frame (I suspect it only really changes at disk insert/eject).
+* Falcon microphone support? Need to find relevant Falcon software to test against.
 * RS232 emulation?
 * Printer emulation?
 * IPF support, figure out library issues. There seems to be a MAME IPF reader?
