@@ -116,7 +116,7 @@ On MacOS, there are some extra requirements:
   * Modifier keys like Shift, Control, Alt are toggled instead of a single press, allowing you to hold the modifier while you press another key. When you close the keyboard, all modifiers will be released.
   * The keyboard language layout can be chosen in the *Input > On-Screen Keyboard Language* core option.
 * MIDI
-  * Libretro has a MIDI interface. I haven't tested it much, but I did get it to play some MIDI notes. It might work?
+  * Libretro has a MIDI interface, and I have connected it here. I've had success playing some MT-32 games with the [MUNT MT-32 Emulator](url=https://github.com/munt/munt) Windows driver.
 * Accuracy:
   * Some of the default core options are chosen to favour lower CPU usage, and faster load times, but these can be adjusted.
   * *System > Fast Floppy* gives artificially faster disk access, on by default.
