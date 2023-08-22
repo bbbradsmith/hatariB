@@ -625,16 +625,16 @@ void core_input_update(void)
 				const int m = core_button_map[i][k];
 
 				// on-screen keyboard button mappings
+				bool is_osk = false;
 				for (int l=0; l<CORE_INPUT_OSKEY_BUTTONS; ++l)
 				{
-					bool is_osk = false;
 					if ((k+1) == core_oskey_map[i][l])
 					{
 						osk_button[l] = 1;
 						is_osk = true;
 					}
-					if (input_osk_key && is_osk) continue; // when using OSK hide these buttons
 				}
+				if (input_osk_key && is_osk) continue; // when using OSK hide these buttons
 
 				// regular mappings
 				if (m >= (BUTTON_KEY_START + BUTTON_KEY_COUNT)) continue;
