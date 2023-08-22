@@ -661,11 +661,12 @@ static bool set_initial_image(unsigned index, const char* path)
 	retro_log(RETRO_LOG_DEBUG,"set_initial_image(%d,%p)\n",index,path);
 	if(path) retro_log(RETRO_LOG_DEBUG,"path: %s\n",path); // logging this path but not doing anything with it
 	//initial_image = index;
+	//return true;
 	// Disabling this. RetroArch appears to give you the last disk you had in the drive, last time you played.
 	// This is inappropriate for Atari ST, where you almost always need a boot disk to start the game.
 	// It also conflicts with the drive B workaround, where RetroArch won't know which drive it is saving the last index of.
 	initial_image = 0;
-	return true;
+	return false;
 }
 
 static bool get_image_path(unsigned index, char* path, size_t len)
