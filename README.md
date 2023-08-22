@@ -7,8 +7,8 @@ A [Libretro](https://www.libretro.com/) core integrating the [Hatari](https://ha
   * Windows 32-bit
   * Ubuntu
   * MacOS
-* Stable Build:
-  * 2023-08-22 v0.1 beta
+* Current Release:
+  * **[hatariB v0.1](https://github.com/bbbradsmith/hatariB/releases/tag/0.1)** - 2023-08-22
 * Unstable Build:
   * [Download](https://nightly.link/bbbradsmith/hatariB/workflows/build/main)
 * Recent Builds:
@@ -166,7 +166,7 @@ Possible Future Tasks:
 
 ## History
 
-* hatariB v0.1 - 2023-08-22
+* [hatariB v0.1](https://github.com/bbbradsmith/hatariB/releases/tag/0.1) - 2023-08-22
   * First beta test version.
 
 No releases yet. See nightly builds above for a preview.
