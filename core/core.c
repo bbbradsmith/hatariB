@@ -33,6 +33,9 @@
 #define DEBUG_RETRO_SET_ENVIRONMENT   0
 
 // make sure this matches ../info/hatarib.info
+#define CORE_VERSION   "v0.1 beta " SHORTHASH " " __DATE__ " " __TIME__;
+
+// make sure this matches ../info/hatarib.info
 static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|m3u|m3u8|zip|gz";
 // IPF/RAW/CRT support requires CAPSLIB which has licensing issues for Libretro.
 // See: https://github.com/libretro/hatari/issues/4
@@ -778,7 +781,7 @@ RETRO_API void retro_get_system_info(struct retro_system_info *info)
 	retro_log(RETRO_LOG_INFO,"retro_get_system_info()\n");
 	memset(info, 0, sizeof(*info));
 	info->library_name = "hatariB";
-	info->library_version = "v0.0 test " SHORTHASH " " __DATE__ " " __TIME__;
+	info->library_version = CORE_VERSION;
 	info->valid_extensions = CORE_FILE_EXTENSIONS;
 	info->need_fullpath = false;
 	info->block_extract = false;

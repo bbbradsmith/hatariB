@@ -8,7 +8,7 @@ A [Libretro](https://www.libretro.com/) core integrating the [Hatari](https://ha
   * Ubuntu
   * MacOS
 * Stable Build:
-  * not yet available
+  * 2023-08-22 v0.1 beta
 * Unstable Build:
   * [Download](https://nightly.link/bbbradsmith/hatariB/workflows/build/main)
 * Recent Builds:
@@ -116,7 +116,9 @@ On MacOS, there are some extra requirements:
   * Modifier keys like Shift, Control, Alt are toggled instead of a single press, allowing you to hold the modifier while you press another key. When you close the keyboard, all modifiers will be released.
   * The keyboard language layout can be chosen in the *Input > On-Screen Keyboard Language* core option.
 * MIDI
-  * Libretro has a MIDI interface, and I have connected it here. I've had success playing some MT-32 games with the [MUNT MT-32 Emulator](url=https://github.com/munt/munt) Windows driver.
+  * Libretro has a MIDI interface, and if you have MIDI devices installed you should be able to select them in the *Settings > Audio > MIDI* menu of RetroArch.
+  * The [MUNT MT-32 Emulator](url=https://sourceforge.net/projects/munt/) is recommended. It can install on your system as a MIDI device, which you can use with MT-32 supporting Atari ST games.
+  * MIDI Maze is reported as incompatible for Hatari 2.4.1, but it appears this is being improved for 2.5.0, so perhaps it will eventually be playable over emulated MIDI.
 * Accuracy:
   * Some of the default core options are chosen to favour lower CPU usage, and faster load times, but these can be adjusted.
   * *System > Fast Floppy* gives artificially faster disk access, on by default.
@@ -145,7 +147,8 @@ Possible Future Tasks:
 * RS232 emulation?
 * Printer emulation?
 * IPF support, figure out library issues. There seems to be a MAME IPF reader?
-* Keyboard languages and layouts? Need to know a bit more about how to test this. Think about host keyboard vs. simulated keyboard, etc. EmuTOS can set German and 'Q' will still map to 'Q' in Hatari, though keys like - = etc may change, so probably the on-screen keyboard remaps can still use the same letter semantics at least, but the Atari-specific keys probably just need a new description.
+* Keyboard languages and layouts? Need to know a bit more about how to test this. Think about host keyboard vs. simulated keyboard, etc. EmuTOS can set German and 'Q' will still map to 'Q' in Hatari, though keys like - = etc may change, so probably the on-screen keyboard remaps can still use the same letter semantics at least, but the Atari-specific keys probably just need a new description. (Could possibly need to provide RETROK remap sets too for host keyboard, but not sure. What RETROK do the brackets give on a QWERTZ keyboard, for example? SDL's keyboard system might be good reference, since it's one of the potential RETROK drivers. [tho-otto](https://tho-otto.de/keyboards/) has great diagrams of the Atari keyboards.)
+* Do some aspect ratio research and calculation for PIXEL_ASPECT_RATIO in core.c.
 
 ## History
 
