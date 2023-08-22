@@ -130,9 +130,11 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Disable SDL joystick system use.
   * Assume 4 attached joysticks, named "Retropad", and poll input from core instead of SDL.
 * **hatari/src/keymap.c**
-  * Disable handling of SDLK_SCROLLLOCK, which conflicts with game focus key (and isn't on ST keyboards).
+  * Disable handling of `SDLK_SCROLLLOCK`, which conflicts with game focus key (and isn't on ST keyboards).
   * Disable dispatch of keypresses to `ShortCut` system (Hatari's own GUI hotkeys).
   * Disable using Num Lock to remap Numpad. (ST has no Num Lock. Numpad is Numpad.)
+  * Disable use of `SDL_GetKeyFromName`/`SDL_GetKeyName`, only needed by configuration GUI.
+  * Fix broken mappings for minus (`- _`), bracket (`[ { ] }`), and backquote/tilde (~) keys. Also [submitted to Hatari](https://github.com/hatari/hatari/pull/26).
 * **hatari/src/main.c**
 * **hatari/src/includes/main.h**
   * Disable `SDL_GetTicks` timer.
@@ -181,7 +183,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Disable `ShortCut_InsertDisk` file dialog.
 * **hatari/src/sound.c**
 * **hatari/src/includes/sound.c**
-  * Fix incorrect lowpass filter frequency, and provide cleaner lowpass filter implementation to replace the existing compromised ones. This change has also been [submitted to Hatari](https://github.com/hatari/hatari/pull/25).
+  * Fix incorrect lowpass filter frequency, and provide cleaner lowpass filter implementation to replace the existing compromised ones. Also [submitted to Hatari](https://github.com/hatari/hatari/pull/25).
   * Store `YM_Buffer_250` in savestates, needed for seamless audio after restore.
   * Deliver generated audio to core with `core_audio_update`.
 * **hatari/src/st.c**
