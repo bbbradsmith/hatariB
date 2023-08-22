@@ -1313,16 +1313,17 @@ int TOS_InitImage(void)
 
 #ifdef __LIBRETRO__
 	// allowing more direct EmuTOS country/framerate override
-	// Note: EmuTOS 1024k will override framerate if the region is set.
 	if (bIsEmuTOS)
 	{
 		Uint16 newconf = osconf;
 		if (ConfigureParams.Rom.nEmuTosRegion >= 0)
-			newconf = (newconf && 0xFF01) | ((ConfigureParams.Rom.nEmuTosRegion << 1) & 0x00FE);
-		if (ConfigureParams.Rom.nEmuTosFramerate >= 1)
-			newconf = (newconf && 0xFFFE) | (ConfigureParams.Rom.nEmuTosFramerate     & 0x0001);
+			newconf = (newconf & 0xFF01) | ((ConfigureParams.Rom.nEmuTosRegion << 1) & 0x00FE);
+		if (ConfigureParams.Rom.nEmuTosFramerate >= 0)
+			newconf = (newconf & 0xFFFE) | (ConfigureParams.Rom.nEmuTosFramerate     & 0x0001);
 		if (newconf != osconf)
 			STMemory_WriteWord(TosAddress+0x1C, newconf);
+		//core_debug_hex("EmuTOS region old: ",osconf);
+		//core_debug_hex("EmuTOS region new: ",newconf);
 		osconf = newconf;
 	}
 #endif

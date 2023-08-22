@@ -164,7 +164,8 @@ const struct OSKey OSK_ROW3_QWERTY[] = {
 	{"+",2,RETROK_KP_PLUS,0},
 	{0,0,0,0}};
 const struct OSKey OSK_ROW4_QWERTY[] = {
-	{"Shift",5,RETROK_LSHIFT,OSK_PRESS_SHL},
+	{"Shf",3,RETROK_LSHIFT,OSK_PRESS_SHL},
+	{"<>",2,RETROK_LESS,0},
 	{"Z",2,RETROK_z,0},
 	{"X",2,RETROK_x,0},
 	{"C",2,RETROK_c,0},

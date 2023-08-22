@@ -185,5 +185,9 @@ const struct rarch_key_map rarch_key_map_sdl[] = {
 #endif
    { SDLK_UNDO, RETROK_UNDO },
 
+#ifdef __LIBRETRO__
+   { SDLK_LESS, RETROK_LESS }, // non-USA ST keyboards have a <> key next to left-shift
+#endif
+
    { 0, RETROK_UNKNOWN },
 };

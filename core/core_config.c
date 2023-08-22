@@ -222,14 +222,22 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{{"0","Off"},{"1","On"},{"2","Auto"},{NULL,NULL}}, "1"
 	},
 	{
-		"hatarib_emutos_region", "EmuTOS Region", NULL,
-		"Causes restart!! For EmuTOS ROMs this can override the default framerate."
-		" EmuTOS 1024k can choose a default region, which sets language, keyboard and framerate together.",
+		"hatarib_emutos_framerate", "EmuTOS Framerate", NULL,
+		"Causes restart!! For EmuTOS ROMs this can override the default framerate.",
 		NULL, "system",
 		{
 			{"-1","Default"},
-			{"-2","NTSC 60 Hz"},
-			{"-3","PAL 50 Hz"},
+			{"0","NTSC 60 Hz"},
+			{"1","PAL 50 Hz"},
+			{NULL,NULL},
+		}, "-1"
+	},
+	{
+		"hatarib_emutos_region", "EmuTOS 1024k Region", NULL,
+		"Causes restart!! EmuTOS 1024k can choose a default region, which sets language and keyboard.",
+		NULL, "system",
+		{
+			{"-1","Default"},
 			{"0","USA (NTSC)"},
 			{"1","Germany"},
 			{"2","France"},
@@ -252,7 +260,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{"31","Greece"},
 			{"127","Multilanguage"},
 			{NULL,NULL},
-		}, "0"
+		}, "-1"
 	},
 	//
 	// Input
@@ -1100,11 +1108,12 @@ void core_config_read_newparam()
 	}
 	CFG_INT("hatarib_hardboot") newparam.HardDisk.bBootFromHardDisk = vi;
 	CFG_INT("hatarib_hard_readonly") { newparam.HardDisk.nWriteProtection = vi; core_hard_readonly = vi; }
+	CFG_INT("hatarib_emutos_framerate") newparam.Rom.nEmuTosFramerate = vi;
 	CFG_INT("hatarib_emutos_region")
 	{
-		if (vi >= 0) newparam.Rom.nEmuTosRegion = vi;
-		if (vi == -2) newparam.Rom.nEmuTosFramerate = 0; // NTSC 60 Hz
-		if (vi == -3) newparam.Rom.nEmuTosFramerate = 1; // PAL 50 Hz
+		newparam.Rom.nEmuTosRegion = vi;
+		if (newparam.Rom.nEmuTosFramerate < 0 && vi >= 0 && vi < 128) // if default framerate, use EmuTOS country defaults
+			newparam.Rom.nEmuTosFramerate = (vi == 0) ? 0 : 1; // NTSC if USA, otherwise PAL
 	}
 	CFG_INT("hatarib_joy1_port") core_joy_port_map[0] = vi;
 	CFG_INT("hatarib_joy2_port") core_joy_port_map[1] = vi;
