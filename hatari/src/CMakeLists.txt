@@ -212,7 +212,5 @@ endif(ENABLE_OSX_BUNDLE)
 
 endif(0) # hatariB - remove platform specific gui code
 
-# hatariB - removed exectuable build, addded core library target, add __LIBRETRO__ define
+# hatariB - removed exectuable build, addded core library target
 add_library(core ${SOURCES})
-target_compile_definitions(core PUBLIC __LIBRETRO__)
-target_compile_definitions(Floppy PUBLIC __LIBRETRO__)
