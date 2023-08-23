@@ -27,6 +27,7 @@ const float DPAD_MOUSE_SPEED = 0.3; // scale of d-pad relative to analog max
 #define AUX_WARM_BOOT    0x00000040
 #define AUX_COLD_BOOT    0x00000080
 #define AUX_STATUSBAR    0x00000100
+#define AUX_OSK_CLOSED   0x00000200
 
 // in core_internal.h
 //#define AUX_OSK_U        0x00010000
@@ -205,6 +206,16 @@ void retrok_to_sdl_init(void)
 //
 // libretro input
 //
+
+void core_input_osk_close(void)
+{
+	if (core_osk_mode != CORE_OSK_OFF)
+	{
+		// OSK_CLOSED used to reset OSK triggers so they can't re-open themselves
+		AUX_SET(true,OSK_CLOSED);
+		core_osk_mode = CORE_OSK_OFF;
+	}
+}
 
 uint16_t core_input_mod_state(void)
 {
@@ -936,17 +947,27 @@ void core_input_update(void)
 		}
 		else if (core_osk_mode == CORE_OSK_PAUSE)
 		{
-			core_osk_mode = CORE_OSK_OFF;
+			core_input_osk_close();
 		}
 		//retro_log(RETRO_LOG_DEBUG,"pause toggle: %d\n",core_osk_mode);
 	}
 	AUX_SET(pause,PAUSE);
+
+	// if osk was just closed, prevent retrigger one time
+	if (AUX(OSK_CLOSED))
+	{
+		AUX_SET(osk_on,OSK_ON);
+		AUX_SET(osk_shot,OSK_SHOT);
+		AUX_SET(false,OSK_CLOSED);
+	}
+
 	if (osk_on && !AUX(OSK_ON) && (core_osk_mode == CORE_OSK_OFF))
 	{
 		core_osk_mode = CORE_OSK_KEY;
 		core_osk_begin = true;
 	}
 	AUX_SET(osk_on,OSK_ON);
+
 	if (osk_shot && !AUX(OSK_SHOT) && (core_osk_mode == CORE_OSK_OFF))
 	{
 		core_osk_mode = CORE_OSK_KEY_SHOT;

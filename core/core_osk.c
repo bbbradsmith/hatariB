@@ -339,7 +339,7 @@ static void input_keyboard(uint32_t key)
 		osk_press_key = 0;
 		if (core_osk_mode == CORE_OSK_KEY_SHOT) // allow one-shot cancel to press modifiers
 			osk_press_time = core_osk_press_len;
-		core_osk_mode = CORE_OSK_OFF;
+		core_input_osk_close();
 		return;
 	}
 
@@ -358,7 +358,7 @@ static void input_keyboard(uint32_t key)
 			osk_press_time = core_osk_press_len;
 			if (core_osk_mode == CORE_OSK_KEY_SHOT) // one-shot exist on activation
 			{
-				core_osk_mode = CORE_OSK_OFF;
+				core_input_osk_close();
 				return;
 			}
 		}
@@ -631,7 +631,7 @@ void core_osk_render(void* video_buffer, int w, int h, int pitch)
 	if (core_osk_mode == CORE_OSK_OFF || core_osk_mode > CORE_OSK_KEY_SHOT)
 	{
 		retro_log(RETRO_LOG_ERROR,"Unexpected core_osk_render mode? %d\n",core_osk_mode);
-		core_osk_mode = CORE_OSK_OFF;
+		core_input_osk_close();
 		return;
 	}
 

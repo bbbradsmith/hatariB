@@ -122,6 +122,7 @@ extern void core_input_update(void); // call in retro_run, polls Libretro inputs
 extern void core_input_post(void); // call to force hatari to process the input queue
 extern void core_input_finish(void); // call at end of retro_run
 extern void core_input_serialize(void);
+extern void core_input_osk_close(void); // call to set core_osk_mode = CORE_OSK_OFF
 
 #if CORE_INPUT_DEBUG
 extern bool core_input_debug;
@@ -191,8 +192,8 @@ extern int core_oskey_map[4][CORE_INPUT_OSKEY_TOTAL];
 extern void core_osk_input(uint32_t osk_new); // bitfield of new OSK button presses (sent by core_input_poll)
 extern void core_osk_render(void* video_buffer, int w, int h, int pitch); // call to render overlay over video_buffer
 extern void core_osk_restore(void* video_buffer, int w, int h, int pitch); // call to restore buffer before overlay
-extern void core_osk_serialize();
-extern void core_osk_init();
+extern void core_osk_serialize(void);
+extern void core_osk_init(void);
 
 extern int core_pause_osk; // pause screen appearance setting
 extern bool core_osk_begin; // set true when pause/osk is toggled on
