@@ -167,8 +167,9 @@ jobs:
       - name: Build SDL2 and zlib
         run: |
           export CC=arm-linux-gnueabihf-gcc
+          export AR=arm-linux-gnueabihf-gcc-ar
           make -f makefile.zlib
-          export CC=gcc
+          export RANLIB=arm-linux-gnueabihf-gcc-ranlib
           export CONFIGURE_FLAGS="--build=x86_64-linux --host=arm-linux-gnueabihf --target=arm-linux-gnueabihf-gcc"
           make -f makefile.sdl
       - name: Build hatariB
