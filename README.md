@@ -36,6 +36,9 @@ On MacOS, there are some extra requirements:
 * After downloading the core, right click on `cores/hatarib.dylib` and open it, here you can give it permission to run.
 * On MacOS the cores and info folders are likely at `Users/[username]/Library/Application Support/RetroArch`.
 
+For *IPF*, *CTR*, and *RAW* floppy disk image support, you will also need to provide the **capsimg 5.1** support library, originally created by the [Software Preservation Society](http://www.softpres.org/download). This library will be a file named `capsimg.dll` or `capsimg.so`, depending on your platform. On Windows this DLL should be placed in your RetroArch installation folder next to `retroarch.exe`. On other platforms it must be installed [in your search path for dlopen](https://linux.die.net/man/8/ldconfig). An up to date version of capsimg for many platforms can be downloaded here:
+* [capsimg 5.1 binaries](https://github.com/rsn8887/capsimg/releases)
+
 ## Notes
 
 * Hatari Manual:
@@ -84,7 +87,7 @@ On MacOS, there are some extra requirements:
     * *Toggle Status Bar* - A quick hide/reveal of the status bar, in case you like it hidden but still want to check it sometimes.
     * *Key Space/Return/Up/Down...* - Any keyboard key can be assigned to a button.
 * File formats:
-  * Floppy disk: ST, MSA, DIM, STX (can be inside ZIP or GZ)
+  * Floppy disk: ST, MSA, DIM, STX, IPF, CTR, RAW (can be inside ZIP or GZ)
   * Muli-disk: M3U, M3U8
   * TOS ROM: TOS, IMG, ROM, BIN
   * Cartridge: IMG, ROM, BIN, CART
@@ -94,6 +97,7 @@ On MacOS, there are some extra requirements:
   * *Load New Disk* can add additional disks while running, but has several caveats, especially regarding savestates. See below.
   * The first two disks of an M3U list will be loaded into drive A and B at startup, 
   * Libretro only has an interface for one disk drive, but you can use the Select button to switch between whether the Disc Control menu currently shows drive A or drive B.
+  * *IPF*, *CTR* and *RAW* formats are only available with the addition of the `capsimg` support libraray. See [Installation](#Installation) for more information.
 * Hard Disks:
   * *GemDOS* type hard disks can select a subdirectory within *system/hatarib/* to use as a simulated drive.
   * A *GemDOS* folder can represent multiple paritions by having its base directory contain only single-letter folder names representing drive letters. *C/*, *D/*, etc.
@@ -111,6 +115,7 @@ On MacOS, there are some extra requirements:
   * In the core options *Advanced > Write Protect Floppy Disks* will act as if all inserted disks have their write protect tab open. This means the emulated operating system will refuse to write any further data to the disk, and will report the error. This is independent of the save feature, and can be turned on and off at will. Turning it on after a disk is modified will not prevent previous modifications from being saved when it is ejected.
   * *STX* saves will create a *WD1772* file instead of an *STX* when saved. This is an overlay of changes made to the file, because the STX format itself cannot be re-written. If you wish to use these with the stand-alone Hatari, place the overlay file in the same folder as its STX.
   * *DIM* format disks cannot be saved by Hatari. It is recommended to convert them to *ST* files instead.
+  * *IPF*, *CTR* and *RAW* format disks cannot be saved by Hatari.
   * Hard Disk folders or images in *system/* will be written to directly when they are modified.
   * The TT and Falcon machines have a small non-volatile RAM (NVRAM) that stores system settings. This is saved to **system/hatarib.nvram** when the content is closed.
 * TOS ROMs:
@@ -160,7 +165,6 @@ Possible Future Tasks:
 * Falcon microphone support? Need to find relevant Falcon software to test against.
 * RS232 emulation?
 * Printer emulation?
-* IPF support, figure out library issues. There seems to be a MAME IPF reader?
 * Keyboard languages and layouts? Need to know a bit more about how to test this. Think about host keyboard vs. simulated keyboard, etc. EmuTOS can set German and 'Q' will still map to 'Q' in Hatari, though keys like - = etc may change, so probably the on-screen keyboard remaps can still use the same letter semantics at least, but the Atari-specific keys probably just need a new description. (Could possibly need to provide RETROK remap sets too for host keyboard, but not sure. What RETROK do the brackets give on a QWERTZ keyboard, for example? SDL's keyboard system might be good reference, since it's one of the potential RETROK drivers. [tho-otto](https://tho-otto.de/keyboards/) has great diagrams of the Atari keyboards.)
 * Do some aspect ratio research and calculation for PIXEL_ASPECT_RATIO in core.c.
 

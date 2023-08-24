@@ -219,6 +219,9 @@ check_symbol_exists(flock "sys/file.h" HAVE_FLOCK)
 check_symbol_exists(strlcpy "string.h" HAVE_LIBC_STRLCPY)
 check_struct_has_member("struct dirent" d_type dirent.h HAVE_DIRENT_D_TYPE)
 
+# hatariB - look for dlopen for CAPS dynamic load
+check_symbol_exists(dlopen "dlfcn.h" HAVE_DLOPEN)
+
 # #############
 # Other CFLAGS:
 # #############

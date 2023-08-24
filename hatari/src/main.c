@@ -767,13 +767,16 @@ static void Main_Init(void)
 		fprintf(stderr, "ERROR: could not initialize the SDL library:\n %s\n", SDL_GetError() );
 		exit(-1);
 	}
-#endif
 
 	if ( IPF_Init() != true )
 	{
 		fprintf(stderr, "ERROR: could not initialize the IPF support\n" );
 		exit(-1);
 	}
+#else
+	// core will instead call IPF_Init on first read of an IPF disk,
+	// loading the DLL/SO at that time if it's available
+#endif
 
 	ClocksTimings_InitMachine ( ConfigureParams.System.nMachineType );
 	Video_SetTimings ( ConfigureParams.System.nMachineType , ConfigureParams.System.VideoTimingMode );
