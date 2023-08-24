@@ -12,6 +12,7 @@ concurrency:
 jobs:
 
   build-win64:
+    if: false
     name: Win64
     runs-on: windows-latest
     steps:
@@ -47,6 +48,7 @@ jobs:
           path: artifact/
 
   build-win32:
+    if: false
     name: Win32
     runs-on: windows-latest
     steps:
@@ -82,6 +84,7 @@ jobs:
           path: artifact/
 
   build-ubuntu:
+    if: false
     name: Ubuntu
     runs-on: ubuntu-latest
     steps:
@@ -113,6 +116,7 @@ jobs:
           path: artifact/
 
   build-macos:
+    if: false
     name: MacOS
     runs-on: macos-latest
     steps:
@@ -148,4 +152,38 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: hatarib-macos--${{ env.BUILD_TAG }}
+          path: artifact/
+
+  build-rpi:
+    name: Raspberry Pi
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Files
+        uses: actions/checkout@v3
+      - name: Setup Ubuntu
+        run: |
+          sudo apt-get update
+          sudo apt-get install make gcc-arm-linux-gnueabihf cmake
+      - name: Build SDL2 and zlib
+        run: |
+          export CC=arm-linux-gnueabihf-gcc
+          make -f makefile.zlib
+          make -f makefile.sdl
+      - name: Build hatariB
+        run: |
+          export CC=arm-linux-gnueabihf-gcc
+          make
+      - name: Prepare Artifact
+        run: |
+          mkdir artifact
+          cp README.md artifact
+          mkdir artifact/cores
+          cp build/*.so artifact/cores
+          mkdir artifact/info
+          cp info/*.* artifact/info
+          echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $GITHUB_ENV
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: hatarib-rpi--${{ env.BUILD_TAG }}
           path: artifact/
