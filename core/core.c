@@ -36,7 +36,7 @@
 #define CORE_VERSION   "v0.2 unstable preview " SHORTHASH " " __DATE__ " " __TIME__;
 
 // make sure this matches ../info/hatarib.info
-static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|ipf|ctr|raw|m3u|m3u8|zip|gz";
+static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|ipf|ctr|m3u|m3u8|zip|gz";
 
 // serialization quirks
 const uint64_t QUIRKS = RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT;

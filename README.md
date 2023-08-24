@@ -36,7 +36,7 @@ On MacOS, there are some extra requirements:
 * After downloading the core, right click on `cores/hatarib.dylib` and open it, here you can give it permission to run.
 * On MacOS the cores and info folders are likely at `Users/[username]/Library/Application Support/RetroArch`.
 
-For *IPF*, *CTR*, and *RAW* floppy disk image support, you will also need to provide the **capsimg 5.1** support library, originally created by the [Software Preservation Society](http://www.softpres.org/download). This library will be a file named `capsimg.dll` or `capsimg.so`, depending on your platform. On Windows this DLL should be placed in your RetroArch installation folder next to `retroarch.exe`. On other platforms it must be installed [in your search path for dlopen](https://linux.die.net/man/8/ldconfig). An up to date version of capsimg for many platforms can be downloaded here:
+For *IPF* and *CTR* floppy disk image support, you will also need to provide the **capsimg 5.1** support library, originally created by the [Software Preservation Society](http://www.softpres.org/download). This library will be a file named `capsimg.dll` or `capsimg.so`, depending on your platform. On Windows this DLL should be placed in your RetroArch installation folder next to `retroarch.exe`. On other platforms it must be installed [in your search path for dlopen](https://linux.die.net/man/8/ldconfig). An up to date version of capsimg for many platforms can be downloaded here:
 * [capsimg 5.1 binaries](https://github.com/rsn8887/capsimg/releases)
 
 ## Notes
@@ -87,7 +87,7 @@ For *IPF*, *CTR*, and *RAW* floppy disk image support, you will also need to pro
     * *Toggle Status Bar* - A quick hide/reveal of the status bar, in case you like it hidden but still want to check it sometimes.
     * *Key Space/Return/Up/Down...* - Any keyboard key can be assigned to a button.
 * File formats:
-  * Floppy disk: ST, MSA, DIM, STX, IPF, CTR, RAW (can be inside ZIP or GZ)
+  * Floppy disk: ST, MSA, DIM, STX, IPF, CTR (can be inside ZIP or GZ)
   * Muli-disk: M3U, M3U8
   * TOS ROM: TOS, IMG, ROM, BIN
   * Cartridge: IMG, ROM, BIN, CART
@@ -97,12 +97,15 @@ For *IPF*, *CTR*, and *RAW* floppy disk image support, you will also need to pro
   * *Load New Disk* can add additional disks while running, but has several caveats, especially regarding savestates. See below.
   * The first two disks of an M3U list will be loaded into drive A and B at startup, 
   * Libretro only has an interface for one disk drive, but you can use the Select button to switch between whether the Disc Control menu currently shows drive A or drive B.
-  * *IPF*, *CTR* and *RAW* formats are only available with the addition of the `capsimg` support libraray. See [Installation](#Installation) for more information.
+  * *IPF* and *CTR* formats are only available with the addition of the `capsimg` support libraray. See [Installation](#Installation) for more information.
+  * *ZIP* files will only load the first floppy image file found inside, though the RetroArch *Load Content* menu may be able to select a specific file inside.
 * Hard Disks:
   * *GemDOS* type hard disks can select a subdirectory within *system/hatarib/* to use as a simulated drive.
   * A *GemDOS* folder can represent multiple paritions by having its base directory contain only single-letter folder names representing drive letters. *C/*, *D/*, etc.
   * *ASCI*, *SCSI* and *IDE* hard disks use a binary image file chosen from *system/hatarib/*.
-  * *Hard disks are read-only by default for safety. This can be disabled in the *System > Hard Disk Write Protect* core option.
+  * Hard disks are read-only by default for safety. This can be disabled in the *System > Hard Disk Write Protect* core option.
+  * Later TOS versions (or EmuTOS) are recommended when using hard drives, as TOS 1.0 has only limited support for them.
+  * Using more than one hard disk image at a time is unsupported, though a single image can have multiple partitions with individual drive letters.
 * Saving:
   * When a modified floppy disk is ejected, or the core is closed, a modified copy of that disk image will be written to the *saves/* folder.
   * Whenever a new floppy disk is added (*Load Content*, or *Load New Disk*), the saved copy will be substituted for the original if it exists. (Also, if you want to return to the original disk, you can delete it from *saves/*.)
@@ -115,7 +118,7 @@ For *IPF*, *CTR*, and *RAW* floppy disk image support, you will also need to pro
   * In the core options *Advanced > Write Protect Floppy Disks* will act as if all inserted disks have their write protect tab open. This means the emulated operating system will refuse to write any further data to the disk, and will report the error. This is independent of the save feature, and can be turned on and off at will. Turning it on after a disk is modified will not prevent previous modifications from being saved when it is ejected.
   * *STX* saves will create a *WD1772* file instead of an *STX* when saved. This is an overlay of changes made to the file, because the STX format itself cannot be re-written. If you wish to use these with the stand-alone Hatari, place the overlay file in the same folder as its STX.
   * *DIM* format disks cannot be saved by Hatari. It is recommended to convert them to *ST* files instead.
-  * *IPF*, *CTR* and *RAW* format disks cannot be saved by Hatari.
+  * *IPF* and *CTR* format disks cannot be saved by Hatari.
   * Hard Disk folders or images in *system/* will be written to directly when they are modified.
   * The TT and Falcon machines have a small non-volatile RAM (NVRAM) that stores system settings. This is saved to **system/hatarib.nvram** when the content is closed.
 * TOS ROMs:
@@ -155,18 +158,19 @@ For *IPF*, *CTR*, and *RAW* floppy disk image support, you will also need to pro
   * Hard Disk modifications are written directly to their source files, and are not included in savestates.
   * If you increase the size of memory, you should close and restart the core before using savestates, to allow RetroArch to update the savestate size.
 * Quirks:
-  * Restoring a savestate, or using netplay/run-ahead into the pause or one-shot keyboard will have an outdated/blank background until unpaused, as Hatari can't rebuild the image until it runs a frame. We might consider fixing this by adding the framebuffer to the savestate, though it would significantly increase the data size.
-  * If the on-screen keyboard confirm/cancel buttons aren't mapped to dedicated keys, you might end up suddenly holding the underlying button when the keyboard closes.
-  * The *Floppy Disk List* pause screen won't display unicode filenames correctly.
-  * You can use *Load New Disk* or M3U playlists to load the same floppy multiple times, or multiple floppies with the same name. This mostly works okay, but a savestate restore might be unable to identify which of them was actually inserted.
+  * Restoring a savestate, or using netplay/run-ahead into the pause or one-shot keyboard will have an outdated/blank background until unpaused, as Hatari can't rebuild the image until it runs a frame. We could consider adding the framebuffer to the savestate to prevent this, though it would significantly increase the data size.
+  * If the on-screen keyboard confirm/cancel buttons aren't mapped to dedicated buttons, you might end up suddenly holding the underlying button when the keyboard closes. (Inputs from buttons mapped to the on-screen keyboard are suppressed while it remains open.)
+  * The *Floppy Disk List* pause screen won't display unicode filenames correctly, though they still be viewed through RetroArch's *Disk Control* menu.
+  * You can use *Load New Disk* or *M3U* playlists to load the same floppy multiple times, or multiple floppies with the same name. This mostly works okay, but a savestate restore might be unable to identify which of them was actually inserted.
+  * If *IPF* support is enabled, an *M3U* playlist can also be used to load the *RAW* format supported by that library. I kept it out of the associated file types list because I have not yet encountered dumps in this format.
 
 Possible Future Tasks:
 * Can savestate restore be more lightweight? What takes so much CPU time? Are there any lingering spurious disk accesses? Also, I think netplay efficiency may rely on stable data positions, so double check this to see if structures are moving around from frame to frame (I suspect it only really changes at disk insert/eject).
 * Falcon microphone support? Need to find relevant Falcon software to test against.
-* RS232 emulation?
-* Printer emulation?
 * Keyboard languages and layouts? Need to know a bit more about how to test this. Think about host keyboard vs. simulated keyboard, etc. EmuTOS can set German and 'Q' will still map to 'Q' in Hatari, though keys like - = etc may change, so probably the on-screen keyboard remaps can still use the same letter semantics at least, but the Atari-specific keys probably just need a new description. (Could possibly need to provide RETROK remap sets too for host keyboard, but not sure. What RETROK do the brackets give on a QWERTZ keyboard, for example? SDL's keyboard system might be good reference, since it's one of the potential RETROK drivers. [tho-otto](https://tho-otto.de/keyboards/) has great diagrams of the Atari keyboards.)
 * Do some aspect ratio research and calculation for PIXEL_ASPECT_RATIO in core.c.
+* Printer emulation? Probably a pipe dream, as I can't think of a good way to handle it. Maybe a secondary graphical page display, and saving a PNG image to the saves folder after?
+* RS232 doesn't seem possible to support via Libretro, though maybe there is a way to work around this.
 
 ## History
 

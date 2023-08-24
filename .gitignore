@@ -2,3 +2,4 @@ secrets/
 zlib_build/
 build/
 vscode/test_*.bat
+*.lnk
