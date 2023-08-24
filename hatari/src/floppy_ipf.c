@@ -28,6 +28,7 @@ const char floppy_ipf_fileid[] = "Hatari floppy_ipf.c";
 
 #include <string.h>
 
+#ifndef __LIBRETRO__
 #ifdef HAVE_CAPSIMAGE
 #ifndef __cdecl
 #define __cdecl  /* CAPS headers need this, but do not define it on their own */
@@ -38,7 +39,293 @@ const char floppy_ipf_fileid[] = "Hatari floppy_ipf.c";
 /* Macro to check release and revision */
 #define	CAPS_LIB_REL_REV	( CAPS_LIB_RELEASE * 100 + CAPS_LIB_REVISION )
 #endif
+#else
 
+// dynamically link with CAPSIMAGE library at runtime instead of implicitly linking it into the build
+#define HAVE_CAPSIMAGE
+
+#ifdef WIN32
+#include <windows.h>
+#define SO_HANDLE HANDLE
+#else
+#define __cdecl
+#ifdef HAVE_DLOPEN
+#include <dlfcn.h>
+#define SO_HANDLE void*
+#endif
+#endif
+
+#ifndef __cdecl
+#define __cdecl
+#endif
+
+typedef uint8_t UBYTE;
+typedef uint32_t UDWORD;
+typedef int32_t SDWORD;
+typedef void *PVOID;
+typedef char *PCHAR;
+typedef UBYTE *PUBYTE;
+typedef UDWORD *PUDWORD;
+
+typedef SDWORD CapsLong;
+typedef UDWORD CapsULong;
+
+typedef struct CapsImageInfo *PCAPSIMAGEINFO;
+typedef struct CapsDrive *PCAPSDRIVE;
+typedef struct CapsFdc *PCAPSFDC;
+typedef void (__cdecl *CAPSFDCHOOK)(PCAPSFDC pfdc, UDWORD state);
+
+#define CAPS_MAXPLATFORM 4
+
+#define CAPSDRIVE_35DD_RPM 300
+#define CAPSDRIVE_35DD_HST 83
+#define CAPSDRIVE_DA_IN (1UL<<0)
+#define CAPSDRIVE_DA_WP (1UL<<1)
+#define CAPSDRIVE_DA_MO (1UL<<2)
+#define CAPSDRIVE_DA_SS (1UL<<3)
+#define CAPSFDC_LO_DIRC (1UL<<4)
+#define DI_LOCK_INDEX    (1UL<<0)
+#define DI_LOCK_ALIGN    (1UL<<1)
+#define DI_LOCK_DENVAR   (1UL<<2)
+#define DI_LOCK_DENAUTO  (1UL<<3)
+#define DI_LOCK_DENNOISE (1UL<<4)
+#define DI_LOCK_NOISE    (1UL<<5)
+#define DI_LOCK_NOISEREV (1UL<<6)
+#define DI_LOCK_MEMREF   (1UL<<7)
+#define DI_LOCK_UPDATEFD (1UL<<8)
+#define DI_LOCK_TYPE     (1UL<<9)
+#define DI_LOCK_DENALT   (1UL<<10)
+#define DI_LOCK_OVLBIT   (1UL<<11)
+#define DI_LOCK_TRKBIT   (1UL<<12)
+#define DI_LOCK_NOUPDATE (1UL<<13)
+#define DI_LOCK_SETWSEED (1UL<<14)
+
+enum {
+	citError=0,
+	citUnknown,
+	citIPF,
+	citCTRaw,
+	citKFStream,
+	citKFStreamCue,
+	citDraft
+};
+
+enum {
+	ciipNA=0
+};
+
+enum {
+	imgeOk=0
+};
+
+enum {
+	cfdcmNA=0,
+	cfdcmWD1772
+};
+
+
+#pragma pack(push,1)
+
+struct CapsVersionInfo {
+	UDWORD type;
+	UDWORD release;
+	UDWORD revision;
+	UDWORD flag;
+};
+
+struct CapsDrive {
+	UDWORD type;
+	UDWORD rpm;
+	SDWORD maxtrack;
+	SDWORD track;
+	SDWORD buftrack;
+	SDWORD side;
+	SDWORD bufside;
+	SDWORD newside;
+	UDWORD diskattr;
+	UDWORD idistance;
+	UDWORD clockrev;
+	SDWORD clockip;
+	SDWORD ipcnt;
+	UDWORD ttype;
+	PUBYTE trackbuf;
+	PUDWORD timebuf;
+	UDWORD tracklen;
+	SDWORD overlap;
+	SDWORD trackbits;
+	SDWORD ovlmin;
+	SDWORD ovlmax;
+	SDWORD ovlcnt;
+	SDWORD ovlact;
+	SDWORD nact;
+	UDWORD nseed;
+	PVOID userptr;
+	UDWORD userdata;
+};
+
+struct CapsFdc {
+	UDWORD type;
+	UDWORD model;
+	UDWORD endrequest;
+	UDWORD clockact;
+	UDWORD clockreq;
+	UDWORD clockfrq;
+	UDWORD addressmask;
+	UDWORD dataline;
+	UDWORD datamask;
+	UDWORD lineout;
+	UDWORD runmode;
+	UDWORD runstate;
+	UDWORD r_st0;
+	UDWORD r_st1;
+	UDWORD r_stm;
+	UDWORD r_command;
+	UDWORD r_track;
+	UDWORD r_sector;
+	UDWORD r_data;
+	UDWORD seclenmask;
+	UDWORD seclen;
+	UDWORD crc;
+	UDWORD crccnt;
+	UDWORD amdecode;
+	UDWORD aminfo;
+	UDWORD amisigmask;
+	SDWORD amdatadelay;
+	SDWORD amdataskip;
+	SDWORD ammarkdist;
+	SDWORD ammarktype;
+	UDWORD dsr;
+	SDWORD dsrcnt;
+	SDWORD datalock;
+	UDWORD datamode;
+	UDWORD datacycle;
+	UDWORD dataphase;
+	UDWORD datapcnt;
+	SDWORD indexcount;
+	SDWORD indexlimit;
+	SDWORD readlimit;
+	SDWORD verifylimit;
+	SDWORD spinupcnt;
+	SDWORD spinuplimit;
+	SDWORD idlecnt;
+	SDWORD idlelimit;
+	UDWORD clockcnt;
+	UDWORD steptime[4];
+	UDWORD clockstep[4];
+	UDWORD hstime;
+	UDWORD clockhs;
+	UDWORD iptime;
+	UDWORD updatetime;
+	UDWORD clockupdate;
+	SDWORD drivecnt;
+	SDWORD drivemax;
+	SDWORD drivenew;
+	SDWORD drivesel;
+	SDWORD driveact;
+	PCAPSDRIVE driveprc;
+	PCAPSDRIVE drive;
+	CAPSFDCHOOK cbirq;
+	CAPSFDCHOOK cbdrq;
+	CAPSFDCHOOK cbtrk;
+	PVOID userptr;
+	UDWORD userdata;
+};
+
+struct CapsDateTimeExt {
+	UDWORD year;
+	UDWORD month;
+	UDWORD day;
+	UDWORD hour;
+	UDWORD min;
+	UDWORD sec;
+	UDWORD tick;
+};
+
+struct CapsImageInfo {
+	UDWORD type;
+	UDWORD release;
+	UDWORD revision;
+	UDWORD mincylinder;
+	UDWORD maxcylinder;
+	UDWORD minhead;
+	UDWORD maxhead;
+	struct CapsDateTimeExt crdt;
+	UDWORD platform[CAPS_MAXPLATFORM];
+};
+
+struct CapsTrackInfoT1 {
+	UDWORD type;
+	UDWORD cylinder;
+	UDWORD head;
+	UDWORD sectorcnt;
+	UDWORD sectorsize;
+	PUBYTE trackbuf;
+	UDWORD tracklen;
+	UDWORD timelen;
+	PUDWORD timebuf;
+	SDWORD overlap;
+};
+
+#pragma pack(pop)
+
+SDWORD (__cdecl *CAPSInit)(void);
+SDWORD (__cdecl *CAPSExit)(void);
+SDWORD (__cdecl *CAPSAddImage)(void);
+SDWORD (__cdecl *CAPSRemImage)(SDWORD id);
+SDWORD (__cdecl *CAPSLockImageMemory)(SDWORD id, PUBYTE buffer, UDWORD length, UDWORD flag);
+SDWORD (__cdecl *CAPSUnlockImage)(SDWORD id);
+SDWORD (__cdecl *CAPSLoadImage)(SDWORD id, UDWORD flag);
+SDWORD (__cdecl *CAPSGetImageInfo)(PCAPSIMAGEINFO pi, SDWORD id);
+SDWORD (__cdecl *CAPSLockTrack)(PVOID ptrackinfo, SDWORD id, UDWORD cylinder, UDWORD head, UDWORD flag);
+PCHAR  (__cdecl *CAPSGetPlatformName)(UDWORD pid);
+SDWORD (__cdecl *CAPSGetVersionInfo)(PVOID pversioninfo, UDWORD flag);
+SDWORD (__cdecl *CAPSFdcInit)(PCAPSFDC pc);
+void   (__cdecl *CAPSFdcReset)(PCAPSFDC pc);
+void   (__cdecl *CAPSFdcEmulate)(PCAPSFDC pc, UDWORD cyclecnt);
+UDWORD (__cdecl *CAPSFdcRead)(PCAPSFDC pc, UDWORD address);
+void   (__cdecl *CAPSFdcWrite)(PCAPSFDC pc, UDWORD address, UDWORD data);
+SDWORD (__cdecl *CAPSFdcInvalidateTrack)(PCAPSFDC pc, SDWORD drive);
+SDWORD (__cdecl *CAPSSetRevolution)(SDWORD id, UDWORD value);
+SDWORD (__cdecl *CAPSGetImageTypeMemory)(PUBYTE buffer, UDWORD length);
+
+struct SoImport {
+	void** funcptr;
+	const char* funcname;
+};
+
+#define CAPSIMPORT_COUNT 19
+const struct SoImport CAPSIMPORT[CAPSIMPORT_COUNT] = {
+	{ (void*)&CAPSInit, "CAPSInit" },
+	{ (void*)&CAPSExit, "CAPSExit" },
+	{ (void*)&CAPSAddImage, "CAPSAddImage" },
+	{ (void*)&CAPSRemImage, "CAPSRemImage" },
+	{ (void*)&CAPSLockImageMemory, "CAPSLockImageMemory" },
+	{ (void*)&CAPSUnlockImage, "CAPSUnlockImage" },
+	{ (void*)&CAPSLoadImage, "CAPSLoadImage" },
+	{ (void*)&CAPSGetImageInfo, "CAPSGetImageInfo" },
+	{ (void*)&CAPSLockTrack, "CAPSLockTrack" },
+	{ (void*)&CAPSGetPlatformName, "CAPSGetPlatformName" },
+	{ (void*)&CAPSGetVersionInfo, "CAPSGetVersionInfo" },
+	{ (void*)&CAPSFdcInit, "CAPSFdcInit" },
+	{ (void*)&CAPSFdcReset, "CAPSFdcReset" },
+	{ (void*)&CAPSFdcEmulate, "CAPSFdcEmulate" },
+	{ (void*)&CAPSFdcRead, "CAPSFdcRead" },
+	{ (void*)&CAPSFdcWrite, "CAPSFdcWrite" },
+	{ (void*)&CAPSFdcInvalidateTrack, "CAPSFdcInvalidateTrack" },
+	{ (void*)&CAPSSetRevolution, "CAPSSetRevolution" },
+	{ (void*)&CAPSGetImageTypeMemory, "CAPSGetImageTypeMemory" },
+};
+
+static SO_HANDLE capsHandle = NULL;
+static bool capsValid = false;
+
+#ifdef WIN32
+#define CAPS_SONAME "capsimg.dll"
+#else
+#define CAPS_SONAME "capsimg.so"
+#endif
+
+#endif
 
 /* To handle RAW stream images with one file per track/side */
 #define	IPF_MAX_TRACK_RAW_STREAM_IMAGE	84				/* track number can be 0 .. 83 */
@@ -106,10 +393,37 @@ void IPF_MemorySnapShot_Capture(bool bSave)
 	int	TrackSize;
 	Uint8	*p;
 
+#ifdef __LIBRETRO__
+	if ( bSave )
+	{
+		MemorySnapShot_Store(&capsValid, sizeof(capsValid));
+		if (!capsValid) return; // don't store anything more
+	}
+	else
+	{
+		bool hadCaps = false;
+		MemorySnapShot_Store(&hadCaps, sizeof(hadCaps));
+		if (!hadCaps && capsValid)
+		{
+			IPF_Exit();
+		}
+		else if (hadCaps && !capsValid)
+		{
+			if (!IPF_Init())
+			{
+				core_error_msg("Savestate used IPF which is unavailable here.");
+				MemorySnapShot_Store(&StructSize, sizeof(StructSize));
+				MemorySnapShot_Skip( StructSize );
+				return;
+			}
+		}
+		if (!hadCaps) return; // no further IPF data
+	}
+#endif
 
 	if ( bSave )					/* Saving snapshot */
 	{
-		StructSize = sizeof ( IPF_State );	/* 0 if HAVE_CAPSIMAGE is not defined */
+		StructSize = sizeof ( IPF_State );	/* 0 if f is not defined */
 		MemorySnapShot_Store(&StructSize, sizeof(StructSize));
 		if ( StructSize > 0 )
 		{
@@ -276,6 +590,13 @@ static char *IPF_FilenameFindTrackSide (char *FileName)
  */
 Uint8 *IPF_ReadDisk(int Drive, const char *pszFileName, long *pImageSize, int *pImageType)
 {
+#ifdef __LIBRETRO__
+	if (!IPF_Init())
+	{
+		core_signal_alert("Could not load the capsimg 5.1 DLL/SO library. IPF disk format is unavailable.");
+		return NULL;
+	}
+#endif
 #ifndef HAVE_CAPSIMAGE
 	Log_AlertDlg(LOG_ERROR, "Hatari built without IPF support -> can't handle floppy image");
 	return NULL;
@@ -321,6 +642,52 @@ bool IPF_WriteDisk(int Drive, const char *pszFileName, Uint8 *pBuffer, int Image
  */
 bool	IPF_Init ( void )
 {
+#ifdef __LIBRETRO__
+	// load CAPSIMG on demand, if available
+	if (capsHandle) // already loaded
+	{
+		return capsValid;
+	}
+#ifdef WIN32
+	capsHandle = LoadLibrary(CAPS_SONAME);
+#else
+#ifdef HAVE_DLOPEN
+	capsHandle = dlopen(CAPS_SONAME, RTLD_NOW);
+	if (!capsHandle) core_error_msg(dlerror());
+#else
+	core_error_msg("dlopen unavailable");
+#endif
+#endif
+	if (capsHandle == NULL)
+	{
+		core_error_msg(CAPS_SONAME " could not be loaded.");
+		return false;
+	}
+	core_info_msg(CAPS_SONAME " loaded.");
+	capsValid = false;
+	for (int i=0; i<CAPSIMPORT_COUNT; ++i)
+	{
+		*CAPSIMPORT[i].funcptr = 
+#ifdef WIN32
+			GetProcAddress(capsHandle, CAPSIMPORT[i].funcname);
+#else
+#ifdef HAVE_DLOPEN
+			dlsym(capsHandle, CAPSIMPORT[i].funcname);
+#else
+			NULL;
+#endif
+#endif
+		if (*CAPSIMPORT[i].funcptr == NULL)
+		{
+			capsValid = false;
+			core_error_msg(CAPSIMPORT[i].funcname);
+			core_error_msg(CAPS_SONAME " missing function.");
+			return false;
+		}
+		core_debug_msg(CAPSIMPORT[i].funcname);
+	}
+	// DLL and needed functions are now loaded
+#endif
 #ifndef HAVE_CAPSIMAGE
 	return true;
 
@@ -390,6 +757,10 @@ bool	IPF_Init ( void )
 
 	CAPSFdcReset ( &IPF_State.Fdc );
 
+#ifdef __LIBRETRO__
+	// CAPSIMAGE is available
+	capsValid = true;
+#endif
 	return true;
 #endif
 }
@@ -402,9 +773,26 @@ bool	IPF_Init ( void )
  */
 void	IPF_Exit ( void )
 {
+#ifdef __LIBRETRO__
+	// unload CAPSIMAGE
+	if (capsHandle)
+	{
+		CAPSExit();
+		#ifdef WIN32
+			FreeLibrary(capsHandle);
+		#else
+		#ifdef HAVE_DLOPEN
+			dlclose(capsHandle);
+		#endif
+		#endif
+		capsHandle = NULL;
+	}
+	capsValid = false;
+#else
 #ifndef HAVE_CAPSIMAGE
 #else
 	CAPSExit();
+#endif
 #endif
 }
 
@@ -696,6 +1084,9 @@ return true;						/* This function is not used for now, always return true */
 void IPF_Reset ( void )
 {
 #ifdef HAVE_CAPSIMAGE
+#ifdef __LIBRETRO__
+	if (!capsValid) return;
+#endif
 	CAPSFdcReset ( &IPF_State.Fdc );
 
 	IPF_State.FdcClock = CyclesGlobalClockCounter;
@@ -798,6 +1189,9 @@ void	IPF_Drive_Set_Enable ( int Drive , bool value )
 	return;
 
 #else
+#ifdef __LIBRETRO__
+	if (!capsValid) return;
+#endif
 	IPF_State.DriveEnabled[ Drive ] = value;			/* Store the new state */
 
 	IPF_Drive_Update_Enable_Side ();				/* Update IPF's internal state */
@@ -815,6 +1209,9 @@ void	IPF_Drive_Set_DoubleSided ( int Drive , bool value )
 	return;
 
 #else
+#ifdef __LIBRETRO__
+	if (!capsValid) return;
+#endif
 	IPF_State.DoubleSided[ Drive ] = value;				/* Store the new state */
 
 	IPF_Drive_Update_Enable_Side ();				/* Update IPF's internal state */
@@ -859,6 +1256,9 @@ void	IPF_SetDriveSide ( Uint8 io_porta_old , Uint8 io_porta_new )
 	return;
 
 #else
+#ifdef __LIBRETRO__
+	if (!capsValid) return;
+#endif
 	int	Side;
 
 	LOG_TRACE(TRACE_FDC, "fdc ipf change drive/side io_porta_old=0x%x io_porta_new=0x%x VBL=%d HBL=%d\n" , io_porta_old , io_porta_new , nVBLs , nHBL );
@@ -898,6 +1298,9 @@ void	IPF_FDC_WriteReg ( Uint8 Reg , Uint8 Byte )
 	return;						/* This should not be reached (an IPF image can't be inserted without capsimage) */
 
 #else
+#ifdef __LIBRETRO__
+	if (!capsValid) return;
+#endif
 	if ( Reg == 0 )					/* more detailed logs for command register */
 		IPF_FDC_LogCommand ( Byte );
 	else
@@ -942,6 +1345,9 @@ Uint8	IPF_FDC_ReadReg ( Uint8 Reg )
 #ifndef HAVE_CAPSIMAGE
 	return 0;					/* This should not be reached (an IPF image can't be inserted without capsimage) */
 #else
+#ifdef __LIBRETRO__
+	if (!capsValid) return 0;
+#endif
 	Uint8	Byte;
 
 	IPF_Emulate();					/* Update emulation's state up to this point */
@@ -965,6 +1371,9 @@ void	IPF_FDC_StatusBar ( Uint8 *pCommand , Uint8 *pHead , Uint8 *pTrack , Uint8 
 #ifndef HAVE_CAPSIMAGE
 	return;						/* This should not be reached (an IPF image can't be inserted without capsimage) */
 #else
+#ifdef __LIBRETRO__
+	if (!capsValid) return;
+#endif
 	int	Drive;
 
 	Drive = IPF_State.Fdc.driveact;
@@ -1090,6 +1499,9 @@ void	IPF_Emulate ( void )
 	return;
 
 #else
+#ifdef __LIBRETRO__
+	if (!capsValid) return;
+#endif
 	int	NbCycles;
 	int	Drive;
 

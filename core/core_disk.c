@@ -345,7 +345,7 @@ static bool load_zip(uint8_t* data, unsigned int size, const char* zip_filename,
 			return false;
 		}
 		retro_log(RETRO_LOG_DEBUG,"Zip contains: '%s'\n",zip_file_filename);
-		if (has_extension(zip_file_filename,"st\0" "msa\0" "dim\0" "stx\0" "\0"))
+		if (has_extension(zip_file_filename,"st\0" "msa\0" "dim\0" "stx\0" "ipf\0" "ctr\0" "raw\0" "\0"))
 			break; // found a file
 		if (UNZ_OK != unzGoToNextFile(zip))
 		{

@@ -26,21 +26,17 @@
 
 // Transmit Hatari log message to the Libretro debug log
 // 0 = none, 1 = errors, 2 = all
-#define DEBUG_HATARI_LOG   0
+#define DEBUG_HATARI_LOG   2
 
 // Logs seem valid for either first retro_set_environment or everything else,
 // set this to 1 when you want to log the first call to retro_set_environment.
 #define DEBUG_RETRO_SET_ENVIRONMENT   0
 
 // make sure this matches ../info/hatarib.info
-#define CORE_VERSION   "v0.1 beta " SHORTHASH " " __DATE__ " " __TIME__;
+#define CORE_VERSION   "v0.2 unstable preview " SHORTHASH " " __DATE__ " " __TIME__;
 
 // make sure this matches ../info/hatarib.info
-static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|m3u|m3u8|zip|gz";
-// IPF/RAW/CRT support requires CAPSLIB which has licensing issues for Libretro.
-// See: https://github.com/libretro/hatari/issues/4
-// See also: https://github.com/mamedev/mame/blob/master/src/lib/formats/ipf_dsk.cpp
-//static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|ipf|raw|ctr|m3u|m3u8|zip|gz";
+static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|ipf|ctr|raw|m3u|m3u8|zip|gz";
 
 // serialization quirks
 const uint64_t QUIRKS = RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT;
