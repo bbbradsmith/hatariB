@@ -39,6 +39,12 @@ On MacOS, there are some extra requirements:
 For *IPF* and *CTR* floppy disk image support, you will also need to provide the **capsimg 5.1** support library, originally created by the [Software Preservation Society](http://www.softpres.org/download). This library will be a file named `capsimg.dll` or `capsimg.so`, depending on your platform. On Windows this DLL should be placed in your RetroArch installation folder next to `retroarch.exe`. On other platforms it must be installed [in your search path for dlopen](https://linux.die.net/man/8/ldconfig). An up to date version of capsimg for many platforms can be downloaded here:
 * [capsimg 5.1 binaries](https://github.com/rsn8887/capsimg/releases)
 
+On MacOS `capsimg.so` can be placed next to the `hatarib.dylib` file, but it also must be given permission, in [a slightly more difficult way](https://cycling74.com/articles/using-unsigned-max-externals-on-mac-os-10-15-catalina):
+* Open the Terminal utility.
+* You can drag the `capsimg.so` into the terminal to copy its filename path there.
+* Use `xattr` to remove the quarantine:
+  * `xattr -d com.apple.quarantine Users/[username]/Library/Application\ Support/RetroArch/cores/capsimg.so`
+
 ## Notes
 
 * Hatari Manual:
