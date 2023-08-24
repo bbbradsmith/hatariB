@@ -45,6 +45,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Disabled `DALERT_HOOKS` for MacOS build which produced unwanted MacOS native GUI dependencies.
   * Disabled `HAVE_STATVFS` because we use Libretro's own virtual file system instead.
   * Disabled `tests` subdirectory, because we do not build the executable needed for these tests.
+  * Add `HAVE_DLOPEN` to use for dynamic loading of CAPSIMAGE library for IPF support.
 * **hatari/src/CMakeLists.txt**
   * Removed platform-specific GUI dependencies.
   * Removed stand-alone executable build.
@@ -104,7 +105,8 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * `Floppy_IsWriteProtected` formerly checked the file on disk's write-protect state. This is not available from the Libretro virtual filesystem, so we cannot use this information. Assuming all disks are not write protected. Can use core options to write protect the drives manually, but we lack a per-disk-image setting. However, since we do not save back to the original floppy file, there is less of a need for this.
   * Provide extern access to core file system in header.
 * **hatari/src/floppy_ipf.c**
-  * Use core's file system to load floppy image. (IPF isn't supported currently, though. Need a replacement for the CapsImage library which has issues of proprietary code.)
+  * Use core's file system to load floppy image.
+  * Convert implicit capsimg linking to one loaded at runtime if available.
 * **hatari/src/floppy_stx.c**
   * Use core's file system to load floppy image.
   * Use core's file system to save floppy overlay image.
@@ -153,6 +155,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * `main` split into `main_init` and `main_deinit` so that we can begin emulation, but return when ready to start simulating frames.
     * `main_init` does the initialization, and starts the main emulation loop `M68000_Start` (see: m68000.c, cpu/newcpu.c) which is also modified to exit before the first frame is emulated, instead of entering a loop until the user quits.
     * `main_deinit` is some final shutdown after the main emulation loop exits.
+  * Defer `IPF_Init` until first use, allowing it to be dynamically loaded only if needed and available.
   * Include `core.h` in main header to provide global extern access to some core functions.
 * **hatari/src/memorySnapShot.c**
   * Disable compression of savestate data, Libretro does its own compression for save to disk, but also needs an uncompressed form for run-ahead or netplay to work.
