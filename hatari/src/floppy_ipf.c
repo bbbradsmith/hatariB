@@ -423,7 +423,7 @@ void IPF_MemorySnapShot_Capture(bool bSave)
 
 	if ( bSave )					/* Saving snapshot */
 	{
-		StructSize = sizeof ( IPF_State );	/* 0 if f is not defined */
+		StructSize = sizeof ( IPF_State );	/* 0 if HAVE_CAPSIMAGE is not defined */
 		MemorySnapShot_Store(&StructSize, sizeof(StructSize));
 		if ( StructSize > 0 )
 		{
