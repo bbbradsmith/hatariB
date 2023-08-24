@@ -168,7 +168,7 @@ jobs:
         run: |
           export CC=arm-linux-gnueabihf-gcc
           make -f makefile.zlib
-          export CONFIGURE_FLAGS=--host=gcc
+          export CONFIGURE_FLAGS=--host=arm-linux-gnueabihf-gcc
           make -f makefile.sdl
       - name: Build hatariB
         run: |

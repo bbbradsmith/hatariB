@@ -764,8 +764,8 @@ bool	IPF_Init ( void )
 	// make sure the configuration state is up to date
 	IPF_Drive_Set_Enable ( 0 , ConfigureParams.DiskImage.EnableDriveA );
 	IPF_Drive_Set_Enable ( 1 , ConfigureParams.DiskImage.EnableDriveB );
-	IPF_Drive_Set_NumberOfHeads ( 0 , ConfigureParams.DiskImage.DriveA_NumberOfHeads );
-	IPF_Drive_Set_NumberOfHeads ( 1 , ConfigureParams.DiskImage.DriveB_NumberOfHeads );
+	IPF_Drive_Set_DoubleSided ( 0 , ConfigureParams.DiskImage.DriveA_NumberOfHeads==2 ? true : false );
+	IPF_Drive_Set_DoubleSided ( 1 , ConfigureParams.DiskImage.DriveB_NumberOfHeads==2 ? true : false );
 #endif
 	return true;
 #endif
