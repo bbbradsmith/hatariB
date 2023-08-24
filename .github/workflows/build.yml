@@ -163,11 +163,12 @@ jobs:
       - name: Setup Ubuntu
         run: |
           sudo apt-get update
-          sudo apt-get install make gcc-arm-linux-gnueabihf cmake
+          sudo apt-get install make gcc gcc-arm-linux-gnueabihf cmake
       - name: Build SDL2 and zlib
         run: |
           export CC=arm-linux-gnueabihf-gcc
           make -f makefile.zlib
+          export CONFIG_FLAGS=--host=gcc
           make -f makefile.sdl
       - name: Build hatariB
         run: |
