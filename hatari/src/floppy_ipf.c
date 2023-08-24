@@ -760,6 +760,12 @@ bool	IPF_Init ( void )
 #ifdef __LIBRETRO__
 	// CAPSIMAGE is available
 	capsValid = true;
+
+	// make sure the configuration state is up to date
+	IPF_Drive_Set_Enable ( 0 , ConfigureParams.DiskImage.EnableDriveA );
+	IPF_Drive_Set_Enable ( 1 , ConfigureParams.DiskImage.EnableDriveB );
+	IPF_Drive_Set_NumberOfHeads ( 0 , ConfigureParams.DiskImage.DriveA_NumberOfHeads );
+	IPF_Drive_Set_NumberOfHeads ( 1 , ConfigureParams.DiskImage.DriveB_NumberOfHeads );
 #endif
 	return true;
 #endif
