@@ -2,17 +2,20 @@
 
 A [Libretro](https://www.libretro.com/) core integrating the [Hatari](https://hatari.tuxfamily.org/) emulation of Atari ST, STE, TT, and Falcon computers.
 
-* Supported platforms:
+* Current Build Platforms:
   * Windows 64-bit
   * Windows 32-bit
   * Ubuntu
   * MacOS
+  * Raspberry Pi
 * Current Release:
   * **[hatariB v0.1](https://github.com/bbbradsmith/hatariB/releases/tag/0.1)** - 2023-08-22
 * Unstable Build:
   * [Download](https://nightly.link/bbbradsmith/hatariB/workflows/build/main)
 * Recent Builds:
   * [Github Actions](https://github.com/bbbradsmith/hatariB/actions)
+
+Other platforms may be possible. See [Manual Build](#Manual-Build) below.
 
 This is intended as an alternative or replacement for the older [Libretro Hatari Core](https://github.com/libretro/hatari).
 
@@ -28,22 +31,41 @@ Development notes: [DEVELOP.md](DEVELOP.md)
 
 The build artifact ZIP files contain a `core/` and `info/` folder. The core folder contains the hatariB core object, and the info folder contains metadata that allows RetroArch to know its associated file types.
 
-On Windows, if using RetroArch's portable *Download* version instead of the installer, you can simply copy the core and info files into the RetroArch folder and it will merge into those folders.
-
-If installed, or on other platforms, you may need to locate the needed core and info folders. You can find these in RetroArch's *Settings > Directories* menu under *Cores* and *Core Info*.
-
-On MacOS, there are some extra requirements:
-* After downloading the core, right click on `cores/hatarib.dylib` and open it, here you can give it permission to run.
-* On MacOS the cores and info folders are likely at `Users/[username]/Library/Application Support/RetroArch`.
+On Windows, if using RetroArch's portable *Download* version instead of the installer, you can simply copy the core and info files into the RetroArch folder and it will merge into those folders. If installed, or on other platforms, you may need to locate the needed core and info folders. You can find these in RetroArch's *Settings > Directories* menu under *Cores* and *Core Info*. You may also need to add executable permission (`chmod +x`).
 
 For *IPF* and *CTR* floppy disk image support, you will also need to provide the **capsimg 5.1** support library, originally created by the [Software Preservation Society](http://www.softpres.org/download). This library will be a file named `capsimg.dll` or `capsimg.so`, depending on your platform. On Windows this DLL should be placed in your RetroArch installation folder next to `retroarch.exe`. On other platforms it must be installed [in your search path for dlopen](https://linux.die.net/man/8/ldconfig). An up to date version of capsimg for many platforms can be downloaded here:
 * [capsimg 5.1 binaries](https://github.com/rsn8887/capsimg/releases)
 
-On MacOS `capsimg.so` can be placed next to the `hatarib.dylib` file, but it also must be given permission, in [a slightly more difficult way](https://cycling74.com/articles/using-unsigned-max-externals-on-mac-os-10-15-catalina):
+If you have trouble getting the builds to work, you can turn on logging under *Settings > Logging*. Log output to a file, restart RetoArch, then try to start the core. After it fails, close RetroArch and find the log. There should hopefully be an error message near the bottom of the log, which might help if we're not unlucky.
+
+### MacOS
+
+Installing for MacOS requires a different method for giving permission:
+* After downloading the core, right click on `cores/hatarib.dylib` and open it, here you can give it permission to run.
+* On MacOS the cores and info folders are likely at `Users/[username]/Library/Application Support/RetroArch`.
+
+The `capsimg.so` for IPF support can be placed next to the `hatarib.dylib` file, but it also must be given permission, in [a slightly more difficult way](https://cycling74.com/articles/using-unsigned-max-externals-on-mac-os-10-15-catalina):
 * Open the Terminal utility.
 * You can drag the `capsimg.so` into the terminal to copy its filename path there.
 * Use `xattr` to remove the quarantine:
   * `xattr -d com.apple.quarantine Users/[username]/Library/Application\ Support/RetroArch/cores/capsimg.so`
+
+### Manual Build
+
+If you want to try building it yourself, in theory it should build on any platform supported by SDL2.
+
+Prerequisite tools: `git`, `make`, `cmake`, `gcc`.
+
+Open a terminal to the directory you want to use, and do the following:
+* `git clone https://github.com/bbbradsmith/hatariB.git`
+* `cd hatariB`
+* `make full`
+
+If successful, this should create `hatariB/build/hatarib.so` (or DLL/dylib).
+
+If unsuccessful, you might look at [build.yml](.github/workflows/build.yml) which runs the Github Actions builds for ideas.
+
+See [DEVELOP.md](DEVELOP.md) for more details.
 
 ## Notes
 
