@@ -156,7 +156,7 @@ jobs:
 
   build-rpi:
     name: Raspberry Pi
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout Files
         uses: actions/checkout@v3
