@@ -2,7 +2,7 @@
 DEBUG = 0
 
 # enables verbose cmake for diagnosing the make step, and the cmake build command lines (1 = build steps, 2 = cmake trace)
-VERBOSE_CMAKE = 1
+VERBOSE_CMAKE = 0
 
 SHORTHASH = "$(shell git rev-parse --short HEAD || unknown)"
 
