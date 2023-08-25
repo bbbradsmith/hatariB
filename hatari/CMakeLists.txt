@@ -328,7 +328,8 @@ add_subdirectory(doc)
 #add_subdirectory(tests)
 add_subdirectory(tools)
 
-include(FindPythonInterp)
+# hatariB -- disabling FindPythonInterp
+#include(FindPythonInterp)
 if(PYTHONINTERP_FOUND AND PYTHON_VERSION_MAJOR LESS 3)
 	message("Note: Hatari needs at least Python 3 ... ignoring older version")
 	unset(PYTHONINTERP_FOUND)

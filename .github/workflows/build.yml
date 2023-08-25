@@ -12,7 +12,7 @@ concurrency:
 jobs:
 
   build-win64:
-    name: Win64
+    name: Windows 64-bit
     runs-on: windows-latest
     steps:
       - name: Checkout Files
@@ -47,7 +47,7 @@ jobs:
           path: artifact/
 
   build-win32:
-    name: Win32
+    name: Windows 32-bit
     runs-on: windows-latest
     steps:
       - name: Checkout Files
@@ -82,7 +82,7 @@ jobs:
           path: artifact/
 
   build-ubuntu:
-    name: Ubuntu
+    name: Ubuntu Linux
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Files
@@ -113,7 +113,7 @@ jobs:
           path: artifact/
 
   build-macos:
-    name: MacOS
+    name: MacOS 10.13
     runs-on: macos-latest
     steps:
       - name: Checkout Files
@@ -148,4 +148,45 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: hatarib-macos--${{ env.BUILD_TAG }}
+          path: artifact/
+
+  build-rpi:
+    name: Raspberry Pi 32-bit
+    runs-on: ubuntu-20.04
+    # ubuntu-latest was building with a newer GLIBC than current Rpi images, making them incompatible,
+    # but 20.04 builds seem to have an older GLIBC that is compatible.
+    steps:
+      - name: Checkout Files
+        uses: actions/checkout@v3
+      - name: Setup Ubuntu
+        run: |
+          sudo apt-get update
+          sudo apt-get install make gcc gcc-arm-linux-gnueabihf cmake
+      - name: Build SDL2 and zlib
+        run: |
+          export CC=arm-linux-gnueabihf-gcc
+          export AR=arm-linux-gnueabihf-gcc-ar
+          make -f makefile.zlib
+          export RANLIB=arm-linux-gnueabihf-gcc-ranlib
+          export CONFIGURE_FLAGS="--build=x86_64-linux --host=arm-linux-gnueabihf --target=arm-linux-gnueabihf-gcc"
+          make -f makefile.sdl
+      - name: Build hatariB
+        run: |
+          export CC=arm-linux-gnueabihf-gcc
+          export CMAKEFLAGS="-DCMAKE_SYSTEM_NAME=arm-linux-gnueabihf"
+          make
+        # CMAKE_SYSTEM_NAME informs cmake that we are cross-compiling, so that it knows to build and run cpugen natively.
+      - name: Prepare Artifact
+        run: |
+          mkdir artifact
+          cp README.md artifact
+          mkdir artifact/cores
+          cp build/*.so artifact/cores
+          mkdir artifact/info
+          cp info/*.* artifact/info
+          echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $GITHUB_ENV
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: hatarib-rpi--${{ env.BUILD_TAG }}
           path: artifact/

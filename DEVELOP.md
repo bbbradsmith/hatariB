@@ -45,6 +45,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Disabled `DALERT_HOOKS` for MacOS build which produced unwanted MacOS native GUI dependencies.
   * Disabled `HAVE_STATVFS` because we use Libretro's own virtual file system instead.
   * Disabled `tests` subdirectory, because we do not build the executable needed for these tests.
+  * Disabled `FindPythonInterp`, because we don't need the python interpreter or GTK, which are used for Hatari's debugger.
   * Add `HAVE_DLOPEN` to use for dynamic loading of CAPSIMAGE library for IPF support.
 * **hatari/src/CMakeLists.txt**
   * Removed platform-specific GUI dependencies.
