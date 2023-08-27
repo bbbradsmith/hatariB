@@ -424,6 +424,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{ // Source: https://tho-otto.de/keyboards/
 			{"0","QWERTY US"},
 			{"1","QWERTZ German"},
+			{"2","AZERTY French"},
 		}, "0"
 	},
 	//
