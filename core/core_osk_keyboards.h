@@ -657,7 +657,7 @@ const struct OSKey OSK_ROW1_SE[] = {
 	{"8(",2,RETROK_8,0},
 	{"9)",2,RETROK_9,0},
 	{"0=",2,RETROK_0,0},
-	{"'?",2,RETROK_MINUS,0},
+	{"+?",2,RETROK_MINUS,0},
 	{"\xC9",2,RETROK_EQUALS,0},
 	{"'*",2,RETROK_BACKQUOTE,0},
 	{"Bck",3,RETROK_BACKSPACE,0},
@@ -680,8 +680,8 @@ const struct OSKey OSK_ROW2_SE[] = {
 	{"I",2,RETROK_i,0},
 	{"O",2,RETROK_o,0},
 	{"P",2,RETROK_p,0},
-	{"\xC5[",2,RETROK_LEFTBRACKET,0},
-	{"\xCC]",2,RETROK_RIGHTBRACKET,0},
+	{"\xE5[",2,RETROK_LEFTBRACKET,0},
+	{"\xFC]",2,RETROK_RIGHTBRACKET,0},
 	{0,2,0,0},
 	{"Dl",2,RETROK_DELETE,0},
 	{"In",2,RETROK_INSERT,0},
@@ -704,7 +704,7 @@ const struct OSKey OSK_ROW3_SE[] = {
 	{"K",2,RETROK_k,0},
 	{"L",2,RETROK_l,0},
 	{"\xD6",2,RETROK_SEMICOLON,0},
-	{"\xC4`",2,RETROK_QUOTE,0},
+	{"\xE4`",2,RETROK_QUOTE,0},
 	{"Ret",3,RETROK_RETURN,0},
 	{"\\^",2,RETROK_BACKSLASH,0},
 	{"\x4",2,RETROK_LEFT,0},
@@ -913,6 +913,153 @@ static const struct OSKey* const OSK_ROWS_CH_DE[OSK_ROWS] = {
 };
 
 //
+// Finnish Layout
+//
+
+static const struct OSKey* const OSK_ROWS_FI[OSK_ROWS] = {
+	OSK_ROW0,
+	OSK_ROW1_SE, // same as Swedish
+	OSK_ROW2_SE,
+	OSK_ROW3_SE,
+	OSK_ROW4_SE,
+	OSK_ROW5,
+};
+
+//
+// Norwegian Layout
+//
+
+const struct OSKey OSK_ROW3_NO[] = {
+	{"Ctrl",4,RETROK_LCTRL,OSK_PRESS_CTRL},
+	{"A",2,RETROK_a,0},
+	{"S",2,RETROK_s,0},
+	{"D",2,RETROK_d,0},
+	{"F",2,RETROK_f,0},
+	{"G",2,RETROK_g,0},
+	{"H",2,RETROK_h,0},
+	{"J",2,RETROK_j,0},
+	{"K",2,RETROK_k,0},
+	{"L",2,RETROK_l,0},
+	{"\xD8",2,RETROK_SEMICOLON,0},
+	{"\xE6`",2,RETROK_QUOTE,0},
+	{"Ret",3,RETROK_RETURN,0},
+	{"\\^",2,RETROK_BACKSLASH,0},
+	{"\x4",2,RETROK_LEFT,0},
+	{"\x2",2,RETROK_DOWN,0},
+	{"\x3",2,RETROK_RIGHT,0},
+	{"4",2,RETROK_KP4,0},
+	{"5",2,RETROK_KP5,0},
+	{"6",2,RETROK_KP6,0},
+	{"+",2,RETROK_KP_PLUS,0},
+	{0,0,0,0}};
+
+static const struct OSKey* const OSK_ROWS_NO[OSK_ROWS] = {
+	OSK_ROW0,
+	OSK_ROW1_SE, // same as Swedish
+	OSK_ROW2_SE,
+	OSK_ROW3_NO,
+	OSK_ROW4_SE,
+	OSK_ROW5,
+};
+
+//
+// Danish Layout
+//
+
+const struct OSKey OSK_ROW1_DK[] = {
+	{"Es",2,RETROK_ESCAPE,0},
+	{"1!",2,RETROK_1,0},
+	{"2\"",2,RETROK_2,0},
+	{"3#",2,RETROK_3,0},
+	{"4$",2,RETROK_4,0},
+	{"5%",2,RETROK_5,0},
+	{"6&",2,RETROK_6,0},
+	{"7/",2,RETROK_7,0},
+	{"8(",2,RETROK_8,0},
+	{"9)",2,RETROK_9,0},
+	{"0=",2,RETROK_0,0},
+	{"+?",2,RETROK_MINUS,0},
+	{"\x92\x91",2,RETROK_EQUALS,0},
+	{"\xC9",2,RETROK_BACKQUOTE,0},
+	{"Bck",3,RETROK_BACKSPACE,0},
+	{"Hlp",3,RETROK_PRINT,0},
+	{"Und",3,RETROK_END,0},
+	{"(",2,RETROK_PAGEUP,0},
+	{")",2,RETROK_PAGEDOWN,0},
+	{"/",2,RETROK_KP_DIVIDE,0},
+	{"*",2,RETROK_KP_MULTIPLY,0},
+	{0,0,0,0}};
+const struct OSKey OSK_ROW2_DK[] = {
+	{"Tab",3,RETROK_TAB,0},
+	{"Q",2,RETROK_q,0},
+	{"W",2,RETROK_w,0},
+	{"E",2,RETROK_e,0},
+	{"R",2,RETROK_r,0},
+	{"T",2,RETROK_t,0},
+	{"Y",2,RETROK_y,0},
+	{"U",2,RETROK_u,0},
+	{"I",2,RETROK_i,0},
+	{"O",2,RETROK_o,0},
+	{"P",2,RETROK_p,0},
+	{"\xE5[",2,RETROK_LEFTBRACKET,0},
+	{"*]",2,RETROK_RIGHTBRACKET,0},
+	{0,2,0,0},
+	{"Dl",2,RETROK_DELETE,0},
+	{"In",2,RETROK_INSERT,0},
+	{"\x1",2,RETROK_UP,0},
+	{"Hm",2,RETROK_HOME,0},
+	{"7",2,RETROK_KP7,0},
+	{"8",2,RETROK_KP8,0},
+	{"9",2,RETROK_KP9,0},
+	{"-",2,RETROK_KP_MINUS,0},
+	{0,0,0,0}};
+const struct OSKey OSK_ROW3_DK[] = {
+	{"Ctrl",4,RETROK_LCTRL,OSK_PRESS_CTRL},
+	{"A",2,RETROK_a,0},
+	{"S",2,RETROK_s,0},
+	{"D",2,RETROK_d,0},
+	{"F",2,RETROK_f,0},
+	{"G",2,RETROK_g,0},
+	{"H",2,RETROK_h,0},
+	{"J",2,RETROK_j,0},
+	{"K",2,RETROK_k,0},
+	{"L",2,RETROK_l,0},
+	{"\xC6",2,RETROK_SEMICOLON,0},
+	{"\xF8`",2,RETROK_QUOTE,0},
+	{"Ret",3,RETROK_RETURN,0},
+	{"\\^",2,RETROK_BACKSLASH,0},
+	{"\x4",2,RETROK_LEFT,0},
+	{"\x2",2,RETROK_DOWN,0},
+	{"\x3",2,RETROK_RIGHT,0},
+	{"4",2,RETROK_KP4,0},
+	{"5",2,RETROK_KP5,0},
+	{"6",2,RETROK_KP6,0},
+	{"+",2,RETROK_KP_PLUS,0},
+	{0,0,0,0}};
+
+static const struct OSKey* const OSK_ROWS_DK[OSK_ROWS] = {
+	OSK_ROW0,
+	OSK_ROW1_DK,
+	OSK_ROW2_DK,
+	OSK_ROW3_DK,
+	OSK_ROW4_SE, // same as Swedish
+	OSK_ROW5,
+};
+
+//
+// Dutch Layout
+//
+
+static const struct OSKey* const OSK_ROWS_NL[OSK_ROWS] = {
+	OSK_ROW0,
+	OSK_ROW1_UK, // same as UK
+	OSK_ROW2_US, // (UK row 2 same as US)
+	OSK_ROW3_UK,
+	OSK_ROW4_UK,
+	OSK_ROW5,
+};
+
+//
 // Layout collection
 //
 
@@ -926,4 +1073,8 @@ static const struct OSKey* const * const OSK_LAYOUTS[] = {
 	OSK_ROWS_SE,
 	OSK_ROWS_CH_FR,
 	OSK_ROWS_CH_DE,
+	OSK_ROWS_FI,
+	OSK_ROWS_NO,
+	OSK_ROWS_DK,
+	OSK_ROWS_NL,
 };
