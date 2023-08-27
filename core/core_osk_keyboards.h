@@ -357,6 +357,85 @@ static const struct OSKey* const OSK_ROWS_FR[OSK_ROWS] = {
 };
 
 //
+// UK Layout
+//
+
+const struct OSKey OSK_ROW1_UK[] = {
+	{"Es",2,RETROK_ESCAPE,0},
+	{"1!",2,RETROK_1,0},
+	{"2\"",2,RETROK_2,0},
+	{"3\xA3",2,RETROK_3,0},
+	{"4$",2,RETROK_4,0},
+	{"5%",2,RETROK_5,0},
+	{"6^",2,RETROK_6,0},
+	{"7&",2,RETROK_7,0},
+	{"8*",2,RETROK_8,0},
+	{"9(",2,RETROK_9,0},
+	{"0)",2,RETROK_0,0},
+	{"-_",2,RETROK_MINUS,0},
+	{"=+",2,RETROK_EQUALS,0},
+	{"`\xAF",2,RETROK_BACKQUOTE,0},
+	{"Bck",3,RETROK_BACKSPACE,0},
+	{"Hlp",3,RETROK_PRINT,0}, // (Help)
+	{"Und",3,RETROK_END,0}, // (Undo)
+	{"(",2,RETROK_PAGEUP,0}, // (Left Paren)
+	{")",2,RETROK_PAGEDOWN,0}, // (Right Paren)
+	{"/",2,RETROK_KP_DIVIDE,0},
+	{"*",2,RETROK_KP_MULTIPLY,0},
+	{0,0,0,0}};
+const struct OSKey OSK_ROW3_UK[] = {
+	{"Ctrl",4,RETROK_LCTRL,OSK_PRESS_CTRL},
+	{"A",2,RETROK_a,0},
+	{"S",2,RETROK_s,0},
+	{"D",2,RETROK_d,0},
+	{"F",2,RETROK_f,0},
+	{"G",2,RETROK_g,0},
+	{"H",2,RETROK_h,0},
+	{"J",2,RETROK_j,0},
+	{"K",2,RETROK_k,0},
+	{"L",2,RETROK_l,0},
+	{";:",2,RETROK_SEMICOLON,0},
+	{"'@",2,RETROK_QUOTE,0},
+	{"Ret",3,RETROK_RETURN,0},
+	{"#~",2,RETROK_BACKSLASH,0},
+	{"\x4",2,RETROK_LEFT,0},
+	{"\x2",2,RETROK_DOWN,0},
+	{"\x3",2,RETROK_RIGHT,0},
+	{"4",2,RETROK_KP4,0},
+	{"5",2,RETROK_KP5,0},
+	{"6",2,RETROK_KP6,0},
+	{"+",2,RETROK_KP_PLUS,0},
+	{0,0,0,0}};
+const struct OSKey OSK_ROW4_UK[] = {
+	{"Shf",3,RETROK_LSHIFT,OSK_PRESS_SHL},
+	{"\\|",2,RETROK_LESS,0},
+	{"Z",2,RETROK_z,0},
+	{"X",2,RETROK_x,0},
+	{"C",2,RETROK_c,0},
+	{"V",2,RETROK_v,0},
+	{"B",2,RETROK_b,0},
+	{"N",2,RETROK_n,0},
+	{"M",2,RETROK_m,0},
+	{",<",2,RETROK_COMMA,0},
+	{".>",2,RETROK_PERIOD,0},
+	{"/?",2,RETROK_SLASH,0},
+	{"Shift",5,RETROK_RSHIFT,OSK_PRESS_SHR},
+	{0,7,0,0},
+	{"1",2,RETROK_KP1,0},
+	{"2",2,RETROK_KP2,0},
+	{"3",2,RETROK_KP3,0},
+	{0,0,0,0}};
+
+static const struct OSKey* const OSK_ROWS_UK[OSK_ROWS] = {
+	OSK_ROW0,
+	OSK_ROW1_UK,
+	OSK_ROW2_US, // same as US
+	OSK_ROW3_UK,
+	OSK_ROW4_UK,
+	OSK_ROW5,
+};
+
+//
 // Layout collection
 //
 
@@ -364,4 +443,5 @@ static const struct OSKey* const * const OSK_LAYOUTS[] = {
 	OSK_ROWS_US,
 	OSK_ROWS_DE,
 	OSK_ROWS_FR,
+	OSK_ROWS_UK,
 };

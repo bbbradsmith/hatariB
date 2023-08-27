@@ -141,9 +141,14 @@ static inline void draw_box(int x, int y, int w, int h, Uint32 c)
 
 static void rebuild_keyboard(void)
 {
+	// safety fallback
+	int32_t layout = core_osk_layout;
+	if (layout < 0 || layout >= CORE_ARRAY_SIZE(OSK_LAYOUTS))
+		layout = 0;
+
 	// select layout
 	for (int r=0; r<OSK_ROWS; ++r)
-		osk_row[r] = OSK_LAYOUTS[core_osk_layout][r];
+		osk_row[r] = OSK_LAYOUTS[layout][r];
 	core_osk_layout_set = core_osk_layout;
 
 	// rebuild grid

@@ -422,9 +422,22 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		"Choose a layout for the on-screen keyboard.",
 		NULL,"input",
 		{ // Source: https://tho-otto.de/keyboards/
-			{"0","QWERTY US"},
-			{"1","QWERTZ German"},
-			{"2","AZERTY French"},
+			{"0","US QWERTY"},
+			{"1","German QWERTZ"},
+			{"2","French AZERTY"},
+			{"3","UK QWERTY"},/*
+			{"4","Spanish QWERTY"},
+			{"5","Italian QWERTY"},
+			{"6","Swedish QWERTY"},
+			{"7","Swiss French QWERTZ"},
+			{"8","Swiss German QWERTZ"},
+			{"9","Finnish QWERTY"},
+			{"10","Norwegian QWERTY"},
+			{"11","Danish QWERTY"},
+			{"12","Dutch QWERTY"},
+			{"13","Czech QWERTZ"},
+			{"14","Hungarian QWERTZ"},
+			{"15","Polish QWERTY"},*/
 		}, "0"
 	},
 	//
