@@ -425,10 +425,10 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{"0","US QWERTY"},
 			{"1","German QWERTZ"},
 			{"2","French AZERTY"},
-			{"3","UK QWERTY"},/*
+			{"3","UK QWERTY"},
 			{"4","Spanish QWERTY"},
 			{"5","Italian QWERTY"},
-			{"6","Swedish QWERTY"},
+			{"6","Swedish QWERTY"}, /*
 			{"7","Swiss French QWERTZ"},
 			{"8","Swiss German QWERTZ"},
 			{"9","Finnish QWERTY"},
