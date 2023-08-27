@@ -417,20 +417,15 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{NULL,NULL},
 		}, "5"
 	},
-	//{ // disabled pending more information
-	//	"hatarib_osk_layout", "On-Screen Keyboard Layout", NULL,
-	//	"Choose a layout for the on-screen keyboard.",
-	//	NULL,"input",
-	//	{
-	//		{"0","QWERTY"},
-	//		//{"1","QWERTZ"},
-	//		//{"2","AZERTY"},
-	//		// https://tho-otto.de/keyboards/
-	//		// BOOTCONF utility gave: USA, D, F,GB, E, I , S, CH (F), CH (D)
-	//		// I think just these 3 might be sufficient though?
-	//		// Need more information about how to test this, and how keys like <> should be mapped.
-	//	}, "0"
-	//},
+	{
+		"hatarib_osk_layout", "On-Screen Keyboard Layout", NULL,
+		"Choose a layout for the on-screen keyboard.",
+		NULL,"input",
+		{ // Source: https://tho-otto.de/keyboards/
+			{"0","QWERTY US"},
+			{"1","QWERTZ German"},
+		}, "0"
+	},
 	//
 	// Video
 	//
@@ -1128,7 +1123,7 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_stick_threshold") core_stick_threshold = vi;
 	CFG_INT("hatarib_mouse_speed") core_mouse_speed = vi;
 	CFG_INT("hatarib_mouse_deadzone") core_mouse_dead = vi;
-	//CFG_INT("hatarib_osk_layout") core_osk_layout = vi; // disabled pending more information
+	CFG_INT("hatarib_osk_layout") core_osk_layout = vi;
 	CFG_INT("hatarib_osk_press_len") core_osk_press_len = vi;
 	CFG_INT("hatarib_lowres2x") newparam.Screen.bLowResolutionDouble = vi;
 	CFG_INT("hatarib_borders") newparam.Screen.bAllowOverscan = vi;
