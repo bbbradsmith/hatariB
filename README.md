@@ -192,11 +192,11 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * The *Floppy Disk List* pause screen won't display unicode filenames correctly, though they still be viewed through RetroArch's *Disk Control* menu.
   * You can use *Load New Disk* or *M3U* playlists to load the same floppy multiple times, or multiple floppies with the same name. This mostly works okay, but a savestate restore might be unable to identify which of them was actually inserted.
   * If *IPF* support is enabled, an *M3U* playlist can also be used to load the *RAW* format supported by that library. I kept it out of the associated file types list because I have not yet encountered dumps in this format.
+  * Though the on-screen keyboard is available in [several language layouts](https://tho-otto.de/keyboards/), for your physical keyboard there aren't any direct configuration options, currently. It appears that RetroArch ignores the OS keyboard layout, and all keys report as-if in US layout (e.g. German Z reports as RETROK_y). Because of this, if you pick a TOS that matches your keyboard language, the mappings are likely to be mostly compatible. Otherwise, if you need finer control of the mapping, RetroArch's *Input* settings can be used to remap individual keys.
 
 Possible Future Tasks:
 * Can savestate restore be more lightweight? What takes so much CPU time? Are there any lingering spurious disk accesses? Also, I think netplay efficiency may rely on stable data positions, so double check this to see if structures are moving around from frame to frame (I suspect it only really changes at disk insert/eject).
 * Falcon microphone support? Need to find relevant Falcon software to test against.
-* Host keyboard layouts. Need to figure out if RETROK report change based on host system settings (they seem not to?), in which case... maybe best to do nothing? Otherwise, remap the reported RETROK to the needed RETROK for each of those. (RetroArch's input menu might handle this?)
 * Do some aspect ratio research and calculation for PIXEL_ASPECT_RATIO in core.c.
 * Printer emulation? Probably a pipe dream, as I can't think of a good way to handle it. Maybe a secondary graphical page display, and saving a PNG image to the saves folder after?
 * RS232 doesn't seem possible to support via Libretro, though maybe there is a way to work around this.
