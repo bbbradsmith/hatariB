@@ -17,6 +17,8 @@
 // We also have access to special characters in the font set for the displayed key names:
 //   hatari\src\gui-sdl\font5x8.bmp
 //   hatari\src\gui-sdl\font10x16.bmp
+//
+// Where there is an alt-key, I've tried to indicate this with a lowercase letter if possible.
 
 //
 // Universal rows (F-keys, alt/space/caps/0/./enter)
@@ -1060,6 +1062,302 @@ static const struct OSKey* const OSK_ROWS_NL[OSK_ROWS] = {
 };
 
 //
+// Czech Layout
+//
+
+const struct OSKey OSK_ROW1_CZ[] = {
+	{"Es",2,RETROK_ESCAPE,0},
+	{"\xD3",2,RETROK_1,0},
+	{"E",2,RETROK_2,0}, // don't have Ě
+	{"\x8A",2,RETROK_3,0},
+	{"C",2,RETROK_4,0}, // don't have Č
+	{"R",2,RETROK_5,0}, // don't have Ř
+	{"\x8E",2,RETROK_6,0},
+	{"\xDD",2,RETROK_7,0},
+	{"\xC1",2,RETROK_8,0},
+	{"\xCD",2,RETROK_9,0},
+	{"\xC9",2,RETROK_0,0},
+	{"=?",2,RETROK_MINUS,0},
+	{"'`",2,RETROK_EQUALS,0},
+	{"#^",2,RETROK_BACKQUOTE,0},
+	{"Bck",3,RETROK_BACKSPACE,0},
+	{"Hlp",3,RETROK_PRINT,0},
+	{"Und",3,RETROK_END,0},
+	{"(",2,RETROK_PAGEUP,0},
+	{")",2,RETROK_PAGEDOWN,0},
+	{"/",2,RETROK_KP_DIVIDE,0},
+	{"*",2,RETROK_KP_MULTIPLY,0},
+	{0,0,0,0}};
+const struct OSKey OSK_ROW2_CZ[] = {
+	{"Tab",3,RETROK_TAB,0},
+	{"Q",2,RETROK_q,0},
+	{"W",2,RETROK_w,0},
+	{"E",2,RETROK_e,0},
+	{"R",2,RETROK_r,0},
+	{"T",2,RETROK_t,0},
+	{"Z",2,RETROK_y,0},
+	{"U",2,RETROK_u,0},
+	{"I",2,RETROK_i,0},
+	{"O",2,RETROK_o,0},
+	{"P",2,RETROK_p,0},
+	{"\xDA",2,RETROK_LEFTBRACKET,0},
+	{"D",2,RETROK_RIGHTBRACKET,0}, // don't have Ď
+	{0,2,0,0},
+	{"Dl",2,RETROK_DELETE,0},
+	{"In",2,RETROK_INSERT,0},
+	{"\x1",2,RETROK_UP,0},
+	{"Hm",2,RETROK_HOME,0},
+	{"7|",2,RETROK_KP7,0},
+	{"8[",2,RETROK_KP8,0},
+	{"9]",2,RETROK_KP9,0},
+	{"-_",2,RETROK_KP_MINUS,0},
+	{0,0,0,0}};
+const struct OSKey OSK_ROW3_CZ[] = {
+	{"Ctrl",4,RETROK_LCTRL,OSK_PRESS_CTRL},
+	{"A",2,RETROK_a,0},
+	{"S",2,RETROK_s,0},
+	{"D",2,RETROK_d,0},
+	{"F",2,RETROK_f,0},
+	{"G",2,RETROK_g,0},
+	{"H",2,RETROK_h,0},
+	{"J",2,RETROK_j,0},
+	{"K",2,RETROK_k,0},
+	{"L",2,RETROK_l,0},
+	{"U",2,RETROK_SEMICOLON,0}, // don't have Ů
+	{"T",2,RETROK_QUOTE,0}, // don't have Ť
+	{"Ret",3,RETROK_RETURN,0},
+	{"\xD1",2,RETROK_BACKSLASH,0},
+	{"\x4",2,RETROK_LEFT,0},
+	{"\x2",2,RETROK_DOWN,0},
+	{"\x3",2,RETROK_RIGHT,0},
+	{"4$",2,RETROK_KP4,0},
+	{"5%",2,RETROK_KP5,0},
+	{"6&",2,RETROK_KP6,0},
+	{"+",2,RETROK_KP_PLUS,0},
+	{0,0,0,0}};
+const struct OSKey OSK_ROW4_CZ[] = {
+	{"Shf",3,RETROK_LSHIFT,OSK_PRESS_SHL},
+	{"<>",2,RETROK_LESS,0},
+	{"Y",2,RETROK_z,0},
+	{"X",2,RETROK_x,0},
+	{"C",2,RETROK_c,0},
+	{"V",2,RETROK_v,0},
+	{"B",2,RETROK_b,0},
+	{"N",2,RETROK_n,0},
+	{"M",2,RETROK_m,0},
+	{",;",2,RETROK_COMMA,0},
+	{".:",2,RETROK_PERIOD,0},
+	{"-_",2,RETROK_SLASH,0},
+	{"Shift",5,RETROK_RSHIFT,OSK_PRESS_SHR},
+	{0,7,0,0},
+	{"1!",2,RETROK_KP1,0},
+	{"2\"",2,RETROK_KP2,0},
+	{"3#",2,RETROK_KP3,0},
+	{0,0,0,0}};
+const struct OSKey OSK_ROW5_CZ[] = {
+	{0,2,0,0},
+	{"Alt",4,RETROK_LALT,OSK_PRESS_ALT},
+	{"",18,RETROK_SPACE,0},
+	{"Caps",4,RETROK_CAPSLOCK,0},
+	{0,9,0,0},
+	{"0=",4,RETROK_KP0,0}, // the = on the numpad 0 is special for Czech
+	{".",2,RETROK_KP_PERIOD,0},
+	{"En",2,RETROK_KP_ENTER,0},
+	{0,0,0,0}};
+
+static const struct OSKey* const OSK_ROWS_CZ[OSK_ROWS] = {
+	OSK_ROW0,
+	OSK_ROW1_CZ,
+	OSK_ROW2_CZ,
+	OSK_ROW3_CZ,
+	OSK_ROW4_CZ,
+	OSK_ROW5_CZ, // only layout with special row 5
+};
+
+//
+// Hungarian Layout
+//
+
+const struct OSKey OSK_ROW1_HU[] = {
+	{"Es",2,RETROK_ESCAPE,0},
+	{"1~",2,RETROK_1,0},
+	{"2\"",2,RETROK_2,0},
+	{"3+",2,RETROK_3,0},
+	{"4!",2,RETROK_4,0},
+	{"5%",2,RETROK_5,0},
+	{"6/",2,RETROK_6,0},
+	{"7=",2,RETROK_7,0},
+	{"8(",2,RETROK_8,0},
+	{"9)",2,RETROK_9,0},
+	{"0\xA7",2,RETROK_0,0},
+	{"\xF6\x94",2,RETROK_MINUS,0},
+	{"\xFC\xA8",2,RETROK_EQUALS,0},
+	{"\xF3\xB8",2,RETROK_BACKQUOTE,0},
+	{"Bck",3,RETROK_BACKSPACE,0},
+	{"Hlp",3,RETROK_PRINT,0},
+	{"Und",3,RETROK_END,0},
+	{"(",2,RETROK_PAGEUP,0},
+	{")",2,RETROK_PAGEDOWN,0},
+	{"/",2,RETROK_KP_DIVIDE,0},
+	{"*",2,RETROK_KP_MULTIPLY,0},
+	{0,0,0,0}};
+const struct OSKey OSK_ROW2_HU[] = {
+	{"Tab",3,RETROK_TAB,0},
+	{"Q",2,RETROK_q,0},
+	{"W",2,RETROK_w,0},
+	{"E",2,RETROK_e,0},
+	{"R",2,RETROK_r,0},
+	{"T",2,RETROK_t,0},
+	{"Z",2,RETROK_y,0},
+	{"u\x80",2,RETROK_u,0},
+	{"i\xCD",2,RETROK_i,0},
+	{"O",2,RETROK_o,0},
+	{"P",2,RETROK_p,0},
+	{"\xF6\xF7",2,RETROK_LEFTBRACKET,0},
+	{"\xFA\xD7",2,RETROK_RIGHTBRACKET,0},
+	{0,2,0,0},
+	{"Dl",2,RETROK_DELETE,0},
+	{"In",2,RETROK_INSERT,0},
+	{"\x1",2,RETROK_UP,0},
+	{"Hm",2,RETROK_HOME,0},
+	{"7",2,RETROK_KP7,0},
+	{"8",2,RETROK_KP8,0},
+	{"9",2,RETROK_KP9,0},
+	{"-",2,RETROK_KP_MINUS,0},
+	{0,0,0,0}};
+const struct OSKey OSK_ROW3_HU[] = {
+	{"Ctrl",4,RETROK_LCTRL,OSK_PRESS_CTRL},
+	{"a\xE4",2,RETROK_a,0},
+	{"s\xF0",2,RETROK_s,0},
+	{"d\xD0",2,RETROK_d,0},
+	{"f[",2,RETROK_f,0},
+	{"g]",2,RETROK_g,0},
+	{"H",2,RETROK_h,0},
+	{"j\xED",2,RETROK_j,0},
+	{"kl",2,RETROK_k,0}, // don't have ł
+	{"lL",2,RETROK_l,0}, // don't have Ł
+	{"\xE9$",2,RETROK_SEMICOLON,0},
+	{"\xE1\xDF",2,RETROK_QUOTE,0},
+	{"Ret",3,RETROK_RETURN,0},
+	{"\xFD\xA4",2,RETROK_BACKSLASH,0},
+	{"\x4",2,RETROK_LEFT,0},
+	{"\x2",2,RETROK_DOWN,0},
+	{"\x3",2,RETROK_RIGHT,0},
+	{"4",2,RETROK_KP4,0},
+	{"5",2,RETROK_KP5,0},
+	{"6",2,RETROK_KP6,0},
+	{"+",2,RETROK_KP_PLUS,0},
+	{0,0,0,0}};
+const struct OSKey OSK_ROW4_HU[] = {
+	{"Shf",3,RETROK_LSHIFT,OSK_PRESS_SHL},
+	{"\xED<",2,RETROK_LESS,0},
+	{"y>",2,RETROK_z,0},
+	{"x#",2,RETROK_x,0},
+	{"c&",2,RETROK_c,0},
+	{"v@",2,RETROK_v,0},
+	{"b{",2,RETROK_b,0},
+	{"n}",2,RETROK_n,0},
+	{"m<",2,RETROK_m,0},
+	{",;",2,RETROK_COMMA,0},
+	{".>",2,RETROK_PERIOD,0},
+	{"-*",2,RETROK_SLASH,0},
+	{"Shift",5,RETROK_RSHIFT,OSK_PRESS_SHR},
+	{0,7,0,0},
+	{"1",2,RETROK_KP1,0},
+	{"2",2,RETROK_KP2,0},
+	{"3",2,RETROK_KP3,0},
+	{0,0,0,0}};
+
+static const struct OSKey* const OSK_ROWS_HU[OSK_ROWS] = {
+	OSK_ROW0,
+	OSK_ROW1_HU,
+	OSK_ROW2_HU,
+	OSK_ROW3_HU,
+	OSK_ROW4_HU,
+	OSK_ROW5,
+};
+
+//
+// Polish Layout
+//
+
+const struct OSKey OSK_ROW2_PL[] = {
+	{"Tab",3,RETROK_TAB,0},
+	{"Q",2,RETROK_q,0},
+	{"W",2,RETROK_w,0},
+	{"ee",2,RETROK_e,0}, // don't have ę
+	{"R",2,RETROK_r,0},
+	{"T",2,RETROK_t,0},
+	{"Y",2,RETROK_y,0},
+	{"U",2,RETROK_u,0},
+	{"I",2,RETROK_i,0},
+	{"o\xF3",2,RETROK_o,0},
+	{"P",2,RETROK_p,0},
+	{"[{",2,RETROK_LEFTBRACKET,0},
+	{"]}",2,RETROK_RIGHTBRACKET,0},
+	{0,2,0,0},
+	{"Dl",2,RETROK_DELETE,0},
+	{"In",2,RETROK_INSERT,0},
+	{"\x1",2,RETROK_UP,0},
+	{"Hm",2,RETROK_HOME,0},
+	{"7",2,RETROK_KP7,0},
+	{"8",2,RETROK_KP8,0},
+	{"9",2,RETROK_KP9,0},
+	{"-",2,RETROK_KP_MINUS,0},
+	{0,0,0,0}};
+const struct OSKey OSK_ROW3_PL[] = {
+	{"Ctrl",4,RETROK_LCTRL,OSK_PRESS_CTRL},
+	{"aa",2,RETROK_a,0}, // don't have ą
+	{"ss",2,RETROK_s,0}, // don't have ś
+	{"D",2,RETROK_d,0},
+	{"F",2,RETROK_f,0},
+	{"G",2,RETROK_g,0},
+	{"H",2,RETROK_h,0},
+	{"J",2,RETROK_j,0},
+	{"K",2,RETROK_k,0},
+	{"ll",2,RETROK_l,0}, // don't have ł
+	{";:",2,RETROK_SEMICOLON,0},
+	{"'\"",2,RETROK_QUOTE,0},
+	{"Ret",3,RETROK_RETURN,0},
+	{"\\|",2,RETROK_BACKSLASH,0},
+	{"\x4",2,RETROK_LEFT,0},
+	{"\x2",2,RETROK_DOWN,0},
+	{"\x3",2,RETROK_RIGHT,0},
+	{"4",2,RETROK_KP4,0},
+	{"5",2,RETROK_KP5,0},
+	{"6",2,RETROK_KP6,0},
+	{"+",2,RETROK_KP_PLUS,0},
+	{0,0,0,0}};
+const struct OSKey OSK_ROW4_PL[] = {
+	{"Shf",3,RETROK_LSHIFT,OSK_PRESS_SHL},
+	{"<>",2,RETROK_LESS,0}, // not on Polish keyboard, but including it for utility/consistency
+	{"zz",2,RETROK_z,0}, // don't have ż
+	{"Xz",2,RETROK_x,0}, // don't have ź
+	{"cc",2,RETROK_c,0}, // don't have ć
+	{"V",2,RETROK_v,0},
+	{"B",2,RETROK_b,0},
+	{"nn",2,RETROK_n,0}, // don't have ń
+	{"M",2,RETROK_m,0},
+	{",<",2,RETROK_COMMA,0},
+	{".>",2,RETROK_PERIOD,0},
+	{"/?",2,RETROK_SLASH,0},
+	{"Shift",5,RETROK_RSHIFT,OSK_PRESS_SHR},
+	{0,7,0,0},
+	{"1",2,RETROK_KP1,0},
+	{"2",2,RETROK_KP2,0},
+	{"3",2,RETROK_KP3,0},
+	{0,0,0,0}};
+
+static const struct OSKey* const OSK_ROWS_PL[OSK_ROWS] = {
+	OSK_ROW0,
+	OSK_ROW1_US, // same as US
+	OSK_ROW2_PL,
+	OSK_ROW3_PL,
+	OSK_ROW4_PL,
+	OSK_ROW5,
+};
+
+//
 // Layout collection
 //
 
@@ -1077,4 +1375,7 @@ static const struct OSKey* const * const OSK_LAYOUTS[] = {
 	OSK_ROWS_NO,
 	OSK_ROWS_DK,
 	OSK_ROWS_NL,
+	OSK_ROWS_CZ,
+	OSK_ROWS_HU,
+	OSK_ROWS_PL,
 };

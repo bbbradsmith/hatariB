@@ -434,10 +434,10 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{"9","Finnish QWERTY"},
 			{"10","Norwegian QWERTY"},
 			{"11","Danish QWERTY"},
-			{"12","Dutch QWERTY"}, /*
+			{"12","Dutch QWERTY"},
 			{"13","Czech QWERTZ"},
 			{"14","Hungarian QWERTZ"},
-			{"15","Polish QWERTY"},*/
+			{"15","Polish QWERTY"},
 		}, "0"
 	},
 	//

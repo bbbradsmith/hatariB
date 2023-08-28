@@ -165,7 +165,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Press L2 to raise the keyboard in one-shot mode, which pauses emulation and will resume immediately when you press L1 or R2.
   * To alternate between a top and bottom keyboard position, press X.
   * Modifier keys like Shift, Control, Alt are toggled instead of a single press, allowing you to hold the modifier while you press another key. When you close the keyboard, all modifiers will be released.
-  * The keyboard language layout can be chosen in the *Input > On-Screen Keyboard Language* core option.
+  * The keyboard language layout can be chosen in the *Input > On-Screen Keyboard Language* core option. This should usually be chosen to match your TOS region.
 * MIDI
   * Libretro has a MIDI interface, and if you have MIDI devices installed you should be able to select them in the *Settings > Audio > MIDI* menu of RetroArch.
   * The [MUNT MT-32 Emulator](url=https://sourceforge.net/projects/munt/) is recommended. It can install on your system as a MIDI device, which you can use with MT-32 supporting Atari ST games.
@@ -196,7 +196,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
 Possible Future Tasks:
 * Can savestate restore be more lightweight? What takes so much CPU time? Are there any lingering spurious disk accesses? Also, I think netplay efficiency may rely on stable data positions, so double check this to see if structures are moving around from frame to frame (I suspect it only really changes at disk insert/eject).
 * Falcon microphone support? Need to find relevant Falcon software to test against.
-* Keyboard languages and layouts? Need to know a bit more about how to test this. Think about host keyboard vs. simulated keyboard, etc. EmuTOS can set German and 'Q' will still map to 'Q' in Hatari, though keys like - = etc may change, so probably the on-screen keyboard remaps can still use the same letter semantics at least, but the Atari-specific keys probably just need a new description. (Could possibly need to provide RETROK remap sets too for host keyboard, but not sure. What RETROK do the brackets give on a QWERTZ keyboard, for example? SDL's keyboard system might be good reference, since it's one of the potential RETROK drivers. [tho-otto](https://tho-otto.de/keyboards/) has great diagrams of the Atari keyboards.)
+* Host keyboard layouts. Need to figure out if RETROK report change based on host system settings (they seem not to?), in which case... maybe best to do nothing? Otherwise, remap the reported RETROK to the needed RETROK for each of those. (RetroArch's input menu might handle this?)
 * Do some aspect ratio research and calculation for PIXEL_ASPECT_RATIO in core.c.
 * Printer emulation? Probably a pipe dream, as I can't think of a good way to handle it. Maybe a secondary graphical page display, and saving a PNG image to the saves folder after?
 * RS232 doesn't seem possible to support via Libretro, though maybe there is a way to work around this.
