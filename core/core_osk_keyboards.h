@@ -124,8 +124,7 @@ const struct OSKey OSK_ROW3_US[] = {
 	{"+",2,RETROK_KP_PLUS,0},
 	{0,0,0,0}};
 const struct OSKey OSK_ROW4_US[] = {
-	{"Shf",3,RETROK_LSHIFT,OSK_PRESS_SHL},
-	{"<>",2,RETROK_LESS,0}, // not on US keyboard, but including it for utility/consistency
+	{"Shift",5,RETROK_LSHIFT,OSK_PRESS_SHL},
 	{"Z",2,RETROK_z,0},
 	{"X",2,RETROK_x,0},
 	{"C",2,RETROK_c,0},
@@ -1329,8 +1328,7 @@ const struct OSKey OSK_ROW3_PL[] = {
 	{"+",2,RETROK_KP_PLUS,0},
 	{0,0,0,0}};
 const struct OSKey OSK_ROW4_PL[] = {
-	{"Shf",3,RETROK_LSHIFT,OSK_PRESS_SHL},
-	{"<>",2,RETROK_LESS,0}, // not on Polish keyboard, but including it for utility/consistency
+	{"Shift",5,RETROK_LSHIFT,OSK_PRESS_SHL},
 	{"zz",2,RETROK_z,0}, // don't have ż
 	{"Xz",2,RETROK_x,0}, // don't have ź
 	{"cc",2,RETROK_c,0}, // don't have ć
