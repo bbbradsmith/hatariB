@@ -7,8 +7,8 @@ A [Libretro](https://www.libretro.com/) core integrating the [Hatari](https://ha
   * Windows 32-bit
   * Ubuntu
   * MacOS
-  * Raspberry Pi 32-bit
-  * Raspberry Pi 64-bit
+  * Raspberry Pi OS 32-bit
+  * Raspberry Pi OS 64-bit
 * Current Release:
   * **[hatariB v0.1](https://github.com/bbbradsmith/hatariB/releases/tag/0.1)** - 2023-08-22
 * Unstable Build:

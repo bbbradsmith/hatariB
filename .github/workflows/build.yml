@@ -151,7 +151,7 @@ jobs:
           path: artifact/
 
   build-rpi32:
-    name: Raspberry Pi 32-bit
+    name: Raspberry Pi OS 32-bit
     runs-on: ubuntu-20.04
     # ubuntu-latest was building with a newer GLIBC than current Rpi images, making them incompatible,
     # but 20.04 builds seem to have an older GLIBC that is compatible.
@@ -193,7 +193,7 @@ jobs:
 
 
   build-rpi64:
-    name: Raspberry Pi 64-bit
+    name: Raspberry Pi OS 64-bit
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout Files
