@@ -36,6 +36,8 @@ Other targets:
 * `make zlib` - shorthand for `make -f makefile.zlib`
 * `make sdl` - shorthand for `make -f makefile.sdl`
 
+By default SDL ant hatariB are built with the `-j` option to multithread the build process. You can disable this by adding `MULTITHREAD=` to the command line. This may be needed if the system runs out of memory, or otherwise can't handle the threading.
+
 ## Changes to Hatari
 
 Changes to the C source code are all contained in `__LIBRETRO__` defines. This is important for merging future versions, because we always be able to see what code was replaced. None of the original code has been modified or deleted, only _disabled_ within `#ifdef` blocks.
@@ -259,7 +261,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
 
 ## SDL2 Usage
 
-The SDL library is not initialized. Aside from some type definitions, it is mostly only needed to provide palette colour translations, software-render the status bar, and onscreen keyboard. Only the video subsystem is needed, though the events subsystem is also included because it cannot be disabled in SDL2's configuration. This is the short list of SDL functions used:
+The SDL library is not initialized. Aside from some type definitions, it is mostly only needed to provide palette colour translations, and software-rendering the status bar + onscreen keyboard. Only the video subsystem is needed, though the events subsystem is also included because it cannot be disabled in SDL2's configuration. This is the short list of SDL functions used:
 * SDL_CreateRGBSurface
 * SDL_FreeSurface
 * SDL_LockSurface

@@ -2,6 +2,7 @@ SDL_PREFIX = $(PWD)/SDL/build
 CFLAGS += -fPIC
 # -fPIC needed to link into a shared object
 CONFIGURE_FLAGS +=
+MULTITHREAD ?= -j
 
 default: sdl
 
@@ -31,7 +32,7 @@ sdl: submodules
 		--enable-video-opengles2=no \
 		--enable-video-vulkan=no \
 		--enable-render-d3d=no
-	cd SDL/build && $(MAKE) -j
+	cd SDL/build && $(MAKE) $(MULTITHREAD)
 	cd SDL/build && $(MAKE) install
 
 clean:

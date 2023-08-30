@@ -4,6 +4,9 @@ DEBUG = 0
 # enables verbose cmake for diagnosing the make step, and the cmake build command lines (1 = build steps, 2 = cmake trace)
 VERBOSE_CMAKE = 0
 
+# if multithreaded make causes problems try setting MULTITHREAD to be nothing
+MULTITHREAD ?= -j
+
 SHORTHASH = "$(shell git rev-parse --short HEAD || unknown)"
 
 # static libraries
@@ -35,7 +38,7 @@ CMAKEFLAGS += \
 	-DCMAKE_DISABLE_FIND_PACKAGE_PortMidi=1 \
 	-DCMAKE_DISABLE_FIND_PACKAGE_CapsImage=1 \
 	-DENABLE_SMALL_MEM=0
-CMAKEBUILDFLAGS += -j
+CMAKEBUILDFLAGS += $(MULTITHREAD)
 
 ifneq ($(DEBUG),0)
 	CFLAGS += -g
@@ -89,11 +92,11 @@ full:
 	$(MAKE) -f makefile.sdl clean
 	$(MAKE) clean
 	$(MAKE) -f makefile.zlib
-	$(MAKE) -f makefile.sdl
+	$(MAKE) -f makefile.sdl MULTITHREAD=$(MULTITHREAD)
 	$(MAKE) default
 
 sdl:
-	$(MAKE) -f makefile.sdl
+	$(MAKE) -f makefile.sdl MULTITHREAD=$(MULTITHREAD)
 
 zlib:
 	$(MAKE) -f makefile.zlib
@@ -102,7 +105,7 @@ zlib:
 sdlreconfig:
 	$(MAKE) -f makefile.sdl clean
 	$(MAKE) clean
-	$(MAKE) -f makefile.sdl
+	$(MAKE) -f makefile.sdl MULTITHREAD=$(MULTITHREAD)
 	$(MAKE) default
 
 directories:
