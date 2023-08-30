@@ -1,21 +1,22 @@
 # enables debug symbols, CPU trace logging
-DEBUG = 0
+DEBUG ?= 0
 
 # enables verbose cmake for diagnosing the make step, and the cmake build command lines (1 = build steps, 2 = cmake trace)
-VERBOSE_CMAKE = 0
+VERBOSE_CMAKE ?= 0
 
 # if multithreaded make causes problems try setting MULTITHREAD to be nothing
 MULTITHREAD ?= -j
 
+# git revision hash
 SHORTHASH = "$(shell git rev-parse --short HEAD || unknown)"
 
 # static libraries
-ZLIB_INCLUDE = $(PWD)/zlib_build/include
-SDL2_INCLUDE = $(PWD)/SDL/build/include/SDL2
-ZLIB_LIB = $(PWD)/zlib_build/lib/libz.a
-SDL2_LIB = $(PWD)/SDL/build/lib/libSDL2.a
-SDL2_LINK = $(shell $(PWD)/SDL/build/bin/sdl2-config --static-libs)
-ZLIB_LINK = $(ZLIB_LIB)
+ZLIB_INCLUDE ?= $(PWD)/zlib_build/include
+SDL2_INCLUDE ?= $(PWD)/SDL/build/include/SDL2
+ZLIB_LIB ?= $(PWD)/zlib_build/lib/libz.a
+SDL2_LIB ?= $(PWD)/SDL/build/lib/libSDL2.a
+SDL2_LINK ?= $(shell $(PWD)/SDL/build/bin/sdl2-config --static-libs)
+ZLIB_LINK ?= $(ZLIB_LIB)
 # sdl2-config is less than ideal, designed for EXE rather than DLL,
 # it adds -lSDLmain etc. but it seems the best way to get the mac dependencies right
 
