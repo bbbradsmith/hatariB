@@ -92,6 +92,12 @@ full:
 	$(MAKE) -f makefile.sdl
 	$(MAKE) default
 
+sdl:
+	$(MAKE) -f makefile.sdl
+
+zlib:
+	$(MAKE) -f makefile.zlib
+
 # to test a reconfiguration of SDL only
 sdlreconfig:
 	$(MAKE) -f makefile.sdl clean

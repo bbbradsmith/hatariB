@@ -33,6 +33,8 @@ Other targets:
 * `make clean` - removes the build and all temporary files to start fresh.
 * `make full` - cleans and rebuilds both the static libraries and hatariB.
 * `make sdlreconfig` - for testing SDL2 configuration changes: cleans and rebuilds SDL2, then incrementally builds hatariB.
+* `make zlib` - shorthand for `make -f makefile.zlib`
+* `make sdl` - shorthand for `make -f makefile.sdl`
 
 ## Changes to Hatari
 
