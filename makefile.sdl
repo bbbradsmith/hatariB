@@ -31,7 +31,8 @@ sdl: submodules
 		--enable-video-opengles1=no \
 		--enable-video-opengles2=no \
 		--enable-video-vulkan=no \
-		--enable-render-d3d=no
+		--enable-render-d3d=no \
+		--enable-werror=no
 	cd SDL/build && $(MAKE) $(MULTITHREAD)
 	cd SDL/build && $(MAKE) install
 
