@@ -68,6 +68,9 @@ If successful, this should create `hatariB/build/hatarib.so` (or DLL/dylib).
 
 If unsuccessful, you might look at [build.yml](.github/workflows/build.yml) which runs the Github Actions builds for ideas.
 
+If unsuccessful because the system is out of memory (may look like a ["fatal error" of GCC](https://github.com/bbbradsmith/hatariB/issues/11)), try setting the MULTITHREAD variable to empty:
+* `make full MULTITHREAD=`
+
 See [DEVELOP.md](DEVELOP.md) for more details.
 
 ## Notes

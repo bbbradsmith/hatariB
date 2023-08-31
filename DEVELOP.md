@@ -211,7 +211,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
 * **hatari/src/includes/unzip.h**
   * Replace direct file access to unzip from a memory buffer instead.
 * **hatari/src/video.c**
-  * `Video_ResetShiterTimings` relays current framerate to `core_set_fps`.
+  * `Video_ResetShifterTimings` relays current framerate to `core_set_fps`.
   * Unused variable warning suppression for `ENABLE_TRACING`.
 * **hatari/src/zip.c**
   * Disable use of `unzOpen` which was modified (see: unzip.c) and not needed by this core.
@@ -274,3 +274,5 @@ The SDL library is not initialized. Aside from some type definitions, it is most
 * SDL_strlcpy
 
 If direct replacements for these were provided, we could remove SDL entirely. Most have a simple function and not used in high-performance code, but `SDL_UpperBlit` and `SDL_FillRect` are both used extensively by the status bar and onscreen keyboard. A naive replacement of those would be simple, but they both have very intensive target-specific optimizations which seem worth keeping, despite the dependency overhead.
+
+You may provide your own SDL2 by overriding the `SDL2_INCLUDE`, `SDL2_LIB`, and `SDL2_LINK` variables found in `makefile`. A minimal static build was chosen instead because on some platforms the dependency was difficult to provide to the user, and it also appeared that it could cause conflicts with RetroArch's SDL2 drivers, if used. (These conflicts seemed to be resolved by removing any SDL initialization, but it seemed prudent to avoid using the global shared object altogether.)
