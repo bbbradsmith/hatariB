@@ -2763,6 +2763,9 @@ void Ide_Init(void)
 			int is_byteswap;
 			if (bdrv_open(hd_table[i], ConfigureParams.Ide[i].sDeviceFile, ConfigureParams.Ide[i].nBlockSize, 0) < 0)
 			{
+#ifdef __LIBRETRO__
+				core_signal_error("Failed to open IDE hard disk image: ",ConfigureParams.Ide[i].sDeviceFile);
+#endif
 				ConfigureParams.Ide[i].bUseDevice = false;
 				continue;
 			}

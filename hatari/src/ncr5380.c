@@ -1048,7 +1048,14 @@ bool Ncr5380_Init(void)
 			bScsiEmuOn = true;
 		}
 		else
+#ifdef __LIBRETRO__
+		{
+			core_signal_error("Failed to open SCSI hard disk image: ",ConfigureParams.Scsi[i].sDeviceFile);
 			ConfigureParams.Scsi[i].bUseDevice = false;
+		}
+#else
+			ConfigureParams.Scsi[i].bUseDevice = false;
+#endif
 	}
 	nNumDrives += nScsiPartitions;
 #endif

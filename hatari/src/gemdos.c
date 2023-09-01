@@ -747,6 +747,9 @@ static bool GemDOS_DetermineMaxPartitions(int *pnMaxDrives)
 #endif
 	if (count < 0)
 	{
+#ifdef __LIBRETRO__
+		core_signal_error("Failed to open GemDOS hard disk folder: ",ConfigureParams.HardDisk.szHardDiskDirectories[0]);
+#endif
 		Log_Printf(LOG_ERROR, "GEMDOS hard disk emulation failed:\n "
 			   "Can not access '%s'.\n", ConfigureParams.HardDisk.szHardDiskDirectories[0]);
 		return false;

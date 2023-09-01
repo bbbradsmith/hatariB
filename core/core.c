@@ -330,7 +330,13 @@ void core_set_samplerate(int rate)
 	core_audio_samplerate_new = rate;
 }
 
-// halting / reset
+// signals to core for halt, reset, onscreen alerts, etc.
+
+void core_signal_reset(bool cold) // called by Reset_ST, allows the retro_run loop to know a reset happened.
+{
+	//retro_log(RETRO_LOG_DEBUG,"core_signal_reset(%d)\n",cold);
+	core_runflags |= cold ? CORE_RUNFLAG_RESET_COLD : CORE_RUNFLAG_RESET_WARM;
+}
 
 void core_signal_halt(void)
 {
@@ -380,10 +386,21 @@ void core_signal_alert(const char* alertmsg)
 	environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg);
 }
 
-void core_signal_reset(bool cold) // called by Reset_ST, allows the retro_run loop to know a reset happened.
+void core_signal_error(const char* alertmsg, const char* suffix)
 {
-	//retro_log(RETRO_LOG_DEBUG,"core_signal_reset(%d)\n",cold);
-	core_runflags |= cold ? CORE_RUNFLAG_RESET_COLD : CORE_RUNFLAG_RESET_WARM;
+	static char alertmsg2[1024];
+	strcpy_trunc(alertmsg2,alertmsg,sizeof(alertmsg2));
+	strcat_trunc(alertmsg2,suffix,sizeof(alertmsg2));
+
+	struct retro_message_ext msg;
+	msg.msg = alertmsg2;
+	msg.duration = 5 * 1000;
+	msg.priority = 3;
+	msg.level = RETRO_LOG_ERROR;
+	msg.target = RETRO_MESSAGE_TARGET_ALL;
+	msg.type = RETRO_MESSAGE_TYPE_NOTIFICATION;
+	msg.progress = -1;
+	environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg);
 }
 
 //

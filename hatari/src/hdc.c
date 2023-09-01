@@ -1012,7 +1012,14 @@ bool HDC_Init(void)
 			bAcsiEmuOn = true;
 		}
 		else
+#ifdef __LIBRETRO__
+		{
+			core_signal_error("Failed to open ACSI hard disk image: ",ConfigureParams.Acsi[i].sDeviceFile);
 			ConfigureParams.Acsi[i].bUseDevice = false;
+		}
+#else
+			ConfigureParams.Acsi[i].bUseDevice = false;
+#endif
 	}
 	/* set total number of partitions */
 	nNumDrives += nAcsiPartitions;
