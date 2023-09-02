@@ -117,7 +117,7 @@ directories:
 $(CORE): directories hatarilib $(OBJECTS)
 	$(CC) -o $(CORE) $(LDFLAGS) $(OBJECTS) $(HATARILIBS)
 
-$(BD)core/%.o: core/%.c
+$(BD)core/%.o: core/%.c hatarilib
 	$(CC) -o $@ $(CFLAGS) -c $< 
 
 hatarilib: directories
