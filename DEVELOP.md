@@ -178,6 +178,8 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Notify core when the system is reset.
 * **hatari/src/resolution.c**
   * Disable `SDL_GetDesktopDisplayMode` and assume the desktop is the size we need.
+* **hatari/src/scandir.c**
+  * Remove scandir implementations enabled by !HAVE_SCANDIR, because they are unused, but also to suppress a warning-as-error on size_t vs. int mismatch.
 * **hatari/src/screen.c**
   * Disable SDL rendering, reduce use of SDL to merely creating a software render SDL_Surface which can be used by the gui-sdl system to render the status bar and onscreen keyboard.
   * Replace `SDL_RenderPresent` with `core_video_update` to deliver the new frame buffer.
