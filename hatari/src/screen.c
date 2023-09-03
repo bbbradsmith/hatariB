@@ -240,7 +240,11 @@ static void Screen_SetDrawFunctions(int nBitCount, bool bDoubleLowRes)
 /**
  * Set amount of border pixels
  */
+#ifndef __LIBRETRO__
 static void Screen_SetBorderPixels(int leftX, int leftY)
+#else
+static void Screen_SetBorderPixels(int leftX, int leftY, int zoom, int height, int statusH)
+#endif
 {
 	/* All screen widths need to be aligned to 16-bits */
 	nBorderPixelsLeft = Opt_ValueAlignMinMax(leftX/2, 16, 0, 48);
@@ -264,6 +268,81 @@ static void Screen_SetBorderPixels(int leftX, int leftY)
 		else
 			nBorderPixelsTop = nBorderPixelsBottom = 0;
 	}
+
+#ifdef __LIBRETRO__
+	if (ConfigureParams.Screen.nCropOverscan >= 2)
+	{
+		// target cropped height for 720p (2) or 1080p (3) with convenient integer scale
+		int th = (ConfigureParams.Screen.nCropOverscan == 3) ? 270 : 240;
+		if (height >= 300) th *= 2;
+
+		// temporarily undo the zoom to count output pixels
+		nBorderPixelsTop *= zoom;
+		nBorderPixelsBottom *= zoom;
+
+		// figure out how many lines we can remove
+		int overscan = th - height; // number of lines available for overscan
+		if (overscan < 0) overscan = 0;
+		int crop = (nBorderPixelsBottom + nBorderPixelsTop) - overscan; // total number of lines available to remove
+		if (crop < 0) crop = 0;
+
+		// try to make the border padding symmetrical
+		// if the bottom is longer, taket from it first to even things out
+		if (nBorderPixelsBottom > nBorderPixelsTop)
+		{
+			int c = nBorderPixelsBottom - nBorderPixelsTop;
+			if (c > crop) c = crop;
+			nBorderPixelsBottom -= c;
+			crop -= c;
+		}
+		else // just in case the top is longer (shouldn't happen though)
+		{
+			int c = nBorderPixelsTop - nBorderPixelsBottom;
+			if (c > crop) c = crop;
+			nBorderPixelsTop -= c;
+			crop -= c;
+		}
+
+		// next, take half of whats left away from the top first (rounding down)
+		{
+			int c = crop / 2;
+			if (c > nBorderPixelsTop) c = nBorderPixelsTop;
+			nBorderPixelsTop -= c;
+			crop -= c;
+		}
+		// take whatever remains from the bottom
+		{
+			int c = crop;
+			if (c > nBorderPixelsBottom) c = nBorderPixelsBottom;
+			nBorderPixelsBottom -= c;
+			crop -= c;
+		}
+
+		// finally, make room for the status bar, but try to place it all on the bottom if possible (as if an overlay)
+		crop += statusH;
+		{
+			int c = crop;
+			if (c > nBorderPixelsBottom) c = nBorderPixelsBottom;
+			nBorderPixelsBottom -= c;
+			crop -= c;
+		}
+		// if we need to, take the rest from the top
+		{
+			int c = crop;
+			if (c > nBorderPixelsTop) c = nBorderPixelsTop;
+			nBorderPixelsTop -= c;
+			crop -= c;
+		}
+
+		// if crop isn't 0 by now, there's nothing more we can remove!
+
+		// re-apply the zoom
+		int remain = ((nBorderPixelsTop + nBorderPixelsBottom) % zoom) / zoom; // if they don't divide evenly by zoom, compensate with an extra pixel on the bottom
+		nBorderPixelsTop /= zoom;
+		nBorderPixelsBottom /= zoom;
+		nBorderPixelsBottom += remain;
+	}
+#endif
 }
 
 /*-----------------------------------------------------------------------*/
@@ -734,7 +813,11 @@ static void Screen_SetSTResolution(bool bForceChange)
 		int leftX = maxW - Width;
 		int leftY = maxH - (Height + Statusbar_GetHeightForSize(Width, Height));
 
+#ifndef __LIBRETRO__
 		Screen_SetBorderPixels(leftX/nZoom, leftY/nZoom);
+#else
+		Screen_SetBorderPixels(leftX/nZoom, leftY/nZoom, nZoom, Height, Statusbar_GetHeightForSize(Width, Height));
+#endif
 		DEBUGPRINT(("resolution limit:\n\t%d x %d\nlimited resolution:\n\t", maxW, maxH));
 		DEBUGPRINT(("%d * (%d + %d + %d) x (%d + %d + %d)\n", nZoom,
 			    nBorderPixelsLeft, Width/nZoom, nBorderPixelsRight,

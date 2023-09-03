@@ -457,7 +457,9 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		NULL, "video",
 		{
 			{"0","Hide"},
-			{"1","Show"},
+			{"1","Full"},
+			{"2","Crop 720p (240, 480)"},
+			{"3","Crop 1080p (270, 540)"},
 			{NULL,NULL}
 		}, "1"
 	},
@@ -1140,7 +1142,7 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_osk_layout") core_osk_layout = vi;
 	CFG_INT("hatarib_osk_press_len") core_osk_press_len = vi;
 	CFG_INT("hatarib_lowres2x") newparam.Screen.bLowResolutionDouble = vi;
-	CFG_INT("hatarib_borders") newparam.Screen.bAllowOverscan = vi;
+	CFG_INT("hatarib_borders") { newparam.Screen.bAllowOverscan = (vi != 0); newparam.Screen.nCropOverscan = vi; }
 	CFG_INT("hatarib_statusbar") { newparam.Screen.bShowStatusbar = (vi==1); newparam.Screen.bShowDriveLed = (vi==2); }
 	CFG_INT("hatarib_aspect") { if (core_video_aspect_mode != vi) { core_video_aspect_mode = vi; core_video_changed = true; } }
 	CFG_INT("hatarib_pause_osk") core_pause_osk = vi;

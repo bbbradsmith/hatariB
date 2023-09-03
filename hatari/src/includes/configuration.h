@@ -324,6 +324,7 @@ typedef struct
   int nFrameSkips;
 #ifdef __LIBRETRO__
   bool bLowResolutionDouble;
+  int nCropOverscan;
 #endif
 } CNF_SCREEN;
 
