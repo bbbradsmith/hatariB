@@ -24,10 +24,6 @@
 #define SNAPSHOT_ROUND         (64 * 1024)
 #define SNAPSHOT_VERSION       1
 
-// Transmit Hatari log message to the Libretro debug log
-// 0 = none, 1 = errors, 2 = all
-#define DEBUG_HATARI_LOG   2
-
 // Logs seem valid for either first retro_set_environment or everything else,
 // set this to 1 when you want to log the first call to retro_set_environment.
 #define DEBUG_RETRO_SET_ENVIRONMENT   0
@@ -178,19 +174,12 @@ void core_info_msg(const char* msg)
 
 void core_debug_hatari(bool error, const char* msg)
 {
-#if (DEBUG_HATARI_LOG < 1)
-	(void)msg;
-#else
 	int len;
-	#if (DEBUG_HATARI_LOG < 2)
-		if (!error) return;
-	#endif
 	len = strlen(msg);
 	retro_log(
 		error ? RETRO_LOG_ERROR : RETRO_LOG_DEBUG,
 		(len == 0 || (msg[len-1] != '\n')) ? "Hatari: %s\n" : "Hatari: %s",
 		msg);
-#endif
 }
 
 void core_trace_next(int count)

@@ -234,7 +234,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Disable `SDL_SetRelativeMouseMode`
 * **hatari/src/debug/log.c**
 * **hatari/src/debug/log.h**
-  * Send log message to the Libretro log (requires `DEBUG_HATARI_LOG=1` in core.c).
+  * Send log message to the Libretro log.
   * Disable log to stderr.
   * Redirect alert dialogs instead to a Libretro onscreen notification.
   * Send trace logs to Libretro log.

@@ -710,6 +710,21 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{{"0","Off"},{"1","On"},{NULL,NULL}}, "0"
 	},
 	#endif
+	{
+		"hatarib_log_hatari", "Hatari Logging", NULL,
+		"Hatari's internal log messages can be sent to the RetroArch logs."
+		" Requires content close and re-open.",
+		NULL, "advanced",
+		{
+			{"0","Fatal"},
+			{"1","Error"},
+			{"2","Warn"},
+			{"3","Info"},
+			{"4","To Do"},
+			{"5","Debug"},
+			{NULL,NULL}
+		}, "1",
+	},
 	//
 	// Pads
 	//
@@ -1167,6 +1182,7 @@ void core_config_read_newparam()
 	#if CORE_INPUT_DEBUG
 		CFG_INT("hatarib_input_debug") core_input_debug = vi;
 	#endif
+	CFG_INT("hatarib_log_hatari") newparam.Log.nTextLogLevel = vi;
 	for (int i=0; i<4; ++i)
 	{
 		CFG_INT_PAD(i,"dpad"  ) core_stick_map[ i][CORE_INPUT_STICK_DPAD   ] = vi;
