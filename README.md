@@ -138,9 +138,10 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * A *GemDOS* folder can represent multiple paritions by having its base directory contain only single-letter folder names representing drive letters. *C/*, *D/*, etc.
   * *ASCI*, *SCSI* and *IDE* hard disks use a binary image file chosen from *system/hatarib/*.
   * Hard disks are read-only by default for safety. This can be disabled in the *System > Hard Disk Write Protect* core option.
-  * Later TOS versions (or EmuTOS) are recommended when using hard drives, as TOS 1.0 has only limited support for them.
+  * Later TOS versions (or EmuTOS) are recommended when using hard drives, as TOS 1.0 has only limited support for them. Without EmuTOS you may need to use a hard disk driver.
   * Using more than one hard disk image at a time is unsupported, though a single image can have multiple partitions with individual drive letters.
   * If you need an [easy way to switch between hard disk configurations](https://github.com/bbbradsmith/hatariB/issues/12), you could create a "boot" floppy disk to go along with the hard disk, and use *Manage Core Options > Save Game Options* to create a settings override associated with that floppy. Alternatively a configuration file could be appended via the command line.
+  * See [Hatari's Manual: Hard Disk Support](https://hatari.tuxfamily.org/doc/manual.html#Hard_disk_support) for further information.  
 * Saving:
   * When a modified floppy disk is ejected, or the core is closed, a modified copy of that disk image will be written to the *saves/* folder.
   * Whenever a new floppy disk is added (*Load Content*, or *Load New Disk*), the saved copy will be substituted for the original if it exists. (Also, if you want to return to the original disk, you can delete it from *saves/*.)
