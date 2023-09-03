@@ -352,6 +352,8 @@ void Log_AlertDlg(LOGTYPE nType, const char *psFormat, ...)
 		DlgAlert_Notice(psTmpBuf);
 #else
 		// don't allow the blocking dialog box, but send the notifications
+		for (char* c = psTmpBuf; *c != 0; ++c)
+			if (*c == '\n') *c = ' '; // remove newlines
 		core_signal_alert(psTmpBuf);
 #endif
 		free(psTmpBuf);
