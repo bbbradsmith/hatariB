@@ -754,8 +754,10 @@ static void Main_Init(void)
 	/* Open debug log file */
 	if (!Log_Init())
 	{
+#ifndef __LIBRETRO__
 		fprintf(stderr, "ERROR: logging/tracing initialization failed\n");
 		exit(-1);
+#endif
 	}
 	Log_Printf(LOG_INFO, PROG_NAME ", compiled on:  " __DATE__ ", " __TIME__ "\n");
 

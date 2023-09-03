@@ -178,7 +178,9 @@ static LOGTYPE AlertDlgLogLevel;
  */
 void Log_Default(void)
 {
+#ifndef __LIBRETRO__
 	hLogFile = stderr;
+#endif
 	TraceFile = stderr;
 	TextLogLevel = LOG_INFO;
 }
@@ -202,7 +204,9 @@ int Log_Init(void)
 {
 	Log_SetLevels();
 
+#ifndef __LIBRETRO__
 	hLogFile = File_Open(ConfigureParams.Log.sLogFileName, "w");
+#endif
 	TraceFile = File_Open(ConfigureParams.Log.sTraceFileName, "w");
    
 	return (hLogFile && TraceFile);
@@ -227,7 +231,9 @@ int Log_SetAlertLevel(int level)
  */
 void Log_UnInit(void)
 {
+#ifndef __LIBRETRO__
 	hLogFile = File_Close(hLogFile);
+#endif
 	TraceFile = File_Close(TraceFile);
 }
 
@@ -299,12 +305,15 @@ void Log_Printf(LOGTYPE nType, const char *psFormat, ...)
 		/* Add a new-line if necessary: */
 		if (psFormat[strlen(psFormat)-1] != '\n')
 			fputs("\n", hLogFile);
-	#ifdef __LIBRETRO__
+	}
+#ifdef __LIBRETRO__
+	if (nType <= TextLogLevel)
+	{
 		va_start(argptr, psFormat);
 		corelog_prefix_va(nType,psFormat,argptr);
 		va_end(argptr);
-	#endif
 	}
+#endif
 }
 
 
@@ -326,16 +335,21 @@ void Log_AlertDlg(LOGTYPE nType, const char *psFormat, ...)
 		/* Add a new-line if necessary: */
 		if (psFormat[strlen(psFormat)-1] != '\n')
 			fputs("\n", hLogFile);
-	#ifdef __LIBRETRO__
+	}
+#ifdef __LIBRETRO__
+	if (nType <= TextLogLevel)
+	{
 		va_start(argptr, psFormat);
 		corelog_prefix_va(nType,psFormat,argptr);
 		va_end(argptr);
-	#endif
 	}
+#endif
 
 #ifndef __LIBRETRO__
 	/* Show alert dialog box: */
 	if (sdlscrn && nType <= AlertDlgLogLevel)
+#else
+	if (nType <= AlertDlgLogLevel)
 #endif
 	{
 		char *psTmpBuf;

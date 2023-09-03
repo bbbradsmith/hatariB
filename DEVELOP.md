@@ -162,6 +162,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
     * `main_deinit` is some final shutdown after the main emulation loop exits.
   * Defer `IPF_Init` until first use, allowing it to be dynamically loaded only if needed and available.
   * Include `core.h` in main header to provide global extern access to some core functions.
+  * Disable log output requirement.
 * **hatari/src/memorySnapShot.c**
   * Disable compression of savestate data, Libretro does its own compression for save to disk, but also needs an uncompressed form for run-ahead or netplay to work.
   * Instead of saving to a file, write to a provided memory buffer.
@@ -186,6 +187,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Provide Libretro's 3 available pixel formats.
   * Implement option to use doubled pixels for low resolution.
   * Use palette 0 to clear the screen after mode changes, because it looks more natural than black. (Needed if the resolution changes while emulation is paused.)
+  * Provide border cropping options.
 * **hatari/src/screenSnapShot.c**
   * Disable `SDL_SaveBMP`.
 * **hatari/src/shortcut.c**
@@ -233,6 +235,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
 * **hatari/src/debug/log.c**
 * **hatari/src/debug/log.h**
   * Send log message to the Libretro log (requires `DEBUG_HATARI_LOG=1` in core.c).
+  * Disable log to stderr.
   * Redirect alert dialogs instead to a Libretro onscreen notification.
   * Send trace logs to Libretro log.
 * **hatari/src/falcon/microphone.c**
