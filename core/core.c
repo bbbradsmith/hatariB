@@ -85,6 +85,7 @@ int core_crashtime = 10;
 int core_crash_frames = 0; // reset to 0 whenever CORE_RUNFLAG_HALT
 bool core_option_soft_reset = false;
 bool core_show_welcome = true;
+bool core_first_reset = true;
 
 // internal
 
@@ -750,6 +751,7 @@ RETRO_API void retro_init(void)
 	//Log_SetTraceOptions("cpu_disasm");
 	//Log_SetTraceOptions("video_vbl,video_sync");
 
+	core_first_reset = true;
 	core_runflags = 0;
 	main_init(1,(char**)argv);
 
@@ -883,7 +885,10 @@ RETRO_API void retro_run(void)
 	{
 		core_config_reset(); // can apply boot parameters (e.g. CPU Freq)
 		bool cold = core_runflags & CORE_RUNFLAG_RESET_COLD;
-		core_signal_alert(cold ? "Cold Boot" : "Warm Boot");
+		if (!core_first_reset)
+			core_signal_alert(cold ? "Cold Boot" : "Warm Boot");
+		else
+			core_first_reset = false;
 		m68k_go_quit();
 		UAE_Set_Quit_Reset(cold);
 		core_runflags &= ~(CORE_RUNFLAG_RESET | CORE_RUNFLAG_HALT);
