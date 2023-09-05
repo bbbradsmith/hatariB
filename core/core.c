@@ -3,6 +3,7 @@
 #include "core_internal.h"
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 // large enough for TT high resolution 1280x960 at 32bpp
 #define VIDEO_MAX_W   2048
@@ -69,6 +70,7 @@ extern void UAE_Set_Quit_Reset ( bool hard );
 extern void core_flush_audio(void);
 extern int core_save_state(void);
 extern int core_restore_state(void);
+extern void Statusbar_AddMessage(const char *msg, uint32_t msecs);
 
 //
 // Available to Hatari
@@ -86,6 +88,7 @@ int core_crash_frames = 0; // reset to 0 whenever CORE_RUNFLAG_HALT
 bool core_option_soft_reset = false;
 bool core_show_welcome = true;
 bool core_first_reset = true;
+bool core_perf_display = false;
 
 // internal
 
@@ -457,6 +460,82 @@ static void core_midi_frame()
 }
 
 //
+// performance counters
+//
+// Tried initially to use retro_perf_counter, but it didn't seem to do anything useful,
+// so am just using get_time_usec directly instead.
+//
+
+struct retro_perf_callback* retro_perf = NULL;
+enum {
+	PERF_RUN = 0,
+	PERF_RUN_RESET,
+	PERF_SERIALIZE,
+	PERF_UNSERIALIZE,
+	PERF_COUNT
+};
+static retro_time_t perf_counter_start[PERF_COUNT] = { 0 };
+static retro_time_t perf_counter_total[PERF_COUNT] = { 0 };
+#define PERF_START(p_) { if (retro_perf) perf_counter_start[p_] = retro_perf->get_time_usec(); }
+#define PERF_STOP(p_)  { if (retro_perf) perf_counter_total[p_] += (retro_perf->get_time_usec() - perf_counter_start[p_]); }
+
+static void core_perf_set_environment(retro_environment_t cb)
+{
+	static struct retro_perf_callback retro_perf_interface;
+	if (!retro_perf && cb(RETRO_ENVIRONMENT_GET_PERF_INTERFACE,&retro_perf_interface))
+	{
+		retro_perf = &retro_perf_interface;
+	}
+	if (retro_perf)
+	{
+		retro_log(RETRO_LOG_INFO,"PERF interface available.\n");
+	}
+	else
+	{
+		retro_perf = NULL;
+		retro_log(RETRO_LOG_INFO,"PERF interface not available.\n");
+	}
+}
+
+static void core_perf_show()
+{
+	#define PERF_RUN_AVG  60
+	static retro_time_t perf_counter_total_last[PERF_COUNT] = { 0 };
+	static unsigned int perf_time[PERF_COUNT] = { 0 };
+	static unsigned int perf_run_avg[PERF_RUN_AVG] = { 0 };
+	static unsigned int perf_run_avg_pos = 0;
+
+	// calculate most recent time
+	for (int i=0; i<PERF_COUNT; ++i)
+	{
+		if (perf_counter_total[i] != perf_counter_total_last[i])
+		{
+			retro_time_t time_last =  perf_counter_total[i] - perf_counter_total_last[i];
+			perf_counter_total_last[i] = perf_counter_total[i];
+			perf_time[i] = (int)time_last;
+			if (perf_time[i] > 999999) perf_time[i] = 999999;
+		}
+	}
+	// calculate run average
+	perf_run_avg[perf_run_avg_pos] = perf_time[PERF_RUN];
+	++perf_run_avg_pos;
+	if (perf_run_avg_pos > PERF_RUN_AVG) perf_run_avg_pos = 0;
+	int avg = 0;
+	for (int i=0; i < PERF_RUN_AVG; ++i) avg += perf_run_avg[i];
+	avg /= PERF_RUN_AVG;
+
+	// display on the statusbar
+	char msg[60];
+	snprintf(msg, sizeof(msg), "Perf: %6d (%6d) Bt %6d Sv %6d Rs %6d",
+		perf_time[PERF_RUN], avg,
+		perf_time[PERF_RUN_RESET],
+		perf_time[PERF_SERIALIZE],
+		perf_time[PERF_UNSERIALIZE]
+	);
+	Statusbar_AddMessage(msg,1000);
+}
+
+//
 // memory snapshot simulated file
 //
 
@@ -672,6 +751,8 @@ RETRO_API void retro_set_environment(retro_environment_t cb)
 	core_disk_set_environment(cb);
 	core_config_set_environment(cb);
 	core_midi_set_environment(cb);
+	core_perf_set_environment(cb);
+
 
 	// M3U/M3U8 need fullpath to find the linked files
 	{
@@ -695,9 +776,6 @@ RETRO_API void retro_set_environment(retro_environment_t cb)
 
 	// indicate serialization quirks
 	cb(RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS, (void*)&QUIRKS);
-
-	// future:
-	//   RETRO_ENVIRONMENT_GET_MIDI_INTERFACE
 }
 
 RETRO_API void retro_set_video_refresh(retro_video_refresh_t cb)
@@ -849,6 +927,8 @@ RETRO_API void retro_reset(void)
 
 RETRO_API void retro_run(void)
 {
+	PERF_START(PERF_RUN);
+
 	// undo overlay
 	//   would have done this directly after video_cb,
 	//   but RetroArch seems to display what is given at video_cb time only when running,
@@ -883,6 +963,7 @@ RETRO_API void retro_run(void)
 	// though this will result in a black screen until unpaused and allowed to render
 	if (core_runflags & CORE_RUNFLAG_RESET)
 	{
+		PERF_START(PERF_RUN_RESET);
 		core_config_reset(); // can apply boot parameters (e.g. CPU Freq)
 		bool cold = core_runflags & CORE_RUNFLAG_RESET_COLD;
 		if (!core_first_reset)
@@ -901,6 +982,7 @@ RETRO_API void retro_run(void)
 		// cold reset ejects the disks
 		if (cold)
 			core_disk_drive_reinsert();
+		PERF_STOP(PERF_RUN_RESET);
 	}
 
 	// force hatari to process the input queue before each frame starts
@@ -950,6 +1032,10 @@ RETRO_API void retro_run(void)
 		core_video_restore = true;
 	}
 
+	// performance counters (video_cb may block, so we don't want to include it in our performance measure)
+	PERF_STOP(PERF_RUN);
+	if (core_perf_display) core_perf_show();
+
 	// send video
 	video_cb(core_video_buffer,core_video_w,core_video_h,core_video_pitch);
 
@@ -993,6 +1079,8 @@ RETRO_API size_t retro_serialize_size(void)
 
 RETRO_API bool retro_serialize(void *data, size_t size)
 {
+	bool result = false;
+	PERF_START(PERF_SERIALIZE);
 	//retro_log(RETRO_LOG_DEBUG,"retro_serialize(%p,%d)\n",data,size);
 	snapshot_buffer_prepare(size);
 	if (core_serialize(true))
@@ -1004,13 +1092,16 @@ RETRO_API bool retro_serialize(void *data, size_t size)
 		//core_debug_bin(data,size,0); // dump uncompressed contents to log
 		//core_trace_next(20); // use to verify instructions after savestate are the same as after restore
 		//core_write_file_save("hatarib_serialize_debug.bin",size,data); // for analyzing the uncompressed contents
-		return true;
+		result = true;
 	}
-	return false;
+	PERF_STOP(PERF_SERIALIZE);
+	return result;
 }
 
 RETRO_API bool retro_unserialize(const void *data, size_t size)
 {
+	bool result = false;
+	PERF_START(PERF_UNSERIALIZE);
 	//retro_log(RETRO_LOG_DEBUG,"retro_unserialize(%p,%z)\n",data,size);
 	//core_debug_bin(data,size,0);
 	snapshot_buffer_prepare(size);
@@ -1019,9 +1110,10 @@ RETRO_API bool retro_unserialize(const void *data, size_t size)
 	{
 		core_audio_samples_pending = 0; // clear all pending audio
 		//core_trace_next(20); // verify instructions after savestate are the same as after restore
-		return true;
+		result = true;
 	}
-	return false;
+	PERF_STOP(PERF_UNSERIALIZE);
+	return result;
 }
 
 RETRO_API void retro_cheat_reset(void)

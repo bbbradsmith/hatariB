@@ -702,14 +702,6 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL}}, "0"
 	},
-	#if CORE_INPUT_DEBUG
-	{
-		"hatarib_input_debug", "Input Debug Log", NULL,
-		"For debugging input, dump polled inputs to the log every frame.",
-		NULL, "advanced",
-		{{"0","Off"},{"1","On"},{NULL,NULL}}, "0"
-	},
-	#endif
 	{
 		"hatarib_log_hatari", "Hatari Logging", NULL,
 		"Hatari's internal log messages can be sent to the RetroArch logs."
@@ -725,6 +717,21 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{NULL,NULL}
 		}, "1",
 	},
+	{
+		"hatarib_perf_counters", "Performance Counters", NULL,
+		"Display performance timing on the status bar: "
+		"frame (average) + last: reset, savestate, restore (μs)",
+		NULL, "advanced",
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "0"
+	},
+	#if CORE_INPUT_DEBUG
+	{
+		"hatarib_input_debug", "Input Debug Log", NULL,
+		"For debugging input, dump polled inputs to the log every frame.",
+		NULL, "advanced",
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "0"
+	},
+	#endif
 	//
 	// Pads
 	//
@@ -1179,10 +1186,11 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_prefetch") newparam.System.bCompatibleCpu = vi;
 	CFG_INT("hatarib_cycle_exact") newparam.System.bCycleExactCpu = vi;
 	CFG_INT("hatarib_mmu") newparam.System.bMMU = vi;
+	CFG_INT("hatarib_log_hatari") newparam.Log.nTextLogLevel = vi;
+	CFG_INT("hatarib_perf_counters") core_perf_display = (vi != 0);
 	#if CORE_INPUT_DEBUG
 		CFG_INT("hatarib_input_debug") core_input_debug = vi;
 	#endif
-	CFG_INT("hatarib_log_hatari") newparam.Log.nTextLogLevel = vi;
 	for (int i=0; i<4; ++i)
 	{
 		CFG_INT_PAD(i,"dpad"  ) core_stick_map[ i][CORE_INPUT_STICK_DPAD   ] = vi;
