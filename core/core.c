@@ -89,6 +89,7 @@ bool core_option_soft_reset = false;
 bool core_show_welcome = true;
 bool core_first_reset = true;
 bool core_perf_display = false;
+bool core_midi_enable = true;
 
 // internal
 
@@ -406,6 +407,9 @@ uint32_t midi_delta_time = 0;
 
 static void core_midi_set_environment(retro_environment_t cb)
 {
+	// Unfortunately I don't think we can prevent opening the device, since the environment setup happens before core options.
+	// So, core_midi_enable isn't relevant here.
+
 	// if we call this a second time after succeeding it seems to fail, so just keep the first one we get
 	static struct retro_midi_interface retro_midi_interface;
 	if (!retro_midi && cb(RETRO_ENVIRONMENT_GET_MIDI_INTERFACE,&retro_midi_interface))
@@ -429,7 +433,7 @@ static void core_midi_set_environment(retro_environment_t cb)
 bool core_midi_read(uint8_t* data)
 {
 	//retro_log(RETRO_LOG_DEBUG,"core_midi_read(%p)\n",data);
-	if (retro_midi && retro_midi->input_enabled() && retro_midi->read(data))
+	if (retro_midi && core_midi_enable && retro_midi->input_enabled() && retro_midi->read(data))
 	{
 		//retro_log(RETRO_LOG_DEBUG,"MIDI READ: %02X\n",*data);
 		return true;
@@ -440,7 +444,7 @@ bool core_midi_read(uint8_t* data)
 bool core_midi_write(uint8_t data)
 {
 	//retro_log(RETRO_LOG_DEBUG,"core_midi_write(%02X)\n",data);
-	if (retro_midi && retro_midi->output_enabled() && retro_midi->write(data,midi_delta_time))
+	if (retro_midi && core_midi_enable && retro_midi->output_enabled() && retro_midi->write(data,midi_delta_time))
 	{
 		//retro_log(RETRO_LOG_DEBUG,"MIDI WRITE: %02X (%d ms)\n",data,midi_delta_time);
 		midi_delta_time = 0;

@@ -542,7 +542,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	},
 	{
 		"hatarib_lpf", "Lowpass Filter", NULL,
-		"Reduces high frequency noise from sound output.",
+		"Reduces high frequency noise from sound output to reduce harshness.",
 		NULL, "audio",
 		{
 			{"0","None"},
@@ -561,6 +561,13 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{"1","IIR Highpass"},
 			{NULL,NULL}
 		}, "1"
+	},
+	{
+		"hatarib_midi", "MIDI Enable", NULL,
+		"MIDI I/O is enabled by default if you have a MIDI device set,"
+		" but it can be disabled here.",
+		NULL, "audio",
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
 	},
 	//
 	// Advanced
@@ -1176,6 +1183,7 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_ymmix") newparam.Sound.YmVolumeMixing = vi;
 	CFG_INT("hatarib_lpf") newparam.Sound.YmLpf = vi;
 	CFG_INT("hatarib_hpf") newparam.Sound.YmHpf = vi;
+	CFG_INT("hatarib_midi") core_midi_enable = (vi != 0);
 	CFG_INT("hatarib_driveb") { newparam.DiskImage.EnableDriveB = vi; core_disk_enable_b = vi; }
 	CFG_INT("hatarib_drivesingle") { newparam.DiskImage.DriveA_NumberOfHeads = newparam.DiskImage.DriveB_NumberOfHeads = vi; }
 	CFG_INT("hatarib_readonly_floppy") newparam.DiskImage.nWriteProtection = vi;
