@@ -804,7 +804,7 @@ void Configuration_SetDefault(void)
 	ConfigureParams.Rom.nEmuTosRegion = -1;
 	ConfigureParams.Rom.nEmuTosFramerate = -1;
 	ConfigureParams.Screen.bLowResolutionDouble = 0;
-	ConfigureParams.Screen.nCropOverscan = 1;
+	ConfigureParams.Screen.nCropOverscan = 2;
 	ConfigureParams.Sound.YmLpf = YM2149_LPF_FILTER_IIR;
 	ConfigureParams.Sound.YmHpf = YM2149_HPF_FILTER_IIR;
 	ConfigureParams.System.nBootCpuFreq = 8;

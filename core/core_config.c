@@ -456,12 +456,15 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		" but most software does not display anything in it.",
 		NULL, "video",
 		{
-			{"0","Hide"},
-			{"1","Full"},
-			{"2","Crop 720p (240, 480)"},
-			{"3","Crop 1080p (270, 540)"},
+			{"0","None"},
+			{"1","Small"},
+			{"2","Medium"},
+			{"3","Large"},
+			{"4","Extreme"},
+			{"5","Crop 720p (240, 480)"},
+			{"6","Crop 1080p (270, 540)"},
 			{NULL,NULL}
-		}, "1"
+		}, "2"
 	},
 	{
 		"hatarib_statusbar", "Status Bar", NULL,

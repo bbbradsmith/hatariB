@@ -270,10 +270,31 @@ static void Screen_SetBorderPixels(int leftX, int leftY, int zoom, int height, i
 	}
 
 #ifdef __LIBRETRO__
-	if (ConfigureParams.Screen.nCropOverscan >= 2)
+	if (ConfigureParams.Screen.nCropOverscan == 1) // Small
 	{
-		// target cropped height for 720p (2) or 1080p (3) with convenient integer scale
-		int th = (ConfigureParams.Screen.nCropOverscan == 3) ? 270 : 240;
+		nBorderPixelsTop = 16;
+		nBorderPixelsBottom = 16;
+		nBorderPixelsLeft = 16;
+		nBorderPixelsRight = 16;
+	}
+	else if (ConfigureParams.Screen.nCropOverscan == 2) // Medium
+	{
+		nBorderPixelsTop = 24;
+		nBorderPixelsBottom = 24;
+		nBorderPixelsLeft = 32;
+		nBorderPixelsRight = 32;
+	}
+	else if (ConfigureParams.Screen.nCropOverscan == 3) // Large
+	{
+		nBorderPixelsTop = 29;
+		nBorderPixelsBottom = 29;
+		nBorderPixelsLeft = 48;
+		nBorderPixelsRight = 48;
+	}
+	else if (ConfigureParams.Screen.nCropOverscan >= 5) // 720p/1080p crops
+	{
+		// target cropped height for 720p (5) or 1080p (6) with convenient integer scale
+		int th = (ConfigureParams.Screen.nCropOverscan == 6) ? 270 : 240;
 		if (height >= 300) th *= 2;
 
 		// temporarily undo the zoom to count output pixels
@@ -774,7 +795,7 @@ static void Screen_SetSTResolution(bool bForceChange)
 
 #ifdef __LIBRETRO__
 	maxW = 2*NUM_VISIBLE_LINE_PIXELS;
-	maxH = 2*NUM_VISIBLE_LINES+STATUSBAR_MAX_HEIGHT;
+	maxH = 2*(NUM_VISIBLE_LINES+STATUSBAR_MAX_HEIGHT);
 	if (!ConfigureParams.Screen.bLowResolutionDouble)
 	{
 		if (STRes == ST_LOW_RES)
