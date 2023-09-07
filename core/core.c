@@ -30,7 +30,7 @@
 #define DEBUG_RETRO_SET_ENVIRONMENT   0
 
 // make sure this matches ../info/hatarib.info
-#define CORE_VERSION   "v0.2 unstable preview " SHORTHASH " " __DATE__ " " __TIME__;
+#define CORE_VERSION   "v0.2 beta " SHORTHASH " " __DATE__ " " __TIME__;
 
 // make sure this matches ../info/hatarib.info
 static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|ipf|ctr|m3u|m3u8|zip|gz";

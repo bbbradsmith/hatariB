@@ -10,7 +10,7 @@ A [Libretro](https://www.libretro.com/) core integrating the [Hatari](https://ha
   * Raspberry Pi OS 32-bit
   * Raspberry Pi OS 64-bit
 * Current Release:
-  * **[hatariB v0.1](https://github.com/bbbradsmith/hatariB/releases/tag/0.1)** - 2023-08-22
+  * **[hatariB v0.2](https://github.com/bbbradsmith/hatariB/releases/tag/0.2)** - 2023-09-07
 * Unstable Build:
   * [Download](https://nightly.link/bbbradsmith/hatariB/workflows/build/main)
 * Recent Builds:
@@ -210,10 +210,17 @@ Possible Future Tasks:
 
 ## History
 
+* [hatariB v0.2](https://github.com/bbbradsmith/hatariB/releases/tag/0.2) - 2023-09-07
+  * Second beta test version.
+  * IPF support via dynamic loading of capsimg library.
+  * Raspberry Pi builds.
+  * Onscreen keyboard layouts for all known ST languages.
+  * Notification messages for hard disk load errors.
+  * Correct aspect ratios.
+  * Border cropping options.
+  * Performance profiling option.
 * [hatariB v0.1](https://github.com/bbbradsmith/hatariB/releases/tag/0.1) - 2023-08-22
   * First beta test version.
-
-No releases yet. See nightly builds above for a preview.
 
 ## License
 
