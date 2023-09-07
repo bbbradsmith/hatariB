@@ -1020,7 +1020,7 @@ RETRO_API void retro_run(void)
 	{
 		// automatic reset timer after halt
 		++core_crash_frames;
-		core_debug_int("core_crash_frames: ",core_crash_frames);
+		//core_debug_int("core_crash_frames: ",core_crash_frames);
 		if ((core_crash_frames / core_video_fps) >= core_crashtime)
 		{
 			Reset_Cold();
