@@ -205,7 +205,6 @@ See [DEVELOP.md](DEVELOP.md) for more details.
 Possible Future Tasks:
 * Can savestate restore be more lightweight? What takes so much CPU time? Are there any lingering spurious disk accesses? Also, I think netplay efficiency may rely on stable data positions, so double check this to see if structures are moving around from frame to frame (I suspect it only really changes at disk insert/eject).
 * Falcon microphone support? Need to find relevant Falcon software to test against.
-* Do some aspect ratio research and calculation for PIXEL_ASPECT_RATIO in core.c.
 * Printer emulation? Probably a pipe dream, as I can't think of a good way to handle it. Maybe a secondary graphical page display, and saving a PNG image to the saves folder after?
 * RS232 doesn't seem possible to support via Libretro, though maybe there is a way to work around this.
 

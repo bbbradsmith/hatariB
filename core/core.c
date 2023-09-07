@@ -233,16 +233,34 @@ void core_debug_bin(const char* data, int len, int offset)
 //  6 TT_HIGH_RES
 //  7 TT_LOW_RES
 // Currenlty only servicing the first 3 and the rest get a default.
-// TODO threw in some basic numbers I found, but need to double check and calculate for myself.
-//   NTSC/PAL should be computable by their pixel clock timings vs. other known systems.
-//   Is Atari monitor really 5/6, is monochrome really 1/1? Though, they were also adjustable.
+//
+// References for pixel aspect ratios:
+//   Atari monitors were adjustable, but figures here are based on various service manuals:
+//      https://docs.dev-docs.org/
+//   The numbers given aren't always the same, unfortunately, and historically people adjusted them at home, too.
+//   Trying to pick something representative.
+//   SM124 (monochrome monitor) manuals give 210x130mm as a target picture size:
+//      (210/640)/(130/400) = 105/104 = ~1.010
+//   SC1224 (color monitor) manuals most often give 216x160mm:
+//      (216/320)/(160/200) = 27/32 = 0.84375
+//   For TVs, each pixel is 1/4 of the ST's 32.04245 MHz clock:
+//     https://forums.atariage.com/topic/353761-mystery-of-the-sts-weird-clock-oscillator-frequency-choices/
+//   NTSC and PAL standardized square pixels at a rate of 12+3/11 MHz and 14+3/4 MHz for 480i/576i. (Halve this for 240p/288p.)
+//     https://en.wikipedia.org/wiki/Pixel_aspect_ratio#Analog-to-digital_conversion
+//   NTSC: ((12+3/11)/2) / (32.04245/4) = ~0.766
+//   PAL:  ((14+3/4 )/2) / (32.04245/4) = ~0.921
+//   Side note according to article above:
+//     NTSC ST uses a 227 instead of 227.5 colorburst scanline, and PAL 283 instead of 283.75.
+//     STe may have a slightly higher base clock without adjusting the colorburst.
+//     This difference is negligible for pixel aspect ratio, but would affect color artifact emulation if that were attempted.
+//
 #define RESOLUTION_COUNT 4
 static const double PIXEL_ASPECT_RATIO[4][RESOLUTION_COUNT] = {
 	//  low,   med,  high, default
-	{ 1./1., 1./1., 1./1., 1./1. }, // square pixels
-	{ 5./6., 5./6., 1./1., 5./6. }, // Atari monitor
-	{ 0.846, 0.846, 0.846, 0.846 }, // NTSC TV (monochrome is fiction)
-	{ 1.040, 1.040, 1.040, 1.040 }, // PAL TV (monochrome is fiction)
+	{ 1.000, 1.000, 1.000, 1.000 }, // square pixels
+	{ 0.844, 0.844, 1.010, 0.844 }, // Atari monitor
+	{ 0.766, 0.766, 0.766, 0.766 }, // NTSC TV (high resolution is incompatible)
+	{ 0.921, 0.921, 0.921, 0.921 }, // PAL TV (high resolution is incompatible)
 };
 
 void core_video_update(void* data, int w, int h, int pitch, int resolution)
