@@ -178,11 +178,12 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * The [MUNT MT-32 Emulator](url=https://sourceforge.net/projects/munt/) is recommended. It can install on your system as a MIDI device, which you can use with MT-32 supporting Atari ST games.
   * MIDI Maze is reported as incompatible for Hatari 2.4.1, but it appears this is being improved for 2.5.0, so perhaps it will eventually be playable over emulated MIDI.
 * Accuracy:
-  * Some of the default core options are chosen to favour lower CPU usage, and faster load times, but these can be adjusted.
-  * *System > Fast Floppy* gives artificially faster disk access, on by default.
-  * *System > Patch TOS for Fast Boot* modifies known TOS images to boot faster, on by default.
-  * *System > CPU Prefetch Emulation* - Emulates memory prefetch, needed for some games. On by default.
-  * *System > Cycle-exact Cache Emulation* - Very accurate cache emulation, not usually needed for compatibility. Off by default.
+  * Some of the default core options are chosen to favour faster load times, but these can be adjusted:
+    * *System > Fast Floppy* gives artificially faster disk access, on by default.
+    * *System > Patch TOS for Fast Boot* modifies known TOS images to boot faster, on by default.
+  * Other accuracy options might be adjusted for lower CPU usage:
+    * *System > CPU Prefetch Emulation* - Emulates memory prefetch, needed for some games. On by default.
+    * *System > Cycle-exact Cache Emulation* - More accurate cache emulation, needed for some games. On by default.
   * See the *Advanced* category for other relevant options.
 * Savestates:
   * Savestates are seamless, allowing run-ahead and netplay in theory, but the restore action is very CPU intensive and may cause stuttering in the live output.

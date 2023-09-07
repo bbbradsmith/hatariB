@@ -813,7 +813,6 @@ void Configuration_SetDefault(void)
 	ConfigureParams.Sound.nPlaybackFreq = 48000;
 	ConfigureParams.DiskImage.FastFloppy = true;
 	ConfigureParams.System.bFastBoot = true;
-	ConfigureParams.System.bCycleExactCpu = false;
 	ConfigureParams.HardDisk.nWriteProtection = WRITEPROT_ON;
 	ConfigureParams.Midi.bEnableMidi = true;
 #endif

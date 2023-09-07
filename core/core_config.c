@@ -704,7 +704,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		"hatarib_cycle_exact", "Cycle-exact Cache Emulation", NULL,
 		"Causes restart!! Uses more CPU power, more accurate.",
 		NULL, "advanced",
-		{{"0","Off"},{"1","On"},{NULL,NULL}}, "0"
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
 	},
 	{
 		"hatarib_mmu", "MMU Emulation", NULL,
