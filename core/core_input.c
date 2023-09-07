@@ -214,6 +214,7 @@ void core_input_osk_close(void)
 		// OSK_CLOSED used to reset OSK triggers so they can't re-open themselves
 		AUX_SET(true,OSK_CLOSED);
 		core_osk_mode = CORE_OSK_OFF;
+		core_osk_button_last = 0;
 	}
 }
 
@@ -943,7 +944,7 @@ void core_input_update(void)
 		if (core_osk_mode == CORE_OSK_OFF  )
 		{
 			core_osk_mode = CORE_OSK_PAUSE;
-			core_osk_begin = true;
+			core_osk_begin = 1;
 		}
 		else if (core_osk_mode == CORE_OSK_PAUSE)
 		{
@@ -964,14 +965,14 @@ void core_input_update(void)
 	if (osk_on && !AUX(OSK_ON) && (core_osk_mode == CORE_OSK_OFF))
 	{
 		core_osk_mode = CORE_OSK_KEY;
-		core_osk_begin = true;
+		core_osk_begin = 1;
 	}
 	AUX_SET(osk_on,OSK_ON);
 
 	if (osk_shot && !AUX(OSK_SHOT) && (core_osk_mode == CORE_OSK_OFF))
 	{
 		core_osk_mode = CORE_OSK_KEY_SHOT;
-		core_osk_begin = true;
+		core_osk_begin = 1;
 	}
 	AUX_SET(osk_shot,OSK_SHOT);
 
@@ -986,7 +987,7 @@ void core_input_update(void)
 	osk_new = (osk_new ^ aux_buttons) & aux_buttons & AUX_OSK_ALL; // OSK buttons pressed this frame
 	if (core_osk_mode >= CORE_OSK_KEY)
 	{
-		core_osk_input(osk_new);
+		core_osk_input(osk_new, aux_buttons & AUX_OSK_ALL);
 	}
 
 	#if CORE_INPUT_DEBUG

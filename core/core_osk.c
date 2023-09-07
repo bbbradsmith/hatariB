@@ -10,14 +10,22 @@ extern SDL_Surface* sdlscrn;
 extern SDL_Surface* pSdlGuiScrn;
 extern void SDLGui_DirectBox(int x, int y, int w, int h, int offset, bool focused, bool selected);
 
+// core settings
+int core_pause_osk = 2; // help screen default
+int32_t core_osk_press_len = 5;
+int32_t core_osk_repeat_delay = 500;
+int32_t core_osk_repeat_rate = 150;
+
+// state
 int32_t core_osk_layout = 0;
 int32_t core_osk_mode = CORE_OSK_OFF;
-int32_t core_osk_press_len = 5;
-int core_pause_osk = 2; // help screen default
-bool core_osk_begin = false; // true when first entered pause/osk
-
+int32_t core_osk_repeat_time = 0;
+uint32_t core_osk_button_last = 0;
+uint8_t core_osk_begin = 0; // 1 when first entered pause/osk
+uint8_t core_osk_hold_ready = 0;
 int32_t core_osk_pos_r;
 int32_t core_osk_pos_c;
+int32_t core_osk_pos_space; // last column before moving to spacebar so up can return to it and not always Z
 uint8_t core_osk_pos_display;
 
 void* screen = NULL;
@@ -203,10 +211,33 @@ static void render_keyboard(void)
 	}
 }
 
-static void input_keyboard(uint32_t key)
+static void input_keyboard(uint32_t key, uint32_t held)
 {
 	int c = core_osk_pos_c;
 	int r = core_osk_pos_r;
+	bool repeat = false;
+
+	// repeat directionals due to hold
+	if (core_osk_repeat_time > 0)
+	{
+		if (held == core_osk_button_last)
+		{
+			--core_osk_repeat_time;
+			if (core_osk_repeat_time == 0)
+			{
+				repeat = true;
+				key |= (held & (AUX_OSK_U | AUX_OSK_D | AUX_OSK_L | AUX_OSK_R));
+			}
+		}
+		else core_osk_repeat_time = 0;
+	}
+	core_osk_button_last = held;
+
+	if (key == 0 && (held & AUX_OSK_CONFIRM) == 0)
+	{
+		core_osk_hold_ready = 1; // can't hold a key until CONFIRM has been released once
+		return; // no new presses, repeats, or held key
+	}
 
 	if (key & AUX_OSK_POS) core_osk_pos_display ^= 1; // flip display position
 
@@ -223,25 +254,48 @@ static void input_keyboard(uint32_t key)
 	{
 		// if it's a mod key, toggle it
 		int k = osk_grid[r][c];
-		if (k >= 0 && osk_row[r][k].mod)
+		if (k >= 0)
 		{
-			osk_press_mod ^= osk_row[r][k].mod;
-		}
-		else
-		{
-			// activate the key
-			osk_press_key = osk_row[r][k].key;
-			osk_press_time = core_osk_press_len;
-			if (core_osk_mode == CORE_OSK_KEY_SHOT) // one-shot exist on activation
+			if (osk_row[r][k].mod)
 			{
-				core_input_osk_close();
-				return;
+				osk_press_mod ^= osk_row[r][k].mod;
 			}
+			else
+			{
+				// activate the key
+				osk_press_key = osk_row[r][k].key;
+				osk_press_time = core_osk_press_len;
+				if (core_osk_mode == CORE_OSK_KEY_SHOT) // one-shot exist on activation
+				{
+					core_input_osk_close();
+					return;
+				}
+			}
+		}
+	}
+	else if (held & AUX_OSK_CONFIRM &&
+	         core_osk_mode == CORE_OSK_KEY &&
+	         core_osk_hold_ready != 0 &&
+	         osk_press_time == 0) // can hold a key down when not in one-shot mode
+	{
+		int k = osk_grid[r][c];
+		if (k >= 0 && !osk_row[r][k].mod)
+		{
+			osk_press_key = osk_row[r][k].key;
+			osk_press_time = 1; // only add 1 frame at a time for snappy release from hold
 		}
 	}
 
 	// exit if no motion
 	if (!(key & (AUX_OSK_U | AUX_OSK_D | AUX_OSK_L | AUX_OSK_R))) return;
+
+	// a direction has been preseed, begin repeat timer
+	if (core_osk_repeat_delay > 0)
+	{
+		int32_t ms = repeat ? core_osk_repeat_rate : core_osk_repeat_delay;
+		core_osk_repeat_time = (ms * core_video_fps) / 1000;
+		if (core_osk_repeat_time < 1) core_osk_repeat_time = 1;
+	}
 
 	// if not on a key, return to the leftmost valid key on grid
 	if (osk_grid[r][c] < 0)
@@ -258,6 +312,7 @@ static void input_keyboard(uint32_t key)
 		int nc = c-1;
 		for (; (nc >= 0) && (osk_grid[r][nc] == gk || osk_grid[r][nc] < 0); --nc);
 		if (nc >= 0) c = nc;
+		core_osk_pos_space = -1;
 	}
 	if (key & AUX_OSK_R)
 	{
@@ -265,28 +320,41 @@ static void input_keyboard(uint32_t key)
 		int nc = c+1;
 		for (; (nc < OSK_COLS) && (osk_grid[r][nc] == gk || osk_grid[r][nc] < 0); ++nc);
 		if (nc < OSK_COLS) c = nc;
+		core_osk_pos_space = -1;
 	}
 	if (key & AUX_OSK_U)
 	{
-		// move to the leftmost cell of key first
-		while((c > 0) && (osk_grid[r][c] == osk_grid[r][c-1])) --c;
-		// search up for non-empty key
-		int nr = r-1;
-		for (; (nr >= 0) && (osk_grid[nr][c] < 0); --nr);
-		if (nr >= 0)
+		// special case moving up from space bar
+		if (r == 5 && core_osk_pos_space >= 0 && osk_grid[4][core_osk_pos_space] >= 0)
 		{
-			r = nr;
+			r = 4;
+			c = core_osk_pos_space;
+			core_osk_pos_space = -1;
 		}
-		else // retry from rightmost side
+		else
 		{
-			while((c < (OSK_COLS-1)) && (osk_grid[r][c] == osk_grid[r][c+1])) ++c;
-			nr = r-1;
+			// move to the leftmost cell of key first
+			while((c > 0) && (osk_grid[r][c] == osk_grid[r][c-1])) --c;
+			// search up for non-empty key
+			int nr = r-1;
 			for (; (nr >= 0) && (osk_grid[nr][c] < 0); --nr);
-			if (nr >= 0) r = nr;
+			if (nr >= 0)
+			{
+				r = nr;
+			}
+			else // retry from rightmost side
+			{
+				while((c < (OSK_COLS-1)) && (osk_grid[r][c] == osk_grid[r][c+1])) ++c;
+				nr = r-1;
+				for (; (nr >= 0) && (osk_grid[nr][c] < 0); --nr);
+				if (nr >= 0) r = nr;
+			}
 		}
 	}
 	if (key & AUX_OSK_D)
 	{
+		// remember last column if potentially moving to space bar
+		if (r == 4) core_osk_pos_space = c;
 		// move to the rightmost cell of key first
 		while((c < (OSK_COLS-1)) && (osk_grid[r][c] == osk_grid[r][c+1])) ++c;
 		// search down
@@ -303,6 +371,10 @@ static void input_keyboard(uint32_t key)
 			for (; (nr < OSK_ROWS) && (osk_grid[nr][c] < 0); ++nr);
 			if (nr < OSK_ROWS) r = nr;
 		}
+		// forget the space column if not on space bar (space bar is defined as: row 5, cells >= 10)
+		int k = osk_grid[r][c];
+		if (r != 5 || k < 0 || osk_row[r][k].cells < 10)
+			core_osk_pos_space = -1;
 	}
 
 	core_osk_pos_c = c;
@@ -487,7 +559,7 @@ static void render_pause(void)
 // public interface
 //
 
-void core_osk_input(uint32_t osk_new)
+void core_osk_input(uint32_t osk_new, uint32_t osk_now)
 {
 	if (core_osk_mode < CORE_OSK_KEY) return; // pause menu does not take input
 	if (core_osk_begin)
@@ -497,9 +569,12 @@ void core_osk_input(uint32_t osk_new)
 		osk_press_mod = 0;
 		osk_press_key = 0;
 		osk_press_time = 0;
+		core_osk_button_last = 0;
+		core_osk_repeat_time = 0;
+		core_osk_hold_ready = 0;
 		return;
 	}
-	if (osk_new) input_keyboard(osk_new);
+	input_keyboard(osk_new, osk_now);
 }
 
 void core_osk_render(void* video_buffer, int w, int h, int pitch)
@@ -551,7 +626,7 @@ void core_osk_render(void* video_buffer, int w, int h, int pitch)
 	else
 		render_pause();
 	
-	core_osk_begin = false;
+	core_osk_begin = 0;
 }
 
 void core_osk_restore(void* video_buffer, int w, int h, int pitch)
@@ -568,11 +643,15 @@ void core_osk_serialize(void)
 {
 	// pause screen static state doesn't matter, no impact on emulation
 	// but the on-screen keyboard state does, and needs its status restored
-	core_serialize_int32(&core_osk_mode);
 	core_serialize_int32(&core_osk_layout);
-	core_serialize_int32(&core_osk_press_len);
-	core_serialize_int32(&core_osk_pos_c);
+	core_serialize_int32(&core_osk_mode);
+	core_serialize_int32(&core_osk_repeat_time);
+	core_serialize_uint32(&core_osk_button_last);
+	core_serialize_uint8(&core_osk_begin);
+	core_serialize_uint8(&core_osk_hold_ready);
 	core_serialize_int32(&core_osk_pos_r);
+	core_serialize_int32(&core_osk_pos_c);
+	core_serialize_int32(&core_osk_pos_space);
 	core_serialize_uint8(&core_osk_pos_display);
 }
 
@@ -581,5 +660,9 @@ void core_osk_init()
 	core_osk_layout_set = -1; // reinitialize layout
 	core_osk_pos_r = 5;
 	core_osk_pos_c = 10; // start on space bar?
+	core_osk_pos_space = -1;
 	core_osk_pos_display = 1; // bottom by default
+	core_osk_button_last = 0;
+	core_osk_repeat_time = 0;
+	core_osk_hold_ready = 0;
 }

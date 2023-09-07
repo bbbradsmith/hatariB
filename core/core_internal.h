@@ -21,6 +21,7 @@ extern int core_crashtime;
 extern bool core_show_welcome;
 extern bool core_perf_display;
 extern bool core_midi_enable;
+extern int core_video_fps;
 
 extern bool core_midi_read(uint8_t* data);
 extern bool core_midi_write(uint8_t data);
@@ -191,16 +192,19 @@ extern int core_oskey_map[4][CORE_INPUT_OSKEY_TOTAL];
 #define AUX_OSK_POS      0x00400000
 #define AUX_OSK_ALL      0x00FF0000
 
-extern void core_osk_input(uint32_t osk_new); // bitfield of new OSK button presses (sent by core_input_poll)
+extern void core_osk_input(uint32_t osk_new, uint32_t osk_now); // bitfield of new OSK button presses (sent by core_input_poll)
 extern void core_osk_render(void* video_buffer, int w, int h, int pitch); // call to render overlay over video_buffer
 extern void core_osk_restore(void* video_buffer, int w, int h, int pitch); // call to restore buffer before overlay
 extern void core_osk_serialize(void);
 extern void core_osk_init(void);
 
 extern int core_pause_osk; // pause screen appearance setting
-extern bool core_osk_begin; // set true when pause/osk is toggled on
+extern uint8_t core_osk_begin; // set 1 when pause/osk is toggled on
 extern int32_t core_osk_layout;
 extern int32_t core_osk_press_len; // frames to press key
+extern int32_t core_osk_repeat_delay; // ms before direction repeat
+extern int32_t core_osk_repeat_rate; // ms between direction repeat
+extern uint32_t core_osk_button_last;
 
 #define CORE_OSK_OFF        0
 #define CORE_OSK_PAUSE      1

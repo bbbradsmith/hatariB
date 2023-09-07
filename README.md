@@ -210,6 +210,11 @@ Possible Future Tasks:
 
 ## History
 
+* hatariB v0.3 - Unreleased
+  * On-screen keyboard improvements:
+    * Can now hold the key continuously.
+    * Auto-repeat for a held direction.
+    * Pressing up from space bar now remembers last key instead of always going to Z.
 * [hatariB v0.2](https://github.com/bbbradsmith/hatariB/releases/tag/0.2) - 2023-09-07
   * Second beta test version.
   * IPF support via dynamic loading of capsimg library.
