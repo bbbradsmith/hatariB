@@ -231,7 +231,7 @@ extern void core_debug_printf(const char* fmt, ...)
 	va_start(args, fmt);
 	vsnprintf(line,sizeof(line),fmt,args);
 	va_end(args);
-	line[255] = 0;
+	line[sizeof(line)-1] = 0;
 	retro_log(RETRO_LOG_DEBUG,line);
 }
 

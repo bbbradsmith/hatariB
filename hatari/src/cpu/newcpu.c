@@ -912,6 +912,9 @@ static void set_x_ifetches(void)
 void (*x_do_cycles_hatari_blitter_save)(uae_u32);
 void (*x_do_cycles_pre_hatari_blitter_save)(uae_u32);
 void (*x_do_cycles_post_hatari_blitter_save)(uae_u32, uae_u32);
+#ifdef __LIBRETRO__
+static bool blitter_x_funcs = false;
+#endif
 
 static void do_cycles_ce_post_hatari_blitter (uae_u32 cycles, uae_u32 v)
 {
@@ -920,6 +923,9 @@ static void do_cycles_ce_post_hatari_blitter (uae_u32 cycles, uae_u32 v)
 
 void set_x_funcs_hatari_blitter (int flag)
 {
+#ifdef __LIBRETRO__
+	blitter_x_funcs = (flag != 0);
+#endif
 	if ( flag == 0 )
 	{
 //fprintf ( stderr , "restore blitter x_funcs\n" );
@@ -1520,6 +1526,14 @@ static void set_x_funcs (void)
 			dcache_bput = put_byte030_cicheck;
 		}
 	}
+#ifdef __LIBRETRO__
+	// if blitter was active when a frame ended,
+	// the next frame's run loop will enter and overwrite the blitter's x_funcs override,
+	// so we are restoring them here if they were active.
+	// Note that restore_state may have the potential to call set_x_funcs_hatari_blitter before set_x_funcs,
+	// which may not yet have valid x_funcs for it to save. Doing it redundantly here ensures it saves the correct functions.
+	if (blitter_x_funcs) set_x_funcs_hatari_blitter(1);
+#endif
 }
 
 bool can_cpu_tracer (void)
@@ -7370,6 +7384,7 @@ void m68k_go (int may_quit)
 {
 	hardboot = 1;
 	startup = 1;
+	blitter_x_funcs = false;
 #else
 void m68k_go (int may_quit)
 {
@@ -7440,6 +7455,9 @@ void m68k_go_frame(void)
 			vsync_counter = 0;
 			quit_program = 0;
 			hardboot = 0;
+#ifdef __LIBRETRO__
+			blitter_x_funcs = false;
+#endif
 
 #ifdef SAVESTATE
 			if (savestate_state == STATE_DORESTORE)

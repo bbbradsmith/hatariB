@@ -230,6 +230,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
     * `m68k_go_quit` provides some final shutdown when exiting the emulation loop. This is called in `retro_deinit`.
     * When performing a configuration change or other full reset, we also use `m68k_go_quit -> m68k_go` to provide the equivalent of exiting and re-entering the original `m68k_go`, which the stand-alone Hatari does during resets.
   * Use `LOG_TRACE_PRINT` to direct traces to the log instead of the CPU system's separate log file.
+  * Track and restore blitter's override of `set_x_func` so that leaving the frame loop while the blitter is active does not hang the blitter.
 * **hatari/src/debug/debugui.c**
   * Disable `SDL_SetRelativeMouseMode`
 * **hatari/src/debug/log.c**
