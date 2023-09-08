@@ -45,6 +45,7 @@ extern void core_info_msg(const char* msg);
 extern void core_debug_bin(const char* data, int len, int offset); // hex dump to log (offset is added to the address display)
 extern void core_debug_hatari(bool error, const char* msg); // log message from hatari
 extern void core_trace_next(int count); // if ENABLE_TRACING=1 will print the next "count" lines of CPU trace to log
+extern void core_debug_printf(const char* fmt, ...); // DEBUG log, expects newline in fmt.
 
 // send video/audio frame update to core
 extern void core_video_update(void* data, int width, int height, int pitch, int resolution);

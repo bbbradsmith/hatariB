@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 // large enough for TT high resolution 1280x960 at 32bpp
 #define VIDEO_MAX_W   2048
@@ -221,6 +222,17 @@ void core_debug_bin(const char* data, int len, int offset)
 		}
 		retro_log(RETRO_LOG_DEBUG,"%010X: %s\n",offset,line);
 	}
+}
+
+extern void core_debug_printf(const char* fmt, ...)
+{
+	static char line[256];
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(line,sizeof(line),fmt,args);
+	va_end(args);
+	line[255] = 0;
+	retro_log(RETRO_LOG_DEBUG,line);
 }
 
 // resolution values are in hatari/src/includes/screen.h:
