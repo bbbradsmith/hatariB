@@ -94,6 +94,7 @@ extern void core_disk_unload_game(void);
 extern void core_disk_reindex(void); // call after loading a savestate to rebuild disk cache indices
 extern void core_disk_drive_toggle(void);
 extern void core_disk_drive_reinsert(void); // used after cold reboot
+extern void core_disk_swap(void); // convenience for: eject, next disk, insert
 
 extern unsigned get_num_images(void);
 extern bool get_image_label(unsigned index, char* label, size_t len);

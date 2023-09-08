@@ -216,6 +216,7 @@ Possible Future Tasks:
     * Auto-repeat for a held direction.
     * Pressing up from space bar now remembers last key instead of always going to Z.
   * Fixed blitter hang when using cycle-accurate cache emulation.
+  * Single button disk swap.
 * [hatariB v0.2](https://github.com/bbbradsmith/hatariB/releases/tag/0.2) - 2023-09-07
   * Second beta test version.
   * IPF support via dynamic loading of capsimg library.

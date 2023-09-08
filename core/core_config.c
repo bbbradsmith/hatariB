@@ -873,23 +873,24 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{"5","On-Screen Keyboard"}, \
 		{"6","On-Screen Keyboard One-Shot"}, \
 		{"7","Select Floppy Drive"}, \
-		{"8","Help Screen / Pause"}, \
-		{"9","Joystick Up"}, \
-		{"10","Joystick Down"}, \
-		{"11","Joystick Left"}, \
-		{"12","Joystick Right"}, \
-		{"13","STE Button A"}, \
-		{"14","STE Button B"}, \
-		{"15","STE Button C"}, \
-		{"16","STE Button Option"}, \
-		{"17","STE Button Pause"}, \
-		{"18","Mouse Speed Slow"}, \
-		{"19","Mouse Speed Fast"}, \
-		{"20","Soft Reset"}, \
-		{"21","Hard Reset"}, \
-		{"22","Toggle Status Bar"}, \
-		{"23","Key Space"}, \
-		{"24","Key Return"}, \
+		{"8","Swap to Next Disk"}, \
+		{"9","Help Screen / Pause"}, \
+		{"10","Joystick Up"}, \
+		{"11","Joystick Down"}, \
+		{"12","Joystick Left"}, \
+		{"13","Joystick Right"}, \
+		{"14","STE Button A"}, \
+		{"15","STE Button B"}, \
+		{"16","STE Button C"}, \
+		{"17","STE Button Option"}, \
+		{"18","STE Button Pause"}, \
+		{"19","Mouse Speed Slow"}, \
+		{"20","Mouse Speed Fast"}, \
+		{"21","Soft Reset"}, \
+		{"22","Hard Reset"}, \
+		{"23","Toggle Status Bar"}, \
+		{"24","Key Space"}, \
+		{"25","Key Return"}, \
 		{"","Key Up"}, \
 		{"","Key Down"}, \
 		{"","Key Left"}, \
@@ -1015,19 +1016,19 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	{ "hatarib_pad" padnum "_select", "Pad " padnum " Select", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_BUTTON(), "7" }, /* select floppy drive */ \
 	{ "hatarib_pad" padnum "_start", "Pad " padnum " Start", NULL, NULL, NULL, "pad" padnum, \
-		OPTION_PAD_BUTTON(), "8" }, /* help screen */ \
+		OPTION_PAD_BUTTON(), "9" }, /* help screen */ \
 	{ "hatarib_pad" padnum "_l1", "Pad " padnum " L1", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_BUTTON(), "5" }, /* on-screen keyboard */ \
 	{ "hatarib_pad" padnum "_r1", "Pad " padnum " R1", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_BUTTON(), "6" }, /* on-screen keyboard one-shot */ \
 	{ "hatarib_pad" padnum "_l2", "Pad " padnum " L2", NULL, NULL, NULL, "pad" padnum, \
-		OPTION_PAD_BUTTON(), "18" }, /* mouse slow */ \
+		OPTION_PAD_BUTTON(), "19" }, /* mouse slow */ \
 	{ "hatarib_pad" padnum "_r2", "Pad " padnum " R2", NULL, NULL, NULL, "pad" padnum, \
-		OPTION_PAD_BUTTON(), "19" }, /* mouse fast */ \
+		OPTION_PAD_BUTTON(), "20" }, /* mouse fast */ \
 	{ "hatarib_pad" padnum "_l3", "Pad " padnum " L3", NULL, NULL, NULL, "pad" padnum, \
-		OPTION_PAD_BUTTON(), "23" }, /* key space */ \
+		OPTION_PAD_BUTTON(), "24" }, /* key space */ \
 	{ "hatarib_pad" padnum "_r3", "Pad " padnum " R3", NULL, NULL, NULL, "pad" padnum, \
-		OPTION_PAD_BUTTON(), "24" }, /* key return */ \
+		OPTION_PAD_BUTTON(), "25" }, /* key return */ \
 	{ "hatarib_pad" padnum "_lstick", "Pad " padnum " Left Analog Stick", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_STICK(), "1" }, /* joystick */ \
 	{ "hatarib_pad" padnum "_rstick", "Pad " padnum " Right Analog Stick", NULL, NULL, NULL, "pad" padnum, \

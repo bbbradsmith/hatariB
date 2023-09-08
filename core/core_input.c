@@ -24,10 +24,11 @@ const float DPAD_MOUSE_SPEED = 0.3; // scale of d-pad relative to analog max
 #define AUX_OSK_ON       0x00000008
 #define AUX_OSK_SHOT     0x00000010
 #define AUX_DRIVE_SWAP   0x00000020
-#define AUX_WARM_BOOT    0x00000040
-#define AUX_COLD_BOOT    0x00000080
-#define AUX_STATUSBAR    0x00000100
-#define AUX_OSK_CLOSED   0x00000200
+#define AUX_DISK_SWAP    0x00000040
+#define AUX_WARM_BOOT    0x00000080
+#define AUX_COLD_BOOT    0x00000100
+#define AUX_STATUSBAR    0x00000200
+#define AUX_OSK_CLOSED   0x00000400
 
 // in core_internal.h
 //#define AUX_OSK_U        0x00010000
@@ -394,6 +395,7 @@ void core_input_update(void)
 	int32_t vjoy_stick[JOY_PORTS] = { 0,0,0,0,0,0 };
 	// accumulated auxiliary button state
 	bool drive_swap = false;
+	bool disk_swap = false;
 	bool warm_boot = false;
 	bool mouse_slow = false;
 	bool mouse_fast = false;
@@ -713,53 +715,56 @@ void core_input_update(void)
 					case 7: // Select Floppy Drive
 						drive_swap = true;
 						break;
-					case 8: // Help Screen
+					case 8: // Swap to Next Disk
+						disk_swap = true;
+						break;
+					case 9: // Help Screen
 						pause = true;
 						break;
-					case 9: // Joystick Up
+					case 10: // Joystick Up
 						if (j < JOY_PORTS) vjoy_stick[j] |= JOY_STICK_U;
 						break;
-					case 10: // Joystick Down
+					case 11: // Joystick Down
 						if (j < JOY_PORTS) vjoy_stick[j] |= JOY_STICK_D;
 						break;
-					case 11: // Joystick Left
+					case 12: // Joystick Left
 						if (j < JOY_PORTS) vjoy_stick[j] |= JOY_STICK_L;
 						break;
-					case 12: // Joystick Right
+					case 13: // Joystick Right
 						if (j < JOY_PORTS) vjoy_stick[j] |= JOY_STICK_R;
 						break;
-					case 13: // STE Button A
+					case 14: // STE Button A
 						if (j < JOY_PORTS)
 						{
 							vjoy_stick[j] |= JOY_STICK_F;
 							vjoy_fire[j] |= JOY_FIRE_A;
 						}
 						break;
-					case 14: // STE Button B
+					case 15: // STE Button B
 						if (j < JOY_PORTS) vjoy_fire[j] |= JOY_FIRE_B;
 						break;
-					case 15: // STE Button C
+					case 16: // STE Button C
 						if (j < JOY_PORTS) vjoy_fire[j] |= JOY_FIRE_C;
 						break;
-					case 16: // STE Button Option
+					case 17: // STE Button Option
 						if (j < JOY_PORTS) vjoy_fire[j] |= JOY_FIRE_OPT;
 						break;
-					case 17: // STE Button Pause
+					case 18: // STE Button Pause
 						if (j < JOY_PORTS) vjoy_fire[j] |= JOY_FIRE_PAUSE;
 						break;
-					case 18: // Mouse Speed Slow
+					case 19: // Mouse Speed Slow
 						mouse_slow = true;
 						break;
-					case 19: //  Mouse Speed Fast
+					case 20: //  Mouse Speed Fast
 						mouse_fast = true;
 						break;
-					case 20: // Soft Reset
+					case 21: // Soft Reset
 						warm_boot = true;
 						break;
-					case 21: // Hard Reset
+					case 22: // Hard Reset
 						cold_boot = true;
 						break;
-					case 22: // Toggle Statusbar
+					case 23: // Toggle Statusbar
 						statusbar = true;
 						break;
 					}
@@ -906,6 +911,7 @@ void core_input_update(void)
 	{
 		// cancel auxiliary buttons
 		drive_swap = false;
+		disk_swap = false;
 		warm_boot = false;
 		cold_boot = false;
 		statusbar = false;
@@ -926,6 +932,10 @@ void core_input_update(void)
 	// select drive
 	if (drive_swap && !AUX(DRIVE_SWAP)) core_disk_drive_toggle();
 	AUX_SET(drive_swap,DRIVE_SWAP);
+
+	// swap disk
+	if (disk_swap && !AUX(DISK_SWAP)) core_disk_swap();
+	AUX_SET(disk_swap,DISK_SWAP);
 
 	// perform reset
 	if (warm_boot && !AUX(WARM_BOOT)) Reset_Warm();

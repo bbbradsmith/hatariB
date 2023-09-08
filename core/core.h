@@ -58,7 +58,8 @@ extern void core_signal_halt(void);
 extern void core_signal_reset(bool cold);
 extern void core_signal_tos_fail(void);
 extern void core_signal_alert(const char* alertmsg); // onscreen notifications (INFO)
-extern void core_signal_error(const char* msg, const char* suffix); // onscreen notification + suffix (ERROR)
+extern void core_signal_alert2(const char* alertmsg, const char* suffix); // onscreen notifications (INFO)
+extern void core_signal_error(const char* alertmsg, const char* suffix); // onscreen notification + suffix (ERROR)
 
 // input translation
 typedef union SDL_Event* core_event_t;

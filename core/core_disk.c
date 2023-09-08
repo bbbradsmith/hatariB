@@ -865,6 +865,17 @@ void core_disk_drive_reinsert(void)
 	drive = restore_drive;
 }
 
+void core_disk_swap(void) // convenience to eject and swap to next disk
+{
+	set_eject_state(true);
+	unsigned int i = get_image_index();
+	i += 1;
+	if (i >= get_num_images()) i = 0;
+	set_image_index(i);
+	set_eject_state(false);
+	core_signal_alert2((drive==0) ? "[A:] " : "[B:] ",disks[image_index[drive]].filename);
+}
+
 //
 // saving
 //

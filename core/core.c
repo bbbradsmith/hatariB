@@ -410,9 +410,25 @@ void core_signal_alert(const char* alertmsg)
 	environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg);
 }
 
+static char alertmsg2[1024];
+
+void core_signal_alert2(const char* alertmsg, const char* suffix)
+{
+	strcpy_trunc(alertmsg2,alertmsg,sizeof(alertmsg2));
+	strcat_trunc(alertmsg2,suffix,sizeof(alertmsg2));
+
+	struct retro_message_ext msg;
+	msg.msg = alertmsg2;
+	msg.duration = 5 * 1000;
+	msg.priority = 1;
+	msg.level = RETRO_LOG_INFO;
+	msg.target = RETRO_MESSAGE_TARGET_ALL;
+	msg.type = RETRO_MESSAGE_TYPE_NOTIFICATION;
+	msg.progress = -1;
+	environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg);
+}
 void core_signal_error(const char* alertmsg, const char* suffix)
 {
-	static char alertmsg2[1024];
 	strcpy_trunc(alertmsg2,alertmsg,sizeof(alertmsg2));
 	strcat_trunc(alertmsg2,suffix,sizeof(alertmsg2));
 
