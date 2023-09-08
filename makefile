@@ -11,14 +11,10 @@ MULTITHREAD ?= -j
 SHORTHASH = "$(shell git rev-parse --short HEAD || unknown)"
 
 # static libraries
-ZLIB_INCLUDE ?= $(PWD)/zlib_build/include
 SDL2_INCLUDE ?= $(PWD)/SDL/build/include/SDL2
+ZLIB_INCLUDE ?= $(PWD)/zlib_build/include
 ZLIB_LIB ?= $(PWD)/zlib_build/lib/libz.a
-SDL2_LIB ?= $(PWD)/SDL/build/lib/libSDL2.a
-SDL2_LINK ?= $(shell $(PWD)/SDL/build/bin/sdl2-config --static-libs)
 ZLIB_LINK ?= $(ZLIB_LIB)
-# sdl2-config is less than ideal, designed for EXE rather than DLL,
-# it adds -lSDLmain etc. but it seems the best way to get the mac dependencies right
 
 CC ?= gcc
 CFLAGS += \
@@ -32,7 +28,6 @@ CMAKEFLAGS += \
 	-DZLIB_INCLUDE_DIR=$(ZLIB_INCLUDE) \
 	-DZLIB_LIBRARY=$(ZLIB_LIB) \
 	-DSDL2_INCLUDE_DIR=$(SDL2_INCLUDE) \
-	-DSDL2_LIBRARY=$(SDL2_LIB) \
 	-DCMAKE_DISABLE_FIND_PACKAGE_Readline=1 \
 	-DCMAKE_DISABLE_FIND_PACKAGE_X11=1 \
 	-DCMAKE_DISABLE_FIND_PACKAGE_PNG=1 \
@@ -72,7 +67,8 @@ SOURCES = \
 	core/core_input.c \
 	core/core_disk.c \
 	core/core_config.c \
-	core/core_osk.c
+	core/core_osk.c \
+	core/core_sdl2.c
 OBJECTS = $(SOURCES:%.c=$(BD)%.o)
 HATARILIBS = \
 	hatari/build/src/libcore.a \
@@ -82,7 +78,7 @@ HATARILIBS = \
 	hatari/build/src/libFloppy.a \
 	hatari/build/src/debug/libDebug.a \
 	hatari/build/src/libcore.a \
-	$(ZLIB_LINK) $(SDL2_LINK)
+	$(ZLIB_LINK)
 # note: libcore is linked twice to allow other hatari internal libraries to resolve references within it.
 
 default: $(CORE)

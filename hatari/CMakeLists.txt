@@ -102,10 +102,14 @@ endif(APPLE)
 # Check for libraries:
 # ####################
 
+if(0) # hatariB - provide our own SDL2_INCLUDE_DIR, but not libraries
 find_package(SDL2)
 if(NOT SDL2_FOUND)
 	message(FATAL_ERROR "SDL2 library not found!")
 endif(NOT SDL2_FOUND)
+else() # hatariB
+	set(SDL2_FOUND 1)
+endif() # hatariB
 
 find_package(Math)
 
@@ -368,7 +372,8 @@ Libraries summary :
 -------------------
 ")
 
-message("  - sdl :\tusing SDL2 v${SDL2_VERSION_STRING}")
+# hatariB - not using SDL2 directly
+#message("  - sdl :\tusing SDL2 v${SDL2_VERSION_STRING}")
 
 if(Readline_FOUND)
   message( "  - readline :\tfound, enables history/completion in the debugger" )

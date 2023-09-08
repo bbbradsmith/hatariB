@@ -22,7 +22,7 @@ This has been built and tested with MSYS2 UCRT64. The following packages are req
 * gcc (mingw-w64-ucrt-x86_64-gcc)
 * cmake (mingw-w64-ucrt-x86_64-cmake)
 
-Before running make to build hatariB, build the static libraries for zlib and SDL2:
+Before running make to build hatariB, build the static libraries for zlib, and configure the headers for SDL2:
 * `make -f makefile.zlib`
 * `make -f makefile.sdl`
 
@@ -36,7 +36,7 @@ Other targets:
 * `make zlib` - shorthand for `make -f makefile.zlib`
 * `make sdl` - shorthand for `make -f makefile.sdl`
 
-By default SDL ant hatariB are built with the `-j` option to multithread the build process. You can disable this by adding `MULTITHREAD=` to the command line. This may be needed if the system runs out of memory, or otherwise can't handle the threading.
+By default hatariB is built with the `-j` option to multithread the build process. You can disable this by adding `MULTITHREAD=` to the command line. This may be needed if the system runs out of memory, or otherwise can't handle the threading.
 
 ## Changes to Hatari
 
@@ -51,6 +51,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Disabled `tests` subdirectory, because we do not build the executable needed for these tests.
   * Disabled `FindPythonInterp`, because we don't need the python interpreter or GTK, which are used for Hatari's debugger.
   * Add `HAVE_DLOPEN` to use for dynamic loading of CAPSIMAGE library for IPF support.
+  * Disable check for SDL2, supply SDL2_INCLUDE_DIR directly instead.
 * **hatari/src/CMakeLists.txt**
   * Removed platform-specific GUI dependencies.
   * Removed stand-alone executable build.
@@ -264,20 +265,8 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Modify `SDLGui_DrawBox` to provide `SDLGui_DirectBox` for use by on-screen keyboard.
   * Disable `SDLGui_EditField`, `SDLGui_ScaleMouseButtonCoordinates`, `SDLGui_DoDialogExt` to remove SDL use.
 
-## SDL2 Usage
+## SDL2 and zlib Usage
 
-The SDL library is not initialized. Aside from some type definitions, it is mostly only needed to provide palette colour translations, and software-rendering the status bar + onscreen keyboard. Only the video subsystem is needed, though the events subsystem is also included because it cannot be disabled in SDL2's configuration. This is the short list of SDL functions used:
-* SDL_CreateRGBSurface
-* SDL_FreeSurface
-* SDL_LockSurface
-* SDL_UnlockSurface
-* SDL_MapRGB
-* SDL_SetPaletteColors
-* SDL_SetColorKey
-* SDL_UpperBlit
-* SDL_FillRect
-* SDL_strlcpy
+SDL2 is used only for its headers. A very small subset of functions were reimplemented in **core/core_sdl2.c** as a substitute for linking against a SDL2 library.
 
-If direct replacements for these were provided, we could remove SDL entirely. Most have a simple function and not used in high-performance code, but `SDL_UpperBlit` and `SDL_FillRect` are both used extensively by the status bar and onscreen keyboard. A naive replacement of those would be simple, but they both have very intensive target-specific optimizations which seem worth keeping, despite the dependency overhead.
-
-You may provide your own SDL2 by overriding the `SDL2_INCLUDE`, `SDL2_LIB`, and `SDL2_LINK` variables found in `makefile`. A minimal static build was chosen instead because on some platforms the dependency was difficult to provide to the user, and it also appeared that it could cause conflicts with RetroArch's SDL2 drivers, if used. (These conflicts seemed to be resolved by removing any SDL initialization, but it seemed prudent to avoid using the global shared object altogether.)
+zlib is built here so that it can be statically linked into the core shared object. This removes any potential zlib dependency mismatch on the deployed system. You may provide your own zlib by overriding the `ZLIB_INCLUDE`, `ZLIB_LIB`, and `ZLIB_LINK` variables found in `makefile`, though in such a case you will probably want to use the shared object version, rather than statically linking, because standard static library packages are not normally built as relocatable code which can be linked with a shared object (`-fPIC`).
