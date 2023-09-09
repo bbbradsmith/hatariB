@@ -46,6 +46,7 @@ ifneq ($(DEBUG),0)
 	LDFLAGS += -g
 	CMAKEFLAGS += -DENABLE_TRACING=1
 else
+	LDFLAGS += -Wl,--strip-debug
 	CMAKEFLAGS += -DENABLE_TRACING=0
 endif
 
