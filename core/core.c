@@ -750,8 +750,15 @@ static bool core_serialize(bool write)
 	if (write) result = core_save_state();
 	else       result = core_restore_state();
 
-	// update core_disk to match changes to the inserted disks
-	if (!write) core_disk_reindex();
+	if (!write)
+	{
+		// update core_disk to match changes to the inserted disks
+		core_disk_reindex();
+		// cancel spurious rate changes after restore
+		core_rate_changed = false;
+		core_video_fps_new = core_video_fps;
+		core_audio_samplerate_new = core_audio_samplerate;
+	}
 
 	// finish
 
