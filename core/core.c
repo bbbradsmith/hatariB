@@ -547,6 +547,17 @@ static void core_perf_set_environment(retro_environment_t cb)
 	}
 }
 
+void core_debug_profile(const char* name)
+{
+	static retro_time_t time_last = 0;
+	if (retro_perf)
+	{
+		retro_time_t t = retro_perf->get_time_usec();
+		retro_log(RETRO_LOG_DEBUG,"%20s: %8d\n",name,(int)(t-time_last));
+		time_last = retro_perf->get_time_usec();
+	}
+}
+
 static void core_perf_show()
 {
 	#define PERF_RUN_AVG  60
