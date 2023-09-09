@@ -553,7 +553,7 @@ void core_debug_profile(const char* name)
 	if (retro_perf)
 	{
 		retro_time_t t = retro_perf->get_time_usec();
-		retro_log(RETRO_LOG_DEBUG,"%20s: %8d\n",name,(int)(t-time_last));
+		retro_log(RETRO_LOG_DEBUG,"%40s: %8d\n",name,(int)(t-time_last));
 		time_last = retro_perf->get_time_usec();
 	}
 }
@@ -769,7 +769,7 @@ static bool core_serialize(bool write)
 		environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg);		
 	}
 
-	retro_log(RETRO_LOG_DEBUG,"core_serialized: %d of %d used\n",snapshot_max,snapshot_size);
+	//retro_log(RETRO_LOG_DEBUG,"core_serialized: %d of %d used\n",snapshot_max,snapshot_size);
 	if (result != 0)
 	{
 		snapshot_error = true;

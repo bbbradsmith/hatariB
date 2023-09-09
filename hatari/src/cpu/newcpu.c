@@ -2324,7 +2324,18 @@ void init_m68k (void)
 	}
 #endif
 
+#ifdef __LIBRETRO__
+	// don't rebuild this table unless the CPU has changed
+	// (saves huge amount of time during savestate restore)
+	static int table_model = -1;
+	if (currprefs.cpu_model != table_model || table68k == NULL)
+	{
+		table_model = currprefs.cpu_model;
+		init_table68k();
+	}
+#else
 	init_table68k();
+#endif
 
 	write_log (_T("%d CPU functions\n"), nr_cpuop_funcs);
 }
