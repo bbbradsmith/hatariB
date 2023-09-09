@@ -187,7 +187,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
     * *System > Cycle-exact Cache Emulation* - More accurate cache emulation, needed for some games. On by default.
   * See the *Advanced* category for other relevant options.
 * Savestates:
-  * Savestates are seamless, allowing run-ahead and netplay in theory, but the restore action is very CPU intensive and may cause stuttering in the live output.
+  * Savestates are seamless, allowing run-ahead and netplay.
   * *Load New Disk* has several caveats with savesates:
       * RetroArch will change the savestate name to match the newest loaded disk, so be sure that you know that savestates associated with that disk.
       * To restore in a later session, start the core as you did before and use *Load New Disk* to add all needed disks before attempting to restore the savestate. The last disk loaded must be the same as before, so that the savestate name will match correctly.
@@ -204,7 +204,6 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Though the on-screen keyboard is available in [several language layouts](https://tho-otto.de/keyboards/), for your physical keyboard there aren't any direct configuration options, currently. RetroArch ignores the OS keyboard layout, and [all keys report as-if in US layout](https://github.com/libretro/RetroArch/issues/13838) (e.g. German Z reports as RETROK_y). Because of this, if you pick a TOS that matches your keyboard language, the mappings are likely to be mostly compatible. Otherwise, if you need finer control of the mapping, RetroArch's *Input* settings can be used to remap individual keys.
 
 Possible Future Tasks:
-* Can savestate restore be more lightweight? What takes so much CPU time? Are there any lingering spurious disk accesses? Also, I think netplay efficiency may rely on stable data positions, so double check this to see if structures are moving around from frame to frame (I suspect it only really changes at disk insert/eject). In the advanced menu there's a performance profiling option that will list the timings of the last savestate. On my laptop save is about 8ms, and load is about 12ms. Not good enough for real-time, but not impossibly far off either. (Emulating a frame takes about 1.3ms by comparison.)
 * Cut the SDL2 dependency down to a very minimal self-contained library. There are a very short list of functions which need to be implemented (see [DEVELOP.md](DEVELOP.md)). This would probably reduce the EXE size by a few megabytes, and make compilation slightly less complicated.
 * Falcon microphone support? Need to find relevant Falcon software to test against.
 * Printer emulation? Probably a pipe dream, as I can't think of a good way to handle it. Maybe a secondary graphical page display, and saving a PNG image to the saves folder after?
@@ -219,6 +218,7 @@ Possible Future Tasks:
     * Pressing up from space bar now remembers last key instead of always going to Z.
   * Fixed blitter hang when using cycle-accurate cache emulation.
   * Single button disk swap.
+  * Savestate restore speedup, making run-ahead and netplay viable.
 * [hatariB v0.2](https://github.com/bbbradsmith/hatariB/releases/tag/0.2) - 2023-09-07
   * Second beta test version.
   * IPF support via dynamic loading of capsimg library.
