@@ -112,6 +112,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
     * *On-Screen Keyboard* - Raises the on-screen keyboard.
     * *On-Screen Keyboard One-Shot* - Pauses emulation and raises the on-screen keyboard. Resumes when you confirm/cancel a keypress.
     * *Select Floppy Drive* - Selects drive A or B to use with the Libretro disk controls.
+    * *Swap to Next Disk* - Ejects the disk in the selected drive and inserts the next one.
     * *Help Screen / Pause* - Pauses emulation and brings up a help screen or other display. You can choose a pause display under *Video > Pause Screen Display*.
     * *Joystick Up* - For those who don't like up-to-jump controls, you can make it a button.
     * *Joystick Down/Left/Right* - The other joystick directions can be made into buttons too.
