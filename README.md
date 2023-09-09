@@ -147,7 +147,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * When a modified floppy disk is ejected, or the core is closed, a modified copy of that disk image will be written to the *saves/* folder.
   * Whenever a new floppy disk is added (*Load Content*, or *Load New Disk*), the saved copy will be substituted for the original if it exists. (Also, if you want to return to the original disk, you can delete it from *saves/*.)
   * If the *System > Save Floppy Disks* core option is disabled, only the original copy of the file will be used, and the *saves/* folder will not be accessed. However, the modified disk images will still persist in memory for the duration of the session, until you close the content.
-  * Only the two currently inserted disks are included in savestates. If there are other disks in your loaded collection, they may take on their most recent version from the saves/ folder next time you open this content. A savestate will not be able to restore them to an earlier version.
+  * Only the two currently inserted disks are included in savestates. If there are other disks in your loaded collection, they may take on their most recent version from the *saves/* folder next time you open this content. A savestate will not be able to restore them to an earlier version.
   * Floppy disks in *saves/* must have a unique filename. Try not to use generic names like *savedisk.st*, and instead include the game title in its filename.
   * If possible, it is recommended that save disks for games use the *ST* format, because it is the simplest and least error prone format. You can download a prepared blank disk here: **[blank.st](../../raw/main/blank.st)**.
   * The images written to *saves/* will be standard Atari ST image formats, and you should be able to load them in other emulators if you wish.
@@ -200,11 +200,13 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * If the on-screen keyboard confirm/cancel buttons aren't mapped to dedicated buttons, you might end up suddenly holding the underlying button when the keyboard closes. (Inputs from buttons mapped to the on-screen keyboard are suppressed while it remains open.)
   * The *Floppy Disk List* pause screen won't display unicode filenames correctly, though they can still be viewed through RetroArch's *Disk Control* menu.
   * You can use *Load New Disk* or *M3U* playlists to load the same floppy multiple times, or multiple floppies with the same name. This mostly works okay, but a savestate restore might be unable to identify which of them was actually inserted.
+  * There is no way to designate individual floppy disks as read-only. In Hatari this was detected by the host filesystem's read-only attribute on the file, but in Libretro this information is not available. The *Advanced > Write Protect Floppy Disks* provides a coarse way to override this. However, note that any modifications to the file are saved to a copy in the user's *saves/* folder, so the original floppy image is never modified, regardless of setting.
   * If *IPF* support is enabled, an *M3U* playlist can also be used to load the *RAW* format supported by that library. I kept it out of the associated file types list because I have not yet encountered dumps in this format.
   * Though the on-screen keyboard is available in [several language layouts](https://tho-otto.de/keyboards/), for your physical keyboard there aren't any direct configuration options, currently. RetroArch ignores the OS keyboard layout, and [all keys report as-if in US layout](https://github.com/libretro/RetroArch/issues/13838) (e.g. German Z reports as RETROK_y). Because of this, if you pick a TOS that matches your keyboard language, the mappings are likely to be mostly compatible. Otherwise, if you need finer control of the mapping, RetroArch's *Input* settings can be used to remap individual keys.
+  * The *CPU Clock Rate* setting is only applied at boot/reset. It cannot be changed on-the-fly like in stand-alone Hatari.
 
 Possible Future Tasks:
-* Cut the SDL2 dependency down to a very minimal self-contained library. There are a very short list of functions which need to be implemented (see [DEVELOP.md](DEVELOP.md)). This would probably reduce the EXE size by a few megabytes, and make compilation slightly less complicated.
+* Netplay seems to work but the large savestate size seems to cause delays. Is there some way to mitigate this? The savestate seems to have coherent data locations, at least, though games often rewrite large portions of the system RAM every frame.
 * Falcon microphone support? Need to find relevant Falcon software to test against.
 * Printer emulation? Probably a pipe dream, as I can't think of a good way to handle it. Maybe a secondary graphical page display, and saving a PNG image to the saves folder after?
 * RS232 doesn't seem possible to support via Libretro, though maybe there is a way to work around this.
@@ -219,6 +221,7 @@ Possible Future Tasks:
   * Fixed blitter hang when using cycle-accurate cache emulation.
   * Single button disk swap.
   * Savestate restore speedup, making run-ahead and netplay viable.
+  * Fix CPU clock rate change on reset.
 * [hatariB v0.2](https://github.com/bbbradsmith/hatariB/releases/tag/0.2) - 2023-09-07
   * Second beta test version.
   * IPF support via dynamic loading of capsimg library.
