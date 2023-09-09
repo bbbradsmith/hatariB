@@ -1112,6 +1112,7 @@ extern CNF_PARAMS ConfigureParams;
 extern bool Change_DoNeedReset(CNF_PARAMS *current, CNF_PARAMS *changed);
 extern void Change_CopyChangedParamsToConfiguration(CNF_PARAMS *current, CNF_PARAMS *changed, bool bForceReset);
 extern void Screen_ModeChanged(bool bForceChange);
+extern void Statusbar_UpdateInfo(void);
 
 //
 // Internal
@@ -1500,5 +1501,7 @@ void core_config_apply(void)
 
 void core_config_reset(void) // boot configurations that need to be applied at reset
 {
+	Configuration_ChangeCpuFreq(ConfigureParams.System.nBootCpuFreq);
 	ConfigureParams.System.nCpuFreq = ConfigureParams.System.nBootCpuFreq;
+	Statusbar_UpdateInfo();
 }
