@@ -71,7 +71,7 @@ extern void UAE_Set_Quit_Reset ( bool hard );
 extern void core_flush_audio(void);
 extern int core_save_state(void);
 extern int core_restore_state(void);
-extern void Statusbar_AddMessage(const char *msg, uint32_t msecs);
+extern void Statusbar_SetMessage(const char *msg);
 
 //
 // Available to Hatari
@@ -582,7 +582,7 @@ static void core_perf_show()
 		perf_time[PERF_SERIALIZE],
 		perf_time[PERF_UNSERIALIZE]
 	);
-	Statusbar_AddMessage(msg,1000);
+	Statusbar_SetMessage(msg);
 }
 
 //

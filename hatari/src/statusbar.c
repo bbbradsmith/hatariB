@@ -712,6 +712,15 @@ void Statusbar_UpdateInfo(void)
 	DefaultMessage.shown = false;
 }
 
+#ifndef LIBRETRO__
+// replaces default message
+extern void Statusbar_SetMessage(const char* msg);
+void Statusbar_SetMessage(const char* msg)
+{
+	strlcpy(DefaultMessage.msg, msg, MAX_MESSAGE_LEN);
+	DefaultMessage.shown = false;
+}
+#endif
 /*-----------------------------------------------------------------------*/
 /**
  * Draw 'msg' centered to the message area

@@ -282,3 +282,10 @@ The SDL library is not initialized. Aside from some type definitions, it is most
 If direct replacements for these were provided, we could remove SDL entirely. Most have a simple function and not used in high-performance code, but `SDL_UpperBlit` and `SDL_FillRect` are both used extensively by the status bar and onscreen keyboard. A naive replacement of those would be simple, but they both have very intensive target-specific optimizations which seem worth keeping, despite the dependency overhead.
 
 You may provide your own SDL2 by overriding the `SDL2_INCLUDE`, `SDL2_LIB`, and `SDL2_LINK` variables found in `makefile`. A minimal static build was chosen instead because on some platforms the dependency was difficult to provide to the user, and it also appeared that it could cause conflicts with RetroArch's SDL2 drivers, if used. (These conflicts seemed to be resolved by removing any SDL initialization, but it seemed prudent to avoid using the global shared object altogether.)
+
+Notes for removing SDL2:
+* We probably need to keep the configure step of `makefile.sdl` to generate headers, but the make is no longer needed. Instead just `make install-hdrs` will copy the needed header files.
+* Disable the check for SDL2 in `CMakeLists.txt`, just set `SDL2_FOUND` instead.
+* Remove SDL2_LINK from `makefile`.
+* Implement the functions listed above in out own core implementation.
+* See [PR #16](https://github.com/bbbradsmith/hatariB/pull/16) for reference.
