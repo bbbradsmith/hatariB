@@ -861,8 +861,9 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	}
 	// The values for OPTION_PAD_BUTTON will be automatically replaced with NUMBERS.
 	// The ones that are numbered at the beginning are for reference when implementing
-	// their mapping in core_input.c (which must match this list precisely)
-	// and also make sure the defaults still match (e.g. key space / key return on L3/R3)
+	// their mapping in core_input.c (which must match this list precisely), especially BUTTON_KEY_START
+	// and also make sure the defaults still match below (e.g. key space / key return on L3/R3)
+	// and BUTTON_DEF in core_input.c
 #define OPTION_PAD_BUTTON() \
 	{ \
 		{"0","None"}, \
@@ -888,9 +889,10 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{"20","Mouse Speed Fast"}, \
 		{"21","Soft Reset"}, \
 		{"22","Hard Reset"}, \
-		{"23","Toggle Status Bar"}, \
-		{"24","Key Space"}, \
-		{"25","Key Return"}, \
+		{"23","CPU Speed"}, \
+		{"24","Toggle Status Bar"}, \
+		{"25","Key Space"}, \
+		{"26","Key Return"}, \
 		{"","Key Up"}, \
 		{"","Key Down"}, \
 		{"","Key Left"}, \
@@ -1026,9 +1028,9 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	{ "hatarib_pad" padnum "_r2", "Pad " padnum " R2", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_BUTTON(), "20" }, /* mouse fast */ \
 	{ "hatarib_pad" padnum "_l3", "Pad " padnum " L3", NULL, NULL, NULL, "pad" padnum, \
-		OPTION_PAD_BUTTON(), "24" }, /* key space */ \
+		OPTION_PAD_BUTTON(), "25" }, /* key space */ \
 	{ "hatarib_pad" padnum "_r3", "Pad " padnum " R3", NULL, NULL, NULL, "pad" padnum, \
-		OPTION_PAD_BUTTON(), "25" }, /* key return */ \
+		OPTION_PAD_BUTTON(), "26" }, /* key return */ \
 	{ "hatarib_pad" padnum "_lstick", "Pad " padnum " Left Analog Stick", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_STICK(), "1" }, /* joystick */ \
 	{ "hatarib_pad" padnum "_rstick", "Pad " padnum " Right Analog Stick", NULL, NULL, NULL, "pad" padnum, \
@@ -1338,6 +1340,26 @@ void core_config_read_newparam()
 	memcpy(newparam.DiskImage.szDiskFileName[0],ConfigureParams.DiskImage.szDiskFileName[0],sizeof(newparam.DiskImage.szDiskFileName[0]));
 	memcpy(newparam.DiskImage.szDiskFileName[1],ConfigureParams.DiskImage.szDiskFileName[1],sizeof(newparam.DiskImage.szDiskFileName[1]));
 	newparam.System.nCpuFreq = ConfigureParams.System.nCpuFreq;
+}
+
+void config_cycle_cpu_speed(void)
+{
+	int speed = 8;
+	const char* name = "8 MHz";
+	switch (ConfigureParams.System.nCpuFreq)
+	{
+	case  8: speed = 16; name = "16 MHz"; break;
+	case 16: speed = 32; name = "32 MHz"; break;
+	case 32: default: break; // 8 Mhz
+	}
+
+	// apply new speed
+	Configuration_ChangeCpuFreq(speed);
+	ConfigureParams.System.nCpuFreq = speed;
+	Statusbar_UpdateInfo();
+
+	// notify
+	core_signal_alert2("Cpu Speed: ",name);
 }
 
 void config_toggle_statusbar(void)

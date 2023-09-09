@@ -119,6 +119,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
     * *STE Button A/B/C/Option/Pause* - Buttons for the enhanced STE controller ports.
     * *Mouse Speed Slow/Fast* - Hold to slow or speed the mouse, useful if you have no analog stick.
     * *Soft/Hard Reset* - If you need a button to reset the machine.
+    * *CPU Speed* - Switches between 8 MHz, 16 MHz, and 32 MHz CPU speeds.
     * *Toggle Status Bar* - A quick hide/reveal of the status bar, in case you like it hidden but still want to check it sometimes.
     * *Key Space/Return/Up/Down...* - Any keyboard key can be assigned to a button.
 * File formats:
@@ -222,6 +223,7 @@ Possible Future Tasks:
   * Single button disk swap.
   * Savestate restore speedup, making run-ahead and netplay viable.
   * Fix CPU clock rate change on reset.
+  * CPU speed button mapping.
 * [hatariB v0.2](https://github.com/bbbradsmith/hatariB/releases/tag/0.2) - 2023-09-07
   * Second beta test version.
   * IPF support via dynamic loading of capsimg library.

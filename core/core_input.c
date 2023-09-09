@@ -27,8 +27,9 @@ const float DPAD_MOUSE_SPEED = 0.3; // scale of d-pad relative to analog max
 #define AUX_DISK_SWAP    0x00000040
 #define AUX_WARM_BOOT    0x00000080
 #define AUX_COLD_BOOT    0x00000100
-#define AUX_STATUSBAR    0x00000200
-#define AUX_OSK_CLOSED   0x00000400
+#define AUX_CPU_SPEED    0x00000200
+#define AUX_STATUSBAR    0x00000400
+#define AUX_OSK_CLOSED   0x00000800
 
 // in core_internal.h
 //#define AUX_OSK_U        0x00010000
@@ -86,9 +87,9 @@ static int32_t joy_fire[JOY_PORTS];
 static int32_t joy_stick[JOY_PORTS];
 static uint8_t retrok_joy[RETROK_LAST]; // overlay to retrok_down
 
-// input mappings
+// input mappings (defaults should match core_config.c OPTION_PAD)
 #define STICK_DEF    {1,1,2}
-#define BUTTON_DEF   {2,1,4,3,7,8,5,6,0,0,17,18}
+#define BUTTON_DEF   {2,1,4,3,7,9,5,6,19,20,25,26}
 #define OSKEY_DEF    {7,8,3,1}
 int core_joy_port_map[4] = {1,0,2,3};
 int core_stick_map[4][3] = {STICK_DEF,STICK_DEF,STICK_DEF,STICK_DEF};
@@ -400,6 +401,7 @@ void core_input_update(void)
 	bool mouse_slow = false;
 	bool mouse_fast = false;
 	bool cold_boot = false;
+	bool cpu_speed = false;
 	bool statusbar = false;
 	bool pause = false;
 	bool osk_on = false;
@@ -641,10 +643,10 @@ void core_input_update(void)
 					RETROK_KP6,
 					RETROK_KP7,
 					RETROK_KP8,
-					RETROK_KP9, // 116
+					RETROK_KP9, // 118
 				};
 				#define BUTTON_KEY_COUNT   (sizeof(BUTTON_KEY)/sizeof(BUTTON_KEY[0]))
-				#define BUTTON_KEY_START   23
+				#define BUTTON_KEY_START   25
 
 				const int m = core_button_map[i][k];
 
@@ -764,7 +766,10 @@ void core_input_update(void)
 					case 22: // Hard Reset
 						cold_boot = true;
 						break;
-					case 23: // Toggle Statusbar
+					case 23: // Cpu Speed
+						cpu_speed = true;
+						break;
+					case 24: // Toggle Statusbar
 						statusbar = true;
 						break;
 					}
@@ -914,6 +919,7 @@ void core_input_update(void)
 		disk_swap = false;
 		warm_boot = false;
 		cold_boot = false;
+		cpu_speed = false;
 		statusbar = false;
 		if (input_osk_shot) pause = false; // cancel only if in OSK one-shot mode (otherwise we need it to unpause!)
 	}
@@ -942,6 +948,10 @@ void core_input_update(void)
 	if (cold_boot && !AUX(COLD_BOOT)) Reset_Cold();
 	AUX_SET(warm_boot,WARM_BOOT);
 	AUX_SET(cold_boot,COLD_BOOT);
+
+	// CPU speed cycle
+	if (cpu_speed && !AUX(CPU_SPEED)) config_cycle_cpu_speed();
+	AUX_SET(cpu_speed,CPU_SPEED);
 
 	// status bar toggle
 	if (statusbar && !AUX(STATUSBAR)) config_toggle_statusbar();
