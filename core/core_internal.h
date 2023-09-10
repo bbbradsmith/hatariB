@@ -213,3 +213,221 @@ extern uint32_t core_osk_button_last;
 #define CORE_OSK_KEY        2
 #define CORE_OSK_KEY_SHOT   3
 extern int32_t core_osk_mode;
+
+// OPTION_PAD definitions
+
+// must match core_stick_map switch in core_input.c
+#define OPTION_PAD_STICK() \
+	{ \
+		{"0","None"}, \
+		{"1","Joystick"}, \
+		{"2","Mouse"}, \
+		{"3","Cursor Keys"}, \
+		{NULL,NULL} \
+	}
+
+// default should match OPTION_PAD below
+#define STICK_DEF {1,1,2}
+
+// The values for OPTION_PAD_BUTTON will be automatically replaced with NUMBERS.
+// The ones that are numbered at the beginning are for reference when implementing
+// their mapping in core_input.c (which must match this list precisely).
+// Also make sure the defaults still match OPTION_PAD below (e.g. key space / key return on L3/R3)
+// If the key list is re-ordered, also adjust BUTTON_KEY in core_input.c.
+
+// This is the index of the first key (space)
+#define BUTTON_KEY_START   25
+
+#define OPTION_PAD_BUTTON() \
+	{ \
+		{"0","None"}, \
+		{"1","Fire"}, \
+		{"2","Auto-Fire"}, \
+		{"3","Mouse Left"}, \
+		{"4","Mouse Right"}, \
+		{"5","On-Screen Keyboard"}, \
+		{"6","On-Screen Keyboard One-Shot"}, \
+		{"7","Select Floppy Drive"}, \
+		{"8","Swap to Next Disk"}, \
+		{"9","Help Screen / Pause"}, \
+		{"10","Joystick Up"}, \
+		{"11","Joystick Down"}, \
+		{"12","Joystick Left"}, \
+		{"13","Joystick Right"}, \
+		{"14","STE Button A"}, \
+		{"15","STE Button B"}, \
+		{"16","STE Button C"}, \
+		{"17","STE Button Option"}, \
+		{"18","STE Button Pause"}, \
+		{"19","Mouse Speed Slow"}, \
+		{"20","Mouse Speed Fast"}, \
+		{"21","Soft Reset"}, \
+		{"22","Hard Reset"}, \
+		{"23","CPU Speed"}, \
+		{"24","Toggle Status Bar"}, \
+		{"25","Key Space"}, \
+		{"26","Key Return"}, \
+		{"","Key Up"}, \
+		{"","Key Down"}, \
+		{"","Key Left"}, \
+		{"","Key Right"}, \
+		{"","Key F1"}, \
+		{"","Key F2"}, \
+		{"","Key F3"}, \
+		{"","Key F4"}, \
+		{"","Key F5"}, \
+		{"","Key F6"}, \
+		{"","Key F7"}, \
+		{"","Key F8"}, \
+		{"","Key F9"}, \
+		{"","Key F10"}, \
+		{"","Key Esc"}, \
+		{"","Key 1"}, \
+		{"","Key 2"}, \
+		{"","Key 3"}, \
+		{"","Key 4"}, \
+		{"","Key 5"}, \
+		{"","Key 6"}, \
+		{"","Key 7"}, \
+		{"","Key 8"}, \
+		{"","Key 9"}, \
+		{"","Key 0"}, \
+		{"","Key Minus"}, \
+		{"","Key Equals"}, \
+		{"","Key Backquote"}, \
+		{"","Key Backspace"}, \
+		{"","Key Tab"}, \
+		{"","Key Q"}, \
+		{"","Key W"}, \
+		{"","Key E"}, \
+		{"","Key R"}, \
+		{"","Key T"}, \
+		{"","Key Y"}, \
+		{"","Key U"}, \
+		{"","Key I"}, \
+		{"","Key O"}, \
+		{"","Key P"}, \
+		{"","Key Left Brace"}, \
+		{"","Key Right Brace"}, \
+		{"","Key Delete"}, \
+		{"","Key Control"}, \
+		{"","Key A"}, \
+		{"","Key S"}, \
+		{"","Key D"}, \
+		{"","Key F"}, \
+		{"","Key G"}, \
+		{"","Key H"}, \
+		{"","Key J"}, \
+		{"","Key K"}, \
+		{"","Key L"}, \
+		{"","Key Semicolon"}, \
+		{"","Key Quote"}, \
+		{"","Key Backslash"}, \
+		{"","Key Left Shift"}, \
+		{"","Key Z"}, \
+		{"","Key X"}, \
+		{"","Key C"}, \
+		{"","Key V"}, \
+		{"","Key B"}, \
+		{"","Key N"}, \
+		{"","Key M"}, \
+		{"","Key Comma"}, \
+		{"","Key Period"}, \
+		{"","Key Slash"}, \
+		{"","Key Right Shift"}, \
+		{"","Key Alternate"}, \
+		{"","Key Capslock"}, \
+		{"","Key Help"}, \
+		{"","Key Undo"}, \
+		{"","Key Insert"}, \
+		{"","Key Clr Home"}, \
+		{"","Key Numpad Left Paren"}, \
+		{"","Key Numpad Right Paren"}, \
+		{"","Key Numpad Divide"}, \
+		{"","Key Numpad Multiply"}, \
+		{"","Key Numpad Subtract"}, \
+		{"","Key Numpad Add"}, \
+		{"","Key Numpad Enter"}, \
+		{"","Key Numpad Decimal"}, \
+		{"","Key Numpad 0"}, \
+		{"","Key Numpad 1"}, \
+		{"","Key Numpad 2"}, \
+		{"","Key Numpad 3"}, \
+		{"","Key Numpad 4"}, \
+		{"","Key Numpad 5"}, \
+		{"","Key Numpad 6"}, \
+		{"","Key Numpad 7"}, \
+		{"","Key Numpad 8"}, \
+		{"","Key Numpad 9"}, \
+		{NULL,NULL} \
+	}
+// default should match OPTION_PAD below
+#define BUTTON_DEF   {2,1,4,3,7,9,5,6,19,20,25,26}
+
+#define OPTION_OSKEY_BUTTON() \
+	{ \
+		{"0","None"}, \
+		{"1","A"}, \
+		{"2","B"}, \
+		{"3","X"}, \
+		{"4","Y"}, \
+		{"5","Select"}, \
+		{"6","Start"}, \
+		{"7","L1"}, \
+		{"8","R1"}, \
+		{"9","L2"}, \
+		{"10","R2"}, \
+		{"11","L3"}, \
+		{"12","R3"}, \
+		{NULL,NULL} \
+	}
+// default should match OPTION_PAD below
+#define OSKEY_DEF {7,8,3,1}
+
+#define OPTION_PAD(padnum) \
+	{ "hatarib_pad" padnum "_dpad", "Pad " padnum " D-Pad", NULL, NULL, NULL, "pad" padnum, \
+		OPTION_PAD_STICK(), "1" }, /* joystick */ \
+	{ "hatarib_pad" padnum "_a", "Pad " padnum " A", NULL, NULL, NULL, "pad" padnum, \
+		OPTION_PAD_BUTTON(), "2" }, /* auto-fire */ \
+	{ "hatarib_pad" padnum "_b", "Pad " padnum " B", NULL, NULL, NULL, "pad" padnum, \
+		OPTION_PAD_BUTTON(), "1" }, /* fire */ \
+	{ "hatarib_pad" padnum "_x", "Pad " padnum " X", NULL, NULL, NULL, "pad" padnum, \
+		OPTION_PAD_BUTTON(), "4" }, /* mouse right */ \
+	{ "hatarib_pad" padnum "_y", "Pad " padnum " Y", NULL, NULL, NULL, "pad" padnum, \
+		OPTION_PAD_BUTTON(), "3" }, /* mouse left */ \
+	{ "hatarib_pad" padnum "_select", "Pad " padnum " Select", NULL, NULL, NULL, "pad" padnum, \
+		OPTION_PAD_BUTTON(), "7" }, /* select floppy drive */ \
+	{ "hatarib_pad" padnum "_start", "Pad " padnum " Start", NULL, NULL, NULL, "pad" padnum, \
+		OPTION_PAD_BUTTON(), "9" }, /* help screen */ \
+	{ "hatarib_pad" padnum "_l1", "Pad " padnum " L1", NULL, NULL, NULL, "pad" padnum, \
+		OPTION_PAD_BUTTON(), "5" }, /* on-screen keyboard */ \
+	{ "hatarib_pad" padnum "_r1", "Pad " padnum " R1", NULL, NULL, NULL, "pad" padnum, \
+		OPTION_PAD_BUTTON(), "6" }, /* on-screen keyboard one-shot */ \
+	{ "hatarib_pad" padnum "_l2", "Pad " padnum " L2", NULL, NULL, NULL, "pad" padnum, \
+		OPTION_PAD_BUTTON(), "19" }, /* mouse slow */ \
+	{ "hatarib_pad" padnum "_r2", "Pad " padnum " R2", NULL, NULL, NULL, "pad" padnum, \
+		OPTION_PAD_BUTTON(), "20" }, /* mouse fast */ \
+	{ "hatarib_pad" padnum "_l3", "Pad " padnum " L3", NULL, NULL, NULL, "pad" padnum, \
+		OPTION_PAD_BUTTON(), "25" }, /* key space */ \
+	{ "hatarib_pad" padnum "_r3", "Pad " padnum " R3", NULL, NULL, NULL, "pad" padnum, \
+		OPTION_PAD_BUTTON(), "26" }, /* key return */ \
+	{ "hatarib_pad" padnum "_lstick", "Pad " padnum " Left Analog Stick", NULL, NULL, NULL, "pad" padnum, \
+		OPTION_PAD_STICK(), "1" }, /* joystick */ \
+	{ "hatarib_pad" padnum "_rstick", "Pad " padnum " Right Analog Stick", NULL, NULL, NULL, "pad" padnum, \
+		OPTION_PAD_STICK(), "2" }, /* mouse */ \
+	{ "hatarib_pad" padnum "_oskey_confirm", "Pad " padnum " On-Screen Key Confirm", NULL, NULL, NULL, "pad" padnum, \
+		OPTION_OSKEY_BUTTON(), "7" }, /* l1 */ \
+	{ "hatarib_pad" padnum "_oskey_cancel", "Pad " padnum " On-Screen Key Cancel", NULL, NULL, NULL, "pad" padnum, \
+		OPTION_OSKEY_BUTTON(), "8" }, /* r1 */ \
+	{ "hatarib_pad" padnum "_oskey_pos", "Pad " padnum " On-Screen Key Position", NULL, NULL, NULL, "pad" padnum, \
+		OPTION_OSKEY_BUTTON(), "3" }, /* x */ \
+	{ "hatarib_pad" padnum "_oskey_move", "Pad " padnum " On-Screen Key Cursor", NULL, NULL, NULL, "pad" padnum, \
+		{ \
+			{"0","None"}, \
+			{"1","D-Pad"}, \
+			{"2","Left Analog Stick"}, \
+			{"3","Right Analog Stick"}, \
+			{NULL,NULL} \
+		},"1" /* d-pad */ \
+	}, \
+	/* end of OPTION_PAD define */

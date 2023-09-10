@@ -87,10 +87,6 @@ static int32_t joy_fire[JOY_PORTS];
 static int32_t joy_stick[JOY_PORTS];
 static uint8_t retrok_joy[RETROK_LAST]; // overlay to retrok_down
 
-// input mappings (defaults should match core_config.c OPTION_PAD)
-#define STICK_DEF    {1,1,2}
-#define BUTTON_DEF   {2,1,4,3,7,9,5,6,19,20,25,26}
-#define OSKEY_DEF    {7,8,3,1}
 int core_joy_port_map[4] = {1,0,2,3};
 int core_stick_map[4][3] = {STICK_DEF,STICK_DEF,STICK_DEF,STICK_DEF};
 int core_button_map[4][12] = {BUTTON_DEF,BUTTON_DEF,BUTTON_DEF,BUTTON_DEF};
@@ -483,7 +479,7 @@ void core_input_update(void)
 				if (input_osk_key) continue; // when using OSK hide this axis
 			}
 
-			switch (core_stick_map[i][k]) // must match options in core_config.c
+			switch (core_stick_map[i][k]) // must match OPTION_PAD_STICK in core_internal.h
 			{
 			default:
 			case 0: // None
@@ -548,9 +544,9 @@ void core_input_update(void)
 				debug_b[k] = 1;
 				debug_pad = true;
 				#endif
-				static const int BUTTON_KEY[] = // must match options in core_config.c
+				static const int BUTTON_KEY[] = // must match OPTION_PAD_BUTTON in core_internal.h
 				{
-					RETROK_SPACE, // 23
+					RETROK_SPACE,
 					RETROK_RETURN,
 					RETROK_UP,
 					RETROK_DOWN,
@@ -643,10 +639,9 @@ void core_input_update(void)
 					RETROK_KP6,
 					RETROK_KP7,
 					RETROK_KP8,
-					RETROK_KP9, // 118
+					RETROK_KP9,
 				};
 				#define BUTTON_KEY_COUNT   (sizeof(BUTTON_KEY)/sizeof(BUTTON_KEY[0]))
-				#define BUTTON_KEY_START   25
 
 				const int m = core_button_map[i][k];
 
@@ -671,7 +666,7 @@ void core_input_update(void)
 				}
 				else
 				{
-					switch(m) // must match options in core_config.c
+					switch(m) // must match OPTION_PAD_BUTTION in core_internal.h
 					{
 					default:
 					case 0: // None
