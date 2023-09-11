@@ -197,6 +197,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Hard Disk modifications are written directly to their source files, and are not included in savestates.
   * If you increase the size of memory, you should close and restart the core before using savestates, to allow RetroArch to update the savestate size.
 * Quirks:
+  * Netplay will stutter sometimes. I think I will be able to resolve this, but for now expect frequent short pauses during netplay.
   * Restoring a savestate, or using netplay/run-ahead into the pause or one-shot keyboard will have an outdated/blank background until unpaused, as Hatari can't rebuild the image until it runs a frame. We could consider adding the framebuffer to the savestate to prevent this, though it would significantly increase the data size.
   * If the on-screen keyboard confirm/cancel buttons aren't mapped to dedicated buttons, you might end up suddenly holding the underlying button when the keyboard closes. (Inputs from buttons mapped to the on-screen keyboard are suppressed while it remains open.)
   * RetroArch netplay does not send host keyboard input over the network. For netplay I recommend disabling the host keyboard and mouse, then only sending keyboard input via the on-screen keyboard instead.
@@ -206,12 +207,6 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * If *IPF* support is enabled, an *M3U* playlist can also be used to load the *RAW* format supported by that library. I kept it out of the associated file types list because I have not yet encountered dumps in this format.
   * Though the on-screen keyboard is available in [several language layouts](https://tho-otto.de/keyboards/), for your physical keyboard there aren't any direct configuration options, currently. RetroArch ignores the OS keyboard layout, and [all keys report as-if in US layout](https://github.com/libretro/RetroArch/issues/13838) (e.g. German Z reports as RETROK_y). Because of this, if you pick a TOS that matches your keyboard language, the mappings are likely to be mostly compatible. Otherwise, if you need finer control of the mapping, RetroArch's *Input* settings can be used to remap individual keys.
   * The *CPU Clock Rate* setting is only applied at boot/reset. It cannot be changed on-the-fly like in stand-alone Hatari.
-
-Possible Future Tasks:
-* Netplay seems to work but the large savestate size seems to cause delays. Is there some way to mitigate this? The savestate seems to have coherent data locations, at least, though games often rewrite large portions of the system RAM every frame.
-* Falcon microphone support? Need to find relevant Falcon software to test against.
-* Printer emulation? Probably a pipe dream, as I can't think of a good way to handle it. Maybe a secondary graphical page display, and saving a PNG image to the saves folder after?
-* RS232 doesn't seem possible to support via Libretro, though maybe there is a way to work around this.
 
 ## History
 
