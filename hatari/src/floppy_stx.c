@@ -128,7 +128,15 @@ void STX_MemorySnapShot_Capture(bool bSave)
 
 	if ( bSave )					/* Saving snapshot */
 	{
+		#ifdef __LIBRETRO__
+			// pointers can't go to savestate, they cause divergence, temporarily setting to 0
+			STX_MAIN_STRUCT* temp_ImageBuffer[MAX_FLOPPYDRIVES];
+			for (int j=0; j<MAX_FLOPPYDRIVES; ++j) { temp_ImageBuffer[j] = STX_State.ImageBuffer[j]; STX_State.ImageBuffer[j] = 0; }
+		#endif
 		MemorySnapShot_Store( &STX_State , sizeof (STX_State) );
+		#ifdef __LIBRETRO__
+			for (int j=0; j<MAX_FLOPPYDRIVES; ++j) STX_State.ImageBuffer[j] = temp_ImageBuffer[j];
+		#endif
 
 		/* Also save the 'write sector' and 'write track' buffers */
 		for ( Drive=0 ; Drive < MAX_FLOPPYDRIVES ; Drive++ )
@@ -143,7 +151,14 @@ void STX_MemorySnapShot_Capture(bool bSave)
 				{
 //Str_Dump_Hex_Ascii ( (char *) &STX_SaveStruct[ Drive ].pSaveSectorsStruct[ i ], sizeof( STX_SAVE_SECTOR_STRUCT ), 16, "" , stderr );
 					/* Save the structure */
+					#ifdef __LIBRETRO__
+						Uint8* temp_data = STX_SaveStruct[Drive].pSaveSectorsStruct[i].pData;
+						STX_SaveStruct[Drive].pSaveSectorsStruct[i].pData = 0;
+					#endif
 					MemorySnapShot_Store ( &STX_SaveStruct[ Drive ].pSaveSectorsStruct[ i ] , sizeof( STX_SAVE_SECTOR_STRUCT ) );
+					#ifdef __LIBRETRO__
+						STX_SaveStruct[Drive].pSaveSectorsStruct[i].pData = temp_data;
+					#endif
 					/* Save the sector's data */
 					MemorySnapShot_Store ( STX_SaveStruct[ Drive ].pSaveSectorsStruct[ i ].pData ,
 							STX_SaveStruct[ Drive ].pSaveSectorsStruct[ i ].SectorSize );
@@ -161,7 +176,17 @@ void STX_MemorySnapShot_Capture(bool bSave)
 				{
 //Str_Dump_Hex_Ascii ( (char *) &STX_SaveStruct[ Drive ].pSaveTracksStruct[ i ], sizeof( STX_SAVE_TRACK_STRUCT ), 16, "" , stderr );
 					/* Save the structure */
+					#ifdef __LIBRETRO__
+						Uint8* temp_datar = STX_SaveStruct[Drive].pSaveTracksStruct[i].pDataRead;
+						Uint8* temp_dataw = STX_SaveStruct[Drive].pSaveTracksStruct[i].pDataWrite;
+						STX_SaveStruct[Drive].pSaveTracksStruct[i].pDataRead  = 0;
+						STX_SaveStruct[Drive].pSaveTracksStruct[i].pDataWrite = 0;
+					#endif
 					MemorySnapShot_Store ( &STX_SaveStruct[ Drive ].pSaveTracksStruct[ i ] , sizeof( STX_SAVE_TRACK_STRUCT ) );
+					#ifdef __LIBRETRO__
+						STX_SaveStruct[Drive].pSaveTracksStruct[i].pDataRead  = temp_datar;
+						STX_SaveStruct[Drive].pSaveTracksStruct[i].pDataWrite = temp_dataw;
+					#endif
 					/* Save the track's data (as it was written, don't save the interpreted track) */
 					MemorySnapShot_Store ( STX_SaveStruct[ Drive ].pSaveTracksStruct[ i ].pDataWrite ,
 							STX_SaveStruct[ Drive ].pSaveTracksStruct[ i ].TrackSizeWrite );

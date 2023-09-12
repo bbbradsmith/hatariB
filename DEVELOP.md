@@ -116,6 +116,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Use core's file system to load floppy image.
   * Use core's file system to save floppy overlay image.
   * Suppress Hatari's warning that STX saves to an overlay instead of the image file, since we never save back to the original floppy image files.
+  * Suppress savestate pointer data to prevent divergence.
 * **hatari/src/gemdos.c**
   * Use core's file system to provide folder hard disk support.
   * Provide `core_scandir_system` as a simplified replacement for `scandir` using what is available through the virtual file system.
