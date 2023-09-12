@@ -47,6 +47,10 @@ const uint64_t QUIRKS = RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT;
 // Add core_debug_snapshot before entries in memorySnapshot.c MemorySnapShot_Capture_Do to help find data locations.
 #define DEBUG_SAVESTATE_INTEGRITY   0
 
+// Simpler savestate integrity test: whenever a savestate is saved, it will store another state in X frames,
+// and then every savestate restore will compare its own state after X frames. 0 to disable.
+#define DEBUG_SAVESTATE_SIMPLE   0
+
 //
 // Libretro
 //
@@ -613,6 +617,12 @@ int snapshot_pos = 0;
 int snapshot_max = 0;
 int snapshot_size = 0;
 bool snapshot_error = false;
+#if DEBUG_SAVESTATE_SIMPLE
+static uint8_t* debug_snapshot_buffer = NULL;
+static int debug_snapshot_buffer_size = 0;
+static int debug_snapshot_countdown = 0;
+static bool debug_snapshot_read = false;
+#endif
 
 static void core_snapshot_open_internal(void)
 {
@@ -1178,6 +1188,45 @@ RETRO_API void retro_run(void)
 	snapshot_buffer_prepare(snapshot_size);
 	core_serialize(true);
 #endif
+#if DEBUG_SAVESTATE_SIMPLE
+	if (debug_snapshot_countdown > 0)
+	{
+		--debug_snapshot_countdown;
+		if (debug_snapshot_countdown == 0)
+		{
+			snapshot_buffer_prepare(snapshot_size);
+			core_serialize(true);
+			if (debug_snapshot_read == false)
+			{
+				if (debug_snapshot_buffer == NULL || debug_snapshot_buffer_size != snapshot_size)
+				{
+					free(debug_snapshot_buffer);
+					debug_snapshot_buffer = malloc(snapshot_size);
+					debug_snapshot_buffer_size = snapshot_size;
+				}
+				memcpy(debug_snapshot_buffer,snapshot_buffer,snapshot_size);
+				core_debug_msg("DEBUG SNAPSHOT saved");
+			}
+			else
+			{
+				if (debug_snapshot_buffer == NULL)
+					core_debug_msg("DEBUG SNAPSHOT no snapshot to compare?");
+				else if (debug_snapshot_buffer_size != snapshot_size)
+					core_debug_msg("DEBUG SNAPSHOT size mismatch?");
+				else
+				{
+					int mismatch = -1;
+					for (int i=0; i<snapshot_size; ++i)
+						if (snapshot_buffer[i] != debug_snapshot_buffer[i]) { mismatch = i; break; }
+					if (mismatch >= 0)
+						core_debug_hex("DEBUG SNAPSHOT divergence at: ",mismatch);
+					else
+						core_debug_msg("DEBUG SNAPSHOT match!");
+				}
+			}
+		}
+	}
+#endif
 }
 
 RETRO_API size_t retro_serialize_size(void)
@@ -1203,6 +1252,10 @@ RETRO_API bool retro_serialize(void *data, size_t size)
 		result = true;
 	}
 	PERF_STOP(PERF_SERIALIZE);
+#if DEBUG_SAVESTATE_SIMPLE
+	debug_snapshot_countdown = DEBUG_SAVESTATE_SIMPLE;
+	debug_snapshot_read = false;
+#endif
 	return result;
 }
 
@@ -1221,6 +1274,10 @@ RETRO_API bool retro_unserialize(const void *data, size_t size)
 		result = true;
 	}
 	PERF_STOP(PERF_UNSERIALIZE);
+#if DEBUG_SAVESTATE_SIMPLE
+	debug_snapshot_countdown = DEBUG_SAVESTATE_SIMPLE;
+	debug_snapshot_read = true;
+#endif
 	return result;
 }
 
