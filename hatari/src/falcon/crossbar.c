@@ -421,9 +421,16 @@ void Crossbar_MemorySnapShot_Capture(bool bSave)
 	MemorySnapShot_Store(&dspXmit, sizeof(dspXmit));
 	MemorySnapShot_Store(&dspReceive, sizeof(dspReceive));
 
+#ifndef __LIBRETRO__
 	/* After restoring, update the clock/freq counters */
 	if ( !bSave )
 		Crossbar_Recalculate_Clocks_Cycles();
+#else
+	// disabled this because it was causing savestate divergence
+	// this recalculate only operates on the crossbar structure and sets dac.wordCount=0.
+	// if these were valid before restore, they should still be valid after.
+	// the recalculate instead resets some state, causing them to diverge?
+#endif
 }
 
 
