@@ -352,7 +352,29 @@ void	ACIA_Reset ( ACIA_STRUCT *pAllACIA )
  */
 void	ACIA_MemorySnapShot_Capture ( bool bSave )
 {
+	#ifdef __LIBRETRO__
+		ACIA_STRUCT temp_acia[ACIA_MAX_NB];
+		if (bSave)
+		{
+			// hiding pointers from savesate to prevent divergence
+			memcpy(&temp_acia,&ACIA_Array,sizeof(ACIA_Array));
+			for (int i=0; i<ACIA_MAX_NB; ++i)
+			{
+				ACIA_Array[i].Get_Line_RX = 0;
+				ACIA_Array[i].Set_Line_TX = 0;
+				ACIA_Array[i].Set_Line_IRQ = 0;
+				ACIA_Array[i].Set_Timers = 0;
+				ACIA_Array[i].Get_Line_CTS = 0;
+				ACIA_Array[i].Get_Line_DCD = 0;
+				ACIA_Array[i].Set_Line_RTS = 0;
+			}
+		}
+	#endif
 	MemorySnapShot_Store(&ACIA_Array, sizeof(ACIA_Array));
+	#ifndef __LIBRETRO__
+		if (bSave)
+			memcpy(&ACIA_Array,&temp_acia,sizeof(ACIA_Array));
+	#endif
 
 	if ( !bSave )						/* If restoring */
 		ACIA_Init_Pointers ( ACIA_Array );		/* Restore pointers */

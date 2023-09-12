@@ -427,7 +427,27 @@ void IPF_MemorySnapShot_Capture(bool bSave)
 		MemorySnapShot_Store(&StructSize, sizeof(StructSize));
 		if ( StructSize > 0 )
 		{
+#ifdef __LIBRETRO__
+			// temporarily remove pointers to prevent savestate divergence
+			IPF_STRUCT temp_ipf;
+			memcpy(&temp_ipf,&IPF_State,sizeof(IPF_State));
+			IPF_State.Fdc.driveprc = 0;
+			IPF_State.Fdc.drive = 0;
+			IPF_State.Fdc.cbirq = 0;
+			IPF_State.Fdc.cbdrq = 0;
+			IPF_State.Fdc.cbtrk = 0;
+			IPF_State.Fdc.userptr = 0;
+			for (int i=0; i < MAX_FLOPPYDRIVES; ++i)
+			{
+				IPF_State.Drive[i].trackbuf = 0;
+				IPF_State.Drive[i].timebuf = 0;
+				IPF_State.Drive[i].userptr = 0;
+			}
+#endif
 			MemorySnapShot_Store(&IPF_State, sizeof(IPF_State));
+#ifdef __LIBRETRO__
+			memcpy(&IPF_State,&temp_ipf,sizeof(IPF_State));
+#endif
 
 			/* Save the content of IPF_RawStreamImage[] */
 			for ( Drive=0 ; Drive < MAX_FLOPPYDRIVES ; Drive++ )

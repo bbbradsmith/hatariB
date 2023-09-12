@@ -69,6 +69,8 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * `DEBUG=1` adds `ENABLE_TRACING=1` which can log an emulation trace, sometimes useful when debugging behaviour, especially savestate consistency, but at significant CPU overhead.
   * `VERBOSE_CMAKE=1` will show all the cmake build steps, `=2` will also show the cmake configuration trace.
 
+* **hatari/src/acia.c**
+  * Suppress savestate pointer data to prevent divergence.
 * **hatari/src/audio.c**
   * Disable all use of SDL audio system.
   * `Audio_SetOutputAudioFreq` calls `core_set_samplerate` to notify the core of the current samplerate.
@@ -112,6 +114,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
 * **hatari/src/floppy_ipf.c**
   * Use core's file system to load floppy image.
   * Convert implicit capsimg linking to one loaded at runtime if available.
+  * Suppress savestate pointer data to prevent divergence.
 * **hatari/src/floppy_stx.c**
   * Use core's file system to load floppy image.
   * Use core's file system to save floppy overlay image.
