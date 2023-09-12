@@ -39,6 +39,14 @@ static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|ipf|ctr|m3u|m3u8
 // serialization quirks
 const uint64_t QUIRKS = RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT;
 
+// Dumps a savestate every frame to compare for determinism and integrity.
+// Files will start dumping to the save folder each frame after the first restore
+// and their counter will reset with each restore, allowing comparison of frames since each restore.
+// Start a game, press F2 to save a state, then hit F4 a few times to generate restore timeline dumps
+// Then run hatary_state_compare.py in your saves folder to compare the timelines.
+// Add core_debug_snapshot to memorySnapshot.c to help find data locations.
+#define DEBUG_SAVESTATE_INTEGRITY   0
+
 //
 // Libretro
 //
@@ -600,7 +608,7 @@ static void core_perf_show()
 // memory snapshot simulated file
 //
 
-char* snapshot_buffer = NULL;
+uint8_t* snapshot_buffer = NULL;
 int snapshot_pos = 0;
 int snapshot_max = 0;
 int snapshot_size = 0;
@@ -624,6 +632,11 @@ void core_snapshot_open(void)
 void core_snapshot_close(void)
 {
 	//retro_log(RETRO_LOG_DEBUG,"core_snapshot_close() max: %X = %d\n",snapshot_max,snapshot_max);
+}
+
+void core_debug_snapshot(const char* name) // prints the current file position
+{
+	core_debug_hex(name,snapshot_pos);
 }
 
 void core_snapshot_read(char* buf, int len)
@@ -775,6 +788,27 @@ static bool core_serialize(bool write)
 		msg.progress = -1;
 		environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg);		
 	}
+
+#if DEBUG_SAVESTATE_INTEGRITY
+	{
+		static int timeline = 0;
+		static int count = 0;
+		if (!write)
+		{
+			// savestate restore resets timeline and count
+			++timeline;
+			count = 0;
+		}
+		else if (timeline > 0) // don't start recording until first restore
+		{
+			// savestate save dumps to file
+			char fn[256];
+			snprintf(fn,sizeof(fn),"hatarib_state_%02d_%03d.bin",timeline,count);
+			core_write_file_save(fn,(unsigned int)snapshot_size,snapshot_buffer);
+			++count;
+		}
+	}
+#endif
 
 	//retro_log(RETRO_LOG_DEBUG,"core_serialized: %d of %d used\n",snapshot_max,snapshot_size);
 	if (result != 0)
@@ -1138,6 +1172,12 @@ RETRO_API void retro_run(void)
 
 	// flush midi if needed
 	core_midi_frame();
+
+#if DEBUG_SAVESTATE_INTEGRITY
+	// write a savestate dump each frame
+	snapshot_buffer_prepare(snapshot_size);
+	core_serialize(true);
+#endif
 }
 
 RETRO_API size_t retro_serialize_size(void)
