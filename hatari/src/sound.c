@@ -1691,6 +1691,7 @@ void Sound_MemorySnapShot_Capture(bool bSave)
 	MemorySnapShot_Store(&YM_Buffer_250, sizeof(YM_Buffer_250));
 	MemorySnapShot_Store(&YM_Buffer_250_pos_write, sizeof(YM_Buffer_250_pos_write));
 	MemorySnapShot_Store(&YM_Buffer_250_pos_read, sizeof(YM_Buffer_250_pos_read));
+	MemorySnapShot_Store(&YM2149_ConvertCycles_250, sizeof(YM2149_ConvertCycles_250));
 	MemorySnapShot_Store(&pos_fract, sizeof(pos_fract));
 	MemorySnapShot_Store(&pos_fract2, sizeof(pos_fract2));
 #endif

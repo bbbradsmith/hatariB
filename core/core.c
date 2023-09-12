@@ -24,7 +24,7 @@
 #define SNAPSHOT_MINIMUM       (8 * 1024 * 1024)
 #define SNAPSHOT_OVERHEAD      (64 * 1024)
 #define SNAPSHOT_ROUND         (64 * 1024)
-#define SNAPSHOT_VERSION       1
+#define SNAPSHOT_VERSION       2
 
 // Logs seem valid for either first retro_set_environment or everything else,
 // set this to 1 when you want to log the first call to retro_set_environment.
@@ -44,7 +44,7 @@ const uint64_t QUIRKS = RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT;
 // and their counter will reset with each restore, allowing comparison of frames since each restore.
 // Start a game, press F2 to save a state, then hit F4 a few times to generate restore timeline dumps
 // Then run hatary_state_compare.py in your saves folder to compare the timelines.
-// Add core_debug_snapshot to memorySnapshot.c to help find data locations.
+// Add core_debug_snapshot before entries in memorySnapshot.c MemorySnapShot_Capture_Do to help find data locations.
 #define DEBUG_SAVESTATE_INTEGRITY   0
 
 //
