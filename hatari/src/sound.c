@@ -340,6 +340,8 @@ static ymsample	LowPassFilter		(ymsample x0);
 static ymsample	PWMaliasFilter		(ymsample x0);
 #ifdef __LIBRETRO__
 static ymsample	IIRLowPassFilter	(ymsample x0);
+static double pos_fract = 0; // a local static variable made global because it needs to go in the savestate
+static Uint32 pos_fract2 = 0;
 #endif
 
 static void	interpolate_volumetable	(ymu16 volumetable[32][32][32]);
@@ -1289,7 +1291,9 @@ static void	YM2149_Run ( Uint64 CPU_Clock )
  */
 static ymsample	YM2149_Next_Resample_Nearest ( void )
 {
+#ifndef __LIBRETRO__
 	static double	pos_fract = 0;
+#endif
 	ymsample	sample;
 
 
@@ -1322,7 +1326,9 @@ static ymsample	YM2149_Next_Resample_Nearest ( void )
  */
 static ymsample	YM2149_Next_Resample_Weighted_Average_2 ( void )
 {
+#ifndef __LIBRETRO__
 	static double	pos_fract = 0;
+#endif
 	ymsample	sample_before , sample_after;
 	ymsample	sample;
 
@@ -1365,7 +1371,11 @@ static ymsample	YM2149_Next_Resample_Weighted_Average_2 ( void )
  */
  static ymsample	YM2149_Next_Resample_Weighted_Average_N ( void )
 {
+#ifndef __LIBRETRO__
 	static Uint32	pos_fract = 0;
+#else
+	#define pos_fract pos_fract2
+#endif
 	Uint32		interval_fract;
 	Sint64		total;
 	ymsample	sample;
@@ -1400,6 +1410,9 @@ static ymsample	YM2149_Next_Resample_Weighted_Average_2 ( void )
 //fprintf ( stderr , "next 2 %d\n" , YM_Buffer_250_pos_read );
 	sample = total / interval_fract;
 	return sample;
+#ifdef __LIBRETRO__
+#undef pos_fract
+#endif
 }
 
 
@@ -1678,6 +1691,8 @@ void Sound_MemorySnapShot_Capture(bool bSave)
 	MemorySnapShot_Store(&YM_Buffer_250, sizeof(YM_Buffer_250));
 	MemorySnapShot_Store(&YM_Buffer_250_pos_write, sizeof(YM_Buffer_250_pos_write));
 	MemorySnapShot_Store(&YM_Buffer_250_pos_read, sizeof(YM_Buffer_250_pos_read));
+	MemorySnapShot_Store(&pos_fract, sizeof(pos_fract));
+	MemorySnapShot_Store(&pos_fract2, sizeof(pos_fract2));
 #endif
 }
 
