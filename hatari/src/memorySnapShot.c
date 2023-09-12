@@ -366,6 +366,9 @@ void MemorySnapShot_Capture_Immediate(const char *pszFileName, bool bConfirm)
 /*
  * Do the real saving (called from newcpu.c / m68k_go()
  */
+// use to figure out the structure of a snapshot (logs the start of each block in the savestate)
+//#define LIBRETRO_DEBUG_SNAPSHOT(x) core_debug_snapshot(x)
+#define LIBRETRO_DEBUG_SNAPSHOT(x) {}
 void MemorySnapShot_Capture_Do(void)
 {
 	Uint32 magic = SNAPSHOT_MAGIC;
@@ -374,34 +377,60 @@ void MemorySnapShot_Capture_Do(void)
 	if (MemorySnapShot_OpenFile(Temp_FileName, true, Temp_Confirm))
 	{
 		/* Capture each files details */
+	LIBRETRO_DEBUG_SNAPSHOT("Configuration: ");
 		Configuration_MemorySnapShot_Capture(true);
+	LIBRETRO_DEBUG_SNAPSHOT("TOS: ");
 		TOS_MemorySnapShot_Capture(true);
+	LIBRETRO_DEBUG_SNAPSHOT("STMemory: ");
 		STMemory_MemorySnapShot_Capture(true);
+	LIBRETRO_DEBUG_SNAPSHOT("Cycles: ");
 		Cycles_MemorySnapShot_Capture(true);			/* Before fdc (for CyclesGlobalClockCounter) */
+	LIBRETRO_DEBUG_SNAPSHOT("FDC: ");
 		FDC_MemorySnapShot_Capture(true);
+	LIBRETRO_DEBUG_SNAPSHOT("Floppy: ");
 		Floppy_MemorySnapShot_Capture(true);
+	LIBRETRO_DEBUG_SNAPSHOT("IPF: ");
 		IPF_MemorySnapShot_Capture(true);			/* After fdc/floppy are saved */
+	LIBRETRO_DEBUG_SNAPSHOT("STX: ");
 		STX_MemorySnapShot_Capture(true);			/* After fdc/floppy are saved */
+	LIBRETRO_DEBUG_SNAPSHOT("GemDOS: ");
 		GemDOS_MemorySnapShot_Capture(true);
+	LIBRETRO_DEBUG_SNAPSHOT("ACIA: ");
 		ACIA_MemorySnapShot_Capture(true);
+	LIBRETRO_DEBUG_SNAPSHOT("IKBD: ");
 		IKBD_MemorySnapShot_Capture(true);
+	LIBRETRO_DEBUG_SNAPSHOT("MIDI: ");
 		MIDI_MemorySnapShot_Capture(true);
+	LIBRETRO_DEBUG_SNAPSHOT("CycInt: ");
 		CycInt_MemorySnapShot_Capture(true);
+	LIBRETRO_DEBUG_SNAPSHOT("M68000: ");
 		M68000_MemorySnapShot_Capture(true);
+	LIBRETRO_DEBUG_SNAPSHOT("MFP: ");
 		MFP_MemorySnapShot_Capture(true);
+	LIBRETRO_DEBUG_SNAPSHOT("PSG: ");
 		PSG_MemorySnapShot_Capture(true);
+	LIBRETRO_DEBUG_SNAPSHOT("Sound: ");
 		Sound_MemorySnapShot_Capture(true);
+	LIBRETRO_DEBUG_SNAPSHOT("Video: ");
 		Video_MemorySnapShot_Capture(true);
+	LIBRETRO_DEBUG_SNAPSHOT("Blitter: ");
 		Blitter_MemorySnapShot_Capture(true);
+	LIBRETRO_DEBUG_SNAPSHOT("DmaSnd: ");
 		DmaSnd_MemorySnapShot_Capture(true);
+	LIBRETRO_DEBUG_SNAPSHOT("Crossbar: ");
 		Crossbar_MemorySnapShot_Capture(true);
+	LIBRETRO_DEBUG_SNAPSHOT("VIDEL: ");
 		VIDEL_MemorySnapShot_Capture(true);
+	LIBRETRO_DEBUG_SNAPSHOT("DSP: ");
 		DSP_MemorySnapShot_Capture(true);
 #ifndef __LIBRETRO__
 		DebugUI_MemorySnapShot_Capture(Temp_FileName, true);
 #endif
+	LIBRETRO_DEBUG_SNAPSHOT("IoMem: ");
 		IoMem_MemorySnapShot_Capture(true);
+	LIBRETRO_DEBUG_SNAPSHOT("ScreenConv: ");
 		ScreenConv_MemorySnapShot_Capture(true);
+	LIBRETRO_DEBUG_SNAPSHOT("SCC: ");
 		SCC_MemorySnapShot_Capture(true);
 
 		/* end marker */

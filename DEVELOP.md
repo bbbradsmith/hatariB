@@ -100,6 +100,8 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
     * Remove `File_MakeAbsoluteSpecialName` path conversions, which modify the paths we provide directly. Since all file access is through our core's file system, absolute paths are inappropriate. This also prevents Hatari from making modifications to the paths which might have caused a reset check, disk re-insertion, etc. on options change.
 * **hatari/src/crossbar.c**
   * Removed `Crossbar_Recalculate_Clocks_Cycles()` from savestate restore because it seemed to be unnecessary and caused state divergence.
+* **hatari/src/cycles.c**
+  * Update counters before save or restore of state to prevent divergence.
 * **hatari/src/dialog.c**
   * Disable `Dialog_DoProperty`.
 * **hatari/src/dim.c**
@@ -174,6 +176,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Instead of saving to a file, write to a provided memory buffer.
   * Suppress error dialogs and alerts.
   * Suppress saving `DebugUI` information.
+  * Add `LIBRETRO_DEBUG_SNAPSHOT` macro to debug snapshot memory regions.
 * **hatari/src/midi.c**
   * Connect MIDI read and write to the core's MIDI interface, assume the host device is always open/available from Hatari's perspective.
 * **hatari/src/msa.c**
@@ -224,6 +227,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
 * **hatari/src/video.c**
   * `Video_ResetShifterTimings` relays current framerate to `core_set_fps`.
   * Unused variable warning suppression for `ENABLE_TRACING`.
+  * Save `VBL_ClockCounter` to prevent state divergence.
 * **hatari/src/zip.c**
   * Disable use of `unzOpen` which was modified (see: unzip.c) and not needed by this core.
 * **hatari/cpu/hatari-glue.c**

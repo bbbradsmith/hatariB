@@ -59,6 +59,9 @@ static void	Cycles_UpdateCounters(void);
  */
 void Cycles_MemorySnapShot_Capture(bool bSave)
 {
+#ifdef __LIBRETRO__
+	Cycles_UpdateCounters(); // update all counters before saving or restoring to prevent divergence
+#endif
 	/* Save/Restore details */
 	MemorySnapShot_Store(&nCyclesMainCounter, sizeof(nCyclesMainCounter));
 	MemorySnapShot_Store(nCyclesCounter, sizeof(nCyclesCounter));

@@ -695,6 +695,10 @@ static int		VideoTiming;
 int	Video_GetPosition_ForceInc = 0;
 /* TEMP : to update CYCLES_COUNTER_VIDEO during an opcode */
 
+#ifdef __LIBRETRO__
+// this needs to be part of the savestate to prevent divergence
+static Uint64 VBL_ClockCounter = 0;
+#endif
 
 /*--------------------------------------------------------------*/
 /* Local functions prototypes                                   */
@@ -777,6 +781,9 @@ void Video_MemorySnapShot_Capture(bool bSave)
 	MemorySnapShot_Store(&VblJitterIndex, sizeof(VblJitterIndex));
 	MemorySnapShot_Store(&ShifterFrame, sizeof(ShifterFrame));
 	MemorySnapShot_Store(&TTSpecialVideoMode, sizeof(TTSpecialVideoMode));
+#ifdef __LIBRETRO__
+	MemorySnapShot_Store(&VBL_ClockCounter,sizeof(VBL_ClockCounter));
+#endif
 }
 
 
@@ -4547,7 +4554,9 @@ void Video_InterruptHandler_VBL ( void )
 {
 	int PendingCyclesOver;
 	int PendingInterruptCount_save;
+#ifndef __LIBRETRO__
 	static Uint64 VBL_ClockCounter;
+#endif
 
 	PendingInterruptCount_save = PendingInterruptCount;
 

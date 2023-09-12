@@ -44,7 +44,7 @@ const uint64_t QUIRKS = RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT;
 // and their counter will reset with each restore, allowing comparison of frames since each restore.
 // Start a game, press F2 to save a state, then hit F4 a few times to generate restore timeline dumps
 // Then run hatary_state_compare.py in your saves folder to compare the timelines.
-// Add core_debug_snapshot before entries in memorySnapshot.c MemorySnapShot_Capture_Do to help find data locations.
+// Enable LIBRETRO_DEBUG_SNAPSHOT in memorySnapshot.c to list the the data locations.
 #define DEBUG_SAVESTATE_INTEGRITY   0
 
 // Simpler savestate integrity test: whenever a savestate is saved, it will store another state in X frames,
@@ -1215,11 +1215,18 @@ RETRO_API void retro_run(void)
 					core_debug_msg("DEBUG SNAPSHOT size mismatch?");
 				else
 				{
-					int mismatch = -1;
+					int first_mismatch = -1;
+					int last_mismatch = -1;
 					for (int i=0; i<snapshot_size; ++i)
-						if (snapshot_buffer[i] != debug_snapshot_buffer[i]) { mismatch = i; break; }
-					if (mismatch >= 0)
-						core_debug_hex("DEBUG SNAPSHOT divergence at: ",mismatch);
+					{
+						if (snapshot_buffer[i] != debug_snapshot_buffer[i])
+						{
+							last_mismatch = i;
+							if (first_mismatch < 0) first_mismatch = i;
+						}
+					}
+					if (first_mismatch >= 0)
+						retro_log(RETRO_LOG_DEBUG,"DEBUG SNAPSHOT divergence at: %8X - %8X\n",first_mismatch,last_mismatch);
 					else
 						core_debug_msg("DEBUG SNAPSHOT match!");
 				}
