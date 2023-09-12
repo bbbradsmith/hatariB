@@ -397,7 +397,9 @@ void MemorySnapShot_Capture_Do(void)
 		Crossbar_MemorySnapShot_Capture(true);
 		VIDEL_MemorySnapShot_Capture(true);
 		DSP_MemorySnapShot_Capture(true);
+#ifndef __LIBRETRO__
 		DebugUI_MemorySnapShot_Capture(Temp_FileName, true);
+#endif
 		IoMem_MemorySnapShot_Capture(true);
 		ScreenConv_MemorySnapShot_Capture(true);
 		SCC_MemorySnapShot_Capture(true);

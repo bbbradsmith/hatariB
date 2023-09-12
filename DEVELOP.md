@@ -168,6 +168,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Disable compression of savestate data, Libretro does its own compression for save to disk, but also needs an uncompressed form for run-ahead or netplay to work.
   * Instead of saving to a file, write to a provided memory buffer.
   * Suppress error dialogs and alerts.
+  * Suppress saving `DebugUI` information.
 * **hatari/src/midi.c**
   * Connect MIDI read and write to the core's MIDI interface, assume the host device is always open/available from Hatari's perspective.
 * **hatari/src/msa.c**
