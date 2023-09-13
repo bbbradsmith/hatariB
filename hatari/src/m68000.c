@@ -441,6 +441,9 @@ void M68000_PatchCpuTables(void)
 /**
  * Save/Restore snapshot of CPU variables ('MemorySnapShot_Store' handles type)
  */
+#ifdef __LIBRETRO__
+extern uae_u32 extra_cycle; // from cpu/custom.c
+#endif
 void M68000_MemorySnapShot_Capture(bool bSave)
 {
 	int len;
@@ -482,6 +485,9 @@ void M68000_MemorySnapShot_Capture(bool bSave)
 	MemorySnapShot_Store(&CPU_IACK,sizeof(CPU_IACK));
 	MemorySnapShot_Store(&LastInstrCycles,sizeof(LastInstrCycles));
 	MemorySnapShot_Store(&Pairing,sizeof(Pairing));
+	// from cpu/custom.c
+	MemorySnapShot_Store(&currcycle,sizeof(currcycle));
+	MemorySnapShot_Store(&extra_cycle,sizeof(extra_cycle));
 #endif
 }
 

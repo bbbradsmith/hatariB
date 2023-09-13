@@ -45,7 +45,11 @@ unsigned long int hsync_counter = 0, vsync_counter = 0;
 
 uae_u16 dmacon;
 
+#ifndef __LIBRETRO__
 static uae_u32 extra_cycle;
+#else
+uae_u32 extra_cycle; // allow m68000.c to save this variable
+#endif
 
 #ifdef CPUEMU_13
 

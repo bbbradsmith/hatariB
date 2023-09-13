@@ -155,6 +155,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Fix broken mappings for minus (`- _`), bracket (`[ { ] }`), and backquote/tilde (~) keys. Also [submitted to Hatari](https://github.com/hatari/hatari/pull/26).
 * **hatari/src/m68000.c**
   * Saved `WaitStateCycles`,`BusMode`,`CPU_IACK`,`LastInstrCycles`,`Pairing` to prevent state divergence.
+  * Saved `currcycle` and `extra_cycle` from custom.c to prevent state divergence.
 * **hatari/src/main.c**
 * **hatari/src/includes/main.h**
   * Disable `SDL_GetTicks` timer.
@@ -237,6 +238,8 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Save `VBL_ClockCounter` to prevent state divergence.
 * **hatari/src/zip.c**
   * Disable use of `unzOpen` which was modified (see: unzip.c) and not needed by this core.
+* **hatari/cpu/custom.c**
+  * Make `extra_cycle` externally accessible for savestate.
 * **hatari/cpu/hatari-glue.c**
   * Added `core_save_state`, `core_restore_state` and `core_flush_audio` to facilitate seamless savestates.
 * **hatari/cpu/memory.c**
