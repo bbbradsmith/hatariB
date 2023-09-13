@@ -557,6 +557,10 @@ static Uint8 DMADiskWorkSpace[ FDC_TRACK_BYTES_STANDARD*4+1000 ];/* Workspace us
 								/* It should be large enough to contain a whole track */
 								/* We use a x4 factor when we need to simulate HD and ED too */
 
+#ifdef __LIBRETRO__
+static Uint64 restore_IndexPulse_Time[MAX_FLOPPYDRIVES];
+static Uint8 restore_DiskChange_signal[MAX_FLOPPYDRIVES];
+#endif
 
 
 /*--------------------------------------------------------------*/
@@ -647,6 +651,18 @@ void	FDC_MemorySnapShot_Capture(bool bSave)
 	MemorySnapShot_Store(&FDC_BUFFER, sizeof(FDC_BUFFER_STRUCT));
 
 	MemorySnapShot_Store(DMADiskWorkSpace, sizeof(DMADiskWorkSpace));
+
+#ifdef __LIBRETRO__
+	// store values which much be reapplied if disks are re-inserted
+	if (!bSave)
+	{
+		for (int i=0; i < MAX_FLOPPYDRIVES; ++i)
+		{
+			restore_IndexPulse_Time[i] = FDC_DRIVES[i].IndexPulse_Time;
+			restore_DiskChange_signal[i] = FDC_DRIVES[i].DiskChange_signal;
+		}
+	}
+#endif
 }
 
 
@@ -1389,6 +1405,17 @@ void	FDC_InsertFloppy ( int Drive )
 	}
 }
 
+#ifdef __LIBRETRO__
+void FDC_InsertFloppyRestore ( int Drive )
+{
+	FDC_InsertFloppy ( Drive );
+	if ( ( Drive >= 0 ) && ( Drive < MAX_FLOPPYDRIVES ) )
+	{
+		FDC_DRIVES[ Drive ].IndexPulse_Time = restore_IndexPulse_Time[ Drive ];
+		FDC_Drive_Set_DC_signal( Drive, restore_DiskChange_signal[ Drive ]);
+	}
+}
+#endif
 
 /*-----------------------------------------------------------------------*/
 /**

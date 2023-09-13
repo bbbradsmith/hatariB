@@ -111,6 +111,8 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Use core's file system to load floppy image.
   * Error notification for attempting to save DIM image (unsupported).
 * **hatari/src/fdc.c**
+  **hatari/src/include/fdc.h**
+  * Add `FDC_FloppyInsertRestore` to re-apply pulse index timing and disk change signal after savestate.
   * Replace use of `rand()` with deterministic `core_rand()`.
 * **hatari/src/file.c**
   **hatari/src/include/file.h**
@@ -120,6 +122,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   **hatari/src/include/floppy.h**
   * `Floppy_IsWriteProtected` formerly checked the file on disk's write-protect state. This is not available from the Libretro virtual filesystem, so we cannot use this information. Assuming all disks are not write protected. Can use core options to write protect the drives manually, but we lack a per-disk-image setting. However, since we do not save back to the original floppy file, there is less of a need for this.
   * Provide extern access to core file system in header.
+  * Use added `FDC_FloppyInsertRestore` to restore some FDC state after savestate restore re-insertion.
 * **hatari/src/floppy_ipf.c**
   * Use core's file system to load floppy image.
   * Convert implicit capsimg linking to one loaded at runtime if available.

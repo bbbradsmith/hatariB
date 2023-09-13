@@ -821,8 +821,9 @@ void core_disk_reindex(void)
 				image_index[d] = MAX_DISKS; // set to invalid index
 				retro_log(RETRO_LOG_ERROR,"core_disk_serialize disk in drive %d not cached: '%s'\n",d,infile);
 				// do a save test for possible modifications
-				if (core_disk_save_exists(infile)) // note this doesn't work for STX because it wants an overlay instead
+				if (core_disk_enable_save && core_disk_save_exists(infile)) // note this doesn't work for STX because it wants an overlay instead
 				{
+					// TODO look for STX overlay
 					core_floppy_changed(d);
 					//retro_log(RETRO_LOG_DEBUG,"Savestate marks uncached floppy contents changed: %s\n",infile);
 				}

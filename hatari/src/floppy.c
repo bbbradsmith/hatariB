@@ -157,7 +157,12 @@ void Floppy_MemorySnapShot_Capture(bool bSave)
 		/* FDC_DRIVES[].DiskInserted that was restored just before), we must call FDC_InsertFloppy */
 		/* for each restored drive with an inserted disk to set FDC_DRIVES[].DiskInserted=true */
 		if ( !bSave && ( EmulationDrives[i].bDiskInserted ) )
+#ifndef __LIBRETRO__
 			FDC_InsertFloppy ( i );
+#else
+			// insertion clears some state which must be restored
+			FDC_InsertFloppyRestore ( i );
+#endif
 	}
 }
 
