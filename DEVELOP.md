@@ -153,6 +153,8 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Disable using Num Lock to remap Numpad. (ST has no Num Lock. Numpad is Numpad.)
   * Disable use of `SDL_GetKeyFromName`/`SDL_GetKeyName`, only needed by configuration GUI.
   * Fix broken mappings for minus (`- _`), bracket (`[ { ] }`), and backquote/tilde (~) keys. Also [submitted to Hatari](https://github.com/hatari/hatari/pull/26).
+* **hatari/src/m68000.c**
+  * Saved `WaitStateCycles`,`BusMode`,`CPU_IACK`,`LastInstrCycles`,`Pairing` to prevent state divergence.
 * **hatari/src/main.c**
 * **hatari/src/includes/main.h**
   * Disable `SDL_GetTicks` timer.

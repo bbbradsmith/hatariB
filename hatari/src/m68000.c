@@ -474,6 +474,15 @@ void M68000_MemorySnapShot_Capture(bool bSave)
 		//printf ( "restore mmu done\n"  );
 		//m68k_dumpstate_file(stderr, NULL);
 	}
+
+#ifdef __LIBRETRO__
+	// state that was missing from savesates, leads to divergence if missing
+	MemorySnapShot_Store(&WaitStateCycles,sizeof(WaitStateCycles));
+	MemorySnapShot_Store(&BusMode,sizeof(BusMode));
+	MemorySnapShot_Store(&CPU_IACK,sizeof(CPU_IACK));
+	MemorySnapShot_Store(&LastInstrCycles,sizeof(LastInstrCycles));
+	MemorySnapShot_Store(&Pairing,sizeof(Pairing));
+#endif
 }
 
 
