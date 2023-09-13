@@ -488,6 +488,8 @@ void M68000_MemorySnapShot_Capture(bool bSave)
 	// from cpu/custom.c
 	MemorySnapShot_Store(&currcycle,sizeof(currcycle));
 	MemorySnapShot_Store(&extra_cycle,sizeof(extra_cycle));
+	// from cpu/newcpu.c
+	MemorySnapShot_Store(&BusCyclePenalty,sizeof(BusCyclePenalty));
 #endif
 }
 

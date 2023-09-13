@@ -93,6 +93,11 @@ void IoMem_MemorySnapShot_Capture(bool bSave)
 
 	/* Save/Restore details */
 	MemorySnapShot_Store(&mode, sizeof(mode));
+#ifdef __LIBRETRO__
+	// saving to prevent divergence
+	MemorySnapShot_Store(&IoAccessInstrPrevClock,sizeof(IoAccessInstrPrevClock));
+	MemorySnapShot_Store(&IoAccessInstrCount,sizeof(IoAccessInstrCount));
+#endif
 	if (!bSave)
 		IoMem_SetFalconBusMode(mode);
 }
