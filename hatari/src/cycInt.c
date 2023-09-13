@@ -255,6 +255,10 @@ void CycInt_MemorySnapShot_Capture(bool bSave)
 	MemorySnapShot_Store(&CycInt_ActiveInt, sizeof(CycInt_ActiveInt));
 	MemorySnapShot_Store(&CycInt_ActiveInt_Cycles, sizeof(CycInt_ActiveInt_Cycles));
 	MemorySnapShot_Store(&PendingInterruptCount, sizeof(PendingInterruptCount));
+#ifdef __LIBRETRO__
+	// needed to prevent savestate divergence
+	MemorySnapShot_Store(&CycInt_From_Opcode,sizeof(CycInt_From_Opcode));
+#endif
 	if (bSave)
 	{
 		/* Convert function to ID */

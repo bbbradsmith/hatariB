@@ -101,6 +101,8 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Saved `MachineClocks` (from clocks_timings.c) to prevent state divergence.
 * **hatari/src/crossbar.c**
   * Removed `Crossbar_Recalculate_Clocks_Cycles()` from savestate restore because it seemed to be unnecessary and caused state divergence.
+* **hatari/src/cycInt.c**
+  * Save `CycInt_From_Opcode` to prevent state divergence.
 * **hatari/src/cycles.c**
   * Update counters before save or restore of state to prevent divergence.
 * **hatari/src/dialog.c**
