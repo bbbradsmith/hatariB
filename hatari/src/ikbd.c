@@ -970,7 +970,11 @@ static bool	IKBD_OutputBuffer_CheckFreeCount ( int Nb )
  */
 static int	IKBD_Delay_Random ( int min , int max )
 {
+#ifndef __LIBRETRO__
 	return min + rand() % ( max - min );
+#else
+	return min + core_rand() % ( max - min );
+#endif
 }
 
 

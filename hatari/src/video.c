@@ -1108,7 +1108,11 @@ void	Video_SetTimings( MACHINETYPE MachineType , VIDEOTIMINGMODE Mode )
 	else if ( ( MachineType == MACHINE_ST ) || ( MachineType == MACHINE_MEGA_ST ) )	/* 4 wakeup states are possible for STF */
 	{
 		if ( Mode == VIDEO_TIMING_MODE_RANDOM )
+#ifndef __LIBRETRO__
 			Mode = VIDEO_TIMING_MODE_WS1 + rand() % 4;	/* random between the 4 modes WS1, WS2, WS3, WS4 */
+#else
+			Mode = VIDEO_TIMING_MODE_WS1 + core_rand() % 4;	/* random between the 4 modes WS1, WS2, WS3, WS4 */
+#endif
 
 		if ( Mode == VIDEO_TIMING_MODE_WS1 )		VideoTiming = VIDEO_TIMING_STF_WS1;
 		else if ( Mode == VIDEO_TIMING_MODE_WS2 )	VideoTiming = VIDEO_TIMING_STF_WS2;
@@ -5076,7 +5080,11 @@ static void Video_ColorReg_ReadWord(void)
 
 	if (Config_IsMachineST() && M68000_GetPC() < 0x400000)		/* PC in RAM < 4MB */
 	{
+#ifndef __LIBRETRO__
 		col = ( col & 0x777 ) | ( rand() & 0x888 );
+#else
+		col = ( col & 0x777 ) | ( core_rand() & 0x888 );
+#endif
 		IoMem_WriteWord ( addr , col );
 	}
 

@@ -714,6 +714,15 @@ static void snapshot_buffer_prepare(size_t size)
 //
 
 bool core_serialize_write = false; // serialization direction
+uint32_t core_rand_seed = 1;
+
+// deterministic savestated replacement for rand()
+int core_rand(void)
+{
+	core_rand_seed = ((core_rand_seed * 1103515245U) + 12345U) & 0x7fffffff;
+	//core_debug_hex("core_rand_seed: ",core_rand_seed);
+	return core_rand_seed;
+}
 
 static void core_serialize_internal(void* x, size_t size)
 {
@@ -760,6 +769,7 @@ static bool core_serialize(bool write)
 	// core state
 	core_serialize_uint8(&core_runflags);
 	core_serialize_uint32(&midi_delta_time);
+	core_serialize_uint32(&core_rand_seed);
 	core_input_serialize();
 	core_osk_serialize();
 	//retro_log(RETRO_LOG_DEBUG,"core_serialize header: %d <= %d\n",snapshot_pos,SNAPSHOT_HEADER_SIZE);

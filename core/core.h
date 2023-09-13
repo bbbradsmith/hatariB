@@ -77,6 +77,8 @@ extern void core_snapshot_read(char* buf, int len);
 extern void core_snapshot_write(const char* buf, int len);
 extern void core_snapshot_seek(int pos);
 
+extern int core_rand(void);
+
 // hatari exports
 extern int main_init(int argc, char *argv[]);
 extern int main_deinit(void);

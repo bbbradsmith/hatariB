@@ -3239,7 +3239,11 @@ static int FDC_UpdateReadTrackCmd ( void )
 				  nVBLs, FrameCycles, LineCycles, HblCounterVideo, M68000_GetPC());
 
 			for ( i=0 ; i<FDC_GetBytesPerTrack ( FDC.DriveSelSignal , FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack , FDC.SideSignal ) ; i++ )
+#ifndef __LIBRETRO__
 				FDC_Buffer_Add ( rand() & 0xff );	/* Fill the track buffer with random bytes */
+#else
+				FDC_Buffer_Add ( core_rand() & 0xff );	/* Fill the track buffer with random bytes */
+#endif
 		}
 		else if ( EmulationDrives[ FDC.DriveSelSignal ].ImageType == FLOPPY_IMAGE_TYPE_STX )
 		{
@@ -4795,7 +4799,11 @@ static Uint8 FDC_ReadTrack_ST ( Uint8 Drive , Uint8 Track , Uint8 Side )
 		fprintf ( stderr , "fdc : read track drive=%d track=%d side=%d, but maxtrack=%d, building an unformatted track\n" ,
 			Drive , Track , Side , FDC_GetTracksPerDisk ( Drive ) );
 		for ( i=0 ; i<FDC_GetBytesPerTrack ( Drive , Track , Side ) ; i++ )
+#ifndef __LIBRETRO__
 			FDC_Buffer_Add ( rand() & 0xff );		/* Fill the track buffer with random bytes */
+#else
+			FDC_Buffer_Add ( core_rand() & 0xff );		/* Fill the track buffer with random bytes */
+#endif
 		return 0;
 	}
 

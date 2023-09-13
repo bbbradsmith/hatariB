@@ -110,6 +110,8 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
 * **hatari/src/dim.c**
   * Use core's file system to load floppy image.
   * Error notification for attempting to save DIM image (unsupported).
+* **hatari/src/fdc.c**
+  * Replace use of `rand()` with deterministic `core_rand()`.
 * **hatari/src/file.c**
   **hatari/src/include/file.h**
   * `File_QueryOverwrite` always returns true instead of checking a file. In all instances where this is used (savestates, floppy saves) we are using the core's file system and don't need to ensure this (usually writing to memory instead of a file when this is checked).
@@ -127,6 +129,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Use core's file system to save floppy overlay image.
   * Suppress Hatari's warning that STX saves to an overlay instead of the image file, since we never save back to the original floppy image files.
   * Suppress savestate pointer data to prevent divergence.
+  * Replace use of `rand()` with deterministic `core_rand()`.
 * **hatari/src/gemdos.c**
   * Use core's file system to provide folder hard disk support.
   * Provide `core_scandir_system` as a simplified replacement for `scandir` using what is available through the virtual file system.
@@ -140,6 +143,8 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
 * **hatari/src/ide.c**
   * Use core's file system to provide IDE image hard disk support.
   * File locking is not directly provided by the virtual file system (though the host OS might do it automatically).
+* **hatari/src/ikbd.c**
+  * Replace use of `rand()` with deterministic `core_rand()`.
 * **hatari/src/ioMem.c**
   * Saved `IoAccessInstrPrevClock` and `IoAccessInstrCount` to prevent state divergence.
 * **hatari/src/infile.c**
@@ -188,6 +193,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Add `LIBRETRO_DEBUG_SNAPSHOT` macro to debug snapshot memory regions.
 * **hatari/src/mfp.c**
   * Save `PendingCyclesOver` to prevent state divergence.
+  * Replace use of `rand()` with deterministic `core_rand()`.
 * **hatari/src/midi.c**
   * Connect MIDI read and write to the core's MIDI interface, assume the host device is always open/available from Hatari's perspective.
 * **hatari/src/msa.c**
@@ -239,6 +245,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * `Video_ResetShifterTimings` relays current framerate to `core_set_fps`.
   * Unused variable warning suppression for `ENABLE_TRACING`.
   * Save `VBL_ClockCounter` to prevent state divergence.
+  * Replace use of `rand()` with deterministic `core_rand()`.
 * **hatari/src/zip.c**
   * Disable use of `unzOpen` which was modified (see: unzip.c) and not needed by this core.
 * **hatari/cpu/custom.c**

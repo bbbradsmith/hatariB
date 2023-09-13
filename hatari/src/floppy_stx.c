@@ -1807,7 +1807,11 @@ Uint8	FDC_ReadSector_STX ( Uint8 Drive , Uint8 Track , Uint8 Sector , Uint8 Side
 		{
 			Byte = pStxSector->pData[ i ];
 			if ( pStxSector->pFuzzyData )
+#ifndef __LIBRETRO__
 				Byte = ( Byte & pStxSector->pFuzzyData[ i ] ) | ( rand() & ~pStxSector->pFuzzyData[ i ] );
+#else
+				Byte = ( Byte & pStxSector->pFuzzyData[ i ] ) | ( core_rand() & ~pStxSector->pFuzzyData[ i ] );
+#endif
 		}
 
 		else							/* Use data from 'write sector' */
@@ -2040,7 +2044,11 @@ Uint8	FDC_ReadTrack_STX ( Uint8 Drive , Uint8 Track , Uint8 Side )
 	{
 		Log_Printf ( LOG_WARN , "fdc stx : track info not found for read track drive=%d track=%d side=%d, returning random bytes\n" , Drive , Track , Side );
 		for ( i=0 ; i<FDC_GetBytesPerTrack_STX ( Drive , Track , Side ) ; i++ )
+#ifndef __LIBRETRO__
 			FDC_Buffer_Add ( rand() & 0xff );		/* Fill the track buffer with random bytes */
+#else
+			FDC_Buffer_Add ( core_rand() & 0xff );		/* Fill the track buffer with random bytes */
+#endif
 		return 0;
 	}
 
