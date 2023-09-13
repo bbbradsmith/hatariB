@@ -197,7 +197,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Hard Disk modifications are written directly to their source files, and are not included in savestates.
   * If you increase the size of memory, you should close and restart the core before using savestates, to allow RetroArch to update the savestate size.
 * Quirks:
-  * Netplay will stutter sometimes. I think I will be able to resolve this, but for now expect frequent short pauses during netplay.
+  * For netplay or run-ahead, *Advanced > Floppy Savestate Safety Save* should be disabled to reduce disk activity during their frequent savestate rollbacks.
   * Restoring a savestate, or using netplay/run-ahead into the pause or one-shot keyboard will have an outdated/blank background until unpaused, as Hatari can't rebuild the image until it runs a frame. We could consider adding the framebuffer to the savestate to prevent this, though it would significantly increase the data size.
   * If the on-screen keyboard confirm/cancel buttons aren't mapped to dedicated buttons, you might end up suddenly holding the underlying button when the keyboard closes. (Inputs from buttons mapped to the on-screen keyboard are suppressed while it remains open.)
   * RetroArch netplay does not send host keyboard/mouse input over the network. For netplay I recommend disabling the host keyboard and mouse in the core options, then only sending keyboard input via the on-screen keyboard instead.
@@ -218,6 +218,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Fixed blitter hang when using cycle-accurate cache emulation.
   * Single button disk swap.
   * Savestate restore speedup, making run-ahead and netplay viable.
+  * Savestate determinism improvements to reduce netplay re-synchronizations.
   * Fix CPU clock rate change on reset.
   * CPU speed button mapping.
 * [hatariB v0.2](https://github.com/bbbradsmith/hatariB/releases/tag/0.2) - 2023-09-07

@@ -678,6 +678,14 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	// Advanced
 	//
 	{
+		"hatarib_savestate_floppy_modify","Floppy Savestate Safety Save", NULL,
+		"When loading a savestate for a floppy that already has a save file,"
+		" this automatically marks it as modified, ensuring that any disk changes from the savestate will be written to the save file."
+		" This should be turned off for netplay or run-ahead to prevent extra disk activity during their heavy savestate use.",
+		NULL, "advanced",
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
+	},
+	{
 		"hatarib_driveb","Drive B Enable", NULL,
 		"Turn off to disconnect drive B.",
 		NULL, "advanced",
@@ -1095,6 +1103,7 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_lpf") newparam.Sound.YmLpf = vi;
 	CFG_INT("hatarib_hpf") newparam.Sound.YmHpf = vi;
 	CFG_INT("hatarib_midi") core_midi_enable = (vi != 0);
+	CFG_INT("hatarib_savestate_floppy_modify") core_savestate_floppy_modify = (vi != 0);
 	CFG_INT("hatarib_driveb") { newparam.DiskImage.EnableDriveB = vi; core_disk_enable_b = vi; }
 	CFG_INT("hatarib_drivesingle") { newparam.DiskImage.DriveA_NumberOfHeads = newparam.DiskImage.DriveB_NumberOfHeads = vi; }
 	CFG_INT("hatarib_readonly_floppy") newparam.DiskImage.nWriteProtection = vi;
