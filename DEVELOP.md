@@ -98,6 +98,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
       * `HardDisk.nWriteProtection = WRITEPROT_ON` - Hard Disk should be write protected by default. The user's file system should not be modifiable unless deliberately requested.
       * `Midi.bEnableMidi = true` - Allows MIDI signals to be sent through Libretro's MIDI interface.
     * Remove `File_MakeAbsoluteSpecialName` path conversions, which modify the paths we provide directly. Since all file access is through our core's file system, absolute paths are inappropriate. This also prevents Hatari from making modifications to the paths which might have caused a reset check, disk re-insertion, etc. on options change.
+  * Saved `MachineClocks` (from clocks_timings.c) to prevent state divergence.
 * **hatari/src/crossbar.c**
   * Removed `Crossbar_Recalculate_Clocks_Cycles()` from savestate restore because it seemed to be unnecessary and caused state divergence.
 * **hatari/src/cycles.c**
@@ -177,6 +178,8 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Suppress error dialogs and alerts.
   * Suppress saving `DebugUI` information.
   * Add `LIBRETRO_DEBUG_SNAPSHOT` macro to debug snapshot memory regions.
+* **hatari/src/mfp.c**
+  * Save `PendingCyclesOver` to prevent state divergence.
 * **hatari/src/midi.c**
   * Connect MIDI read and write to the core's MIDI interface, assume the host device is always open/available from Hatari's perspective.
 * **hatari/src/msa.c**

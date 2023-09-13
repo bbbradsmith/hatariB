@@ -618,6 +618,9 @@ void	MFP_MemorySnapShot_Capture ( bool bSave )
 		for ( i=0 ; i<=MFP_INT_MAX ; i++ )
 			MemorySnapShot_Store(&(pMFP->Pending_Time[ i ]), sizeof(pMFP->Pending_Time[ i ]));
 	}
+#ifdef __LIBRETRO__
+	MemorySnapShot_Store(&PendingCyclesOver,sizeof(PendingCyclesOver));
+#endif
 
 	if ( !bSave )					/* If restoring */
 		MFP_Init_Pointers ( MFP_Array );	/* Restore pointers */

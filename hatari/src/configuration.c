@@ -1199,6 +1199,11 @@ void Configuration_MemorySnapShot_Capture(bool bSave)
 
 	MemorySnapShot_Store(&ConfigureParams.DiskImage.FastFloppy, sizeof(ConfigureParams.DiskImage.FastFloppy));
 
+#ifdef __LIBRETRO__
+	// saved to prevent divergence (from clocks_timings.c)
+	MemorySnapShot_Store(&MachineClocks,sizeof(MachineClocks));
+#endif
+
 	if (!bSave)
 		Configuration_Apply(true);
 }

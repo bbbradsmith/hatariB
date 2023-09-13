@@ -362,12 +362,13 @@ void Main_WaitOnVbl(void)
 
 	DestTicks += pulse_swallowing_count;	/* audio.c - Audio_CallBack() */
 
+	nDelay = DestTicks - CurrentTicks;
+
 #ifdef __LIBRETRO__
 	// Don't measure time, always assume Libretro has provided an exact frame delay.
-	CurrentTicks = DestTicks;
+	CurrentTicks = DestTicks = FrameDuration_micro;
+	nDelay = 0;
 #endif
-
-	nDelay = DestTicks - CurrentTicks;
 
 	/* Do not wait if we are in fast forward mode or if we are totally out of sync */
 	/* or if we are in benchmark mode */
