@@ -75,6 +75,8 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Disable all use of SDL audio system.
   * `Audio_SetOutputAudioFreq` calls `core_set_samplerate` to notify the core of the current samplerate.
   * Disable automatic lowpass-filter selection (see: sound.c).
+* **hatari/src/blitter.c**
+  * Save additional state to prevent divergence.
 * **hatari/src/cart.c**
   * Use core's file system to load cartridge ROM.
 * **hatari/src/change.c**
