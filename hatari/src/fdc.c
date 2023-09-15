@@ -1791,7 +1791,11 @@ static void	FDC_IndexPulse_Init ( int Drive )
 	Uint64	IndexPulse_Time;
 
 	FdcCyclesPerRev = FDC_GetCyclesPerRev_FdcCycles ( Drive );
+#ifndef __LIBRETRO__
 	IndexPulse_Time = CyclesGlobalClockCounter - rand () % FDC_FdcCyclesToCpuCycles ( FdcCyclesPerRev );
+#else
+	IndexPulse_Time = CyclesGlobalClockCounter - core_rand() % FDC_FdcCyclesToCpuCycles ( FdcCyclesPerRev );
+#endif
 	if ( IndexPulse_Time <= 0 )					/* Should not happen (only if FDC_IndexPulse_Init is */
 		IndexPulse_Time = 1;					/* called just after emulation starts) */
 	FDC_DRIVES[ Drive ].IndexPulse_Time = IndexPulse_Time;
