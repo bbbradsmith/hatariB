@@ -44,12 +44,15 @@ const uint64_t QUIRKS = RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT;
 // and their counter will reset with each restore, allowing comparison of frames since each restore.
 // Start a game, press F2 to save a state, then hit F4 a few times to generate restore timeline dumps
 // Then run hatary_state_compare.py in your saves folder to compare the timelines.
-// Enable LIBRETRO_DEBUG_SNAPSHOT in memorySnapshot.c to list the the data locations.
-#define DEBUG_SAVESTATE_INTEGRITY   0
+#define DEBUG_SAVESTATE_DUMP   0
 
 // Simpler savestate integrity test: whenever a savestate is saved, it will store another state in X frames,
 // and then every savestate restore will compare its own state after X frames. 0 to disable.
 #define DEBUG_SAVESTATE_SIMPLE   0
+
+// Enable LIBRETRO_DEBUG_SNAPSHOT in memorySnapshot.c to list the the data locations and structure of snapshots.
+
+#define DEBUG_SAVESTATE   (DEBUG_SAVESTATE_DUMP | DEBUG_SAVESTATE_SIMPLE)
 
 //
 // Libretro
@@ -617,6 +620,13 @@ int snapshot_pos = 0;
 int snapshot_max = 0;
 int snapshot_size = 0;
 bool snapshot_error = false;
+#if DEBUG_SAVESTATE
+#define DEBUG_SNAPSHOT_SECTIONS   32
+static const char* debug_snapshot_section_name[DEBUG_SNAPSHOT_SECTIONS];
+static int debug_snapshot_section_pos[DEBUG_SNAPSHOT_SECTIONS];
+static int debug_snapshot_section_count = 0;
+static int debug_snapshot_section_setup = 0;
+#endif
 #if DEBUG_SAVESTATE_SIMPLE
 static uint8_t* debug_snapshot_buffer = NULL;
 static int debug_snapshot_buffer_size = 0;
@@ -644,10 +654,33 @@ void core_snapshot_close(void)
 	//retro_log(RETRO_LOG_DEBUG,"core_snapshot_close() max: %X = %d\n",snapshot_max,snapshot_max);
 }
 
-void core_debug_snapshot(const char* name) // prints the current file position
+void core_debug_snapshot(const char* name) // annotates and indexes the snapshot debug
 {
-	core_debug_hex(name,snapshot_pos);
+#if DEBUG_SAVESTATE
+	// remember section name and its starting position
+	debug_snapshot_section_name[debug_snapshot_section_setup] = name;
+	debug_snapshot_section_pos[debug_snapshot_section_setup] = snapshot_pos;
+	if (debug_snapshot_section_setup < DEBUG_SNAPSHOT_SECTIONS)
+	{
+		++debug_snapshot_section_setup;
+		if (debug_snapshot_section_setup > debug_snapshot_section_count)
+			debug_snapshot_section_count = debug_snapshot_section_setup;
+	}
+#else
+	(void)name;
+#endif
 }
+
+#if DEBUG_SAVESTATE
+void core_debug_snapshot_sections_list()
+{
+	retro_log(RETRO_LOG_DEBUG,"Snapshot structure:\n");
+	for (int i=0; i<debug_snapshot_section_count; ++i)
+		retro_log(RETRO_LOG_DEBUG,"%16s %8X\n",
+			debug_snapshot_section_name[i],
+			debug_snapshot_section_pos[i]);
+}
+#endif
 
 void core_snapshot_read(char* buf, int len)
 {
@@ -720,7 +753,7 @@ uint32_t core_rand_seed = 1;
 int core_rand(void)
 {
 	core_rand_seed = ((core_rand_seed * 1103515245U) + 12345U) & 0x7fffffff;
-	//core_debug_hex("core_rand_seed: ",core_rand_seed);
+	core_debug_hex("core_rand_seed: ",core_rand_seed);
 	return core_rand_seed;
 }
 
@@ -742,6 +775,10 @@ static bool core_serialize(bool write)
 	core_snapshot_open_internal();
 
 	// header (core data)
+	#if DEBUG_SAVESTATE
+		debug_snapshot_section_setup = 0;
+		core_debug_snapshot("core_serialize");
+	#endif
 
 	// integrity
 	result = SNAPSHOT_VERSION;
@@ -770,7 +807,14 @@ static bool core_serialize(bool write)
 	core_serialize_uint8(&core_runflags);
 	core_serialize_uint32(&midi_delta_time);
 	core_serialize_uint32(&core_rand_seed);
+
+	#if DEBUG_SNAPSHOT
+		core_debug_snapshot("core_input");
+	#endif
 	core_input_serialize();
+	#if DEBUG_SNAPSHOT
+		core_debug_snapshot("core_osk");
+	#endif
 	core_osk_serialize();
 	//retro_log(RETRO_LOG_DEBUG,"core_serialize header: %d <= %d\n",snapshot_pos,SNAPSHOT_HEADER_SIZE);
 	if (snapshot_pos > SNAPSHOT_HEADER_SIZE)
@@ -794,6 +838,9 @@ static bool core_serialize(bool write)
 	}
 
 	// finish
+	#if DEBUG_SAVESTATE
+		core_debug_snapshot("END");
+	#endif
 
 	if (write && snapshot_error)
 	{
@@ -809,7 +856,7 @@ static bool core_serialize(bool write)
 		environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg);		
 	}
 
-#if DEBUG_SAVESTATE_INTEGRITY
+#if DEBUG_SAVESTATE_DUMP
 	{
 		static int timeline = 0;
 		static int count = 0;
@@ -1193,7 +1240,7 @@ RETRO_API void retro_run(void)
 	// flush midi if needed
 	core_midi_frame();
 
-#if DEBUG_SAVESTATE_INTEGRITY
+#if DEBUG_SAVESTATE_DUMP
 	// write a savestate dump each frame
 	snapshot_buffer_prepare(snapshot_size);
 	core_serialize(true);
@@ -1219,26 +1266,60 @@ RETRO_API void retro_run(void)
 			}
 			else
 			{
+				bool match = false;
 				if (debug_snapshot_buffer == NULL)
 					core_debug_msg("DEBUG SNAPSHOT no snapshot to compare?");
 				else if (debug_snapshot_buffer_size != snapshot_size)
 					core_debug_msg("DEBUG SNAPSHOT size mismatch?");
 				else
 				{
-					int first_mismatch = -1;
-					int last_mismatch = -1;
+					match = true;
+					int section = 0;
+					int diff0 = -1; // first difference in section
+					int diff1 = -1; // last difference in section
+					int gdiff0 = -1; // global first difference
+					int gdiff1 = -1; // global last difference
 					for (int i=0; i<snapshot_size; ++i)
 					{
+						// print mismatch range when new section is reached
+						// (note "END" section is never printed, but it contains no data)
+						while (((section+1) < debug_snapshot_section_count) && (debug_snapshot_section_pos[(section+1)] <= i))
+						{
+							if (diff0 >= 0)
+							{
+								retro_log(RETRO_LOG_DEBUG,"DIFF: %8X - %8X %16s +%5d / %16s -%5d\n",
+									diff0, diff1,
+									debug_snapshot_section_name[section], diff0 - debug_snapshot_section_pos[section],
+									debug_snapshot_section_name[section+1], debug_snapshot_section_pos[section+1] - diff1);
+							}
+							diff0 = -1;
+							diff1 = -1;
+							++section;
+						}
+
+						// log mismatches
 						if (snapshot_buffer[i] != debug_snapshot_buffer[i])
 						{
-							last_mismatch = i;
-							if (first_mismatch < 0) first_mismatch = i;
+							gdiff1 = diff1 = i;
+							if (diff0 < 0) diff0 = i;
+							if (gdiff0 < 0) gdiff0 = i;
+							match = false;
 						}
 					}
-					if (first_mismatch >= 0)
-						retro_log(RETRO_LOG_DEBUG,"DEBUG SNAPSHOT divergence at: %8X - %8X\n",first_mismatch,last_mismatch);
+					if (!match)
+					{
+						retro_log(RETRO_LOG_DEBUG,"DEBUG SNAPSHOT mismatch! %8X - %8X\n",gdiff0,gdiff1);
+						static bool first_mismatch = true;
+						if (first_mismatch) // dump the sections first time only
+						{
+							core_debug_snapshot_sections_list();
+							first_mismatch = false;
+						}
+					}
 					else
+					{
 						core_debug_msg("DEBUG SNAPSHOT match!");
+					}
 				}
 			}
 		}
