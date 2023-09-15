@@ -1406,14 +1406,17 @@ void	FDC_InsertFloppy ( int Drive )
 }
 
 #ifdef __LIBRETRO__
+extern uint32_t core_rand_seed;
 void FDC_InsertFloppyRestore ( int Drive )
 {
+	uint32_t seed_temp = core_rand_seed; // InsertFloppy may modify core_rand_seed to set IndexPulse_Time. Prevent this from causing a divergence.
 	FDC_InsertFloppy ( Drive );
 	if ( ( Drive >= 0 ) && ( Drive < MAX_FLOPPYDRIVES ) )
 	{
 		FDC_DRIVES[ Drive ].IndexPulse_Time = restore_IndexPulse_Time[ Drive ];
 		FDC_Drive_Set_DC_signal( Drive, restore_DiskChange_signal[ Drive ]);
 	}
+	core_rand_seed = seed_temp;
 }
 #endif
 
