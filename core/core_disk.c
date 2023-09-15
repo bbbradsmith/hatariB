@@ -813,8 +813,11 @@ void core_disk_reindex(void)
 					// since we've already established a valid save file exists.
 					// We mark this drive's contents as changed so it will be saved
 					// at the next eject/close.
-					core_floppy_changed(d);
-					//retro_log(RETRO_LOG_DEBUG,"Savestate marks floppy contents changed: %s\n",disks[i].filename);
+					if (core_savestate_floppy_modify)
+					{
+						core_floppy_changed(d);
+						//retro_log(RETRO_LOG_DEBUG,"Savestate marks floppy contents changed: %s\n",disks[i].filename);
+					}
 				}
 			}
 			else

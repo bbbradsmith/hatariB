@@ -624,7 +624,7 @@ int snapshot_max = 0;
 int snapshot_size = 0;
 bool snapshot_error = false;
 #if DEBUG_SAVESTATE
-#define DEBUG_SNAPSHOT_SECTIONS   32
+#define DEBUG_SNAPSHOT_SECTIONS   64
 static const char* debug_snapshot_section_name[DEBUG_SNAPSHOT_SECTIONS];
 static int debug_snapshot_section_pos[DEBUG_SNAPSHOT_SECTIONS];
 static int debug_snapshot_section_count = 0;

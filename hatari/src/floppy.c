@@ -173,8 +173,12 @@ void Floppy_MemorySnapShot_Capture(bool bSave)
 #ifndef __LIBRETRO__
 			FDC_InsertFloppy ( i );
 #else
+		{
 			// insertion clears some state which must be restored
+			bool changed = EmulationDrives[i].bContentsChanged;
 			FDC_InsertFloppyRestore ( i );
+			EmulationDrives[i].bContentsChanged = changed; // can be reset by Insert
+		}
 #endif
 	}
 }
@@ -787,6 +791,9 @@ bool Floppy_EjectDiskFromDrive(int Drive)
 	EmulationDrives[Drive].ImageType = FLOPPY_IMAGE_TYPE_NONE;
 	EmulationDrives[Drive].nImageBytes = 0;
 	EmulationDrives[Drive].bDiskInserted = false;
+#ifndef __LIBRETRO__
+	if (!core_prevent_eject_save)
+#endif
 	EmulationDrives[Drive].bContentsChanged = false;
 	EmulationDrives[Drive].bOKToSave = false;
 
