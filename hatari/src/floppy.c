@@ -72,6 +72,10 @@ static const char * const pszDiskImageNameExts[] =
 static bool	Floppy_EjectBothDrives(void);
 static void	Floppy_DriveTransitionSetState ( int Drive , int State );
 
+#ifdef __LIBRETRO__
+extern bool core_savestate_floppy_modify;
+static bool core_prevent_eject_save = false;
+#endif
 
 /*-----------------------------------------------------------------------*/
 /**
@@ -129,7 +133,16 @@ void Floppy_MemorySnapShot_Capture(bool bSave)
 
 	/* If restoring then eject old drives first! */
 	if (!bSave)
+#ifdef __LIBRETRO__
+	{
+		// if savety save is disabled, prevent the savestate restore write to disk
+		if (!core_savestate_floppy_modify) core_prevent_eject_save = true;
 		Floppy_EjectBothDrives();
+		core_prevent_eject_save = false;
+	}
+#else	
+		Floppy_EjectBothDrives();
+#endif
 
 	/* Save/Restore details */
 	for (i = 0; i < MAX_FLOPPYDRIVES; i++)
@@ -713,7 +726,12 @@ bool Floppy_EjectDiskFromDrive(int Drive)
 		char *psFileName = EmulationDrives[Drive].sFileName;
 
 		/* OK, has contents changed? If so, need to save */
+#ifndef __LIBRETRO__
 		if (EmulationDrives[Drive].bContentsChanged)
+#else
+		// LIBRETRO can block saves during restore to prevent high disk activity
+		if (EmulationDrives[Drive].bContentsChanged && !core_prevent_eject_save)
+#endif
 		{
 			/* Is OK to save image (if boot-sector is bad, don't allow a save) */
 			if (EmulationDrives[Drive].bOKToSave)

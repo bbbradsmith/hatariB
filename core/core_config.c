@@ -679,9 +679,9 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	//
 	{
 		"hatarib_savestate_floppy_modify","Floppy Savestate Safety Save", NULL,
-		"When loading a savestate for a floppy that already has a save file,"
-		" this automatically marks it as modified, ensuring that any disk changes from the savestate will be written to the save file."
-		" This should be turned off for netplay or run-ahead to prevent extra disk activity during their heavy savestate use.",
+		"Modified floppies are always saved during eject or content closing. "
+		" This setting does an extra save before restoring a savestate to prevent un-ejected data loss,"
+		" but the safety save should be turned off for netplay or run-ahead to prevent extra disk activity during their heavy savestate use.",
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
 	},
