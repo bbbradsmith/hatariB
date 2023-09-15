@@ -48,6 +48,9 @@ const uint64_t QUIRKS = RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT;
 
 // Simpler savestate integrity test: whenever a savestate is saved, it will store another state in X frames,
 // and then every savestate restore will compare its own state after X frames. 0 to disable.
+// Try to test with different delays, 1 frame, 10 frames, 100 frames, etc.
+// Note that any input pressed or held is part of the savestate so generally you want to do this with nothing held.
+// (Usually the DIFF will indicate core_input in this case.)
 #define DEBUG_SAVESTATE_SIMPLE   0
 
 // Enable LIBRETRO_DEBUG_SNAPSHOT in memorySnapshot.c to list the the data locations and structure of snapshots.
@@ -808,11 +811,11 @@ static bool core_serialize(bool write)
 	core_serialize_uint32(&midi_delta_time);
 	core_serialize_uint32(&core_rand_seed);
 
-	#if DEBUG_SNAPSHOT
+	#if DEBUG_SAVESTATE
 		core_debug_snapshot("core_input");
 	#endif
 	core_input_serialize();
-	#if DEBUG_SNAPSHOT
+	#if DEBUG_SAVESTATE
 		core_debug_snapshot("core_osk");
 	#endif
 	core_osk_serialize();
