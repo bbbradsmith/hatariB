@@ -342,6 +342,7 @@ static ymsample	PWMaliasFilter		(ymsample x0);
 static ymsample	IIRLowPassFilter	(ymsample x0);
 static double pos_fract = 0; // a local static variable made global because it needs to go in the savestate
 static Uint32 pos_fract2 = 0;
+static ymu16 Freq_div_2 = 0;
 #endif
 
 static void	interpolate_volumetable	(ymu16 volumetable[32][32][32]);
@@ -883,6 +884,10 @@ static void	YM2149_UpdateClock_250_int_new ( Uint64 CpuClock )
 
 
 //fprintf ( stderr , "update_250 clock_cpu=%ld -> ym_inc=%ld clock_250=%ld clock_250_cpu_clock=%ld\n" , CpuClock , YM2149_ConvertCycles_250.Cycles , YM2149_Clock_250 , YM2149_Clock_250_CpuClock );
+#ifdef __LIBRETRO__
+	// reset to 0 because these cycles have been processed, prevents savestate divergence when paused and not processing
+	YM2149_ConvertCycles_250.Cycles = 0;
+#endif
 }
 
 
@@ -1035,7 +1040,9 @@ static void	YM2149_DoSamples_250 ( int SamplesToGenerate_250 )
 	ymu32		bt;
 	ymu16		Env3Voices;			/* 0x00CCBBAA */
 	ymu16		Tone3Voices;			/* 0x00CCBBAA */
+#ifndef __LIBRETRO__
 	static ymu16	Freq_div_2 = 0;
+#endif
 	int		pos;
 	int		n;
 
@@ -1694,6 +1701,7 @@ void Sound_MemorySnapShot_Capture(bool bSave)
 	MemorySnapShot_Store(&YM2149_ConvertCycles_250, sizeof(YM2149_ConvertCycles_250));
 	MemorySnapShot_Store(&pos_fract, sizeof(pos_fract));
 	MemorySnapShot_Store(&pos_fract2, sizeof(pos_fract2));
+	MemorySnapShot_Store(&Freq_div_2, sizeof(Freq_div_2));
 #endif
 }
 

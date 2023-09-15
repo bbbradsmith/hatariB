@@ -228,8 +228,9 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
 * **hatari/src/sound.c**
 * **hatari/src/includes/sound.c**
   * Fix incorrect lowpass filter frequency, and provide cleaner lowpass filter implementation to replace the existing compromised ones. Also [submitted to Hatari](https://github.com/hatari/hatari/pull/25).
-  * Store `YM_Buffer_250` and `pos_fract` in savestates, needed for seamless audio after restore.
   * Deliver generated audio to core with `core_audio_update`.
+  * Store `YM_Buffer_250`, `pos_fract`, `Freq_div_2`, in savestates, needed for seamless audio after restore and to prevent state divergence.
+  * Clear `YM2149_ConvertCycles_250.Cycles` after they're consumed to prevent state divergence during pause.
 * **hatari/src/st.c**
   * Use core's file system to load and save floppy image.
 * **hatari/src/statusbar.c**
