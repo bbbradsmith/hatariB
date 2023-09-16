@@ -758,7 +758,7 @@ uint32_t core_rand_seed = 1;
 int core_rand(void)
 {
 	core_rand_seed = ((core_rand_seed * 1103515245U) + 12345U) & 0x7fffffff;
-	core_debug_hex("core_rand_seed: ",core_rand_seed);
+	//core_debug_hex("core_rand_seed: ",core_rand_seed);
 	return core_rand_seed;
 }
 
