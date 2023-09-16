@@ -173,12 +173,7 @@ void Floppy_MemorySnapShot_Capture(bool bSave)
 #ifndef __LIBRETRO__
 			FDC_InsertFloppy ( i );
 #else
-		{
-			// insertion clears some state which must be restored
-			bool changed = EmulationDrives[i].bContentsChanged;
-			FDC_InsertFloppyRestore ( i );
-			EmulationDrives[i].bContentsChanged = changed; // can be reset by Insert
-		}
+			FDC_InsertFloppyRestore ( i ); // insertion resets some state that must be restored
 #endif
 	}
 }
