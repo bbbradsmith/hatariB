@@ -1422,7 +1422,8 @@ RETRO_API bool retro_load_game(const struct retro_game_info *game)
 	core_init_return = false;
 
 	// create a dummy savestate to measure the needed snapshot size
-	free(snapshot_buffer); snapshot_buffer = NULL;
+	free(snapshot_buffer_internal); snapshot_buffer_internal = NULL;
+	snapshot_buffer = NULL;
 	core_serialize(true);
 	snapshot_size = snapshot_max + SNAPSHOT_OVERHEAD;
 	// if we've got more than 1MB RAM we should increase our minimum to accomodate it
