@@ -54,6 +54,8 @@ const uint64_t QUIRKS = RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT;
 #define DEBUG_SAVESTATE_SIMPLE   0
 
 // Enable LIBRETRO_DEBUG_SNAPSHOT in memorySnapshot.c to list the the data locations and structure of snapshots.
+// Turn off hatarib_savestate_floppy_modify (Floppy Savestate Safety Save) in the core settings before testing savestates,
+// because it causes bContentsChanged divergence for any floppies that have save files.
 
 #define DEBUG_SAVESTATE   (DEBUG_SAVESTATE_DUMP | DEBUG_SAVESTATE_SIMPLE)
 
@@ -1356,6 +1358,7 @@ RETRO_API bool retro_serialize(void *data, size_t size)
 #if DEBUG_SAVESTATE_SIMPLE
 	debug_snapshot_countdown = DEBUG_SAVESTATE_SIMPLE;
 	debug_snapshot_read = false;
+	core_debug_msg("DEBUG SNAPSHOT open...");	
 #endif
 	return result;
 }

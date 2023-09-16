@@ -168,14 +168,14 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * *EmuTOS 192uk* may be slightly more compatible with *ST* software, but provides fewer features. With a colour monitor it starts up in 50hz by default.
   * *EmuTOS 192us* is similar to *192uk* but instead starts in 60hz.
   * Most other TOS files are only compatible with certain machines.
-* On-Screen Keyboard
+* On-Screen Keyboard:
   * An on-screen keyboard can be used to simulate using the Atari's keyboard from your gamepad.
   * Press L1 to raise the on-screen keyboard, select a key with the d-pad, and press L1 again to press the key. Press R1 to close the keyboard.
   * Press L2 to raise the keyboard in one-shot mode, which pauses emulation and will resume immediately when you press L1 or R2.
   * To alternate between a top and bottom keyboard position, press X.
   * Modifier keys like Shift, Control, Alt are toggled instead of a single press, allowing you to hold the modifier while you press another key. When you close the keyboard, all modifiers will be released.
   * The keyboard language layout can be chosen in the *Input > On-Screen Keyboard Language* core option. This should usually be chosen to match your TOS region.
-* MIDI
+* MIDI:
   * Libretro has a MIDI interface, and if you have MIDI devices installed you should be able to select them in the *Settings > Audio > MIDI* menu of RetroArch.
   * The [MUNT MT-32 Emulator](url=https://sourceforge.net/projects/munt/) is recommended. It can install on your system as a MIDI device, which you can use with MT-32 supporting Atari ST games.
   * MIDI Maze is reported as incompatible for Hatari 2.4.1, but it appears this is being improved for 2.5.0, so perhaps it will eventually be playable over emulated MIDI.
@@ -195,18 +195,22 @@ See [DEVELOP.md](DEVELOP.md) for more details.
       * In rare cases, inserting a unusually large new disk may increase the needed savestate size and cause a failure to save. You can eject the disk and try reducing the savestate size before trying again. (RetroArch has a limitation that savestate size must be fixed, determined at Load Content time.)
       * It is generally recommended to use M3U playlists instead of *Load New Disk* when possible ([tutorial](https://docs.retroachievements.org/Multi-Disc-Games-Tutorial/)).
   * Hard Disk modifications are written directly to their source files, and are not included in savestates.
-  * If you increase the size of memory, you should close and restart the core before using savestates, to allow RetroArch to update the savestate size.
+  * If you increase the size of memory, you should close content and restart the core before using savestates, to allow RetroArch to update the savestate size.
+  * For run-ahead or netplay disable *System > Floppy Savestate Safety Save* to prevent high disk activity.
+* Netplay:
+  * Disable *System > Floppy Savestate Safety Save* to prevent unnecessary disk activity.
+  * Disable *Input > Host Mouse Enabled* and *Input > Host Keyboard Enabled*, because RetroArch netplay does not send this activity over the network. Instead, use the onscreen keyboard and gamepad to operate the ST keyboard and mouse.
+  * Make sure your core options match, especially the TOS image, before attempting to connect.
+  * Savestate store/restore is CPU intensive for this core, so rapid inputs (especially using an analog stick) have the potential to cause slowdown or stutter.
 * Quirks:
-  * For netplay or run-ahead, *Advanced > Floppy Savestate Safety Save* should be disabled to reduce disk activity during their frequent savestate rollbacks.
   * Restoring a savestate, or using netplay/run-ahead into the pause or one-shot keyboard will have an outdated/blank background until unpaused, as Hatari can't rebuild the image until it runs a frame. We could consider adding the framebuffer to the savestate to prevent this, though it would significantly increase the data size.
   * If the on-screen keyboard confirm/cancel buttons aren't mapped to dedicated buttons, you might end up suddenly holding the underlying button when the keyboard closes. (Inputs from buttons mapped to the on-screen keyboard are suppressed while it remains open.)
-  * RetroArch netplay does not send host keyboard/mouse input over the network. For netplay I recommend disabling the host keyboard and mouse in the core options, then only sending keyboard input via the on-screen keyboard instead.
-  * The *Floppy Disk List* pause screen won't display unicode filenames correctly, though they can still be viewed through RetroArch's *Disk Control* menu.
-  * You can use *Load New Disk* or *M3U* playlists to load the same floppy multiple times, or multiple floppies with the same name. This mostly works okay, but a savestate restore might be unable to identify which of them was actually inserted.
-  * There is no way to designate individual floppy disks as read-only. In Hatari this was detected by the host filesystem's read-only attribute on the file, but in Libretro this information is not available. The *Advanced > Write Protect Floppy Disks* provides a coarse way to override this. However, note that any modifications to the file are saved to a copy in the user's *saves/* folder, so the original floppy image is never modified, regardless of setting.
-  * If *IPF* support is enabled, an *M3U* playlist can also be used to load the *RAW* format supported by that library. I kept it out of the associated file types list because I have not yet encountered dumps in this format.
   * Though the on-screen keyboard is available in [several language layouts](https://tho-otto.de/keyboards/), for your physical keyboard there aren't any direct configuration options, currently. RetroArch ignores the OS keyboard layout, and [all keys report as-if in US layout](https://github.com/libretro/RetroArch/issues/13838) (e.g. German Z reports as RETROK_y). Because of this, if you pick a TOS that matches your keyboard language, the mappings are likely to be mostly compatible. Otherwise, if you need finer control of the mapping, RetroArch's *Input* settings can be used to remap individual keys.
-  * The *CPU Clock Rate* setting is only applied at boot/reset. It cannot be changed on-the-fly like in stand-alone Hatari.
+  * The *Floppy Disk List* pause screen won't display unicode filenames correctly, though they can still be viewed through RetroArch's *Disk Control* menu when the selected drive is ejected.
+  * There is no way to designate individual floppy disks as read-only. In Hatari this was detected by the host filesystem's read-only attribute on the file, but in Libretro this information is not available. The *Advanced > Write Protect Floppy Disks* provides a coarse way to override this. However, note that any modifications to the file are saved to a copy in the user's *saves/* folder, so the original floppy image is never modified, regardless of setting.
+  * You can use *Load New Disk* or *M3U* playlists to load the same floppy multiple times, or multiple floppies with the same name. This mostly works okay, but a savestate restore might be unable to identify which of them was actually inserted.
+  * If *IPF* support is enabled, an *M3U* playlist can also be used to load the *RAW* format supported by that library. I kept it out of the associated file types list because I have not yet encountered dumps in this format.
+  * The *Advanced > CPU Clock Rate* core option is only applied at boot/reset, but you can *CPU Speed* to a gamepad button in the *RetroPad* core options to change it while running.
 
 ## History
 

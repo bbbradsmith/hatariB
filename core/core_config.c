@@ -116,6 +116,15 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
 	},
 	{
+		"hatarib_savestate_floppy_modify", "Floppy Savestate Safety Save", NULL,
+		"Disable this for netplay or run-ahead. "
+		"Modified floppies are always saved during eject or content closing, "
+		" but this setting produces an extra save before/after restoring a savestate to prevent un-ejected data loss."
+		" Because netplay and run-ahead use savestates constantly, this should be turned off for those activities.",
+		NULL, "system",
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
+	},
+	{
 		"hatarib_soft_reset", "Soft Reset", NULL,
 		"Core Restart is full cold boot by default (power off, on),"
 		" but this will change it to a warm boot (reset button).",
@@ -678,14 +687,6 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	// Advanced
 	//
 	{
-		"hatarib_savestate_floppy_modify","Floppy Savestate Safety Save", NULL,
-		"Modified floppies are always saved during eject or content closing. "
-		" This setting does an extra save before restoring a savestate to prevent un-ejected data loss,"
-		" but the safety save should be turned off for netplay or run-ahead to prevent extra disk activity during their heavy savestate use.",
-		NULL, "advanced",
-		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
-	},
-	{
 		"hatarib_driveb","Drive B Enable", NULL,
 		"Turn off to disconnect drive B.",
 		NULL, "advanced",
@@ -1002,8 +1003,9 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_monitor") newparam.Screen.nMonitorType = vi;
 	CFG_INT("hatarib_fast_floppy") newparam.DiskImage.FastFloppy = vi;
 	CFG_INT("hatarib_save_floppy") core_disk_enable_save = vi;
+	CFG_INT("hatarib_savestate_floppy_modify") core_savestate_floppy_modify = (vi != 0);
 	CFG_INT("hatarib_soft_reset") core_option_soft_reset = vi;
-	CFG_INT("hatarib_machine")
+ 	CFG_INT("hatarib_machine")
 	{
 		// automatic setup based on OPT_MACHINE in options.c
 		static const int CPULEVEL[] = { 0, 0, 0, 0, 3, 3 };
@@ -1103,7 +1105,6 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_lpf") newparam.Sound.YmLpf = vi;
 	CFG_INT("hatarib_hpf") newparam.Sound.YmHpf = vi;
 	CFG_INT("hatarib_midi") core_midi_enable = (vi != 0);
-	CFG_INT("hatarib_savestate_floppy_modify") core_savestate_floppy_modify = (vi != 0);
 	CFG_INT("hatarib_driveb") { newparam.DiskImage.EnableDriveB = vi; core_disk_enable_b = vi; }
 	CFG_INT("hatarib_drivesingle") { newparam.DiskImage.DriveA_NumberOfHeads = newparam.DiskImage.DriveB_NumberOfHeads = vi; }
 	CFG_INT("hatarib_readonly_floppy") newparam.DiskImage.nWriteProtection = vi;
