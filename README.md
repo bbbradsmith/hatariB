@@ -202,6 +202,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Disable *Input > Host Mouse Enabled* and *Input > Host Keyboard Enabled*, because RetroArch netplay does not send this activity over the network. Instead, use the onscreen keyboard and gamepad to operate the ST keyboard and mouse.
   * Make sure your core options match, especially the TOS image, before attempting to connect.
   * Savestate store/restore is CPU intensive for this core, so rapid inputs (especially using an analog stick) have the potential to cause slowdown or stutter.
+  * The IPF format appears to have drive state that cannot be completely restored. Netplay may stutter during activity if using IPF disk images due to savestate divergence.
 * Quirks:
   * Restoring a savestate, or using netplay/run-ahead into the pause or one-shot keyboard will have an outdated/blank background until unpaused, as Hatari can't rebuild the image until it runs a frame. We could consider adding the framebuffer to the savestate to prevent this, though it would significantly increase the data size.
   * If the on-screen keyboard confirm/cancel buttons aren't mapped to dedicated buttons, you might end up suddenly holding the underlying button when the keyboard closes. (Inputs from buttons mapped to the on-screen keyboard are suppressed while it remains open.)
