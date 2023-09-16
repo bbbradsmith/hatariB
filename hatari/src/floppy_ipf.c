@@ -431,7 +431,7 @@ void IPF_MemorySnapShot_Capture(bool bSave)
 			// temporarily remove pointers to prevent savestate divergence
 			IPF_STRUCT temp_ipf;
 			memcpy(&temp_ipf,&IPF_State,sizeof(IPF_State));
-			temp_ipf.Fdc.driveprc = 0;
+			temp_ipf.Fdc.driveprc = IPF_State.Fdc.driveprc ? (PCAPSDRIVE)-1 : 0; // store -1 or NULL so that it will be restored
 			temp_ipf.Fdc.drive = 0;
 			temp_ipf.Fdc.cbirq = 0;
 			temp_ipf.Fdc.cbdrq = 0;
