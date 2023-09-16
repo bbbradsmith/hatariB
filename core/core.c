@@ -650,6 +650,8 @@ static void core_snapshot_open_internal(void)
 void core_snapshot_open(void)
 {
 	//retro_log(RETRO_LOG_DEBUG,"core_snapshot_open()\n");
+	if (snapshot_buffer && snapshot_max < SNAPSHOT_HEADER_SIZE) // fill rest of header with 0
+		memset(snapshot_buffer+snapshot_max,0,SNAPSHOT_HEADER_SIZE-snapshot_max);
 	snapshot_pos = SNAPSHOT_HEADER_SIZE;
 	snapshot_max = snapshot_pos;
 }
@@ -744,7 +746,6 @@ static void snapshot_buffer_prepare(size_t size)
 		snapshot_size = size;
 	}
 	if (snapshot_buffer == NULL) snapshot_buffer = malloc(snapshot_size);
-	memset(snapshot_buffer,0,snapshot_size);
 }
 
 //
@@ -832,7 +833,13 @@ static bool core_serialize(bool write)
 	if (write) result = core_save_state();
 	else       result = core_restore_state();
 
-	if (!write)
+	if (write)
+	{
+		// zero fill the remaining space
+		if (snapshot_buffer && snapshot_max < snapshot_size)
+			memset(snapshot_buffer + snapshot_max, 0, snapshot_size - snapshot_max);
+	}
+	else
 	{
 		// update core_disk to match changes to the inserted disks
 		core_disk_reindex();

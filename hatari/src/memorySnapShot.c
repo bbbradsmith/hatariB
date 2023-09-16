@@ -90,7 +90,7 @@ static MSS_File CaptureFile;
 #ifndef __LIBRETRO__
 static bool bCaptureSave, bCaptureError;
 #else
-static bool bCaptureSave;
+bool bCaptureSave; // external access for inline use
 bool bCaptureError; // external access to check for error
 #endif
 
@@ -139,6 +139,7 @@ static void MemorySnapShot_fclose(MSS_File fhndl)
 /**
  * Read from file.
  */
+#ifndef __LIBRETRO__
 static int MemorySnapShot_fread(MSS_File fhndl, char *buf, int len)
 {
 #ifdef COMPRESS_MEMORYSNAPSHOT
@@ -151,12 +152,14 @@ static int MemorySnapShot_fread(MSS_File fhndl, char *buf, int len)
 	return fread(buf, 1, len, fhndl);
 #endif
 }
+#endif
 
 
 /*-----------------------------------------------------------------------*/
 /**
  * Write data to file.
  */
+#ifndef __LIBRETRO__
 static int MemorySnapShot_fwrite(MSS_File fhndl, const char *buf, int len)
 {
 #ifdef COMPRESS_MEMORYSNAPSHOT
@@ -169,6 +172,7 @@ static int MemorySnapShot_fwrite(MSS_File fhndl, const char *buf, int len)
 	return fwrite(buf, 1, len, fhndl);
 #endif
 }
+#endif
 
 
 /*-----------------------------------------------------------------------*/
@@ -310,6 +314,7 @@ void MemorySnapShot_Skip(int Nb)
 /**
  * Save/Restore data to/from file.
  */
+#ifndef __LIBRETRO__
 void MemorySnapShot_Store(void *pData, int Size)
 {
 	long nBytes;
@@ -328,6 +333,9 @@ void MemorySnapShot_Store(void *pData, int Size)
 			bCaptureError = true;
 	}
 }
+#else
+// replaced by inline version in memorySnapShot.h
+#endif
 
 
 /*-----------------------------------------------------------------------*/
