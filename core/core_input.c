@@ -30,6 +30,7 @@ const float DPAD_MOUSE_SPEED = 0.3; // scale of d-pad relative to analog max
 #define AUX_CPU_SPEED    0x00000200
 #define AUX_STATUSBAR    0x00000400
 #define AUX_OSK_CLOSED   0x00000800
+#define AUX_JM_TOGGLE    0x00001000
 
 // in core_internal.h
 //#define AUX_OSK_U        0x00010000
@@ -81,6 +82,7 @@ uint8_t retrok_down[RETROK_LAST] = {0}; // for repeat tracking
 uint8_t osk_press_mod;
 int32_t osk_press_key;
 int32_t osk_press_time;
+int32_t jm_toggle_index = -1;
 
 // input state that is temporary
 static int32_t joy_fire[JOY_PORTS];
@@ -310,6 +312,7 @@ void core_input_serialize(void)
 	core_serialize_uint8(&osk_press_mod);
 	core_serialize_int32(&osk_press_key);
 	core_serialize_int32(&osk_press_time);
+	core_serialize_int32(&jm_toggle_index);
 }
 
 void core_input_set_environment(retro_environment_t cb)
@@ -329,6 +332,7 @@ void core_input_init(void)
 	event_queue_init();
 	memset(&retrok_down,0,sizeof(retrok_down));
 	vmouse_x = vmouse_y = 0;
+	jm_toggle_index = -1;
 	aux_buttons = 0;
 	for (int i=0; i<JOY_PORTS; ++i)
 	{
@@ -399,6 +403,8 @@ void core_input_update(void)
 	bool cold_boot = false;
 	bool cpu_speed = false;
 	bool statusbar = false;
+	bool jm_toggle = false;
+	int jm_toggle_source = -1;
 	bool pause = false;
 	bool osk_on = false;
 	bool osk_shot = false;
@@ -479,7 +485,17 @@ void core_input_update(void)
 				if (input_osk_key) continue; // when using OSK hide this axis
 			}
 
-			switch (core_stick_map[i][k]) // must match OPTION_PAD_STICK in core_internal.h
+			int csm = core_stick_map[i][k];
+			if (i == jm_toggle_index) // Joy/Mouse swap
+			{
+				switch (csm)
+				{
+				case 1: csm = 2; break; // swap mouse for joy
+				case 2: csm = 1; break; // swap joy for mouse
+				default:         break;
+				}
+			}
+			switch (csm) // cases must match OPTION_PAD_STICK in core_internal.h
 			{
 			default:
 			case 0: // None
@@ -672,11 +688,16 @@ void core_input_update(void)
 					case 0: // None
 						break;
 					case 1: // Fire
-						if (j < JOY_PORTS)
+						if (i != jm_toggle_index)
 						{
-							vjoy_stick[j] |= JOY_STICK_F;
-							vjoy_fire[j] |= JOY_FIRE_A;
+							if (j < JOY_PORTS)
+							{
+								vjoy_stick[j] |= JOY_STICK_F;
+								vjoy_fire[j] |= JOY_FIRE_A;
+							}
 						}
+						else // swapped for mouse
+							vm_l = true;
 						break;
 					case 2: // Auto-Fire
 						if (j < JOY_PORTS && !input_paused)
@@ -698,7 +719,16 @@ void core_input_update(void)
 						}
 						break;
 					case 3: // Mouse Left
-						vm_l = true;
+						if (i == jm_toggle_index) // swapped for joy
+						{
+							if (j < JOY_PORTS)
+							{
+								vjoy_stick[j] |= JOY_STICK_F;
+								vjoy_fire[j] |= JOY_FIRE_A;
+							}
+						}
+						else
+							vm_l = true;
 						break;
 					case 4: // Mouse Right
 						vm_r = true;
@@ -766,6 +796,10 @@ void core_input_update(void)
 						break;
 					case 24: // Toggle Statusbar
 						statusbar = true;
+						break;
+					case 25: // Joystick / Mouse Toggle
+						jm_toggle = true;
+						jm_toggle_source = i; // always affects the last person to press it
 						break;
 					}
 				}
@@ -916,6 +950,7 @@ void core_input_update(void)
 		cold_boot = false;
 		cpu_speed = false;
 		statusbar = false;
+		jm_toggle = false;
 		if (input_osk_shot) pause = false; // cancel only if in OSK one-shot mode (otherwise we need it to unpause!)
 	}
 	else
@@ -951,6 +986,14 @@ void core_input_update(void)
 	// status bar toggle
 	if (statusbar && !AUX(STATUSBAR)) config_toggle_statusbar();
 	AUX_SET(statusbar,STATUSBAR);
+
+	// Jostick / Mouse toggle
+	if (jm_toggle && !AUX(JM_TOGGLE))
+	{
+		if   (jm_toggle_index >= 0) jm_toggle_index = -1; // toggle off
+		else                        jm_toggle_index = jm_toggle_source; // toggle on for the person who pressed the button
+	}
+	AUX_SET(jm_toggle,JM_TOGGLE);
 
 	// pause/help toggle
 	// onscreen keyboard toggle

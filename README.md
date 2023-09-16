@@ -121,6 +121,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
     * *Soft/Hard Reset* - If you need a button to reset the machine.
     * *CPU Speed* - Switches between 8 MHz, 16 MHz, and 32 MHz CPU speeds.
     * *Toggle Status Bar* - A quick hide/reveal of the status bar, in case you like it hidden but still want to check it sometimes.
+    * *Joystick / Mouse Toggle* - Temporarily swaps stick/d-pad assigned to Joystick to Mouse, and vice versa. Also swaps the joystick fire button for mouse left.
     * *Key Space/Return/Up/Down...* - Any keyboard key can be assigned to a button.
 * File formats:
   * Floppy disk: ST, MSA, DIM, STX, IPF, CTR (can be inside ZIP or GZ)
@@ -200,8 +201,8 @@ See [DEVELOP.md](DEVELOP.md) for more details.
 * Netplay:
   * Disable *System > Floppy Savestate Safety Save* to prevent unnecessary disk activity.
   * Disable *Input > Host Mouse Enabled* and *Input > Host Keyboard Enabled*, because RetroArch netplay does not send this activity over the network. Instead, use the onscreen keyboard and gamepad to operate the ST keyboard and mouse.
+  * RetroArch does not allow analog stick inputs during netplay. The *RetroPad > Joystick / Mouse Toggle* button assignment may be useful for switching between mouse and joystick d-pad input during netplay.
   * Make sure your core options match, especially the TOS image, before attempting to connect.
-  * Savestate store/restore is CPU intensive for this core, so rapid inputs (especially using an analog stick) have the potential to cause slowdown or stutter.
   * The IPF format appears to have drive state that cannot be completely restored. Netplay may stutter during activity if using IPF disk images due to savestate divergence.
 * Quirks:
   * Restoring a savestate, or using netplay/run-ahead into the pause or one-shot keyboard will have an outdated/blank background until unpaused, as Hatari can't rebuild the image until it runs a frame. We could consider adding the framebuffer to the savestate to prevent this, though it would significantly increase the data size.
@@ -226,6 +227,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Savestate determinism improvements to reduce netplay re-synchronizations.
   * Fix CPU clock rate change on reset.
   * CPU speed button mapping.
+  * Joystick / Mouse Toggle button mapping.
 * [hatariB v0.2](https://github.com/bbbradsmith/hatariB/releases/tag/0.2) - 2023-09-07
   * Second beta test version.
   * IPF support via dynamic loading of capsimg library.

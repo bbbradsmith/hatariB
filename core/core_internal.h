@@ -237,7 +237,7 @@ extern int32_t core_osk_mode;
 // If the key list is re-ordered, also adjust BUTTON_KEY in core_input.c.
 
 // This is the index of the first key (space)
-#define BUTTON_KEY_START   25
+#define BUTTON_KEY_START   26
 
 #define OPTION_PAD_BUTTON() \
 	{ \
@@ -266,8 +266,9 @@ extern int32_t core_osk_mode;
 		{"22","Hard Reset"}, \
 		{"23","CPU Speed"}, \
 		{"24","Toggle Status Bar"}, \
-		{"25","Key Space"}, \
-		{"26","Key Return"}, \
+		{"25","Joystick / Mouse Toggle"}, \
+		{"26","Key Space"}, \
+		{"27","Key Return"}, \
 		{"","Key Up"}, \
 		{"","Key Down"}, \
 		{"","Key Left"}, \
@@ -363,7 +364,7 @@ extern int32_t core_osk_mode;
 		{NULL,NULL} \
 	}
 // default should match OPTION_PAD below
-#define BUTTON_DEF   {2,1,4,3,7,9,5,6,19,20,25,26}
+#define BUTTON_DEF   {2,1,4,3,7,9,5,6,19,20,26,27}
 
 #define OPTION_OSKEY_BUTTON() \
 	{ \
@@ -409,9 +410,9 @@ extern int32_t core_osk_mode;
 	{ "hatarib_pad" padnum "_r2", "Pad " padnum " R2", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_BUTTON(), "20" }, /* mouse fast */ \
 	{ "hatarib_pad" padnum "_l3", "Pad " padnum " L3", NULL, NULL, NULL, "pad" padnum, \
-		OPTION_PAD_BUTTON(), "25" }, /* key space */ \
+		OPTION_PAD_BUTTON(), "26" }, /* key space */ \
 	{ "hatarib_pad" padnum "_r3", "Pad " padnum " R3", NULL, NULL, NULL, "pad" padnum, \
-		OPTION_PAD_BUTTON(), "26" }, /* key return */ \
+		OPTION_PAD_BUTTON(), "27" }, /* key return */ \
 	{ "hatarib_pad" padnum "_lstick", "Pad " padnum " Left Analog Stick", NULL, NULL, NULL, "pad" padnum, \
 		OPTION_PAD_STICK(), "1" }, /* joystick */ \
 	{ "hatarib_pad" padnum "_rstick", "Pad " padnum " Right Analog Stick", NULL, NULL, NULL, "pad" padnum, \
