@@ -222,7 +222,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
     * Pressing up from space bar now remembers last key instead of always going to Z.
   * Fixed blitter hang when using cycle-accurate cache emulation.
   * Single button disk swap.
-  * Savestate restore speedup, making run-ahead and netplay viable.
+  * Savestate optimizations, making run-ahead and netplay viable.
   * Savestate determinism improvements to reduce netplay re-synchronizations.
   * Fix CPU clock rate change on reset.
   * CPU speed button mapping.

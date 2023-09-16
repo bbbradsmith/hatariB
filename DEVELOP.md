@@ -192,11 +192,13 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Include `core.h` in main header to provide global extern access to some core functions.
   * Disable log output requirement.
 * **hatari/src/memorySnapShot.c**
+* **hatari/src/includes/memorySnapShot.h**
   * Disable compression of savestate data, Libretro does its own compression for save to disk, but also needs an uncompressed form for run-ahead or netplay to work.
   * Instead of saving to a file, write to a provided memory buffer.
   * Suppress error dialogs and alerts.
   * Suppress saving `DebugUI` information.
   * Add `LIBRETRO_DEBUG_SNAPSHOT` macro to debug snapshot memory regions.
+  * Create inline MemorySnapShot_Store to accelerate savestate load and save.
 * **hatari/src/mfp.c**
   * Save `PendingCyclesOver` to prevent state divergence.
   * Replace use of `rand()` with deterministic `core_rand()`.

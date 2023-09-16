@@ -621,6 +621,7 @@ static void core_perf_show()
 //
 
 uint8_t* snapshot_buffer = NULL;
+uint8_t* snapshot_buffer_internal = NULL;
 int snapshot_pos = 0;
 int snapshot_max = 0;
 int snapshot_size = 0;
@@ -737,15 +738,23 @@ void core_snapshot_seek(int pos)
 	if (snapshot_pos > snapshot_max) snapshot_max = snapshot_pos;
 }
 
-static void snapshot_buffer_prepare(size_t size)
+static void snapshot_buffer_prepare(size_t size, void* data)
 {
 	if (size > snapshot_size)
 	{
 		retro_log(RETRO_LOG_ERROR,"serialize size %d > snapshot_size %d: enlarging.\n",size,snapshot_size);
-		free(snapshot_buffer); snapshot_buffer = NULL;
+		free(snapshot_buffer_internal); snapshot_buffer_internal = NULL;
 		snapshot_size = size;
 	}
-	if (snapshot_buffer == NULL) snapshot_buffer = malloc(snapshot_size);
+	if (data)
+	{
+		snapshot_buffer = data;
+	}
+	else // can use internal buffer for debugging
+	{
+		if (snapshot_buffer_internal == NULL) snapshot_buffer_internal = malloc(snapshot_size);
+		snapshot_buffer = snapshot_buffer_internal;
+	}
 }
 
 //
@@ -1254,7 +1263,7 @@ RETRO_API void retro_run(void)
 
 #if DEBUG_SAVESTATE_DUMP
 	// write a savestate dump each frame
-	snapshot_buffer_prepare(snapshot_size);
+	snapshot_buffer_prepare(snapshot_size,NULL);
 	core_serialize(true);
 #endif
 #if DEBUG_SAVESTATE_SIMPLE
@@ -1263,7 +1272,7 @@ RETRO_API void retro_run(void)
 		--debug_snapshot_countdown;
 		if (debug_snapshot_countdown == 0)
 		{
-			snapshot_buffer_prepare(snapshot_size);
+			snapshot_buffer_prepare(snapshot_size,NULL);
 			core_serialize(true);
 			if (debug_snapshot_read == false)
 			{
@@ -1349,13 +1358,11 @@ RETRO_API bool retro_serialize(void *data, size_t size)
 	bool result = false;
 	PERF_START(PERF_SERIALIZE);
 	//retro_log(RETRO_LOG_DEBUG,"retro_serialize(%p,%d)\n",data,size);
-	snapshot_buffer_prepare(size);
+	snapshot_buffer_prepare(size,data);
 	if (core_serialize(true))
 	{
 		// to test a broken savestate, corrupt its version string
 		//++snapshot_buffer[SNAPSHOT_HEADER_SIZE+1];
-
-		memcpy(data,snapshot_buffer,size);
 		//core_debug_bin(data,size,0); // dump uncompressed contents to log
 		//core_trace_next(20); // use to verify instructions after savestate are the same as after restore
 		//core_write_file_save("hatarib_serialize_debug.bin",size,data); // for analyzing the uncompressed contents
@@ -1376,8 +1383,7 @@ RETRO_API bool retro_unserialize(const void *data, size_t size)
 	PERF_START(PERF_UNSERIALIZE);
 	//retro_log(RETRO_LOG_DEBUG,"retro_unserialize(%p,%z)\n",data,size);
 	//core_debug_bin(data,size,0);
-	snapshot_buffer_prepare(size);
-	memcpy(snapshot_buffer,data,size);
+	snapshot_buffer_prepare(size,(void*)data);
 	if (core_serialize(false))
 	{
 		core_audio_samples_pending = 0; // clear all pending audio
