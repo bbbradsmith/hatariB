@@ -97,6 +97,7 @@ extern void core_disk_drive_reinsert(void); // used after cold reboot
 extern void core_disk_swap(void); // convenience for: eject, next disk, insert
 
 extern unsigned get_num_images(void);
+extern bool get_image_path(unsigned index, char* label, size_t len);
 extern bool get_image_label(unsigned index, char* label, size_t len);
 
 // simple file save, as a complete buffer
