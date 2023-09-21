@@ -38,6 +38,9 @@ Other targets:
 
 By default SDL ant hatariB are built with the `-j` option to multithread the build process. You can disable this by adding `MULTITHREAD=` to the command line. This may be needed if the system runs out of memory, or otherwise can't handle the threading.
 
+The windows build can be debugged with Visual Studio by attaching to process. Set `DEBUG=1` for the make and run
+[cv2pdb](https://github.com/rainers/cv2pdb) on the DLL to generate PDB debug symbols that VS can use.
+
 ## Changes to Hatari
 
 Changes to the C source code are all contained in `__LIBRETRO__` defines. This is important for merging future versions, because we always be able to see what code was replaced. None of the original code has been modified or deleted, only _disabled_ within `#ifdef` blocks.

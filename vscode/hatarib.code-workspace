@@ -32,6 +32,7 @@
 			"zlib/": true,
 			"zlib_build/": true,
 			"vscode/": true,
+			"cv2pdb/": true,
 			"secrets/": true,
 		},
 		"explorer.sortOrder": "type",

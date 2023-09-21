@@ -1,5 +1,6 @@
 secrets/
 zlib_build/
 build/
+cv2pdb/
 vscode/test_*.bat
 *.lnk
