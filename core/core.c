@@ -287,12 +287,13 @@ extern void core_debug_printf(const char* fmt, ...)
 //     This difference is negligible for pixel aspect ratio, but would affect color artifact emulation if that were attempted.
 //
 #define RESOLUTION_COUNT 4
-static const double PIXEL_ASPECT_RATIO[4][RESOLUTION_COUNT] = {
+static const double PIXEL_ASPECT_RATIO[5][RESOLUTION_COUNT] = {
 	//  low,   med,  high, default
 	{ 1.000, 1.000, 1.000, 1.000 }, // square pixels
 	{ 0.844, 0.844, 1.010, 0.844 }, // Atari monitor
 	{ 0.766, 0.766, 0.766, 0.766 }, // NTSC TV (high resolution is incompatible)
 	{ 0.921, 0.921, 0.921, 0.921 }, // PAL TV (high resolution is incompatible)
+	{ 0.750, 0.750, 0.750, 0.750 }, // 4:3 exact (cleaner scaling at approximate NTSC aspect)
 };
 
 void core_video_update(void* data, int w, int h, int pitch, int resolution)

@@ -602,6 +602,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{"1","Atari Monitor"},
 			{"2","NTSC TV"},
 			{"3","PAL TV"},
+			{"4","4:3"},
 			{NULL,NULL}
 		}, "0"
 	},
