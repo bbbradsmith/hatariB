@@ -38,6 +38,8 @@ Other targets:
 
 By default SDL ant hatariB are built with the `-j` option to multithread the build process. You can disable this by adding `MULTITHREAD=` to the command line. This may be needed if the system runs out of memory, or otherwise can't handle the threading.
 
+By default `-Wall -Werror` is used, but if spurious warnings are blocking compliation this can be disabled with `WERROR=` on the command line.
+
 The windows build can be debugged with Visual Studio by attaching to process. Set `DEBUG=1` for the make and run
 [cv2pdb](https://github.com/rainers/cv2pdb) on the DLL to generate PDB debug symbols that VS can use.
 

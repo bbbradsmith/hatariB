@@ -71,6 +71,9 @@ If unsuccessful, you might look at [build.yml](.github/workflows/build.yml) whic
 If unsuccessful because the system is out of memory (may look like a ["fatal error" of GCC](https://github.com/bbbradsmith/hatariB/issues/11)), try setting the MULTITHREAD variable to empty:
 * `make full MULTITHREAD=`
 
+By default all warnings are enabled and treated as werrors. If unsuccessful because of spurious warnings, try setting the WERROR variable to empty:
+* `make full WERROR=`
+
 See [DEVELOP.md](DEVELOP.md) for more details.
 
 ## Notes
