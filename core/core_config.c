@@ -92,7 +92,8 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	},
 	{
 		"hatarib_monitor", "Monitor", NULL,
-		"Causes restart!! Monitor type. Colour, monochrome, etc.",
+		"Causes restart!! Monitor type. Colour, Monochrome, VGA, TV."
+		" TV scanlines effect requires doubled low/medium resolution.",
 		NULL, "system",
 		{
 			{"0","Monochrome High-Resolution"},
@@ -558,11 +559,17 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	// Video
 	//
 	{
-		"hatarib_lowres2x", "Low Resolution Double", NULL,
-		"Low resolution pixel doubling for 640x400 screen output."
-		" Prevents video output size changes for resolution switch.",
+		"hatarib_res2x", "Resolution Double", NULL,
+		"Doubles pixels for low and/or medium resolution, "
+		" Prevents video output size changes for resolution switch,"
+		" and keeps the medium resolution PAR closer to square.",
 		NULL, "video",
-		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
+		{
+			{"0","Off"},
+			{"1","Double Medium"},
+			{"2","Double Low + Medium"},
+			{NULL,NULL},
+		}, "1"
 	},
 	{
 		"hatarib_borders", "Screen Borders", NULL,
@@ -1095,7 +1102,16 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_osk_press_len") core_osk_press_len = vi;
 	CFG_INT("hatarib_osk_repeat_delay") core_osk_repeat_delay = vi;
 	CFG_INT("hatarib_osk_repeat_rate") core_osk_repeat_rate = vi;
-	CFG_INT("hatarib_lowres2x") newparam.Screen.bLowResolutionDouble = vi;
+	CFG_INT("hatarib_res2x")
+	{
+		newparam.Screen.bLowResolutionDouble = (vi >= 2) ? 1 : 0;
+		newparam.Screen.bMedResolutionDouble = (vi >= 1) ? 1 : 0;
+		if (core_video_res2x != vi)
+		{
+			core_video_res2x = vi;
+			core_video_changed = true;
+		}
+	}
 	CFG_INT("hatarib_borders") { newparam.Screen.bAllowOverscan = (vi != 0); newparam.Screen.nCropOverscan = vi; }
 	CFG_INT("hatarib_statusbar") { newparam.Screen.bShowStatusbar = (vi==1); newparam.Screen.bShowDriveLed = (vi==2); }
 	CFG_INT("hatarib_aspect") { if (core_video_aspect_mode != vi) { core_video_aspect_mode = vi; core_video_changed = true; } }

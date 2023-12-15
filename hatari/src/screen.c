@@ -95,6 +95,9 @@ static bool bScreenContentsChanged;     /* true if buffer changed and requires b
 static bool bScrDoubleY;                /* true if double on Y */
 static int ScrUpdateFlag;               /* Bit mask of how to update screen */
 static bool bRGBTableInSync;            /* Is RGB table up to date? */
+#ifdef __LIBRETRO__
+static bool bLibretroDoubleYEnable = 1; // used to disable Y doubling for low/medium resolutions
+#endif
 
 /* These are used for the generic screen conversion functions */
 static int genconv_width_req, genconv_height_req, genconv_bpp;
@@ -243,7 +246,7 @@ static void Screen_SetDrawFunctions(int nBitCount, bool bDoubleLowRes)
 #ifndef __LIBRETRO__
 static void Screen_SetBorderPixels(int leftX, int leftY)
 #else
-static void Screen_SetBorderPixels(int leftX, int leftY, int zoom, int height, int statusH)
+static void Screen_SetBorderPixels(int leftX, int leftY, int zoomY, int height, int statusH)
 #endif
 {
 	/* All screen widths need to be aligned to 16-bits */
@@ -298,8 +301,8 @@ static void Screen_SetBorderPixels(int leftX, int leftY, int zoom, int height, i
 		if (height >= 300) th *= 2;
 
 		// temporarily undo the zoom to count output pixels
-		nBorderPixelsTop *= zoom;
-		nBorderPixelsBottom *= zoom;
+		nBorderPixelsTop *= zoomY;
+		nBorderPixelsBottom *= zoomY;
 
 		// figure out how many lines we can remove
 		int overscan = th - height; // number of lines available for overscan
@@ -358,9 +361,9 @@ static void Screen_SetBorderPixels(int leftX, int leftY, int zoom, int height, i
 		// if crop isn't 0 by now, there's nothing more we can remove!
 
 		// re-apply the zoom
-		int remain = ((nBorderPixelsTop + nBorderPixelsBottom) % zoom) / zoom; // if they don't divide evenly by zoom, compensate with an extra pixel on the bottom
-		nBorderPixelsTop /= zoom;
-		nBorderPixelsBottom /= zoom;
+		int remain = ((nBorderPixelsTop + nBorderPixelsBottom) % zoomY) / zoomY; // if they don't divide evenly by zoom, compensate with an extra pixel on the bottom
+		nBorderPixelsTop /= zoomY;
+		nBorderPixelsBottom /= zoomY;
 		nBorderPixelsBottom += remain;
 	}
 #endif
@@ -794,15 +797,20 @@ static void Screen_SetSTResolution(bool bForceChange)
 	Resolution_GetLimits(&maxW, &maxH, &BitCount, ConfigureParams.Screen.bKeepResolution);
 
 #ifdef __LIBRETRO__
+	int nZoomY = nZoom;
+	bLibretroDoubleYEnable = 1;
 	maxW = 2*NUM_VISIBLE_LINE_PIXELS;
 	maxH = 2*(NUM_VISIBLE_LINES+STATUSBAR_MAX_HEIGHT);
-	if (!ConfigureParams.Screen.bLowResolutionDouble)
+	if (!ConfigureParams.Screen.bLowResolutionDouble && STRes == ST_LOW_RES)
 	{
-		if (STRes == ST_LOW_RES)
-		{
-			maxW /= 2;
-			maxH /= 2;
-		}
+		maxW /= 2;
+		maxH /= 2;
+	}
+	else if (!ConfigureParams.Screen.bMedResolutionDouble && STRes == ST_MEDIUM_RES)
+	{
+		maxH /= 2;
+		Height /= 2;
+		bLibretroDoubleYEnable = 0;
 	}
 #endif
 
@@ -816,6 +824,9 @@ static void Screen_SetSTResolution(bool bForceChange)
 		nScreenZoomX = 2;
 		nScreenZoomY = 2;
 		bDoubleLowRes = true;
+#ifdef __LIBRETRO__
+		nZoomY = nZoom;
+#endif
 	}
 	else if (STRes == ST_MEDIUM_RES)
 	{
@@ -826,6 +837,13 @@ static void Screen_SetSTResolution(bool bForceChange)
 		 */
 		nScreenZoomX = 1;
 		nScreenZoomY = 2;
+#ifdef __LIBRETRO__
+		if (!ConfigureParams.Screen.bMedResolutionDouble)
+		{
+			nScreenZoomY = 1;
+			nZoomY = 1;
+		}
+#endif
 	}
 
 	/* Adjust width/height for overscan borders, if mono or VDI we have no overscan */
@@ -836,15 +854,21 @@ static void Screen_SetSTResolution(bool bForceChange)
 
 #ifndef __LIBRETRO__
 		Screen_SetBorderPixels(leftX/nZoom, leftY/nZoom);
-#else
-		Screen_SetBorderPixels(leftX/nZoom, leftY/nZoom, nZoom, Height, Statusbar_GetHeightForSize(Width, Height));
-#endif
 		DEBUGPRINT(("resolution limit:\n\t%d x %d\nlimited resolution:\n\t", maxW, maxH));
 		DEBUGPRINT(("%d * (%d + %d + %d) x (%d + %d + %d)\n", nZoom,
 			    nBorderPixelsLeft, Width/nZoom, nBorderPixelsRight,
 			    nBorderPixelsTop, Height/nZoom, nBorderPixelsBottom));
 		Width += (nBorderPixelsRight + nBorderPixelsLeft)*nZoom;
 		Height += (nBorderPixelsTop + nBorderPixelsBottom)*nZoom;
+#else
+		Screen_SetBorderPixels(leftX/nZoom, leftY/nZoomY, nZoomY, Height, Statusbar_GetHeightForSize(Width, Height));
+		DEBUGPRINT(("resolution limit:\n\t%d x %d\nlimited resolution:\n\t", maxW, maxH));
+		DEBUGPRINT(("%d * (%d + %d + %d) x %d * (%d + %d + %d)\n", nZoom,
+			    nBorderPixelsLeft, Width/nZoom, nBorderPixelsRight,
+			    nBorderPixelsTop, Height/nZoomY, nBorderPixelsBottom));
+		Width += (nBorderPixelsRight + nBorderPixelsLeft)*nZoom;
+		Height += (nBorderPixelsTop + nBorderPixelsBottom)*nZoomY;
+#endif
 		DEBUGPRINT(("\t= %d x %d (+ statusbar)\n", Width, Height));
 	}
 
@@ -1777,6 +1801,11 @@ static Uint32* Double_ScreenLine32(Uint32 *line, int size)
 	Uint32 *next;
 	Uint32 mask;
 
+#ifdef __LIBRETRO__
+	if (!bLibretroDoubleYEnable)
+		return line + fmt_size;
+#endif
+
 	next = line + fmt_size;
 	/* copy as-is */
 	if (bScrDoubleY)
@@ -1806,6 +1835,11 @@ static Uint16* Double_ScreenLine16(Uint16 *line, int size)
 	int fmt_size = size/2;
 	Uint16 *next;
 	Uint16 mask;
+
+#ifdef __LIBRETRO__
+	if (!bLibretroDoubleYEnable)
+		return line + fmt_size;
+#endif
 
 	next = line + fmt_size;
 	/* copy as-is */

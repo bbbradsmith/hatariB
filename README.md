@@ -228,6 +228,8 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Fix CPU clock rate change on reset.
   * CPU speed button mapping.
   * Joystick / Mouse Toggle button mapping.
+  * 4:3 pixel aspect ratio option.
+  * Medium resolution vertical-doubling can be disabled.
 * [hatariB v0.2](https://github.com/bbbradsmith/hatariB/releases/tag/0.2) - 2023-09-07
   * Second beta test version.
   * IPF support via dynamic loading of capsimg library.

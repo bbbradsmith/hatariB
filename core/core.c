@@ -129,6 +129,7 @@ int core_video_pitch = 320 * sizeof(uint32_t);
 int core_video_resolution = 0;
 float core_video_aspect = 1.0;
 int core_video_aspect_mode = 0;
+int core_video_res2x = 1;
 int core_video_fps = 50;
 int core_video_fps_new = 50;
 int core_audio_samplerate = 48000;
@@ -1071,6 +1072,9 @@ RETRO_API void retro_get_system_av_info(struct retro_system_av_info *info)
 	{
 		double par = PIXEL_ASPECT_RATIO[core_video_aspect_mode][core_video_resolution];
 		core_video_aspect = (par * core_video_w) / (double)core_video_h;
+		// medium resolution correction if not doubling
+		if (core_video_resolution == 1 && core_video_res2x == 0)
+			core_video_aspect /= 2.0f;
 	}
 
 	info->geometry.base_width = core_video_w;
