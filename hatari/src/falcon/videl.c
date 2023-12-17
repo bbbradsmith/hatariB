@@ -921,6 +921,11 @@ void Videl_ScreenModeChanged(bool bForceChange)
 }
 
 
+#ifdef __LIBRETRO__
+// from screen.c
+extern void core_border_crop(int width, int height, int zoomX, int zoomY, int *top, int *bottom, int *left, int *right, int statusH);
+#endif
+
 bool VIDEL_renderScreen(void)
 {
 	/* Atari screen infos */
@@ -936,6 +941,23 @@ bool VIDEL_renderScreen(void)
 	bool change = false;
 
 	Uint32 videoBase = Video_GetScreenBaseAddr();
+
+#ifdef __LIBRETRO__
+	{
+		int top = videl.upperBorderSize;
+		int bottom = videl.lowerBorderSize;
+		int left = videl.leftBorderSize;
+		int right = videl.rightBorderSize;
+		// note: passing status bar height of 0 because we don't know Y zoom at this point (720p/1080p crop won't work with status bar on Falcon)
+		core_border_crop(videl.XSize,videl.YSize,1,1,&top,&bottom,&left,&right,0);
+		videl.upperBorderSize = top;
+		videl.lowerBorderSize = bottom;
+		videl.leftBorderSize = left;
+		videl.rightBorderSize = right;
+		vw = videl.leftBorderSize + videl.XSize + videl.rightBorderSize;
+		vh = videl.upperBorderSize + videl.YSize + videl.lowerBorderSize;
+	}
+#endif
 
 	if (vw > 0 && vw != videl.save_scrWidth) {
 		LOG_TRACE(TRACE_VIDEL, "Videl : width change from %d to %d\n", videl.save_scrWidth, vw);

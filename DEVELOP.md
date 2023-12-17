@@ -85,7 +85,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
 * **hatari/src/cart.c**
   * Use core's file system to load cartridge ROM.
 * **hatari/src/change.c**
-  * New reset cases for added configuration changes (EmuTOS, low resolution doubling).
+  * New reset cases for added configuration changes (EmuTOS, resolution doubling).
   * NVRAM is no longer accessed unless using TT or Falcon machines, so it has a new reset case here.
   * Disable alert dialog for reset due to changes.
 * **hatari/src/configuration.c**
@@ -93,7 +93,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * New settings:
     * Built-in EmuTOS with region/framerate override option.
     * Sound highpass and lowpass filter choice.
-    * Low resolution doubling.
+    * Resolution doubling.
     * CPU frequency at-boot. This copies to the existing `nCpuFreq` setting during a reset. Hatari expects to change `nCpuFreq` directly in its configuration while running, so it reflects the immediate live state of the CPU, but Libretro options are instead only changed by the user. This provides a way for the user to give a setting without conflicting with Hatari's direct usage.
     * Remove `SDL_NumJoysticks`.
     * Replace some default settings:
@@ -225,7 +225,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Disable SDL rendering, reduce use of SDL to merely creating a software render SDL_Surface which can be used by the gui-sdl system to render the status bar and onscreen keyboard.
   * Replace `SDL_RenderPresent` with `core_video_update` to deliver the new frame buffer.
   * Provide Libretro's 3 available pixel formats.
-  * Implement option to use doubled pixels for low resolution.
+  * Implement options to control pixel doubling for low and medium resolutions.
   * Use palette 0 to clear the screen after mode changes, because it looks more natural than black. (Needed if the resolution changes while emulation is paused.)
   * Provide border cropping options.
 * **hatari/src/screenSnapShot.c**
@@ -285,6 +285,8 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Disable log to stderr.
   * Redirect alert dialogs instead to a Libretro onscreen notification.
   * Send trace logs to Libretro log.
+* **hatari/src/falcon.videl.c**
+  * Add border cropping adjustment settings.
 * **hatari/src/falcon/microphone.c**
   * Disable SDL audio device usage. (No microphone support at this time.)
 * **hatari/src/falcon/nvram.c**
