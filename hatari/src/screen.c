@@ -97,6 +97,7 @@ static int ScrUpdateFlag;               /* Bit mask of how to update screen */
 static bool bRGBTableInSync;            /* Is RGB table up to date? */
 #ifdef __LIBRETRO__
 static bool bLibretroDoubleYEnable = 1; // used to disable Y doubling for low/medium resolutions
+static int coreRes = 0; // STRes if using ST resolution, otherwise an assumed mode based on GenConv dimensions.
 #endif
 
 /* These are used for the generic screen conversion functions */
@@ -132,7 +133,7 @@ void SDL_UpdateRects(SDL_Surface *screen, int numrects, SDL_Rect *rects)
 		SDL_RenderPresent(sdlRenderer);
 #else
 		// screen is always sdlscrn
-		core_video_update(sdlscrn->pixels, sdlscrn->w, sdlscrn->h, sdlscrn->pitch, STRes);
+		core_video_update(sdlscrn->pixels, sdlscrn->w, sdlscrn->h, sdlscrn->pitch, coreRes);
 #endif
 	}
 	else
@@ -717,7 +718,7 @@ static bool Screen_SetSDLVideoSize(int width, int height, int bitdepth, bool bFo
 		sdlscrn = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, bitdepth,
 		                               rm, gm, bm, am);
 		// make sure core has valid pointer to screen data (even if not yet initialized)
-		core_video_update(sdlscrn->pixels, sdlscrn->w, sdlscrn->h, sdlscrn->pitch, STRes);
+		core_video_update(sdlscrn->pixels, sdlscrn->w, sdlscrn->h, sdlscrn->pitch, coreRes);
 		if (SDL_MUSTLOCK(sdlscrn))
 			core_error_msg("Screen display may fail: sdlscrn SWSURFACE has MUSTLOCK");
 	#endif
@@ -812,6 +813,7 @@ static void Screen_SetSTResolution(bool bForceChange)
 		Height /= 2;
 		bLibretroDoubleYEnable = 0;
 	}
+	coreRes = STRes;
 #endif
 
 	/* Zoom if necessary, factors used for scaling mouse motions */
@@ -1642,11 +1644,13 @@ void Screen_SetGenConvSize(int width, int height, int bpp, bool bForceChange)
 		}
 	}
 #else
+	coreRes = ST_HIGH_RES;
 	if (2*width  <= maxw) nScreenZoomX = 2;
 	if (2*height <= maxh) nScreenZoomY = 2;
 	// if X is zoomed, use low resolution doubling setting
 	if (nScreenZoomX > 1)
 	{
+		coreRes = ST_LOW_RES;
 		if (!ConfigureParams.Screen.bLowResolutionDouble)
 		{
 			nScreenZoomX = 1;
@@ -1654,9 +1658,13 @@ void Screen_SetGenConvSize(int width, int height, int bpp, bool bForceChange)
 		}
 	}
 	// if only Y is zoomed, use medium resolution doubling setting
-	else if (nScreenZoomY > 1 && !ConfigureParams.Screen.bMedResolutionDouble)
+	else if (nScreenZoomY > 1)
 	{
-		nScreenZoomY = 1;
+		coreRes = ST_MEDIUM_RES;
+		if (!ConfigureParams.Screen.bMedResolutionDouble)
+		{
+			nScreenZoomY = 1;
+		}
 	}
 	(void)scalex;
 	(void)scaley;
