@@ -948,12 +948,35 @@ bool VIDEL_renderScreen(void)
 		int bottom = videl.lowerBorderSize;
 		int left = videl.leftBorderSize;
 		int right = videl.rightBorderSize;
-		// note: passing status bar height of 0 because we don't know Y zoom at this point (720p/1080p crop won't work with status bar on Falcon)
-		core_border_crop(videl.XSize,videl.YSize,1,1,&top,&bottom,&left,&right,0);
-		videl.upperBorderSize = top;
-		videl.lowerBorderSize = bottom;
-		videl.leftBorderSize = left;
-		videl.rightBorderSize = right;
+		// predict zoom factors (replicating Screen_SetGenConvSize behaviour)
+		int zoomX = (videl.XSize < NUM_VISIBLE_LINE_PIXELS) ? 2 : 1;
+		int zoomY = (videl.YSize < (NUM_VISIBLE_LINES+(STATUSBAR_MAX_HEIGHT/2))) ? 2 : 1;
+		if (zoomX > 1)
+		{
+			if (!ConfigureParams.Screen.bLowResolutionDouble)
+			{
+				zoomX = 1;
+				zoomY = 1;
+			}
+		}
+		else if (zoomY > 1)
+		{
+			if (!ConfigureParams.Screen.bMedResolutionDouble)
+				zoomY = 1;
+		}
+		// crop borders
+		top *= zoomY;
+		bottom *= zoomY;
+		left *= zoomX;
+		right *= zoomX;
+		core_border_crop(
+			videl.XSize*zoomX,videl.YSize*zoomY,zoomX,zoomY,
+			&top,&bottom,&left,&right,
+			Statusbar_GetHeightForSize(videl.XSize*zoomX, videl.YSize*zoomY));
+		videl.upperBorderSize = top / zoomY;
+		videl.lowerBorderSize = bottom / zoomY;
+		videl.leftBorderSize = left / zoomX;
+		videl.rightBorderSize = right / zoomX;
 		vw = videl.leftBorderSize + videl.XSize + videl.rightBorderSize;
 		vh = videl.upperBorderSize + videl.YSize + videl.lowerBorderSize;
 	}

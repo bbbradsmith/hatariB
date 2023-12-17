@@ -818,7 +818,7 @@ static void Screen_SetSTResolution(bool bForceChange)
 	bLibretroDoubleYEnable = 1;
 	core_video_aspect_adjust = 0;
 	maxW = 2*NUM_VISIBLE_LINE_PIXELS;
-	maxH = 2*(NUM_VISIBLE_LINES+STATUSBAR_MAX_HEIGHT);
+	maxH = 2*NUM_VISIBLE_LINES+STATUSBAR_MAX_HEIGHT;
 	if (!ConfigureParams.Screen.bLowResolutionDouble && STRes == ST_LOW_RES)
 	{
 		maxW /= 2;
