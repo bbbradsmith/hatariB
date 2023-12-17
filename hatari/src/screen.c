@@ -98,6 +98,7 @@ static bool bRGBTableInSync;            /* Is RGB table up to date? */
 #ifdef __LIBRETRO__
 static bool bLibretroDoubleYEnable = 1; // used to disable Y doubling for low/medium resolutions
 static int coreRes = 0; // STRes if using ST resolution, otherwise an assumed mode based on GenConv dimensions.
+extern int core_video_aspect_adjust;
 #endif
 
 /* These are used for the generic screen conversion functions */
@@ -815,6 +816,7 @@ static void Screen_SetSTResolution(bool bForceChange)
 #ifdef __LIBRETRO__
 	int nZoomY = nZoom;
 	bLibretroDoubleYEnable = 1;
+	core_video_aspect_adjust = 0;
 	maxW = 2*NUM_VISIBLE_LINE_PIXELS;
 	maxH = 2*(NUM_VISIBLE_LINES+STATUSBAR_MAX_HEIGHT);
 	if (!ConfigureParams.Screen.bLowResolutionDouble && STRes == ST_LOW_RES)
@@ -859,6 +861,7 @@ static void Screen_SetSTResolution(bool bForceChange)
 		{
 			nScreenZoomY = 1;
 			nZoomY = 1;
+			core_video_aspect_adjust = 1;
 		}
 #endif
 	}
@@ -1657,6 +1660,7 @@ void Screen_SetGenConvSize(int width, int height, int bpp, bool bForceChange)
 	}
 #else
 	coreRes = ST_HIGH_RES;
+	core_video_aspect_adjust = 0;
 	if (2*width  <= maxw) nScreenZoomX = 2;
 	if (2*height <= maxh) nScreenZoomY = 2;
 	// if X is zoomed, use low resolution doubling setting
@@ -1665,6 +1669,10 @@ void Screen_SetGenConvSize(int width, int height, int bpp, bool bForceChange)
 		coreRes = ST_LOW_RES;
 		if (!ConfigureParams.Screen.bLowResolutionDouble)
 		{
+			if (nScreenZoomX > 1 && nScreenZoomY <= 1) // TT/Falcon "tall" 320x400
+			{
+				core_video_aspect_adjust = 2;
+			}
 			nScreenZoomX = 1;
 			nScreenZoomY = 1;
 		}
@@ -1676,6 +1684,7 @@ void Screen_SetGenConvSize(int width, int height, int bpp, bool bForceChange)
 		if (!ConfigureParams.Screen.bMedResolutionDouble)
 		{
 			nScreenZoomY = 1;
+			core_video_aspect_adjust = 1;
 		}
 	}
 	(void)scalex;

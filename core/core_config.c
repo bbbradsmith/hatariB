@@ -1106,11 +1106,6 @@ void core_config_read_newparam()
 	{
 		newparam.Screen.bLowResolutionDouble = (vi >= 2) ? 1 : 0;
 		newparam.Screen.bMedResolutionDouble = (vi >= 1) ? 1 : 0;
-		if (core_video_res2x != vi)
-		{
-			core_video_res2x = vi;
-			core_video_changed = true;
-		}
 	}
 	CFG_INT("hatarib_borders") { newparam.Screen.bAllowOverscan = (vi != 0); newparam.Screen.nCropOverscan = vi; }
 	CFG_INT("hatarib_statusbar") { newparam.Screen.bShowStatusbar = (vi==1); newparam.Screen.bShowDriveLed = (vi==2); }
