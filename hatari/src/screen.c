@@ -1606,6 +1606,7 @@ void Screen_SetGenConvSize(int width, int height, int bpp, bool bForceChange)
 
 	nScreenZoomX = nScreenZoomY = 1;
 
+#ifndef __LIBRETRO__
 	if (ConfigureParams.Screen.bAspectCorrect) {
 		/* Falcon (and TT) pixel scaling factors seem to 2^x
 		 * (quarter/half pixel, interlace/double line), so
@@ -1640,6 +1641,26 @@ void Screen_SetGenConvSize(int width, int height, int bpp, bool bForceChange)
 			nScreenZoomY *= scaley;
 		}
 	}
+#else
+	if (2*width  <= maxw) nScreenZoomX = 2;
+	if (2*height <= maxh) nScreenZoomY = 2;
+	// if X is zoomed, use low resolution doubling setting
+	if (nScreenZoomX > 1)
+	{
+		if (!ConfigureParams.Screen.bLowResolutionDouble)
+		{
+			nScreenZoomX = 1;
+			nScreenZoomY = 1;
+		}
+	}
+	// if only Y is zoomed, use medium resolution doubling setting
+	else if (nScreenZoomY > 1 && !ConfigureParams.Screen.bMedResolutionDouble)
+	{
+		nScreenZoomY = 1;
+	}
+	(void)scalex;
+	(void)scaley;
+#endif
 
 	genconv_width_req = width;
 	genconv_height_req = height;
