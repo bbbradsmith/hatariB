@@ -279,6 +279,8 @@ void core_border_crop(int width, int height, int zoomX, int zoomY, int *top, int
 	int cbottom = *bottom;
 	int cleft = *left;
 	int cright = *right;
+	bool symmetryX = true;
+	bool symmetryY = true;
 
 	if (ConfigureParams.Screen.nCropOverscan == 1) // Small
 	{
@@ -301,9 +303,11 @@ void core_border_crop(int width, int height, int zoomX, int zoomY, int *top, int
 		cleft = 48;
 		cright = 48;
 	}
-	else if (ConfigureParams.Screen.nCropOverscan == 4) // Extreme
+	else if (ConfigureParams.Screen.nCropOverscan == 4) // Maximum
 	{
-		// keep inputs
+		// keep inputs, don't apply symmetry
+		symmetryX = false;
+		symmetryY = false;
 	}
 	else if (ConfigureParams.Screen.nCropOverscan >= 5) // 720p/1080p crops
 	{
@@ -377,6 +381,20 @@ void core_border_crop(int width, int height, int zoomX, int zoomY, int *top, int
 		ctop /= zoomY;
 		cbottom /= zoomY;
 		cbottom += remain;
+
+		// keep X symmetry, but not Y
+		symmetryY = false;
+	}
+	// symmetry
+	if (symmetryX)
+	{
+		if (cleft > cright) cleft = cright;
+		if (cright > cleft) cright = cleft;
+	}
+	if (symmetryY)
+	{
+		if (ctop > cbottom) ctop = cbottom;
+		if (cbottom > ctop) cbottom = ctop;
 	}
 	// apply
 	if (*top    >= ctop   ) *top    = ctop;

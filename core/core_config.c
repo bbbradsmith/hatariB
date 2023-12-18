@@ -581,7 +581,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{"1","Small"},
 			{"2","Medium"},
 			{"3","Large"},
-			{"4","Extreme"},
+			{"4","Maximum"},
 			{"5","Crop 720p (240, 480)"},
 			{"6","Crop 1080p (270, 540)"},
 			{NULL,NULL}
