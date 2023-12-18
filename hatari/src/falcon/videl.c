@@ -949,8 +949,8 @@ bool VIDEL_renderScreen(void)
 		int left = videl.leftBorderSize;
 		int right = videl.rightBorderSize;
 		// predict zoom factors (replicating Screen_SetGenConvSize behaviour)
-		int zoomX = (videl.XSize < NUM_VISIBLE_LINE_PIXELS) ? 2 : 1;
-		int zoomY = (videl.YSize < (NUM_VISIBLE_LINES+(STATUSBAR_MAX_HEIGHT/2))) ? 2 : 1;
+		int zoomX = (videl.XSize <= NUM_VISIBLE_LINE_PIXELS) ? 2 : 1;
+		int zoomY = (videl.YSize <= (NUM_VISIBLE_LINES+(STATUSBAR_MAX_HEIGHT/2))) ? 2 : 1;
 		if (zoomX > 1)
 		{
 			if (!ConfigureParams.Screen.bLowResolutionDouble)
