@@ -528,7 +528,7 @@ static bool load_hard(const char* path, const char* filename, unsigned index, co
 	else if (ht == 0) // GemDOS converts .GEM into directory name
 	{
 		char gemdos_path[2048];
-		strcpy_trunc(gemdos_path, path, sizeof(gemdos_path)-1);
+		strcpy_trunc(gemdos_path, path, sizeof(gemdos_path));
 		int ep = strlen(gemdos_path)-4;
 		if (ep >= 0)
 		{
