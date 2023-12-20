@@ -979,6 +979,73 @@ bool cfg_read_int_pad(int pad, const char* key, int* v)
 #define CFG_STR(key) if (cfg_read_str((key),&vs))
 #define CFG_INT_PAD(pad,key) if (cfg_read_int_pad((pad),(key),&vi))
 
+static void core_config_hard(CNF_PARAMS *param, const char* image, int ht)
+{
+	retro_log(RETRO_LOG_INFO,"core_config_hard(%p,'%s',%d)\n",param,image,ht);
+
+	// clear existing drives
+	param->HardDisk.bUseHardDiskDirectories = false;
+	param->Acsi[0].bUseDevice = false;
+	param->Scsi[0].bUseDevice = false;
+	param->Ide[0].bUseDevice = false;
+
+	// set new drive
+	switch(ht)
+	{
+	default:
+	case 0: // GemDOS
+	case 1: // GemDOS (Use 8-bit Filenames)
+		param->HardDisk.bFilenameConversion = (ht == 1);
+		param->HardDisk.bUseHardDiskDirectories = true;
+		strcpy_trunc(param->HardDisk.szHardDiskDirectories[0],image,sizeof(param->HardDisk.szHardDiskDirectories[0]));
+		break;
+	case 2: // ACSI
+		param->Acsi[0].bUseDevice = true;
+		strcpy_trunc(param->Acsi[0].sDeviceFile,image,sizeof(param->Acsi[0].sDeviceFile));
+		break;
+	case 3: // SCSI
+		param->Scsi[0].bUseDevice = true;
+		strcpy_trunc(param->Scsi[0].sDeviceFile,image,sizeof(param->Scsi[0].sDeviceFile));
+		break;
+	case 4: // IDE (Auto)
+	case 5: // IDE (Byte Swap Off)
+	case 6: // IDE (Byte Swap On)
+		param->Ide[0].bUseDevice = true;
+		strcpy_trunc(param->Ide[0].sDeviceFile,image,sizeof(param->Ide[0].sDeviceFile));
+		{
+			static const BYTESWAPPING BSMAP[3] = { BYTESWAP_AUTO, BYTESWAP_OFF, BYTESWAP_ON };
+			param->Ide[0].nByteSwap = BSMAP[ht-4];
+		}
+		break;
+	}
+}
+
+bool core_config_hard_content(const char* path, int ht)
+{
+	if (!core_first_reset)
+	{
+		core_signal_alert2("Hard drive change requires reset: ",path);
+		return false;
+	}
+
+	// GemDOS or IDE can alter their type from the core options menu
+	if (ht == 0) // GemDOS 8-bit filenames
+	{
+		if (ConfigureParams.HardDisk.bFilenameConversion) ht = 1;
+	}
+	else if (ht == 4) // IDE can be Auto (4), byte swap off (5) or on (6)
+	{
+		if (ConfigureParams.Ide[0].nByteSwap == BYTESWAP_OFF) ht = 5;
+		if (ConfigureParams.Ide[0].nByteSwap == BYTESWAP_ON ) ht = 6;
+	}
+
+	core_hard_content = true;
+	core_hard_content_type = ht;
+	strcpy_trunc(core_hard_content_path,path,sizeof(core_hard_content_path));
+	core_config_apply();
+	return true;
+}
+
 void core_config_read_newparam()
 {
 	int vi;
@@ -1048,34 +1115,7 @@ void core_config_read_newparam()
 		CFG_STR("hatarib_hardimg") image = vs;
 		if ((image[0] != 0) && strcmp(image,"<none>")) // don't configure unless we have an image to use
 		{
-			switch(ht)
-			{
-			default:
-			case 0: // GemDOS
-			case 1: // GemDOS (Use 8-bit Filenames)
-				newparam.HardDisk.bFilenameConversion = (ht == 1);
-				newparam.HardDisk.bUseHardDiskDirectories = true;
-				strcpy_trunc(newparam.HardDisk.szHardDiskDirectories[0],image,sizeof(newparam.HardDisk.szHardDiskDirectories[0]));
-				break;
-			case 2: // ACSI
-				newparam.Acsi[0].bUseDevice = true;
-				strcpy_trunc(newparam.Acsi[0].sDeviceFile,image,sizeof(newparam.Acsi[0].sDeviceFile));
-				break;
-			case 3: // SCSI
-				newparam.Scsi[0].bUseDevice = true;
-				strcpy_trunc(newparam.Scsi[0].sDeviceFile,image,sizeof(newparam.Scsi[0].sDeviceFile));
-				break;
-			case 4: // IDE (Auto)
-			case 5: // IDE (Byte Swap Off)
-			case 6: // IDE (Byte Swap On)
-				newparam.Ide[0].bUseDevice = true;
-				strcpy_trunc(newparam.Ide[0].sDeviceFile,image,sizeof(newparam.Ide[0].sDeviceFile));
-				{
-					static const BYTESWAPPING BSMAP[3] = { BYTESWAP_AUTO, BYTESWAP_OFF, BYTESWAP_ON };
-					newparam.Ide[0].nByteSwap = BSMAP[ht-4];
-				}
-				break;
-			}
+			core_config_hard(&newparam, image, ht);
 		}
 	}
 	CFG_INT("hatarib_hardboot") newparam.HardDisk.bBootFromHardDisk = vi;
@@ -1162,6 +1202,8 @@ void core_config_read_newparam()
 	memcpy(newparam.DiskImage.szDiskFileName[0],ConfigureParams.DiskImage.szDiskFileName[0],sizeof(newparam.DiskImage.szDiskFileName[0]));
 	memcpy(newparam.DiskImage.szDiskFileName[1],ConfigureParams.DiskImage.szDiskFileName[1],sizeof(newparam.DiskImage.szDiskFileName[1]));
 	newparam.System.nCpuFreq = ConfigureParams.System.nCpuFreq;
+	if (core_hard_content)
+		core_config_hard(&newparam, core_hard_content_path, core_hard_content_type);
 }
 
 void config_cycle_cpu_speed(void)

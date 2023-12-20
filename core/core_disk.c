@@ -47,6 +47,9 @@ extern bool core_floppy_insert(int drive, const char* filename, void* data, unsi
 extern void core_floppy_eject(int drive);
 extern const char* core_floppy_inserted(int drive);
 extern void core_floppy_changed(int drive);
+// options.c
+extern void core_auto_start(const char* path);
+
 //
 // Utilities
 //
@@ -177,8 +180,6 @@ unsigned get_num_images(void)
 static bool add_image_index(void);
 static bool replace_image_index(unsigned index, const struct retro_game_info* game);
 
-
-
 static bool load_m3u(uint8_t* data, unsigned int size, const char* m3u_path, unsigned first_index)
 {
 	static char path[2048] = "";
@@ -216,14 +217,14 @@ static bool load_m3u(uint8_t* data, unsigned int size, const char* m3u_path, uns
 	}
 
 	// scan the file line by line
-	unsigned int p = 0;
-	unsigned int lp = 0;
+	unsigned int p = 0; // position in file
+	unsigned int lp = 0; // position in line buffer (length)
 	bool first = true;
 	bool result = false;
 	while (p <= size)
 	{
 		char c = 10;
-		 if (p < size) c = data[p]; // if p==size then c=10 to generate a final end-of-line
+		if (p < size) c = data[p]; // if p==size then c=10 to generate a final end-of-line
 		if (c == 10 || c == 13) // end of line
 		{
 			//retro_log(RETRO_LOG_DEBUG,"M3U line: '%s'\n",line);
@@ -280,6 +281,12 @@ static bool load_m3u(uint8_t* data, unsigned int size, const char* m3u_path, uns
 					first = false;
 				}
 				else if (!file_result) result = false;
+			}
+			else if (lp != 0 && !strncasecmp(line,"#AUTO:",6)) // EXTM3U AUTO directive passed to Hatari --auto parameter.
+			{
+				const char* auto_start = line+6;
+				while (*auto_start == ' ' || *auto_start == '\t') ++auto_start; // skip leading whitespace
+				core_auto_start(auto_start);
 			}
 			// ready for next line
 			lp = 0;
@@ -494,6 +501,45 @@ static bool load_gz(uint8_t* data, unsigned int size, const char* gz_filename, u
 	return result;
 }
 
+static bool load_hard(const char* path, const char* filename, unsigned index, const char* ext)
+{
+	retro_log(RETRO_LOG_INFO,"load_hard('%s','%s',%d,'%s')\n",path?path:"NULL",filename?filename:"NULL",index,ext);
+
+	strcpy_trunc(disks[index].filename,"<HD>",MAX_FILENAME);
+	strcat_trunc(disks[index].filename,filename,sizeof(disks[index].filename));
+
+	// find the base path
+	if (path == NULL)
+	{
+		retro_log(RETRO_LOG_ERROR,"load_hard with no path?\n");
+		path = "";
+	}
+
+	int ht = -1;
+	if (!strcasecmp(ext,"gem")) ht = 0; // GemDOS
+	else if (!strcasecmp(ext,"ahd") || !strcasecmp(ext,"vhd")) ht = 2; // ACSI
+	else if (!strcasecmp(ext,"shd")) ht = 3; // SCSI
+	else if (!strcasecmp(ext,"ide")) ht = 4; // IDE (Auto)
+	if (ht < 0)
+	{
+		retro_log(RETRO_LOG_ERROR,"Unknown hard disk image type: %s",path);
+		return false;
+	}
+	else if (ht == 0) // GemDOS converts .GEM into directory name
+	{
+		char gemdos_path[2048];
+		strcpy_trunc(gemdos_path, path, sizeof(gemdos_path)-1);
+		int ep = strlen(gemdos_path)-4;
+		if (ep >= 0)
+		{
+			gemdos_path[ep] = '/';
+			gemdos_path[ep+1] = 0;
+		}
+		return core_config_hard_content(gemdos_path,ht);
+	}
+	return core_config_hard_content(path,ht); // Use image name directly
+}
+
 static bool replace_image_index(unsigned index, const struct retro_game_info* game)
 {
 	const char* path = NULL;
@@ -556,6 +602,11 @@ static bool replace_image_index(unsigned index, const struct retro_game_info* ga
 	disks[index].size = 0;
 	disks[index].extra_size = 0;
 	disks[index].saved = false;
+
+	if (ext && (!strcasecmp(ext,"ahd") || !strcasecmp(ext,"shd") || !strcasecmp(ext,"ide") || !strcasecmp(ext,"gem") || !strcasecmp(ext,"vhd")))
+	{
+		return load_hard(game->path, path, index, ext);
+	}
 
 	if (core_disk_enable_save && path)
 	{
@@ -754,19 +805,33 @@ void core_disk_load_game(const struct retro_game_info *game)
 	if (game == NULL) return;
 	add_image_index(); // add one disk
 	replace_image_index(0,game); // load it there (may load multiple if M3U/Zip)
-	if (initial_image >= image_count) initial_image = 0;
+
+	// ensure initial image has data, if possible (avoids selecting hard disk or other invalid image)
+	for (int i=0; i<2; ++i) // two passes to be thorough, in case initial_image is not 0
+	{
+		while (initial_image < image_count && disks[initial_image].data == NULL) ++initial_image;
+		if (initial_image >= image_count) initial_image = 0;
+	}
+	// insert first disk
 	set_image_index(initial_image);
 	set_eject_state(false); // insert it
 
 	// insert second disk if available
-	if (core_disk_enable_b && image_count > 1)
+	if (core_disk_enable_b)
 	{
 		int second_image = initial_image + 1;
-		if (second_image >= image_count) second_image = 0;
-		drive = 1;
-		set_image_index(second_image);
-		set_eject_state(false);
-		drive = 0;
+		for (int i=0; i<2; ++i)
+		{
+			while(second_image < image_count && disks[second_image].data == NULL) ++second_image;
+			if (second_image >= image_count) second_image = 0;
+		}
+		if (second_image != initial_image && disks[second_image].data != NULL)
+		{
+			drive = 1;
+			set_image_index(second_image);
+			set_eject_state(false);
+			drive = 0;
+		}
 	}
 }
 

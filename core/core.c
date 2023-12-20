@@ -34,7 +34,7 @@
 #define CORE_VERSION   "v0.3 unstable preview " SHORTHASH " " __DATE__ " " __TIME__;
 
 // make sure this matches ../info/hatarib.info
-static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|ipf|ctr|m3u|m3u8|zip|gz";
+static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|ipf|ctr|m3u|m3u8|zip|gz|ahd|shd|vhd|ide|gem";
 
 // serialization quirks
 const uint64_t QUIRKS = RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT;
@@ -946,10 +946,11 @@ RETRO_API void retro_set_environment(retro_environment_t cb)
 	core_perf_set_environment(cb);
 
 
-	// M3U/M3U8 need fullpath to find the linked files
+	// M3U/M3U8 and hard disk image need fullpath to find the linked files
 	{
 		static const struct retro_system_content_info_override CONTENT_OVERRIDE[] = {
 			{ "m3u|m3u8", true, false },
+			{ "ahd|shd|ide|gem|vhd", true, false },
 			{ NULL, false, false },
 		};
 		if (content_override_set || cb(RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE, (void*)CONTENT_OVERRIDE))
@@ -959,7 +960,7 @@ RETRO_API void retro_set_environment(retro_environment_t cb)
 		}
 		else
 		{
-			retro_log(RETRO_LOG_ERROR,"SET_CONTENT_INFO_OVERRIDE failed, M3U loading may be broken?\n");
+			retro_log(RETRO_LOG_ERROR,"SET_CONTENT_INFO_OVERRIDE failed, M3U or hard disk loading may be broken?\n");
 		}
 	}
 
@@ -1021,6 +1022,7 @@ RETRO_API void retro_init(void)
 	//Log_SetTraceOptions("cpu_disasm");
 	//Log_SetTraceOptions("video_vbl,video_sync");
 
+	core_hard_content = false;
 	core_first_reset = true;
 	core_runflags = 0;
 	main_init(1,(char**)argv);

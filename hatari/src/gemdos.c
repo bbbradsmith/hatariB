@@ -218,7 +218,7 @@ static bool GemDOS_GetFileInformation(int Handle, DATETIME *DateTime)
 #ifndef __LIBRETRO__
 	if (stat(fname, &fstat) == 0)
 #else
-	if (core_file_stat_system(fname, &fstat) == 0)
+	if (core_file_stat_hard(fname, &fstat) == 0)
 #endif
 	{
 		GemDOS_DateTime2Tos(fstat.st_mtime, DateTime, fname);
@@ -272,7 +272,7 @@ static bool GemDOS_SetFileInformation(int Handle, DATETIME *DateTime)
 #ifndef __LIBRETRO__
 	if (stat(filename, &filestat) != 0)
 #else
-	if (core_file_stat_system(filename, &filestat) != 0)
+	if (core_file_stat_hard(filename, &filestat) != 0)
 #endif
 		return false;
 	timebuf.actime = filestat.st_atime;
@@ -332,7 +332,7 @@ static dta_ret_t PopulateDTA(char *path, struct dirent *file, DTA *pDTA, Uint32 
 #ifndef __LIBRETRO__
 	if (stat(tempstr, &filestat) != 0)
 #else
-	if (core_file_stat_system(tempstr, &filestat) != 0)
+	if (core_file_stat_hard(tempstr, &filestat) != 0)
 #endif
 	{
 		/* skip file if it doesn't exist, otherwise return an error */
@@ -610,7 +610,7 @@ static bool GEMDOS_DoesHostDriveFolderExist(char* lpstrPath, int iDrive)
 #else
 	// just use stat instead of access
 	struct stat status;
-	if (core_file_stat_system(lpstrPath, &status) != 0 || (status.st_mode & S_IFDIR) == 0)
+	if (core_file_stat_hard(lpstrPath, &status) != 0 || (status.st_mode & S_IFDIR) == 0)
 #endif
 	{
 		/* Try lower case drive letter instead */
@@ -628,7 +628,7 @@ static bool GEMDOS_DoesHostDriveFolderExist(char* lpstrPath, int iDrive)
 #else
 	if (iDrive > 1) // just use stat instead of access
 	{
-		if (core_file_stat_system(lpstrPath, &status) == 0 && (status.st_mode & S_IFDIR) != 0)
+		if (core_file_stat_hard(lpstrPath, &status) == 0 && (status.st_mode & S_IFDIR) != 0)
 #endif
 		{
 			bExist = true;
@@ -645,7 +645,7 @@ static bool GEMDOS_DoesHostDriveFolderExist(char* lpstrPath, int iDrive)
 #ifdef __LIBRETRO__
 extern void strcpy_trunc(char* dest, const char* src, unsigned int len);
 // simplified from hatari/src/scandir.c
-static int core_scandir_system(const char *dirname, struct dirent ***namelist,
+static int core_scandir_hard(const char *dirname, struct dirent ***namelist,
             //int (*sdfilter)(const struct dirent *), // filter unused
             int (*dcomp)(const struct dirent **, const struct dirent **))
 {
@@ -655,7 +655,7 @@ static int core_scandir_system(const char *dirname, struct dirent ***namelist,
 	struct dirent** names;
 
 	// count entries
-	dir = core_file_opendir_system(dirname);
+	dir = core_file_opendir_hard(dirname);
 	if (dir == NULL) return -1;
 	while ((de = core_file_readdir(dir)))
 	{
@@ -678,7 +678,7 @@ static int core_scandir_system(const char *dirname, struct dirent ***namelist,
 	// the number of entries could have changed since the count but:
 	//   - if there's less, just free the unused names
 	//   - if there's more, just ignore them
-	dir = core_file_opendir_system(dirname);
+	dir = core_file_opendir_hard(dirname);
 	if (dir == NULL) goto error_out;
 	unsigned int real_count = 0;
 	while(real_count < count && (de = core_file_readdir(dir)))
@@ -743,7 +743,7 @@ static bool GemDOS_DetermineMaxPartitions(int *pnMaxDrives)
 #ifndef __LIBRETRO__
 	count = scandir(ConfigureParams.HardDisk.szHardDiskDirectories[0], &files, 0, alphasort);
 #else
-	count = core_scandir_system(ConfigureParams.HardDisk.szHardDiskDirectories[0], &files, alphasort);
+	count = core_scandir_hard(ConfigureParams.HardDisk.szHardDiskDirectories[0], &files, alphasort);
 #endif
 	if (count < 0)
 	{
@@ -958,7 +958,7 @@ static void save_file_handle_info(FILE_HANDLE *handle)
 		stat(handle->szActualName, &fstat);
 #else
 		offset = core_file_tell(handle->FileHandle);
-		core_file_stat_system(handle->szActualName, &fstat);
+		core_file_stat_hard(handle->szActualName, &fstat);
 #endif
 		mtime = fstat.st_mtime; /* modification time */
 	}
@@ -1016,7 +1016,7 @@ static void restore_file_handle_info(int i, FILE_HANDLE *handle)
 #ifndef __LIBRETRO__
 	if (stat(handle->szActualName, &fstat) != 0)
 #else
-	if (core_file_stat_system(handle->szActualName, &fstat) != 0)
+	if (core_file_stat_hard(handle->szActualName, &fstat) != 0)
 #endif
 	{
 		handle->bUsed = false;
@@ -1034,7 +1034,7 @@ static void restore_file_handle_info(int i, FILE_HANDLE *handle)
 	fp = fopen(handle->szActualName, handle->szMode);
 	if (fp == NULL || fseeko(fp, offset, SEEK_SET) != 0)
 #else
-	fp = core_file_open_system(handle->szActualName, core_file_mode(handle->szMode));
+	fp = core_file_open_hard(handle->szActualName, core_file_mode(handle->szMode));
 	if (fp == NULL || core_file_seek(fp, offset, SEEK_SET) != 0)
 #endif
 	{
@@ -1306,7 +1306,7 @@ static char* match_host_dir_entry(const char *path, const char *name, bool patte
 #ifndef __LIBRETRO__
 	dir = opendir(path);
 #else
-	dir = core_file_opendir_system(path);
+	dir = core_file_opendir_hard(path);
 #endif
 	if (!dir)
 		return NULL;
@@ -1950,7 +1950,7 @@ static bool GemDOS_MkDir(Uint32 Params)
 	else
 		Regs[REG_D0] = errno2gemdos(errno, ERROR_PATH);
 #else
-	if (core_file_mkdir_system(psDirPath) == 0)
+	if (core_file_mkdir_hard(psDirPath) == 0)
 		Regs[REG_D0] = GEMDOS_EOK;
 	else
 		Regs[REG_D0] = errno2gemdos(EACCES, ERROR_PATH); // substitute error
@@ -2015,7 +2015,7 @@ static bool GemDOS_RmDir(Uint32 Params)
 	else
 		Regs[REG_D0] = errno2gemdos(errno, ERROR_PATH);
 #else
-	if (core_file_remove_system(psDirPath) == 0)
+	if (core_file_remove_hard(psDirPath) == 0)
 		Regs[REG_D0] = GEMDOS_EOK;
 	else
 		Regs[REG_D0] = errno2gemdos(EACCES, ERROR_PATH); // substitute error
@@ -2081,7 +2081,7 @@ static bool GemDOS_ChDir(Uint32 Params)
 #ifndef __LIBRETRO__
 	if (stat(psTempDirPath, &buf))
 #else
-	if (core_file_stat_system(psTempDirPath, &buf))
+	if (core_file_stat_hard(psTempDirPath, &buf))
 #endif
 	{
 		/* error */
@@ -2134,7 +2134,7 @@ static bool GemDOS_FilePathMissing(char *szActualFileName)
 			return true;
 #else
 		struct stat buf;
-		return (core_file_stat_system(szActualFileName, &buf) == 0 && S_ISDIR(buf.st_mode));
+		return (core_file_stat_hard(szActualFileName, &buf) == 0 && S_ISDIR(buf.st_mode));
 #endif
 	}
 	return false;
@@ -2216,7 +2216,7 @@ static bool GemDOS_Create(Uint32 Params)
 #ifndef __LIBRETRO__
 	FileHandles[Index].FileHandle = fopen(szActualFileName, "wb+");
 #else
-	FileHandles[Index].FileHandle = core_file_open_system(szActualFileName, CORE_FILE_TRUNCATE);
+	FileHandles[Index].FileHandle = core_file_open_hard(szActualFileName, CORE_FILE_TRUNCATE);
 #endif
 
 	if (FileHandles[Index].FileHandle != NULL)
@@ -2380,7 +2380,7 @@ static bool GemDOS_Open(Uint32 Params)
 #ifndef __LIBRETRO__
 		    (stat(szActualFileName, &FileStat) == 0 && !(FileStat.st_mode & S_IWUSR)))
 #else
-		    (core_file_stat_system(szActualFileName, &FileStat) == 0 && !(FileStat.st_mode & S_IWUSR)))
+		    (core_file_stat_hard(szActualFileName, &FileStat) == 0 && !(FileStat.st_mode & S_IWUSR)))
 #endif
 		{
 			ModeStr = "rb";
@@ -2394,13 +2394,13 @@ static bool GemDOS_Open(Uint32 Params)
 #ifndef __LIBRETRO__
 		FileHandles[Index].FileHandle = fopen(szActualFileName, ModeStr);
 #else
-		FileHandles[Index].FileHandle = core_file_open_system(szActualFileName, core_file_mode(ModeStr));
+		FileHandles[Index].FileHandle = core_file_open_hard(szActualFileName, core_file_mode(ModeStr));
 		// fall back to "rb" if it fails because our st_mode stat is bogus anyway
 		if (FileHandles[Index].FileHandle == NULL)
 		{
 			ModeStr = "rb";
 			RealMode = "read-only";
-			FileHandles[Index].FileHandle = core_file_open_system(szActualFileName, CORE_FILE_READ);
+			FileHandles[Index].FileHandle = core_file_open_hard(szActualFileName, CORE_FILE_READ);
 		}
 #endif
 	}
@@ -2753,7 +2753,7 @@ static bool GemDOS_FDelete(Uint32 Params)
 	else
 		Regs[REG_D0] = errno2gemdos(errno, ERROR_FILE);
 #else
-	if (core_file_remove_system(psActualFileName) == 0)
+	if (core_file_remove_hard(psActualFileName) == 0)
 		Regs[REG_D0] = GEMDOS_EOK;          /* OK */
 	else
 		Regs[REG_D0] = errno2gemdos(EACCES, ERROR_FILE); // substitute error
@@ -2908,7 +2908,7 @@ static bool GemDOS_Fattrib(Uint32 Params)
 #ifndef __LIBRETRO__
 	if (stat(sActualFileName, &FileStat) != 0)
 #else
-	if (core_file_stat_system(sActualFileName, &FileStat) != 0)
+	if (core_file_stat_hard(sActualFileName, &FileStat) != 0)
 #endif
 	{
 		Regs[REG_D0] = GEMDOS_EFILNF;         /* File not found */
@@ -3160,7 +3160,7 @@ static int GemDOS_Pexec(Uint32 Params)
 #ifndef __LIBRETRO__
 	fh = fopen(sFileName, "rb");
 #else
-	fh = core_file_open_system(sFileName, CORE_FILE_READ);
+	fh = core_file_open_hard(sFileName, CORE_FILE_READ);
 #endif
 	if (!fh)
 	{
@@ -3383,7 +3383,7 @@ static bool GemDOS_SFirst(Uint32 Params)
 #ifndef __LIBRETRO__
 	fsdir = opendir(InternalDTAs[useidx].path);
 #else
-	fsdir = core_file_opendir_system(InternalDTAs[useidx].path);
+	fsdir = core_file_opendir_hard(InternalDTAs[useidx].path);
 #endif
 
 	if (fsdir == NULL)
@@ -3399,7 +3399,7 @@ static bool GemDOS_SFirst(Uint32 Params)
 #else
 	core_file_closedir(fsdir);
 
-	count = core_scandir_system(InternalDTAs[useidx].path, &files, alphasort);
+	count = core_scandir_hard(InternalDTAs[useidx].path, &files, alphasort);
 #endif
 	/* File (directory actually) not found */
 	if (count < 0)
@@ -3533,7 +3533,7 @@ static bool GemDOS_Rename(Uint32 Params)
 	else
 		Regs[REG_D0] = errno2gemdos(errno, ERROR_FILE);
 #else
-	if (core_file_rename_system(szOldActualFileName,szNewActualFileName) == 0)
+	if (core_file_rename_hard(szOldActualFileName,szNewActualFileName) == 0)
 		Regs[REG_D0] = GEMDOS_EOK;
 	else
 		Regs[REG_D0] = errno2gemdos(EACCES, ERROR_FILE); // substitute error
@@ -4606,7 +4606,7 @@ int GemDOS_LoadAndReloc(const char *psPrgName, uint32_t baseaddr, bool bFullBpSe
 	prg = File_ReadAsIs(psPrgName, &nFileSize);
 #else
 	unsigned int size = 0;
-	prg = core_read_file_system(psPrgName, &size);
+	prg = core_read_file_hard(psPrgName, &size);
 	nFileSize = size;
 #endif
 	if (!prg)

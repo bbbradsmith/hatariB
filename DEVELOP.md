@@ -213,6 +213,8 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Use core's file system to load and save floppy image.
 * **hatari/src/ncr5380.c**
   * Use core's file system to provide SCSI image hard disk support.
+* **hatari/src/options.c**
+  * Add `core_auto_start` access to provide way to use the `--auto` command line option.
 * **hatari/src/paths.c**
   * Disable attempt to read host's working directory for absolute paths, replace any attempt with "<nopath>".
 * **hatari/src/reset.c**

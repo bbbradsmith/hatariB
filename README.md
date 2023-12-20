@@ -131,23 +131,43 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Muli-disk: M3U, M3U8
   * TOS ROM: TOS, IMG, ROM, BIN
   * Cartridge: IMG, ROM, BIN, CART
-  * Hard disk: (no standard file extensions)
+  * Hard disk: AHD (ACSI), SHD (SCSI), IDE, GEM (GemDOS), VHD (ACSI)
   * TOS, Cartridge, and Hard disk files should be placed in **system/hatarib/**.
-  * When loading multiple disks, the best method is to use M3U playlists to specify all needed disks at once during *Load Content*. Information: [M3U file tutorial](https://docs.retroachievements.org/Multi-Disc-Games-Tutorial/).
+  * When loading multiple disks, the best method is to use M3U playlists to specify all needed disks at once during *Load Content*. Information: [M3U file tutorial](https://docs.retroachievements.org/Multi-Disc-Games-Tutorial/). This can also include a hard disk image.
   * *Load New Disk* can add additional disks while running, but has several caveats, especially regarding savestates. See below.
-  * The first two disks of an M3U list will be loaded into drive A and B at startup, 
+  * The first two disks of an M3U list will be loaded into drive A and B at startup.
   * Libretro only has an interface for one disk drive, but you can use the Select button to switch between whether the Disc Control menu currently shows drive A or drive B.
   * *IPF* and *CTR* formats are only available with the addition of the `capsimg` support libraray. See [Installation](#Installation) for more information.
   * *ZIP* files will only load the first floppy image file found inside, though the RetroArch *Load Content* menu may be able to select a specific file inside.
 * Hard Disks:
+  * A permanent hard disk in your *system/* folder can be configured from the *System* core options menu, but this setting can be overridden by a temporary hard disk loaded from the content menu, or using an M3U playlist.
   * *GemDOS* type hard disks can select a subdirectory within *system/hatarib/* to use as a simulated drive.
-  * A *GemDOS* folder can represent multiple paritions by having its base directory contain only single-letter folder names representing drive letters. *C/*, *D/*, etc.
-  * *ASCI*, *SCSI* and *IDE* hard disks use a binary image file chosen from *system/hatarib/*.
-  * Hard disks are read-only by default for safety. This can be disabled in the *System > Hard Disk Write Protect* core option.
+  * Permanent hard disks:
+    * A *GemDOS* folder can represent multiple paritions by having its base directory contain only   single-letter folder names representing drive letters. *C/*, *D/*, etc.
+    * *ACSI*, *SCSI* and *IDE* hard disks use a binary image file chosen from *system/hatarib/*.
+  * Temporary hard disks:
+    * You can also load a temporary hard disk image directly as content, or through an M3U playlist. The type of hard disk is selected by the filename extension.
+    * *ACSI* images use an *AHD* or *VHD* extension.
+    * *SCSI* images use an *SHD* extension.
+    * *IDE* images use an *IDE* extension.
+    * *GemDOS* folders use a dummy file with a *GEM* extension. Place this file next to a folder with the same name. The file can be empty, as its contents will not be used.
+    * The *GemDOS* and *IDE* hard disk types can be adjusted futher in the core options.
+    * An M3U image can load a temporary hard disk image. Simply add another line with the name of the hard disk image, after any floppy disks.
+  *   Hard disks are read-only by default for safety. This can be disabled in the *System > Hard Disk Write Protect* core option. On some Libretro platforms, temporary hard drives may not be writable due to filesystem security settings.
+  * Because a hard disk image is not included with a savestate, file writes that are interrupted may cause corruption of the disk image's filesystem.
   * Later TOS versions (or EmuTOS) are recommended when using hard drives, as TOS 1.0 has only limited support for them. Without EmuTOS you may need to use a hard disk driver.
   * Using more than one hard disk image at a time is unsupported, though a single image can have multiple partitions with individual drive letters.
-  * If you need an [easy way to switch between hard disk configurations](https://github.com/bbbradsmith/hatariB/issues/12), you could create a "boot" floppy disk to go along with the hard disk, and use *Manage Core Options > Save Game Options* to create a settings override associated with that floppy. Alternatively a configuration file could be appended via the command line.
-  * See [Hatari's Manual: Hard Disk Support](https://hatari.tuxfamily.org/doc/manual.html#Hard_disk_support) for further information.  
+  * If you need an easy way to switch between permanent hard disk configurations, you could create a "boot" floppy disk to go along with the hard disk, and use *Manage Core Options > Save Game Options* to create a settings override associated with that floppy.
+  * See [Hatari's Manual: Hard Disk Support](https://hatari.tuxfamily.org/doc/manual.html#Hard_disk_support) for further information.
+* M3U playlists and Auto-Run:
+  * M3U playlists can be used to specify a collection of disk images, accessible via *Disc Control* in the *Quick Menu* of RetroArch.
+  * Each line of the M3U is the filename of a disk image, relative to the M3U file.
+  * A line starting with `#` will normally be ignored, allowing you to write a comment on the rest of that line, if needed.
+  * The first 2 disk images will be loaded into drives A and B when the content is opened.
+  * A temporary hard disk image can also be listed in the M3U. Place this line after any floppy disk mages.
+  * `#AUTO:filename` can be used to automatically run a TOS file at boot. This is the same as [Hatari's --auto command line option](https://hatari.tuxfamily.org/doc/manual.html#General_options). **TOS 1.04** or later is required to use this feature. Example: `#AUTO:C:\GAMES\JOUST.PRG`
+  * If using the `#AUTO` feature, technically `#EXTM3U` should be added as the first line of the M3U to indicate this is an [Extended M3U](https://en.wikipedia.org/wiki/M3U#Extended_M3U), but hatariB will not enforce this.
+  * *Manage Core Options > Save Game Options* can be used to associate other core options with an M3U playlist.
 * Saving:
   * When a modified floppy disk is ejected, or the core is closed, a modified copy of that disk image will be written to the *saves/* folder.
   * Whenever a new floppy disk is added (*Load Content*, or *Load New Disk*), the saved copy will be substituted for the original if it exists. (Also, if you want to return to the original disk, you can delete it from *saves/*.)
@@ -198,7 +218,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
       * To restore in a later session, start the core as you did before and use *Load New Disk* to add all needed disks before attempting to restore the savestate. The last disk loaded must be the same as before, so that the savestate name will match correctly.
       * In rare cases, inserting a unusually large new disk may increase the needed savestate size and cause a failure to save. You can eject the disk and try reducing the savestate size before trying again. (RetroArch has a limitation that savestate size must be fixed, determined at Load Content time.)
       * It is generally recommended to use M3U playlists instead of *Load New Disk* when possible ([tutorial](https://docs.retroachievements.org/Multi-Disc-Games-Tutorial/)).
-  * Hard Disk modifications are written directly to their source files, and are not included in savestates.
+  * Hard Disk modifications are written directly to their source files, and are not included in savestates. Try to avoid making savestates during a hard disk write.
   * If you increase the size of memory, you should close content and restart the core before using savestates, to allow RetroArch to update the savestate size.
   * For run-ahead or netplay disable *System > Floppy Savestate Safety Save* to prevent high disk activity.
 * Netplay:
@@ -235,6 +255,8 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Medium resolution vertical-doubling can be disabled.
   * Resolution doubling settings now work for TT and Falcon.
   * Border cropping settings now apply to Falcon.
+  * Hard disk images can be loaded as content.
+  * M3U can be used to auto-run a program at boot.
 * [hatariB v0.2](https://github.com/bbbradsmith/hatariB/releases/tag/0.2) - 2023-09-07
   * Second beta test version.
   * IPF support via dynamic loading of capsimg library.
