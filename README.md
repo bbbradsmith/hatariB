@@ -128,10 +128,10 @@ See [DEVELOP.md](DEVELOP.md) for more details.
     * *Key Space/Return/Up/Down...* - Any keyboard key can be assigned to a button.
 * File formats:
   * Floppy disk: ST, MSA, DIM, STX, IPF, CTR (can be inside ZIP or GZ)
+  * Hard disk: ACSI, AHD, VHD, SCSI, SHD, IDE, GEM
   * Muli-disk: M3U, M3U8
   * TOS ROM: TOS, IMG, ROM, BIN
   * Cartridge: IMG, ROM, BIN, CART
-  * Hard disk: AHD (ACSI), SHD (SCSI), IDE, GEM (GemDOS), VHD (ACSI)
   * TOS, Cartridge, and Hard disk files should be placed in **system/hatarib/**.
   * When loading multiple disks, the best method is to use M3U playlists to specify all needed disks at once during *Load Content*. Information: [M3U file tutorial](https://docs.retroachievements.org/Multi-Disc-Games-Tutorial/). This can also include a hard disk image.
   * *Load New Disk* can add additional disks while running, but has several caveats, especially regarding savestates. See below.
@@ -147,8 +147,8 @@ See [DEVELOP.md](DEVELOP.md) for more details.
     * *ACSI*, *SCSI* and *IDE* hard disks use a binary image file chosen from *system/hatarib/*.
   * Temporary hard disks:
     * You can also load a temporary hard disk image directly as content, or through an M3U playlist. The type of hard disk is selected by the filename extension.
-    * *ACSI* images use an *AHD* or *VHD* extension.
-    * *SCSI* images use an *SHD* extension.
+    * *ACSI* images use an *ACSI*, *AHD* or *VHD* extension.
+    * *SCSI* images use an *SCSI* or *SHD* extension.
     * *IDE* images use an *IDE* extension.
     * *GemDOS* folders use a dummy file with a *GEM* extension. Place this file next to a folder with the same name. The file can be empty, as its contents will not be used.
     * The *GemDOS* and *IDE* hard disk types can be adjusted futher in the core options.

@@ -517,8 +517,8 @@ static bool load_hard(const char* path, const char* filename, unsigned index, co
 
 	int ht = -1;
 	if (!strcasecmp(ext,"gem")) ht = 0; // GemDOS
-	else if (!strcasecmp(ext,"ahd") || !strcasecmp(ext,"vhd")) ht = 2; // ACSI
-	else if (!strcasecmp(ext,"shd")) ht = 3; // SCSI
+	else if (!strcasecmp(ext,"acsi") || !strcasecmp(ext,"ahd") || !strcasecmp(ext,"vhd")) ht = 2; // ACSI
+	else if (!strcasecmp(ext,"scsi") || !strcasecmp(ext,"shd")) ht = 3; // SCSI
 	else if (!strcasecmp(ext,"ide")) ht = 4; // IDE (Auto)
 	if (ht < 0)
 	{
@@ -603,7 +603,14 @@ static bool replace_image_index(unsigned index, const struct retro_game_info* ga
 	disks[index].extra_size = 0;
 	disks[index].saved = false;
 
-	if (ext && (!strcasecmp(ext,"ahd") || !strcasecmp(ext,"shd") || !strcasecmp(ext,"ide") || !strcasecmp(ext,"gem") || !strcasecmp(ext,"vhd")))
+	if (ext && (
+		!strcasecmp(ext,"acsi") ||
+		!strcasecmp(ext,"ahd") ||
+		!strcasecmp(ext,"vhd") ||
+		!strcasecmp(ext,"scsi") ||
+		!strcasecmp(ext,"shd") ||
+		!strcasecmp(ext,"ide") ||
+		!strcasecmp(ext,"gem") ))
 	{
 		return load_hard(game->path, path, index, ext);
 	}
