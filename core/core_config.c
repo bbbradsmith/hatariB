@@ -104,35 +104,6 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		}, "1"
 	},
 	{
-		"hatarib_fast_floppy", "Fast Floppy", NULL,
-		"Artifically accelerate floppy disk access, reducing load times.",
-		NULL, "system",
-		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
-	},
-	{
-		"hatarib_save_floppy", "Save Floppy Disks", NULL,
-		"Changes to floppy disks will save a copy in saves/."
-		" If turned off, changes will be lost when the content is closed.",
-		NULL, "system",
-		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
-	},
-	{
-		"hatarib_savestate_floppy_modify", "Floppy Savestate Safety Save", NULL,
-		"Disable this for netplay or run-ahead. "
-		"Modified floppies are always saved during eject or content closing, "
-		" but this setting produces an extra save before/after restoring a savestate to prevent un-ejected data loss."
-		" Because netplay and run-ahead use savestates constantly, this should be turned off for those activities.",
-		NULL, "system",
-		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
-	},
-	{
-		"hatarib_soft_reset", "Soft Reset", NULL,
-		"Core Restart is full cold boot by default (power off, on),"
-		" but this will change it to a warm boot (reset button).",
-		NULL, "system",
-		{{"0","Off"},{"1","On"},{NULL,NULL}}, "0"
-	},
-	{
 		"hatarib_machine", "Machine Type", NULL,
 		"Causes restart!! Atari computer type.",
 		NULL, "system",
@@ -162,6 +133,35 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{"14336","14 MB"},
 			{NULL,NULL},
 		}, "1024"
+	},
+	{
+		"hatarib_fast_floppy", "Fast Floppy", NULL,
+		"Artifically accelerate floppy disk access, reducing load times.",
+		NULL, "system",
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
+	},
+	{
+		"hatarib_save_floppy", "Save Floppy Disks", NULL,
+		"Changes to floppy disks will save a copy in saves/."
+		" If turned off, changes will be lost when the content is closed.",
+		NULL, "system",
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
+	},
+	{
+		"hatarib_savestate_floppy_modify", "Floppy Savestate Safety Save", NULL,
+		"Disable this for netplay or run-ahead. "
+		"Modified floppies are always saved during eject or content closing, "
+		" but this setting produces an extra save before/after restoring a savestate to prevent un-ejected data loss."
+		" Because netplay and run-ahead use savestates constantly, this should be turned off for those activities.",
+		NULL, "system",
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
+	},
+	{
+		"hatarib_soft_reset", "Soft Reset", NULL,
+		"Core Restart is full cold boot by default (power off, on),"
+		" but this will change it to a warm boot (reset button).",
+		NULL, "system",
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "0"
 	},
 	{
 		"hatarib_cartridge", "Cartridge ROM", NULL,
