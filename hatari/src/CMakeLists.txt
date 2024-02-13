@@ -214,3 +214,8 @@ endif(0) # hatariB - remove platform specific gui code
 
 # hatariB - removed exectuable build, addded core library target
 add_library(core ${SOURCES})
+
+# NTxC's DriveSound
+add_library(drivesound ../../drivesound/drivesound.c)
+add_compile_definitions(__DRIVESOUND__)
+

@@ -149,7 +149,9 @@ const char Sound_fileid[] = "Hatari sound.c";
 #include "avi_record.h"
 #include "clocks_timings.h"
 
-
+#ifdef __DRIVESOUND__
+#include "../../drivesound/drivesound.h"
+#endif
 
 /*--------------------------------------------------------------*/
 /* Definition of the possible envelopes shapes (using 5 bits)	*/
@@ -1877,10 +1879,14 @@ void Sound_Update( Uint64 CPU_Clock)
 	{
 		int remain = Samples_Nbr;
 		int pos = pos_write_prev;
+
 		while (remain > 0) { // split if wrapping over the end
 			int len = remain;
 			if ((pos + len) > AUDIOMIXBUFFER_SIZE) len = AUDIOMIXBUFFER_SIZE - pos;
 			core_audio_update(AudioMixBuffer, pos, len);
+#ifdef __DRIVESOUND__
+			drivesound_mix_update( pos, len );
+#endif
 			remain -= len;
 			pos = (pos + len) & AUDIOMIXBUFFER_SIZE_MASK;
 		}

@@ -6,6 +6,10 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#ifdef __DRIVESOUND__
+#include "../../drivesound/drivesound.h"
+#endif
+
 // large enough for TT high resolution 1280x960 at 32bpp
 #define VIDEO_MAX_W   2048
 #define VIDEO_MAX_H   1024
@@ -1188,6 +1192,11 @@ RETRO_API void retro_run(void)
 		// cold reset ejects the disks
 		if (cold)
 			core_disk_drive_reinsert();
+
+#ifdef __DRIVESOUND__
+		drivesound_stop_all( 1 );
+#endif
+
 		PERF_STOP(PERF_RUN_RESET);
 	}
 

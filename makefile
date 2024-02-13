@@ -26,7 +26,7 @@ ZLIB_LINK ?= $(ZLIB_LIB)
 CC ?= gcc
 CFLAGS += \
 	-O3 $(WERROR) -fPIC \
-	-D__LIBRETRO__ -DSHORTHASH=\"$(SHORTHASH)\" \
+	-D__LIBRETRO__ -D__DRIVESOUND__ -DSHORTHASH=\"$(SHORTHASH)\" \
 	-Ihatari/build -I$(SDL2_INCLUDE)
 LDFLAGS += \
 	-shared $(WERROR) -static-libgcc
@@ -78,7 +78,8 @@ SOURCES = \
 	core/core_input.c \
 	core/core_disk.c \
 	core/core_config.c \
-	core/core_osk.c
+	core/core_osk.c \
+	drivesound/drivesound.c
 OBJECTS = $(SOURCES:%.c=$(BD)%.o)
 HATARILIBS = \
 	hatari/build/src/libcore.a \
@@ -118,12 +119,16 @@ sdlreconfig:
 directories:
 	mkdir -p $(BD)
 	mkdir -p $(BD)core
+	mkdir -p $(BD)drivesound
 	mkdir -p hatari/build
 
 $(CORE): directories hatarilib $(OBJECTS)
 	$(CC) -o $(CORE) $(LDFLAGS) $(OBJECTS) $(HATARILIBS)
 
 $(BD)core/%.o: core/%.c hatarilib
+	$(CC) -o $@ $(CFLAGS) -c $< 
+
+$(BD)drivesound/%.o: drivesound/%.c hatarilib
 	$(CC) -o $@ $(CFLAGS) -c $< 
 
 hatarilib: directories

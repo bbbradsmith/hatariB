@@ -72,6 +72,10 @@ const char Main_fileid[] = "Hatari main.c";
 #include "gui-win/opencon.h"
 #endif
 
+#ifdef __DRIVESOUND__
+#include "../../drivesound/drivesound.h"
+#endif
+
 bool bQuitProgram = false;                /* Flag to quit program cleanly */
 static int nQuitValue;                    /* exit value */
 
@@ -781,6 +785,10 @@ static void Main_Init(void)
 	// loading the DLL/SO at that time if it's available
 #endif
 
+#ifdef __DRIVESOUND__
+	drivesound_init();
+#endif
+
 	ClocksTimings_InitMachine ( ConfigureParams.System.nMachineType );
 	Video_SetTimings ( ConfigureParams.System.nMachineType , ConfigureParams.System.VideoTimingMode );
 
@@ -851,6 +859,10 @@ static void Main_Init(void)
  */
 static void Main_UnInit(void)
 {
+#ifdef __DRIVESOUND__
+	drivesound_uninit();
+#endif
+
 	Screen_ReturnFromFullScreen();
 	Floppy_UnInit();
 	HDC_UnInit();

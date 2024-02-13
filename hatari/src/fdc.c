@@ -39,6 +39,9 @@ const char FDC_fileid[] = "Hatari fdc.c";
 #include "utils.h"
 #include "statusbar.h"
 
+#ifdef __DRIVESOUND__
+#include "../../drivesound/drivesound.h"
+#endif
 
 /*
   Floppy Disk Controller
@@ -2237,6 +2240,10 @@ static int FDC_UpdateMotorStop ( void )
 		FDC_Update_STR ( FDC_STR_BIT_MOTOR_ON , 0 );		/* Unset motor bit and keep spin up bit */
 		FDC.Command = FDCEMU_CMD_NULL;				/* Motor stopped, this is the last state */
 		FdcCycles = 0;
+
+#ifdef __DRIVESOUND__
+		drivesound_stop( DRIVESOUND_SPIN );
+#endif
 		break;
 	}
 	return FdcCycles;
@@ -2289,6 +2296,24 @@ static int FDC_UpdateRestoreCmd ( void )
 		/* for other type I commands) */
 		FDC.TR = 0xff;				
 		FDC.CommandState = FDCEMU_RUN_RESTORE_SEEKTOTRACKZERO_LOOP;
+
+#ifdef __DRIVESOUND__
+		if( FDC.DriveSelSignal >= 0 && FDC.DriveSelSignal <= 1 )
+		{
+			int track = (int)FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack;
+
+			if( track == 1 )
+			{
+				drivesound_stop_seek();
+				drivesound_play( DRIVESOUND_CLICK );
+			}
+			else if( track > 0 )
+			{
+				drivesound_play_from_track( DRIVESOUND_SEEK_BACK, track );
+			}
+		}
+#endif
+
 		/* Continue in the _LOOP state */
 	 case FDCEMU_RUN_RESTORE_SEEKTOTRACKZERO_LOOP:
 		if ( FDC.TR == 0 )					/* Track 0 not reached after 255 attempts ? */
@@ -2384,6 +2409,10 @@ static int FDC_UpdateRestoreCmd ( void )
 		break;
 	 case FDCEMU_RUN_RESTORE_COMPLETE:
 		FdcCycles = FDC_CmdCompleteCommon( true );
+
+#ifdef __DRIVESOUND__
+		drivesound_stop_seek();
+#endif
 		break;
 	}
 
@@ -2397,6 +2426,9 @@ static int FDC_UpdateRestoreCmd ( void )
  */
 static int FDC_UpdateSeekCmd ( void )
 {
+#ifdef __DRIVESOUND__
+	static int drivesound_seek_snd_started = 0;
+#endif
 	int	FdcCycles = 0;
 	int	FrameCycles, HblCounterVideo, LineCycles;
 
@@ -2406,6 +2438,9 @@ static int FDC_UpdateSeekCmd ( void )
 	switch (FDC.CommandState)
 	{
 	 case FDCEMU_RUN_SEEK_TOTRACK:
+#ifdef __DRIVESOUND__
+		 drivesound_seek_snd_started = 0;
+#endif
 		if ( FDC_Set_MotorON ( FDC.CR ) )
 		{
 			FDC.CommandState = FDCEMU_RUN_SEEK_TOTRACK_SPIN_UP;
@@ -2415,6 +2450,30 @@ static int FDC_UpdateSeekCmd ( void )
 		{
 			FDC.CommandState = FDCEMU_RUN_SEEK_TOTRACK_MOTOR_ON;
 			FdcCycles = FDC_DELAY_CYCLE_COMMAND_IMMEDIATE;		/* No spin up needed */
+
+#ifdef __DRIVESOUND__
+			drivesound_seek_snd_started = 1;
+
+			if( FDC.DriveSelSignal >= 0 && FDC.DriveSelSignal <= 1 )
+			{
+				if( abs( FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack - FDC.DR ) == 1 )
+				{
+					drivesound_stop_seek();
+					drivesound_play( DRIVESOUND_CLICK );
+				}
+				else
+				{
+					if( FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack < FDC.DR )
+					{
+						drivesound_play_from_track( DRIVESOUND_SEEK_FWD, (int)FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack );
+					}
+					else if( FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack > FDC.DR )
+					{
+						drivesound_play_from_track( DRIVESOUND_SEEK_BACK, (int)FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack );
+					}
+				}
+			}
+#endif
 		}
 		break;
 	 case FDCEMU_RUN_SEEK_TOTRACK_SPIN_UP:
@@ -2423,6 +2482,32 @@ static int FDC_UpdateSeekCmd ( void )
 			FdcCycles = FDC_DELAY_CYCLE_REFRESH_INDEX_PULSE;	/* Wait for the correct number of IP */
 			break;
 		}
+#ifdef __DRIVESOUND__
+		else if( drivesound_seek_snd_started == 0 )
+		{
+			drivesound_seek_snd_started = 1;
+
+			if( FDC.DriveSelSignal >= 0 && FDC.DriveSelSignal <= 1 )
+			{
+				if( abs( FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack - FDC.DR ) == 1 )
+				{
+					drivesound_stop_seek();
+					drivesound_play( DRIVESOUND_CLICK );
+				}
+				else
+				{
+					if( FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack < FDC.DR )
+					{
+						drivesound_play_from_track( DRIVESOUND_SEEK_FWD, (int)FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack );
+					}
+					else if( FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack > FDC.DR )
+					{
+						drivesound_play_from_track( DRIVESOUND_SEEK_BACK, (int)FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack );
+					}
+				}
+			}
+		}
+#endif
 		/* If IndexPulse_Counter reached, we go directly to the _MOTOR_ON state */
 	 case FDCEMU_RUN_SEEK_TOTRACK_MOTOR_ON:
 		FDC_Update_STR ( 0 , FDC_STR_BIT_SPIN_UP );		/* At this point, spin up sequence is ok */
@@ -2475,6 +2560,10 @@ static int FDC_UpdateSeekCmd ( void )
 
 		break;
 	 case FDCEMU_RUN_SEEK_VERIFY:
+#ifdef __DRIVESOUND__
+		 drivesound_seek_snd_started = 0;
+		 drivesound_stop_seek();
+#endif
 		if ( FDC.CR & FDC_COMMAND_BIT_VERIFY )
 		{
 			FDC.CommandState = FDCEMU_RUN_SEEK_VERIFY_HEAD_OK;
@@ -2539,6 +2628,7 @@ static int FDC_UpdateSeekCmd ( void )
 		break;
 	 case FDCEMU_RUN_SEEK_COMPLETE:
 		FdcCycles = FDC_CmdCompleteCommon( true );
+
 		break;
 	}
 
@@ -3461,6 +3551,10 @@ static bool FDC_Set_MotorON ( Uint8 FDC_CR )
 		FDC_Update_STR ( FDC_STR_BIT_SPIN_UP , 0 );		/* Unset spin up bit */
 		FDC.IndexPulse_Counter = 0;				/* Reset counter to measure the spin up sequence */
 		SpinUp = true;
+
+#ifdef __DRIVESOUND__
+		drivesound_play( DRIVESOUND_STARTUP );
+#endif
 	}
 	else								/* No spin up : don't add delay to start the motor */
 	{
@@ -3471,6 +3565,10 @@ static bool FDC_Set_MotorON ( Uint8 FDC_CR )
 	}
 
 	FDC_Update_STR ( 0 , FDC_STR_BIT_MOTOR_ON );			/* Start motor */
+
+#ifdef __DRIVESOUND__
+	drivesound_play( DRIVESOUND_SPIN );
+#endif
 
 	if ( ( FDC.DriveSelSignal < 0 ) || ( !FDC_DRIVES[ FDC.DriveSelSignal ].Enabled )
 		|| ( !FDC_DRIVES[ FDC.DriveSelSignal ].DiskInserted ) )
@@ -3513,6 +3611,7 @@ static int FDC_TypeI_Restore(void)
 
 	FDC_Update_STR ( FDC_STR_BIT_INDEX | FDC_STR_BIT_CRC_ERROR | FDC_STR_BIT_RNF , FDC_STR_BIT_BUSY );
 
+
 	return FDC_DELAY_CYCLE_TYPE_I_PREPARE;
 }
 
@@ -3537,6 +3636,7 @@ static int FDC_TypeI_Seek ( void )
 	FDC.CommandState = FDCEMU_RUN_SEEK_TOTRACK;
 
 	FDC_Update_STR ( FDC_STR_BIT_INDEX | FDC_STR_BIT_CRC_ERROR | FDC_STR_BIT_RNF , FDC_STR_BIT_BUSY );
+
 
 	return FDC_DELAY_CYCLE_TYPE_I_PREPARE;
 }
@@ -3563,6 +3663,11 @@ static int FDC_TypeI_Step ( void )
 
 	FDC_Update_STR ( FDC_STR_BIT_INDEX | FDC_STR_BIT_CRC_ERROR | FDC_STR_BIT_RNF , FDC_STR_BIT_BUSY );
 
+#ifdef __DRIVESOUND__
+	drivesound_stop_seek();
+	drivesound_play( DRIVESOUND_CLICK );
+#endif
+
 	return FDC_DELAY_CYCLE_TYPE_I_PREPARE;
 }
 
@@ -3588,6 +3693,11 @@ static int FDC_TypeI_StepIn(void)
 
 	FDC_Update_STR ( FDC_STR_BIT_INDEX | FDC_STR_BIT_CRC_ERROR | FDC_STR_BIT_RNF , FDC_STR_BIT_BUSY );
 
+#ifdef __DRIVESOUND__
+	drivesound_stop_seek();
+	drivesound_play( DRIVESOUND_CLICK );
+#endif
+
 	return FDC_DELAY_CYCLE_TYPE_I_PREPARE;
 }
 
@@ -3612,6 +3722,11 @@ static int FDC_TypeI_StepOut ( void )
 	FDC.StepDirection = -1;						/* Decrement track */
 
 	FDC_Update_STR ( FDC_STR_BIT_INDEX | FDC_STR_BIT_CRC_ERROR | FDC_STR_BIT_RNF , FDC_STR_BIT_BUSY );
+
+#ifdef __DRIVESOUND__
+	drivesound_stop_seek();
+	drivesound_play( DRIVESOUND_CLICK );
+#endif
 
 	return FDC_DELAY_CYCLE_TYPE_I_PREPARE;
 }

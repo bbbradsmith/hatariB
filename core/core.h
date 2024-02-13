@@ -36,6 +36,12 @@ extern uint8_t core_runflags;
 // PAUSE = user paused emulation
 // OSK = on-screen keyboard or other overlay active
 
+#ifdef __DRIVESOUND__
+extern int core_audio_samples_pending;
+extern int core_audio_samplerate;
+extern int16_t core_audio_buffer[];
+#endif
+
 // print to Libretro log
 extern void core_debug_msg(const char* msg);
 extern void core_debug_int(const char* msg, int num); // msg followed by num
