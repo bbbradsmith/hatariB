@@ -39,6 +39,7 @@ extern uint8_t core_runflags;
 #ifdef __DRIVESOUND__
 extern int core_audio_samples_pending;
 extern int core_audio_samplerate;
+extern bool core_rate_changed;
 extern int16_t core_audio_buffer[];
 #endif
 

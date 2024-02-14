@@ -33,7 +33,7 @@ char *__cdecl va( const char *format, ... );
 extern bool drivesound_enable;
 extern int drivesound_volume;
 
-extern bool drivesound_is_permitted( void );
+extern bool drivesound_is_allowed( void );
 
 extern int drivesound_init( void );
 extern int drivesound_uninit( void );

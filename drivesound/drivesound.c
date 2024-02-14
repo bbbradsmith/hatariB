@@ -85,7 +85,8 @@ char *__cdecl va( const char *format, ... )
 bool drivesound_enable = true;	// read from RetroArch settings
 int drivesound_volume = 100;	// read from RetroArch settings
 
-int drivesound_permit = 0;		// can the sounds actually be played?
+int drivesound_loaded = 0;		// can the sounds actually be played?
+int drivesound_samplerate = 48000;
 
 #define DRIVESOUND_PATH_PREFIX "system/drivesound"
 
@@ -98,14 +99,14 @@ drivesound_snd_t g_drivesound_snd[ DRIVESOUND_MAX ] =
 	{ NULL,	"drive_spin", NULL, 0, 0, 0 }
 };
 
-bool drivesound_is_permitted( void )
+bool drivesound_is_allowed( void )
 {
-	return drivesound_enable && drivesound_permit != 0;
+	return drivesound_enable && drivesound_loaded != 0;
 }
 
 int drivesound_play_from_track( int snd, int fdc_track )
 {
-	if( !drivesound_is_permitted() )
+	if( !drivesound_is_allowed() )
 	{
 		return -1;
 	}
@@ -172,7 +173,7 @@ int drivesound_play( int snd )
 
 int drivesound_stop( int snd )
 {
-	if( !drivesound_is_permitted() )
+	if( !drivesound_is_allowed() )
 	{
 		return -1;
 	}
@@ -189,7 +190,7 @@ int drivesound_stop( int snd )
 
 int drivesound_stop_seek( void )
 {
-	if( !drivesound_is_permitted() )
+	if( !drivesound_is_allowed() )
 	{
 		return -1;
 	}
@@ -202,7 +203,7 @@ int drivesound_stop_seek( void )
 
 int drivesound_stop_all( int stop_spin )
 {
-	if( !drivesound_is_permitted() )
+	if( !drivesound_is_allowed() )
 	{
 		return -1;
 	}
@@ -239,7 +240,20 @@ int drivesound_msg( const char *text )
 
 int drivesound_mix_update( int index, int length )
 {
-	if( !drivesound_is_permitted() )
+	if( drivesound_samplerate != core_audio_samplerate )
+	{
+		drivesound_uninit();
+
+		int result = drivesound_init();
+
+		if( result )
+		{
+			// reinit failed, don't try anymore until the sample rate changes again
+			drivesound_samplerate = core_audio_samplerate;
+		}
+	}
+
+	if( !drivesound_is_allowed() )
 	{
 		return -1;
 	}
@@ -257,7 +271,7 @@ int drivesound_mix_update( int index, int length )
 
 int drivesound_mix_update_snd( int index, int length, int which_snd )
 {
-	if( !drivesound_is_permitted() )
+	if( !drivesound_is_allowed() )
 	{
 		return -1;
 	}
@@ -354,14 +368,14 @@ int drivesound_init( void )
 	FILE *file = NULL;
 	char path[ 512 ] = "";
 
-	drivesound_permit = 0;
+	drivesound_loaded = 0;
 
 	for( int i = 0 ; i < DRIVESOUND_MAX ; i++ )
 	{
 		snd = &g_drivesound_snd[ i ];
 
 		snprintf( path, 512, DRIVESOUND_PATH_PREFIX "/%s_%i.wav",
-			snd->name, 48000 );		// TODO: replace with current core sample rate
+			snd->name, core_audio_samplerate );
 
 		file = fopen( path, "rb+" );
 
@@ -404,7 +418,9 @@ int drivesound_init( void )
 		snd->num_pcm_samples = wav->data_bytes / ( wav->num_channels * wav->bit_depth / 8 );
 	}
 
-	drivesound_permit = 1;
+	drivesound_samplerate = core_audio_samplerate;
+	drivesound_loaded = 1;
+	//core_signal_alert( "[DriveSound] OK" );
 
 	return 0;
 }
@@ -428,7 +444,7 @@ int drivesound_uninit( void )
 		}
 	}
 
-	drivesound_permit = 0;
+	drivesound_loaded = 0;
 
 	return 0;
 }
