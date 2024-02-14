@@ -117,6 +117,7 @@ bool core_perf_display = false;
 bool core_midi_enable = true;
 #ifdef __DRIVESOUND__
 bool core_drivesound_enable = true;
+int core_drivesound_volume = 100;
 #endif
 
 // internal

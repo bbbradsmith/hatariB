@@ -40,8 +40,6 @@ extern uint8_t core_runflags;
 extern int core_audio_samples_pending;
 extern int core_audio_samplerate;
 extern int16_t core_audio_buffer[];
-
-extern bool core_drivesound_enable;
 #endif
 
 // print to Libretro log

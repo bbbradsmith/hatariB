@@ -82,7 +82,10 @@ char *__cdecl va( const char *format, ... )
 
 #endif
 
-int drivesound_permit = 0;
+bool drivesound_enable = true;	// read from RetroArch settings
+int drivesound_volume = 100;	// read from RetroArch settings
+
+int drivesound_permit = 0;		// can the sounds actually be played?
 
 #define DRIVESOUND_PATH_PREFIX "system/drivesound"
 
@@ -97,7 +100,7 @@ drivesound_snd_t g_drivesound_snd[ DRIVESOUND_MAX ] =
 
 bool drivesound_is_permitted( void )
 {
-	return core_drivesound_enable && drivesound_permit != 0;
+	return drivesound_enable && drivesound_permit != 0;
 }
 
 int drivesound_play_from_track( int snd, int fdc_track )
@@ -277,12 +280,25 @@ int drivesound_mix_update_snd( int index, int length, int which_snd )
 
 	snd = &g_drivesound_snd[ which_snd ];
 
+	// get config volume
+
+	float volume = (float)drivesound_volume / 100.0f;
+	if( volume < 0.0f ) volume = 0.0f;
+	else if( volume > 2.0f ) volume = 2.0f;
+
 	for( int i = 0 ; i < l2 ; ++i )
 	{
 		// get the samples
 
 		sample1 = *(Sint16 *)( (Uint8 *)( snd->data + snd->position ) );
 		sample2 = *(Sint16 *)( (Uint8 *)( snd->data + snd->position + 2 ) );
+
+		// adjust volume
+
+		float adjusted = (float)sample1 * volume;
+		sample1 = (Sint16)adjusted;
+		adjusted = (float)sample2 * volume;
+		sample2 = (Sint16)adjusted;
 
 		// hard limiter
 
@@ -351,7 +367,7 @@ int drivesound_init( void )
 
 		if( !file )
 		{
-			//drivesound_msg( va( "[NT] Failed to open wav #%i", i ) );
+			//drivesound_msg( va( "[NT] Failed to open wav %s", path ) );
 			return -1;
 		}
 

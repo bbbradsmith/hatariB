@@ -20,7 +20,7 @@ enum
 
 //#define DRIVESOUND_ENABLE_SDL
 #define DRIVESOUND_DEBUG_PRINT
-//DRIVESOUND_DEBUG_PRINT_MSG
+#define DRIVESOUND_DEBUG_PRINT_MSG
 
 #ifdef DRIVESOUND_DEBUG_PRINT
 #include <stdarg.h>
@@ -29,6 +29,9 @@ char *__cdecl va( const char *format, ... );
 #else
 #define va(x) ;
 #endif
+
+extern bool drivesound_enable;
+extern int drivesound_volume;
 
 extern bool drivesound_is_permitted( void );
 
