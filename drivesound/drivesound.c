@@ -359,6 +359,14 @@ int drivesound_init( void )
 
 		snd->buf = malloc( snd->size );
 
+		if( !snd->buf )
+		{
+			fclose( file );
+			drivesound_msg( va( "[NT] Failed to allocate memory #%i", i ) );
+			g_drivesound_enabled = 0;
+			return -3;
+		}
+
 		fread( snd->buf, 1, snd->size, file );
 		fclose( file );
 
