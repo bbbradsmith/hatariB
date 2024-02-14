@@ -20,6 +20,7 @@ typedef struct drivesound_snd_s
 	int size;
 	int playing;
 	int position;
+	int num_pcm_samples;
 }
 drivesound_snd_t;
 
@@ -209,7 +210,7 @@ int drivesound_stop_all( int stop_spin )
 	return 0;
 }
 
-#ifdef DRIVESOUND_DEBUG_PRINT
+#ifdef DRIVESOUND_DEBUG_PRINT_MSG
 
 int drivesound_msg( const char *text )
 {
@@ -325,6 +326,7 @@ int drivesound_mix_update_snd( int index, int length, int which_snd )
 
 int drivesound_init( void )
 {
+	wav_header_t *wav = NULL;
 	drivesound_snd_t *snd = NULL;
 	FILE *file = NULL;
 	char path[ 512 ] = "";
@@ -340,7 +342,7 @@ int drivesound_init( void )
 
 		if( !file )
 		{
-			drivesound_msg( va( "[NT] Failed to open wav #%i", i ) );
+			//drivesound_msg( va( "[NT] Failed to open wav #%i", i ) );
 			g_drivesound_enabled = 0;
 			return -1;
 		}
@@ -352,7 +354,7 @@ int drivesound_init( void )
 		if( !snd->size )
 		{
 			fclose( file );
-			drivesound_msg( va( "[NT] Empty wav #%i", i ) );
+			//drivesound_msg( va( "[NT] Empty wav #%i", i ) );
 			g_drivesound_enabled = 0;
 			return -2;
 		}
@@ -362,7 +364,7 @@ int drivesound_init( void )
 		if( !snd->buf )
 		{
 			fclose( file );
-			drivesound_msg( va( "[NT] Failed to allocate memory #%i", i ) );
+			//drivesound_msg( va( "[NT] Failed to allocate memory #%i", i ) );
 			g_drivesound_enabled = 0;
 			return -3;
 		}
@@ -375,9 +377,13 @@ int drivesound_init( void )
 		snd->data = (Uint8 *)( (Uint8 *)snd->buf + sizeof( wav_header_t ) );
 		snd->position = 0;
 		snd->playing = 0;
+
+		wav = (wav_header_t *)snd->buf;
+		snd->num_pcm_samples = wav->data_bytes / ( wav->num_channels * wav->bit_depth / 8 );
+		//core_signal_alert( va( "[NT] %i samples", snd->num_pcm_samples ) );
 	}
 
-	drivesound_msg( va( "[NT] MIX DriveSound OK" ) );
+	//drivesound_msg( va( "[NT] MIX DriveSound OK" ) );
 
 	return 0;
 }
