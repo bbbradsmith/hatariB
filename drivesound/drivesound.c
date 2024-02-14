@@ -7,7 +7,7 @@
 
 #ifdef __DRIVESOUND__
 
-#include "../../drivesound/drivesound.h"
+#include "../drivesound/drivesound.h"
 
 #include "../hatari/src/includes/main.h"
 #include "../core/core.h"
