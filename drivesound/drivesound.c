@@ -266,8 +266,8 @@ int drivesound_mix_update_snd( int index, int length, int which_snd )
 	Sint16 sample2 = 0;
 	drivesound_snd_t *snd = NULL;
 
-	int pos = core_audio_samples_pending - length * 2;
 	int len = length * 2;
+	int pos = core_audio_samples_pending - len;
 	int max = CORE_AUDIO_BUFFER_LEN - pos;
 	if( len > max ) len = max;
 
@@ -367,7 +367,7 @@ int drivesound_init( void )
 
 		if( !file )
 		{
-			//drivesound_msg( va( "[NT] Failed to open wav %s", path ) );
+			core_signal_alert( va( "[DriveSound] Failed to open %s!", path ) );
 			return -1;
 		}
 
@@ -378,7 +378,7 @@ int drivesound_init( void )
 		if( !snd->size )
 		{
 			fclose( file );
-			//drivesound_msg( va( "[NT] Empty wav #%i", i ) );
+			core_signal_alert( va( "[DriveSound] %s is empty!", path ) );
 			return -2;
 		}
 
@@ -387,7 +387,7 @@ int drivesound_init( void )
 		if( !snd->buf )
 		{
 			fclose( file );
-			//drivesound_msg( va( "[NT] Failed to allocate memory #%i", i ) );
+			core_signal_alert( "[DriveSound] Memory allocation failed!" );
 			return -3;
 		}
 
@@ -402,11 +402,9 @@ int drivesound_init( void )
 
 		wav = (wav_header_t *)snd->buf;
 		snd->num_pcm_samples = wav->data_bytes / ( wav->num_channels * wav->bit_depth / 8 );
-		//core_signal_alert( va( "[NT] %i samples", snd->num_pcm_samples ) );
 	}
 
 	drivesound_permit = 1;
-	//drivesound_msg( va( "[NT] MIX DriveSound OK" ) );
 
 	return 0;
 }
