@@ -4,3 +4,11 @@ build/
 cv2pdb/
 vscode/test_*.bat
 *.lnk
+/.vs/hatari
+/.vs/hatariB/FileContentIndex
+/.vs/hatariB/v17
+/.vs/CMake Overview
+*.db
+*.json
+*.sqlite
+/.gitignore
