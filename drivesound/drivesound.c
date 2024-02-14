@@ -140,7 +140,7 @@ int drivesound_play_from_track( int snd, int fdc_track )
 
 		if( fwd_position + 1 >= num_pcm_samples )
 		{
-			fwd_position = num_pcm_samples;
+			fwd_position = num_pcm_samples - 1.0f;
 		}
 
 		g_drivesound_snd[ DRIVESOUND_SEEK_BACK ].playing = 0;
