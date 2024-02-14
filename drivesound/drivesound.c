@@ -109,13 +109,14 @@ int drivesound_play_from_track( int snd, int fdc_track )
 
 	if( snd == DRIVESOUND_SEEK_BACK )
 	{
-		float back_position = ( (float)fdc_track / 82.0f ) * 13163.0f;	// TODO: replace with PCM sample count from the header
+		float num_pcm_samples = (float)( g_drivesound_snd[ DRIVESOUND_SEEK_BACK ].num_pcm_samples );
+		float back_position = ( (float)fdc_track / 82.0f ) * num_pcm_samples;
 
-		back_position = 13163.0f - back_position;	// TODO: replace with PCM sample count from the header
+		back_position = num_pcm_samples - back_position;
 
-		if( back_position + 1 >= 13163.0f )	// TODO: replace with PCM sample count from the header
+		if( back_position + 1 >= num_pcm_samples )
 		{
-			back_position = 13162.0f;	// TODO: replace with PCM sample count from the header - 1
+			back_position = num_pcm_samples - 1.0f;
 		}
 
 		g_drivesound_snd[ DRIVESOUND_SEEK_FWD ].playing = 0;
@@ -125,11 +126,12 @@ int drivesound_play_from_track( int snd, int fdc_track )
 	}
 	else if( snd == DRIVESOUND_SEEK_FWD )
 	{
-		float fwd_position = ( (float)fdc_track / 82.0f ) * 10576.0f;	// TODO: replace with PCM sample count from the header
+		float num_pcm_samples = (float)( g_drivesound_snd[ DRIVESOUND_SEEK_FWD ].num_pcm_samples );
+		float fwd_position = ( (float)fdc_track / 82.0f ) * num_pcm_samples;
 
-		if( fwd_position + 1 >= 10576.0f )	// TODO: replace with PCM sample count from the header
+		if( fwd_position + 1 >= num_pcm_samples )
 		{
-			fwd_position = 10575.0f;	// TODO: replace with PCM sample count from the header - 1
+			fwd_position = num_pcm_samples;
 		}
 
 		g_drivesound_snd[ DRIVESOUND_SEEK_BACK ].playing = 0;
