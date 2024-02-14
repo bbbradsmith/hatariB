@@ -691,6 +691,14 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		NULL, "audio",
 		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
 	},
+#ifdef __DRIVESOUND__
+	{
+		"hatarib_drivesound", "Floppy Disk Drive Sounds", NULL,
+		"Simulate floppy disk drive noises.",
+		NULL, "audio",
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
+	},
+#endif
 	//
 	// Advanced
 	//
@@ -1157,6 +1165,9 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_lpf") newparam.Sound.YmLpf = vi;
 	CFG_INT("hatarib_hpf") newparam.Sound.YmHpf = vi;
 	CFG_INT("hatarib_midi") core_midi_enable = (vi != 0);
+#ifdef __DRIVESOUND__
+	CFG_INT( "hatarib_drivesound" ) core_drivesound_enable = ( vi != 0 );
+#endif
 	CFG_INT("hatarib_driveb") { newparam.DiskImage.EnableDriveB = vi; core_disk_enable_b = vi; }
 	CFG_INT("hatarib_drivesingle") { newparam.DiskImage.DriveA_NumberOfHeads = newparam.DiskImage.DriveB_NumberOfHeads = vi; }
 	CFG_INT("hatarib_readonly_floppy") newparam.DiskImage.nWriteProtection = vi;

@@ -7,10 +7,10 @@
 
 #ifdef __DRIVESOUND__
 
-#include "../drivesound/drivesound.h"
-
 #include "../hatari/src/includes/main.h"
 #include "../core/core.h"
+
+#include "../drivesound/drivesound.h"
 
 typedef struct drivesound_snd_s
 {
@@ -82,7 +82,7 @@ char *__cdecl va( const char *format, ... )
 
 #endif
 
-int g_drivesound_enabled = 1;		// TODO: create a RetroArch setting and link it to this variable
+int drivesound_permit = 0;
 
 #define DRIVESOUND_PATH_PREFIX "system/drivesound"
 
@@ -95,9 +95,14 @@ drivesound_snd_t g_drivesound_snd[ DRIVESOUND_MAX ] =
 	{ NULL,	"drive_spin", NULL, 0, 0, 0 }
 };
 
+bool drivesound_is_permitted( void )
+{
+	return core_drivesound_enable && drivesound_permit != 0;
+}
+
 int drivesound_play_from_track( int snd, int fdc_track )
 {
-	if( !g_drivesound_enabled )
+	if( !drivesound_is_permitted() )
 	{
 		return -1;
 	}
@@ -164,7 +169,7 @@ int drivesound_play( int snd )
 
 int drivesound_stop( int snd )
 {
-	if( !g_drivesound_enabled )
+	if( !drivesound_is_permitted() )
 	{
 		return -1;
 	}
@@ -181,7 +186,7 @@ int drivesound_stop( int snd )
 
 int drivesound_stop_seek( void )
 {
-	if( !g_drivesound_enabled )
+	if( !drivesound_is_permitted() )
 	{
 		return -1;
 	}
@@ -194,7 +199,7 @@ int drivesound_stop_seek( void )
 
 int drivesound_stop_all( int stop_spin )
 {
-	if( !g_drivesound_enabled )
+	if( !drivesound_is_permitted() )
 	{
 		return -1;
 	}
@@ -231,7 +236,7 @@ int drivesound_msg( const char *text )
 
 int drivesound_mix_update( int index, int length )
 {
-	if( !g_drivesound_enabled )
+	if( !drivesound_is_permitted() )
 	{
 		return -1;
 	}
@@ -249,7 +254,7 @@ int drivesound_mix_update( int index, int length )
 
 int drivesound_mix_update_snd( int index, int length, int which_snd )
 {
-	if( !g_drivesound_enabled )
+	if( !drivesound_is_permitted() )
 	{
 		return -1;
 	}
@@ -332,7 +337,9 @@ int drivesound_init( void )
 	drivesound_snd_t *snd = NULL;
 	FILE *file = NULL;
 	char path[ 512 ] = "";
-	
+
+	drivesound_permit = 0;
+
 	for( int i = 0 ; i < DRIVESOUND_MAX ; i++ )
 	{
 		snd = &g_drivesound_snd[ i ];
@@ -345,7 +352,6 @@ int drivesound_init( void )
 		if( !file )
 		{
 			//drivesound_msg( va( "[NT] Failed to open wav #%i", i ) );
-			g_drivesound_enabled = 0;
 			return -1;
 		}
 
@@ -357,7 +363,6 @@ int drivesound_init( void )
 		{
 			fclose( file );
 			//drivesound_msg( va( "[NT] Empty wav #%i", i ) );
-			g_drivesound_enabled = 0;
 			return -2;
 		}
 
@@ -367,7 +372,6 @@ int drivesound_init( void )
 		{
 			fclose( file );
 			//drivesound_msg( va( "[NT] Failed to allocate memory #%i", i ) );
-			g_drivesound_enabled = 0;
 			return -3;
 		}
 
@@ -385,6 +389,7 @@ int drivesound_init( void )
 		//core_signal_alert( va( "[NT] %i samples", snd->num_pcm_samples ) );
 	}
 
+	drivesound_permit = 1;
 	//drivesound_msg( va( "[NT] MIX DriveSound OK" ) );
 
 	return 0;
@@ -408,6 +413,8 @@ int drivesound_uninit( void )
 			snd->size = 0;
 		}
 	}
+
+	drivesound_permit = 0;
 
 	return 0;
 }

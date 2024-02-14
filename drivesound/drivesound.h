@@ -30,7 +30,7 @@ char *__cdecl va( const char *format, ... );
 #define va(x) ;
 #endif
 
-extern int g_drivesound_enabled;
+extern bool drivesound_is_permitted( void );
 
 extern int drivesound_init( void );
 extern int drivesound_uninit( void );

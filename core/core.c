@@ -115,6 +115,9 @@ bool core_show_welcome = true;
 bool core_first_reset = true;
 bool core_perf_display = false;
 bool core_midi_enable = true;
+#ifdef __DRIVESOUND__
+bool core_drivesound_enable = true;
+#endif
 
 // internal
 
