@@ -2307,8 +2307,13 @@ static int FDC_UpdateRestoreCmd ( void )
 				drivesound_stop_seek();
 				drivesound_play( DRIVESOUND_CLICK );
 			}
+			else if( track > 2 )
+			{
+				drivesound_play_from_track( DRIVESOUND_SEEK_BACK, track );
+			}
 			else if( track > 0 )
 			{
+				drivesound_play( DRIVESOUND_CLICK );
 				drivesound_play_from_track( DRIVESOUND_SEEK_BACK, track );
 			}
 		}
@@ -2456,7 +2461,9 @@ static int FDC_UpdateSeekCmd ( void )
 
 			if( FDC.DriveSelSignal >= 0 && FDC.DriveSelSignal <= 1 )
 			{
-				if( abs( FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack - FDC.DR ) == 1 )
+				int diff = abs( FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack - FDC.DR );
+
+				if( diff == 1 )
 				{
 					drivesound_stop_seek();
 					drivesound_play( DRIVESOUND_CLICK );
@@ -2465,10 +2472,18 @@ static int FDC_UpdateSeekCmd ( void )
 				{
 					if( FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack < FDC.DR )
 					{
+						if( diff <= 2 )
+						{
+							drivesound_play( DRIVESOUND_CLICK );
+						}
 						drivesound_play_from_track( DRIVESOUND_SEEK_FWD, (int)FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack );
 					}
 					else if( FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack > FDC.DR )
 					{
+						if( diff <= 2 )
+						{
+							drivesound_play( DRIVESOUND_CLICK );
+						}
 						drivesound_play_from_track( DRIVESOUND_SEEK_BACK, (int)FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack );
 					}
 				}
@@ -2489,19 +2504,30 @@ static int FDC_UpdateSeekCmd ( void )
 
 			if( FDC.DriveSelSignal >= 0 && FDC.DriveSelSignal <= 1 )
 			{
-				if( abs( FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack - FDC.DR ) == 1 )
+				int diff = abs( FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack - FDC.DR );
+
+				if( diff == 1 )
 				{
 					drivesound_stop_seek();
 					drivesound_play( DRIVESOUND_CLICK );
 				}
 				else
 				{
+
 					if( FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack < FDC.DR )
 					{
+						if( diff <= 2 )
+						{
+							drivesound_play( DRIVESOUND_CLICK );
+						}
 						drivesound_play_from_track( DRIVESOUND_SEEK_FWD, (int)FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack );
 					}
 					else if( FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack > FDC.DR )
 					{
+						if( diff <= 2 )
+						{
+							drivesound_play( DRIVESOUND_CLICK );
+						}
 						drivesound_play_from_track( DRIVESOUND_SEEK_BACK, (int)FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack );
 					}
 				}
