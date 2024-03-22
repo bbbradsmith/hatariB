@@ -7,10 +7,10 @@
 
 #ifdef __DRIVESOUND__
 
-#include "../../drivesound/drivesound.h"
-
 #include "../hatari/src/includes/main.h"
 #include "../core/core.h"
+
+#include "../drivesound/drivesound.h"
 
 typedef struct drivesound_snd_s
 {
@@ -20,6 +20,7 @@ typedef struct drivesound_snd_s
 	int size;
 	int playing;
 	int position;
+	int num_pcm_samples;
 }
 drivesound_snd_t;
 
@@ -81,7 +82,11 @@ char *__cdecl va( const char *format, ... )
 
 #endif
 
-int g_drivesound_enabled = 1;		// TODO: create a RetroArch setting and link it to this variable
+bool drivesound_enable = true;	// read from RetroArch settings
+int drivesound_volume = 100;	// read from RetroArch settings
+
+int drivesound_loaded = 0;		// can the sounds actually be played?
+int drivesound_samplerate = 48000;
 
 #define DRIVESOUND_PATH_PREFIX "system/drivesound"
 
@@ -94,9 +99,14 @@ drivesound_snd_t g_drivesound_snd[ DRIVESOUND_MAX ] =
 	{ NULL,	"drive_spin", NULL, 0, 0, 0 }
 };
 
+bool drivesound_is_allowed( void )
+{
+	return drivesound_enable && drivesound_loaded != 0;
+}
+
 int drivesound_play_from_track( int snd, int fdc_track )
 {
-	if( !g_drivesound_enabled )
+	if( !drivesound_is_allowed() )
 	{
 		return -1;
 	}
@@ -108,13 +118,14 @@ int drivesound_play_from_track( int snd, int fdc_track )
 
 	if( snd == DRIVESOUND_SEEK_BACK )
 	{
-		float back_position = ( (float)fdc_track / 82.0f ) * 13163.0f;	// TODO: replace with PCM sample count from the header
+		float num_pcm_samples = (float)( g_drivesound_snd[ DRIVESOUND_SEEK_BACK ].num_pcm_samples );
+		float back_position = ( (float)fdc_track / 82.0f ) * num_pcm_samples;
 
-		back_position = 13163.0f - back_position;	// TODO: replace with PCM sample count from the header
+		back_position = num_pcm_samples - back_position;
 
-		if( back_position + 1 >= 13163.0f )	// TODO: replace with PCM sample count from the header
+		if( back_position + 1 >= num_pcm_samples )
 		{
-			back_position = 13162.0f;	// TODO: replace with PCM sample count from the header - 1
+			back_position = num_pcm_samples - 1.0f;
 		}
 
 		g_drivesound_snd[ DRIVESOUND_SEEK_FWD ].playing = 0;
@@ -124,11 +135,12 @@ int drivesound_play_from_track( int snd, int fdc_track )
 	}
 	else if( snd == DRIVESOUND_SEEK_FWD )
 	{
-		float fwd_position = ( (float)fdc_track / 82.0f ) * 10576.0f;	// TODO: replace with PCM sample count from the header
+		float num_pcm_samples = (float)( g_drivesound_snd[ DRIVESOUND_SEEK_FWD ].num_pcm_samples );
+		float fwd_position = ( (float)fdc_track / 82.0f ) * num_pcm_samples;
 
-		if( fwd_position + 1 >= 10576.0f )	// TODO: replace with PCM sample count from the header
+		if( fwd_position + 1 >= num_pcm_samples )
 		{
-			fwd_position = 10575.0f;	// TODO: replace with PCM sample count from the header - 1
+			fwd_position = num_pcm_samples - 1.0f;
 		}
 
 		g_drivesound_snd[ DRIVESOUND_SEEK_BACK ].playing = 0;
@@ -161,7 +173,7 @@ int drivesound_play( int snd )
 
 int drivesound_stop( int snd )
 {
-	if( !g_drivesound_enabled )
+	if( !drivesound_is_allowed() )
 	{
 		return -1;
 	}
@@ -178,7 +190,7 @@ int drivesound_stop( int snd )
 
 int drivesound_stop_seek( void )
 {
-	if( !g_drivesound_enabled )
+	if( !drivesound_is_allowed() )
 	{
 		return -1;
 	}
@@ -191,7 +203,7 @@ int drivesound_stop_seek( void )
 
 int drivesound_stop_all( int stop_spin )
 {
-	if( !g_drivesound_enabled )
+	if( !drivesound_is_allowed() )
 	{
 		return -1;
 	}
@@ -209,7 +221,7 @@ int drivesound_stop_all( int stop_spin )
 	return 0;
 }
 
-#ifdef DRIVESOUND_DEBUG_PRINT
+#ifdef DRIVESOUND_DEBUG_PRINT_MSG
 
 int drivesound_msg( const char *text )
 {
@@ -228,7 +240,20 @@ int drivesound_msg( const char *text )
 
 int drivesound_mix_update( int index, int length )
 {
-	if( !g_drivesound_enabled )
+	if( drivesound_samplerate != core_audio_samplerate )
+	{
+		drivesound_uninit();
+
+		int result = drivesound_init();
+
+		if( result )
+		{
+			// reinit failed, don't try anymore until the sample rate changes again
+			drivesound_samplerate = core_audio_samplerate;
+		}
+	}
+
+	if( !drivesound_is_allowed() )
 	{
 		return -1;
 	}
@@ -246,7 +271,7 @@ int drivesound_mix_update( int index, int length )
 
 int drivesound_mix_update_snd( int index, int length, int which_snd )
 {
-	if( !g_drivesound_enabled )
+	if( !drivesound_is_allowed() )
 	{
 		return -1;
 	}
@@ -255,8 +280,8 @@ int drivesound_mix_update_snd( int index, int length, int which_snd )
 	Sint16 sample2 = 0;
 	drivesound_snd_t *snd = NULL;
 
-	int pos = core_audio_samples_pending - length * 2;
 	int len = length * 2;
+	int pos = core_audio_samples_pending - len;
 	int max = CORE_AUDIO_BUFFER_LEN - pos;
 	if( len > max ) len = max;
 
@@ -269,12 +294,25 @@ int drivesound_mix_update_snd( int index, int length, int which_snd )
 
 	snd = &g_drivesound_snd[ which_snd ];
 
+	// get config volume
+
+	float volume = (float)drivesound_volume / 100.0f;
+	if( volume < 0.0f ) volume = 0.0f;
+	else if( volume > 2.0f ) volume = 2.0f;
+
 	for( int i = 0 ; i < l2 ; ++i )
 	{
 		// get the samples
 
 		sample1 = *(Sint16 *)( (Uint8 *)( snd->data + snd->position ) );
 		sample2 = *(Sint16 *)( (Uint8 *)( snd->data + snd->position + 2 ) );
+
+		// adjust volume
+
+		float adjusted = (float)sample1 * volume;
+		sample1 = (Sint16)adjusted;
+		adjusted = (float)sample2 * volume;
+		sample2 = (Sint16)adjusted;
 
 		// hard limiter
 
@@ -325,23 +363,25 @@ int drivesound_mix_update_snd( int index, int length, int which_snd )
 
 int drivesound_init( void )
 {
+	wav_header_t *wav = NULL;
 	drivesound_snd_t *snd = NULL;
 	FILE *file = NULL;
 	char path[ 512 ] = "";
-	
+
+	drivesound_loaded = 0;
+
 	for( int i = 0 ; i < DRIVESOUND_MAX ; i++ )
 	{
 		snd = &g_drivesound_snd[ i ];
 
 		snprintf( path, 512, DRIVESOUND_PATH_PREFIX "/%s_%i.wav",
-			snd->name, 48000 );		// TODO: replace with current core sample rate
+			snd->name, core_audio_samplerate );
 
 		file = fopen( path, "rb+" );
 
 		if( !file )
 		{
-			drivesound_msg( va( "[NT] Failed to open wav #%i", i ) );
-			g_drivesound_enabled = 0;
+			core_signal_alert( va( "[DriveSound] Failed to open %s!", path ) );
 			return -1;
 		}
 
@@ -352,12 +392,18 @@ int drivesound_init( void )
 		if( !snd->size )
 		{
 			fclose( file );
-			drivesound_msg( va( "[NT] Empty wav #%i", i ) );
-			g_drivesound_enabled = 0;
+			core_signal_alert( va( "[DriveSound] %s is empty!", path ) );
 			return -2;
 		}
 
 		snd->buf = malloc( snd->size );
+
+		if( !snd->buf )
+		{
+			fclose( file );
+			core_signal_alert( "[DriveSound] Memory allocation failed!" );
+			return -3;
+		}
 
 		fread( snd->buf, 1, snd->size, file );
 		fclose( file );
@@ -367,9 +413,14 @@ int drivesound_init( void )
 		snd->data = (Uint8 *)( (Uint8 *)snd->buf + sizeof( wav_header_t ) );
 		snd->position = 0;
 		snd->playing = 0;
+
+		wav = (wav_header_t *)snd->buf;
+		snd->num_pcm_samples = wav->data_bytes / ( wav->num_channels * wav->bit_depth / 8 );
 	}
 
-	drivesound_msg( va( "[NT] MIX DriveSound OK" ) );
+	drivesound_samplerate = core_audio_samplerate;
+	drivesound_loaded = 1;
+	//core_signal_alert( "[DriveSound] OK" );
 
 	return 0;
 }
@@ -392,6 +443,8 @@ int drivesound_uninit( void )
 			snd->size = 0;
 		}
 	}
+
+	drivesound_loaded = 0;
 
 	return 0;
 }

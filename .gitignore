@@ -4,3 +4,5 @@ build/
 cv2pdb/
 vscode/test_*.bat
 *.lnk
+/.vs
+/hatari/CMakeSettings.json

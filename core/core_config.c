@@ -4,6 +4,10 @@
 #include "../hatari/src/includes/main.h"
 #include "../hatari/src/includes/configuration.h"
 
+#ifdef __DRIVESOUND__
+#include "../drivesound/drivesound.h"
+#endif
+
 static CNF_PARAMS defparam;
 static CNF_PARAMS newparam;
 
@@ -691,6 +695,43 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		NULL, "audio",
 		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
 	},
+#ifdef __DRIVESOUND__
+	{
+		"hatarib_drivesound", "Floppy Disk Drive Sound Enable", NULL,
+		"Simulate floppy disk drive noises.",
+		NULL, "audio",
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
+	},
+	{
+		"hatarib_drivesound_volume", "Floppy Disk Drive Sound Volume", NULL,
+		"Drive sound volume control.",
+		NULL, "audio",
+		{
+			{"0","Mute"},
+			{"10","10%"},
+			{"20","20%"},
+			{"30","30%"},
+			{"40","40%"},
+			{"50","50%"},
+			{"60","60%"},
+			{"70","70%"},
+			{"80","80%"},
+			{"90","90%"},
+			{"100","100%"},
+			{"110","110%"},
+			{"120","120%"},
+			{"130","130%"},
+			{"140","140%"},
+			{"150","150%"},
+			{"160","160%"},
+			{"170","170%"},
+			{"180","180%"},
+			{"190","190%"},
+			{"200","200%"},
+			{NULL,NULL},
+		}, "100"
+	},
+#endif
 	//
 	// Advanced
 	//
@@ -1157,6 +1198,10 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_lpf") newparam.Sound.YmLpf = vi;
 	CFG_INT("hatarib_hpf") newparam.Sound.YmHpf = vi;
 	CFG_INT("hatarib_midi") core_midi_enable = (vi != 0);
+#ifdef __DRIVESOUND__
+	CFG_INT( "hatarib_drivesound" ) drivesound_enable = ( vi != 0 );
+	CFG_INT( "hatarib_drivesound_volume" ) drivesound_volume = vi;
+#endif
 	CFG_INT("hatarib_driveb") { newparam.DiskImage.EnableDriveB = vi; core_disk_enable_b = vi; }
 	CFG_INT("hatarib_drivesingle") { newparam.DiskImage.DriveA_NumberOfHeads = newparam.DiskImage.DriveB_NumberOfHeads = vi; }
 	CFG_INT("hatarib_readonly_floppy") newparam.DiskImage.nWriteProtection = vi;

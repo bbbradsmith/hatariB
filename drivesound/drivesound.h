@@ -19,7 +19,8 @@ enum
 };
 
 //#define DRIVESOUND_ENABLE_SDL
-//#define DRIVESOUND_DEBUG_PRINT
+#define DRIVESOUND_DEBUG_PRINT
+#define DRIVESOUND_DEBUG_PRINT_MSG
 
 #ifdef DRIVESOUND_DEBUG_PRINT
 #include <stdarg.h>
@@ -29,7 +30,10 @@ char *__cdecl va( const char *format, ... );
 #define va(x) ;
 #endif
 
-extern int g_drivesound_enabled;
+extern bool drivesound_enable;
+extern int drivesound_volume;
+
+extern bool drivesound_is_allowed( void );
 
 extern int drivesound_init( void );
 extern int drivesound_uninit( void );
@@ -40,7 +44,7 @@ extern int drivesound_stop( int snd );
 extern int drivesound_stop_seek( void );
 extern int drivesound_stop_all( int stop_spin );
 
-#ifdef DRIVESOUND_DEBUG_PRINT
+#ifdef DRIVESOUND_DEBUG_PRINT_MSG
 extern int drivesound_msg( const char *text );
 #else
 #define drivesound_msg(x) ;
