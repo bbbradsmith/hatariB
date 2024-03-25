@@ -372,7 +372,7 @@ int drivesound_init( void )
 	wav_header_t *wav = NULL;
 	drivesound_snd_t *snd = NULL;
 	FILE *file = NULL;
-	unsigned int bytes_read = 0;
+	int bytes_read = 0;
 	char path[ 512 ] = "";
 	char msg[ 512 ] = "";
 
@@ -417,6 +417,16 @@ int drivesound_init( void )
 
 		bytes_read = fread( snd->buf, 1, snd->size, file );
 		fclose( file );
+
+		if( bytes_read != snd->size )
+		{
+			free( snd->buf );
+			snd->buf = NULL;
+
+			snprintf( msg, 512, "[DriveSound] Failed to read %s!", path );
+			core_signal_alert( msg );
+			return -4;
+		}
 
 		//
 
