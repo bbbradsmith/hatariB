@@ -368,7 +368,6 @@ int drivesound_init( void )
 	wav_header_t *wav = NULL;
 	drivesound_snd_t *snd = NULL;
 	corefile *file = NULL;
-	//FILE *file = NULL;
 	int64_t bytes_read = 0;
 	char path[ 512 ] = "";
 	char msg[ 512 ] = "";
@@ -383,7 +382,6 @@ int drivesound_init( void )
 			snd->name, core_audio_samplerate );
 
 		file = core_file_open_system( path, CORE_FILE_READ );
-				//file = fopen( path, "rb+" );
 
 		if( !file )
 		{
@@ -396,14 +394,10 @@ int drivesound_init( void )
 		snd->size = core_file_tell( file );
 		core_file_seek( file, 0, SEEK_SET );
 
-		//fseek( file, 0, SEEK_END );
-		//snd->size = ftell( file );
-		//fseek( file, 0, SEEK_SET );
-
 		if( !snd->size )
 		{
-			//fclose( file );
 			core_file_close( file );
+
 			snprintf( msg, 512, "[DriveSound] %s is empty!", path );
 			core_signal_alert( msg );
 			return -2;
@@ -413,14 +407,12 @@ int drivesound_init( void )
 
 		if( !snd->buf )
 		{
-			//fclose( file );
 			core_file_close( file );
+
 			core_signal_alert( "[DriveSound] Memory allocation failed!" );
 			return -3;
 		}
 
-		//bytes_read = fread( snd->buf, 1, snd->size, file );
-		//fclose( file );
 		bytes_read = core_file_read( snd->buf, 1, snd->size, file );
 		core_file_close( file );
 
@@ -446,7 +438,6 @@ int drivesound_init( void )
 
 	drivesound_samplerate = core_audio_samplerate;
 	drivesound_loaded = 1;
-	//core_signal_alert( "[DriveSound] OK" );
 
 	return 0;
 }
