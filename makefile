@@ -27,7 +27,7 @@ CC ?= gcc
 CFLAGS += \
 	-O3 $(WERROR) -fPIC \
 	-D__LIBRETRO__ -D__DRIVESOUND__ -DSHORTHASH=\"$(SHORTHASH)\" \
-	-Ihatari/build -I$(SDL2_INCLUDE)
+	-Ihatari/build -I$(SDL2_INCLUDE) -I$(ZLIB_INCLUDE)
 LDFLAGS += \
 	-shared $(WERROR) -static-libgcc
 
