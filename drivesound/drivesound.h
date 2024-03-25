@@ -25,7 +25,9 @@ enum
 #ifdef DRIVESOUND_DEBUG_PRINT
 #include <stdarg.h>
 extern int Q_vsnprintf( char *str, int size, const char *format, va_list ap );
+#if 0
 char *__cdecl va( const char *format, ... );
+#endif
 #else
 #define va(x) ;
 #endif

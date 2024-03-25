@@ -65,6 +65,7 @@ int Q_vsnprintf( char *str, int size, const char *format, va_list ap )
 	return retval;
 }
 
+#if 0
 char *__cdecl va( const char *format, ... )
 {
 	va_list		argptr;
@@ -79,6 +80,7 @@ char *__cdecl va( const char *format, ... )
 
 	return buf;
 }
+#endif
 
 #endif
 
@@ -367,6 +369,7 @@ int drivesound_init( void )
 	drivesound_snd_t *snd = NULL;
 	FILE *file = NULL;
 	char path[ 512 ] = "";
+	char msg[ 512 ] = "";
 
 	drivesound_loaded = 0;
 
@@ -381,7 +384,8 @@ int drivesound_init( void )
 
 		if( !file )
 		{
-			core_signal_alert( va( "[DriveSound] Failed to open %s!", path ) );
+			snprintf( msg, 512, "[DriveSound] Failed to open %s!", path );
+			core_signal_alert( msg );
 			return -1;
 		}
 
@@ -392,7 +396,8 @@ int drivesound_init( void )
 		if( !snd->size )
 		{
 			fclose( file );
-			core_signal_alert( va( "[DriveSound] %s is empty!", path ) );
+			snprintf( msg, 512, "[DriveSound] %s is empty!", path );
+			core_signal_alert( msg );
 			return -2;
 		}
 
