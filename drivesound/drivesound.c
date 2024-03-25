@@ -48,6 +48,7 @@ typedef struct wav_header_s
 }
 wav_header_t;
 
+#if 0
 #ifdef DRIVESOUND_DEBUG_PRINT
 
 #define	MAX_VA_STRING	32000
@@ -65,7 +66,6 @@ int Q_vsnprintf( char *str, int size, const char *format, va_list ap )
 	return retval;
 }
 
-#if 0
 #if defined( _MSC_VER )
 char *__cdecl va( const char *format, ... )
 #elif defined( __GNUC__ )

@@ -19,6 +19,7 @@ enum
 };
 
 //#define DRIVESOUND_ENABLE_SDL
+#if 0
 #define DRIVESOUND_DEBUG_PRINT
 #define DRIVESOUND_DEBUG_PRINT_MSG
 
@@ -26,7 +27,6 @@ enum
 #include <stdarg.h>
 extern int Q_vsnprintf( char *str, int size, const char *format, va_list ap );
 
-#if 0
 #if defined( _MSC_VER )
 char *__cdecl va( const char *format, ... );
 #elif defined( __GNUC__ )
