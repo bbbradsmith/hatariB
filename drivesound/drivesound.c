@@ -379,10 +379,10 @@ int drivesound_init( void )
 	{
 		snd = &g_drivesound_snd[ i ];
 
-		snprintf( path, 512, DRIVESOUND_PATH_PREFIX "/%s_%i.wav",
+		snprintf( path, 512, "drivesound/%s_%i.wav",
 			snd->name, core_audio_samplerate );
 
-		file = core_file_open( path, CORE_FILE_READ );
+		file = core_file_open_system( path, CORE_FILE_READ );
 				//file = fopen( path, "rb+" );
 
 		if( !file )
