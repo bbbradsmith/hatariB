@@ -16,7 +16,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout Files
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup MSYS2
         uses: msys2/setup-msys2@v2
         with:
@@ -41,7 +41,7 @@ jobs:
           copy info/*.* artifact/info
           echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $env:GITHUB_ENV
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: hatarib-win64--${{ env.BUILD_TAG }}
           path: artifact/
@@ -51,7 +51,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout Files
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup MSYS2
         uses: msys2/setup-msys2@v2
         with:
@@ -76,7 +76,7 @@ jobs:
           copy info/*.* artifact/info
           echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $env:GITHUB_ENV
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: hatarib-win32--${{ env.BUILD_TAG }}
           path: artifact/
@@ -86,7 +86,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Files
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Ubuntu
         run: |
           sudo apt-get update
@@ -107,7 +107,7 @@ jobs:
           cp info/*.* artifact/info
           echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $GITHUB_ENV
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: hatarib-ubuntu--${{ env.BUILD_TAG }}
           path: artifact/
@@ -117,7 +117,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout Files
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup MacOS
         run: brew install make gcc@13 cmake
         # brew's gcc has to be a specific version, make sure to update 13 above and below if upgrading
@@ -145,7 +145,7 @@ jobs:
           cp info/*.* artifact/info
           echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $GITHUB_ENV
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: hatarib-macos--${{ env.BUILD_TAG }}
           path: artifact/
@@ -157,7 +157,7 @@ jobs:
     # but 20.04 builds seem to have an older GLIBC that is compatible.
     steps:
       - name: Checkout Files
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Ubuntu
         run: |
           sudo apt-get update
@@ -186,7 +186,7 @@ jobs:
           cp info/*.* artifact/info
           echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $GITHUB_ENV
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: hatarib-rpi32--${{ env.BUILD_TAG }}
           path: artifact/
@@ -197,7 +197,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout Files
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Ubuntu
         run: |
           sudo apt-get update
@@ -225,7 +225,7 @@ jobs:
           cp info/*.* artifact/info
           echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $GITHUB_ENV
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: hatarib-rpi64--${{ env.BUILD_TAG }}
           path: artifact/
