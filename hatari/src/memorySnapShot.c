@@ -530,7 +530,9 @@ void MemorySnapShot_Restore_Do(void)
 		Crossbar_MemorySnapShot_Capture(false);
 		VIDEL_MemorySnapShot_Capture(false);
 		DSP_MemorySnapShot_Capture(false);
+#ifndef __LIBRETRO__
 		DebugUI_MemorySnapShot_Capture(Temp_FileName, false);
+#endif
 		IoMem_MemorySnapShot_Capture(false);
 		ScreenConv_MemorySnapShot_Capture(false);
 		SCC_MemorySnapShot_Capture(false);
