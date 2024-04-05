@@ -894,7 +894,7 @@ off_t HDC_CheckAndGetSize(const char *hdtype, const char *filename, unsigned lon
 #ifndef __LIBRETRO__
 	filesize = File_Length(filename);
 #else
-	filesize = core_file_size_system(filename);
+	filesize = core_file_size_hard(filename);
 #endif
 	if (filesize < 0)
 	{
@@ -951,9 +951,9 @@ int HDC_InitDevice(const char *hdtype, SCSI_DEV *dev, char *filename, unsigned l
 	{
 		if (!(fp = fopen(filename, "rb")))
 #else
-	if (core_hard_readonly==1 || !(fp = core_file_open_system(filename, CORE_FILE_REVISE)))
+	if (core_hard_readonly==1 || !(fp = core_file_open_hard(filename, CORE_FILE_REVISE)))
 	{
-		if (!(fp = core_file_open_system(filename, CORE_FILE_READ)))
+		if (!(fp = core_file_open_hard(filename, CORE_FILE_READ)))
 #endif
 		{
 			Log_AlertDlg(LOG_ERROR, "Cannot open %s HD file for reading\n'%s'!\n",

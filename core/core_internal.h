@@ -14,11 +14,13 @@ extern retro_input_poll_t input_poll_cb;
 extern retro_input_state_t input_state_cb;
 extern retro_log_printf_t retro_log;
 extern int core_video_aspect_mode;
+extern int core_video_aspect_adjust;
 extern bool core_video_changed;
 extern bool core_option_soft_reset;
 extern bool core_serialize_write; // current serialization direction
 extern int core_crashtime;
 extern bool core_show_welcome;
+extern bool core_first_reset;
 extern bool core_perf_display;
 extern bool core_midi_enable;
 extern int core_video_fps;
@@ -36,11 +38,15 @@ extern void strcpy_trunc(char* dest, const char* src, unsigned int len);
 extern void strcat_trunc(char* dest, const char* src, unsigned int len);
 extern bool has_extension(const char* fn, const char* exts); // case insensitive, exts = series of null terminated strings, then an extra 0 to finish the list
 extern int core_hard_readonly;
+extern bool core_hard_content;
+extern int core_hard_content_type;
+extern char core_hard_content_path[2048];
 
 extern uint8_t* core_read_file(const char* filename, unsigned int* size_out);
 extern bool core_write_file(const char* filename, unsigned int size, const uint8_t* data);
 extern uint8_t* core_read_file_system(const char* filename, unsigned int* size_out);
 extern uint8_t* core_read_file_save(const char* filename, unsigned int* size_out);
+extern uint8_t* core_read_file_hard(const char* filename, unsigned int* size_out);
 extern bool core_write_file_save(const char* filename, unsigned int size, const uint8_t* data);
 extern bool core_write_file_system(const char* filename, unsigned int size, const uint8_t* data);
 const char* get_temp_fn(); // gets the last temporary path created for a save/system read or write (use carefully)
@@ -55,6 +61,7 @@ const char* get_temp_fn(); // gets the last temporary path created for a save/sy
 struct stat;
 extern corefile* core_file_open(const char* path, int access);
 extern corefile* core_file_open_system(const char* path, int access);
+extern corefile* core_file_open_hard(const char* path, int access);
 extern corefile* core_file_open_save(const char* path, int access);
 extern bool core_file_exists(const char* path); // returns true if file exists and is not a directory (and is read or writable)
 extern bool core_file_exists_save(const char* filename);
@@ -66,16 +73,22 @@ extern int64_t core_file_write(const void* buf, int64_t size, int64_t count, cor
 extern int core_file_flush(corefile* file);
 extern int core_file_remove(const char* path);
 extern int core_file_remove_system(const char* path);
+extern int core_file_remove_hard(const char* path);
 extern int core_file_mkdir(const char* path);
 extern int core_file_mkdir_system(const char* path);
+extern int core_file_mkdir_hard(const char* path);
 extern int core_file_rename(const char* old_path, const char* new_path);
 extern int core_file_rename_system(const char* old_path, const char* new_path);
+extern int core_file_rename_hard(const char* old_path, const char* new_path);
 extern int core_file_stat(const char* path, struct stat* fs);
 extern int core_file_stat_system(const char* path, struct stat* fs);
+extern int core_file_stat_hard(const char* path, struct stat* fs);
 extern int64_t core_file_size(const char* path);
 extern int64_t core_file_size_system(const char* path);
+extern int64_t core_file_size_hard(const char* path);
 extern coredir* core_file_opendir(const char* path);
 extern coredir* core_file_opendir_system(const char* path);
+extern coredir* core_file_opendir_hard(const char* path);
 extern struct coredirent* core_file_readdir(coredir* dir);
 extern int core_file_closedir(coredir* dir);
 
@@ -119,6 +132,7 @@ extern bool core_savestate_floppy_modify;
 extern void core_config_set_environment(retro_environment_t cb); // call after core_disk_set_environment (which scans system folder for TOS etc)
 extern void core_config_apply(void);
 extern void core_config_reset(void);
+extern bool core_config_hard_content(const char* path, int ht);
 extern void config_cycle_cpu_speed(void);
 extern void config_toggle_statusbar(void);
 

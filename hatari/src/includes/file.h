@@ -65,6 +65,7 @@ struct stat;
 extern int core_hard_readonly;
 extern corefile* core_file_open(const char* path, int access);
 extern corefile* core_file_open_system(const char* path, int access);
+extern corefile* core_file_open_hard(const char* path, int access);
 extern corefile* core_file_open_save(const char* path, int access);
 extern bool core_file_exists(const char* path); // returns true if file exists and is not a directory (and is read or writable)
 extern bool core_file_exists_save(const char* filename);
@@ -76,20 +77,27 @@ extern int64_t core_file_write(const void* buf, int64_t size, int64_t count, cor
 extern int core_file_flush(corefile* file);
 extern int core_file_remove(const char* path);
 extern int core_file_remove_system(const char* path);
+extern int core_file_remove_hard(const char* path);
 extern int core_file_mkdir(const char* path);
 extern int core_file_mkdir_system(const char* path);
+extern int core_file_mkdir_hard(const char* path);
 extern int core_file_rename(const char* old_path, const char* new_path);
 extern int core_file_rename_system(const char* old_path, const char* new_path);
+extern int core_file_rename_hard(const char* old_path, const char* new_path);
 extern int core_file_stat(const char* path, struct stat* fs);
 extern int core_file_stat_system(const char* path, struct stat* fs);
+extern int core_file_stat_hard(const char* path, struct stat* fs);
 extern int64_t core_file_size(const char* path);
 extern int64_t core_file_size_system(const char* path);
+extern int64_t core_file_size_hard(const char* path);
 extern coredir* core_file_opendir(const char* path);
 extern coredir* core_file_opendir_system(const char* path);
+extern coredir* core_file_opendir_hard(const char* path);
 extern struct coredirent* core_file_readdir(coredir* dir);
 extern int core_file_closedir(coredir* dir);
 // replaces File_Read
 extern uint8_t* core_read_file_system(const char* filename, unsigned int* size_out);
+extern uint8_t* core_read_file_hard(const char* filename, unsigned int* size_out);
 #endif
 
 #endif /* HATARI_FILE_H */

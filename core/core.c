@@ -34,7 +34,7 @@
 #define CORE_VERSION   "v0.3 unstable preview " SHORTHASH " " __DATE__ " " __TIME__;
 
 // make sure this matches ../info/hatarib.info
-static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|ipf|ctr|m3u|m3u8|zip|gz";
+static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|ipf|ctr|m3u|m3u8|zip|gz|acsi|ahd|vhd|scsi|shd|ide|gem";
 
 // serialization quirks
 const uint64_t QUIRKS = RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT;
@@ -133,6 +133,7 @@ int core_video_pitch = 320 * sizeof(uint32_t);
 int core_video_resolution = 0;
 float core_video_aspect = 1.0;
 int core_video_aspect_mode = 0;
+int core_video_aspect_adjust = 0; // 0 = none, 1 = vertical double, 2 = horizontal double
 int core_video_fps = 50;
 int core_video_fps_new = 50;
 int core_audio_samplerate = 48000;
@@ -291,12 +292,13 @@ extern void core_debug_printf(const char* fmt, ...)
 //     This difference is negligible for pixel aspect ratio, but would affect color artifact emulation if that were attempted.
 //
 #define RESOLUTION_COUNT 4
-static const double PIXEL_ASPECT_RATIO[4][RESOLUTION_COUNT] = {
+static const double PIXEL_ASPECT_RATIO[5][RESOLUTION_COUNT] = {
 	//  low,   med,  high, default
 	{ 1.000, 1.000, 1.000, 1.000 }, // square pixels
 	{ 0.844, 0.844, 1.010, 0.844 }, // Atari monitor
 	{ 0.766, 0.766, 0.766, 0.766 }, // NTSC TV (high resolution is incompatible)
 	{ 0.921, 0.921, 0.921, 0.921 }, // PAL TV (high resolution is incompatible)
+	{ 0.750, 0.750, 0.750, 0.750 }, // 4:3 exact (cleaner scaling at approximate NTSC aspect)
 };
 
 void core_video_update(void* data, int w, int h, int pitch, int resolution)
@@ -951,10 +953,11 @@ RETRO_API void retro_set_environment(retro_environment_t cb)
 	core_perf_set_environment(cb);
 
 
-	// M3U/M3U8 need fullpath to find the linked files
+	// M3U/M3U8 and hard disk image need fullpath to find the linked files
 	{
 		static const struct retro_system_content_info_override CONTENT_OVERRIDE[] = {
 			{ "m3u|m3u8", true, false },
+			{ "acsi|ahd|vhd|scsi|shd|ide|gem", true, false },
 			{ NULL, false, false },
 		};
 		if (content_override_set || cb(RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE, (void*)CONTENT_OVERRIDE))
@@ -964,7 +967,7 @@ RETRO_API void retro_set_environment(retro_environment_t cb)
 		}
 		else
 		{
-			retro_log(RETRO_LOG_ERROR,"SET_CONTENT_INFO_OVERRIDE failed, M3U loading may be broken?\n");
+			retro_log(RETRO_LOG_ERROR,"SET_CONTENT_INFO_OVERRIDE failed, M3U or hard disk loading may be broken?\n");
 		}
 	}
 
@@ -1026,6 +1029,7 @@ RETRO_API void retro_init(void)
 	//Log_SetTraceOptions("cpu_disasm");
 	//Log_SetTraceOptions("video_vbl,video_sync");
 
+	core_hard_content = false;
 	core_first_reset = true;
 	core_runflags = 0;
 	main_init(1,(char**)argv);
@@ -1077,6 +1081,18 @@ RETRO_API void retro_get_system_av_info(struct retro_system_av_info *info)
 	{
 		double par = PIXEL_ASPECT_RATIO[core_video_aspect_mode][core_video_resolution];
 		core_video_aspect = (par * core_video_w) / (double)core_video_h;
+		switch (core_video_aspect_adjust)
+		{
+		default:
+		case 0:
+			break;
+		case 1: // unstretched medium
+			core_video_aspect /= 2.0f;
+			break;
+		case 2: // unstretched TT/Falcon 320x400
+			core_video_aspect *= 2.0f;
+			break;
+		}
 	}
 
 	info->geometry.base_width = core_video_w;

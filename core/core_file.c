@@ -35,6 +35,9 @@ static char save_path[MAX_PATH] = "";
 static bool save_path_ready = false;
 
 int core_hard_readonly = 1;
+bool core_hard_content = false; // if hard disk image is loaded as content, this overrides the system path
+int core_hard_content_type;
+char core_hard_content_path[2048];
 
 #if CORE_FILE_DEBUG
 	#define CFD(_stuff_) {_stuff_;}
@@ -261,6 +264,12 @@ uint8_t* core_read_file_save(const char* filename, unsigned int* size_out)
 	return core_read_file(temp_fn2(save_path,filename),size_out);
 }
 
+uint8_t* core_read_file_hard(const char* filename, unsigned int* size_out)
+{
+	if (core_hard_content) return core_read_file(filename, size_out);
+	else                   return core_read_file_system(filename, size_out);
+}
+
 bool core_write_file_system(const char* filename, unsigned int size, const uint8_t* data)
 {
 	save_path_init();
@@ -310,6 +319,12 @@ corefile* core_file_open(const char* path, int access)
 corefile* core_file_open_system(const char* path, int access)
 {
 	return core_file_open(temp_fn2(system_path,path),access);
+}
+
+corefile* core_file_open_hard(const char* path, int access)
+{
+	if (core_hard_content) return core_file_open(path,access);
+	else                   return core_file_open_system(path,access);
 }
 
 corefile* core_file_open_save(const char* path, int access)
@@ -471,6 +486,12 @@ int core_file_remove_system(const char* path)
 	return core_file_remove(temp_fn2(system_path,path));
 }
 
+int core_file_remove_hard(const char* path)
+{
+	if (core_hard_content) return core_file_remove(path);
+	else                   return core_file_remove_system(path);
+}
+
 int core_file_mkdir(const char* path)
 {
 	CFD(retro_log(RETRO_LOG_DEBUG,"core_file_mkdir('%s')\n",path));
@@ -494,6 +515,12 @@ int core_file_mkdir(const char* path)
 int core_file_mkdir_system(const char* path)
 {
 	return core_file_mkdir(temp_fn2(system_path,path));
+}
+
+int core_file_mkdir_hard(const char* path)
+{
+	if (core_hard_content) return core_file_mkdir(path);
+	else                   return core_file_mkdir_system(path);
 }
 
 int core_file_rename(const char* old_path, const char* new_path)
@@ -522,6 +549,12 @@ int core_file_rename_system(const char* old_path, const char* new_path)
 	strcpy_trunc(ops,temp_fn2(system_path,old_path),sizeof(ops));
 	strcpy_trunc(nps,temp_fn2(system_path,new_path),sizeof(nps));
 	return core_file_rename(ops,nps);
+}
+
+int core_file_rename_hard(const char* old_path, const char* new_path)
+{
+	if (core_hard_content) return core_file_rename(old_path, new_path);
+	else                   return core_file_rename_system(old_path, new_path);
 }
 
 int core_file_stat(const char* path, struct stat* fs)
@@ -567,6 +600,12 @@ int core_file_stat_system(const char* path, struct stat* fs)
 	return core_file_stat(temp_fn2(system_path,path),fs);	
 }
 
+int core_file_stat_hard(const char* path, struct stat* fs)
+{
+	if (core_hard_content) return core_file_stat(path, fs);
+	else                   return core_file_stat_system(path, fs);
+}
+
 int64_t core_file_size(const char* path)
 {
 	CFD(retro_log(RETRO_LOG_DEBUG,"core_file_size('%s')\n",path));
@@ -579,6 +618,12 @@ int64_t core_file_size(const char* path)
 int64_t core_file_size_system(const char* path)
 {
 	return core_file_size(temp_fn2(system_path,path));
+}
+
+int64_t core_file_size_hard(const char* path)
+{
+	if (core_hard_content) return core_file_size(path);
+	else                   return core_file_size_system(path);
 }
 
 static int opendir_debug_count = 0; // for diagnosing unpaired opendir/closedir
@@ -604,6 +649,12 @@ coredir* core_file_opendir(const char* path)
 coredir* core_file_opendir_system(const char* path)
 {
 	return core_file_opendir(temp_fn2(system_path,path));
+}
+
+coredir* core_file_opendir_hard(const char* path)
+{
+	if (core_hard_content) return core_file_opendir(path);
+	else                   return core_file_opendir_system(path);
 }
 
 struct coredirent* core_file_readdir(coredir* dir)

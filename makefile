@@ -7,6 +7,9 @@ VERBOSE_CMAKE ?= 0
 # if multithreaded make causes problems try setting MULTITHREAD to be nothing
 MULTITHREAD ?= -j
 
+# to disable warnings as errors try setting WERROR to be nothing
+WERROR ?= -Wall -Werror
+
 # git revision hash
 SHORTHASH = "$(shell git rev-parse --short HEAD || unknown)"
 
@@ -22,11 +25,11 @@ ZLIB_LINK ?= $(ZLIB_LIB)
 
 CC ?= gcc
 CFLAGS += \
-	-O3 -Wall -Werror -fPIC \
+	-O3 $(WERROR) -fPIC \
 	-D__LIBRETRO__ -DSHORTHASH=\"$(SHORTHASH)\" \
 	-Ihatari/build -I$(SDL2_INCLUDE)
 LDFLAGS += \
-	-shared -Wall -Werror -static-libgcc
+	-shared $(WERROR) -static-libgcc
 
 CMAKEFLAGS += \
 	-DZLIB_INCLUDE_DIR=$(ZLIB_INCLUDE) \

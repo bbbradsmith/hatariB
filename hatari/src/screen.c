@@ -95,6 +95,11 @@ static bool bScreenContentsChanged;     /* true if buffer changed and requires b
 static bool bScrDoubleY;                /* true if double on Y */
 static int ScrUpdateFlag;               /* Bit mask of how to update screen */
 static bool bRGBTableInSync;            /* Is RGB table up to date? */
+#ifdef __LIBRETRO__
+static bool bLibretroDoubleYEnable = 1; // used to disable Y doubling for low/medium resolutions
+static int coreRes = 0; // STRes if using ST resolution, otherwise an assumed mode based on GenConv dimensions.
+extern int core_video_aspect_adjust;
+#endif
 
 /* These are used for the generic screen conversion functions */
 static int genconv_width_req, genconv_height_req, genconv_bpp;
@@ -129,7 +134,7 @@ void SDL_UpdateRects(SDL_Surface *screen, int numrects, SDL_Rect *rects)
 		SDL_RenderPresent(sdlRenderer);
 #else
 		// screen is always sdlscrn
-		core_video_update(sdlscrn->pixels, sdlscrn->w, sdlscrn->h, sdlscrn->pitch, STRes);
+		core_video_update(sdlscrn->pixels, sdlscrn->w, sdlscrn->h, sdlscrn->pitch, coreRes);
 #endif
 	}
 	else
@@ -240,11 +245,7 @@ static void Screen_SetDrawFunctions(int nBitCount, bool bDoubleLowRes)
 /**
  * Set amount of border pixels
  */
-#ifndef __LIBRETRO__
 static void Screen_SetBorderPixels(int leftX, int leftY)
-#else
-static void Screen_SetBorderPixels(int leftX, int leftY, int zoom, int height, int statusH)
-#endif
 {
 	/* All screen widths need to be aligned to 16-bits */
 	nBorderPixelsLeft = Opt_ValueAlignMinMax(leftX/2, 16, 0, 48);
@@ -268,28 +269,45 @@ static void Screen_SetBorderPixels(int leftX, int leftY, int zoom, int height, i
 		else
 			nBorderPixelsTop = nBorderPixelsBottom = 0;
 	}
+}
 
 #ifdef __LIBRETRO__
+extern void core_border_crop(int width, int height, int zoomX, int zoomY, int *top, int *bottom, int *left, int *right, int statusH);
+void core_border_crop(int width, int height, int zoomX, int zoomY, int *top, int *bottom, int *left, int *right, int statusH)
+{
+	int ctop = *top;
+	int cbottom = *bottom;
+	int cleft = *left;
+	int cright = *right;
+	bool symmetryX = true;
+	bool symmetryY = true;
+
 	if (ConfigureParams.Screen.nCropOverscan == 1) // Small
 	{
-		nBorderPixelsTop = 16;
-		nBorderPixelsBottom = 16;
-		nBorderPixelsLeft = 16;
-		nBorderPixelsRight = 16;
+		ctop = 16;
+		cbottom = 16;
+		cleft = 16;
+		cright = 16;
 	}
 	else if (ConfigureParams.Screen.nCropOverscan == 2) // Medium
 	{
-		nBorderPixelsTop = 24;
-		nBorderPixelsBottom = 24;
-		nBorderPixelsLeft = 32;
-		nBorderPixelsRight = 32;
+		ctop = 24;
+		cbottom = 24;
+		cleft = 32;
+		cright = 32;
 	}
 	else if (ConfigureParams.Screen.nCropOverscan == 3) // Large
 	{
-		nBorderPixelsTop = 29;
-		nBorderPixelsBottom = 29;
-		nBorderPixelsLeft = 48;
-		nBorderPixelsRight = 48;
+		ctop = 29;
+		cbottom = 29;
+		cleft = 48;
+		cright = 48;
+	}
+	else if (ConfigureParams.Screen.nCropOverscan == 4) // Maximum
+	{
+		// keep inputs, don't apply symmetry
+		symmetryX = false;
+		symmetryY = false;
 	}
 	else if (ConfigureParams.Screen.nCropOverscan >= 5) // 720p/1080p crops
 	{
@@ -298,44 +316,45 @@ static void Screen_SetBorderPixels(int leftX, int leftY, int zoom, int height, i
 		if (height >= 300) th *= 2;
 
 		// temporarily undo the zoom to count output pixels
-		nBorderPixelsTop *= zoom;
-		nBorderPixelsBottom *= zoom;
+		(void)zoomX; // don't need to account for horizontal zoom
+		ctop *= zoomY;
+		cbottom *= zoomY;
 
 		// figure out how many lines we can remove
 		int overscan = th - height; // number of lines available for overscan
 		if (overscan < 0) overscan = 0;
-		int crop = (nBorderPixelsBottom + nBorderPixelsTop) - overscan; // total number of lines available to remove
+		int crop = (cbottom + ctop) - overscan; // total number of lines available to remove
 		if (crop < 0) crop = 0;
 
 		// try to make the border padding symmetrical
 		// if the bottom is longer, taket from it first to even things out
-		if (nBorderPixelsBottom > nBorderPixelsTop)
+		if (cbottom > ctop)
 		{
-			int c = nBorderPixelsBottom - nBorderPixelsTop;
+			int c = cbottom - ctop;
 			if (c > crop) c = crop;
-			nBorderPixelsBottom -= c;
+			cbottom -= c;
 			crop -= c;
 		}
 		else // just in case the top is longer (shouldn't happen though)
 		{
-			int c = nBorderPixelsTop - nBorderPixelsBottom;
+			int c = ctop - cbottom;
 			if (c > crop) c = crop;
-			nBorderPixelsTop -= c;
+			ctop -= c;
 			crop -= c;
 		}
 
 		// next, take half of whats left away from the top first (rounding down)
 		{
 			int c = crop / 2;
-			if (c > nBorderPixelsTop) c = nBorderPixelsTop;
-			nBorderPixelsTop -= c;
+			if (c > ctop) c = ctop;
+			ctop -= c;
 			crop -= c;
 		}
 		// take whatever remains from the bottom
 		{
 			int c = crop;
-			if (c > nBorderPixelsBottom) c = nBorderPixelsBottom;
-			nBorderPixelsBottom -= c;
+			if (c > cbottom) c = cbottom;
+			cbottom -= c;
 			crop -= c;
 		}
 
@@ -343,28 +362,47 @@ static void Screen_SetBorderPixels(int leftX, int leftY, int zoom, int height, i
 		crop += statusH;
 		{
 			int c = crop;
-			if (c > nBorderPixelsBottom) c = nBorderPixelsBottom;
-			nBorderPixelsBottom -= c;
+			if (c > cbottom) c = cbottom;
+			cbottom -= c;
 			crop -= c;
 		}
 		// if we need to, take the rest from the top
 		{
 			int c = crop;
-			if (c > nBorderPixelsTop) c = nBorderPixelsTop;
-			nBorderPixelsTop -= c;
+			if (c > ctop) c = ctop;
+			ctop -= c;
 			crop -= c;
 		}
 
 		// if crop isn't 0 by now, there's nothing more we can remove!
 
 		// re-apply the zoom
-		int remain = ((nBorderPixelsTop + nBorderPixelsBottom) % zoom) / zoom; // if they don't divide evenly by zoom, compensate with an extra pixel on the bottom
-		nBorderPixelsTop /= zoom;
-		nBorderPixelsBottom /= zoom;
-		nBorderPixelsBottom += remain;
+		int remain = ((ctop + cbottom) % zoomY) / zoomY; // if they don't divide evenly by zoom, compensate with an extra pixel on the bottom
+		ctop /= zoomY;
+		cbottom /= zoomY;
+		cbottom += remain;
+
+		// keep X symmetry, but not Y
+		symmetryY = false;
 	}
-#endif
+	// symmetry
+	if (symmetryX)
+	{
+		if (cleft > cright) cleft = cright;
+		if (cright > cleft) cright = cleft;
+	}
+	if (symmetryY)
+	{
+		if (ctop > cbottom) ctop = cbottom;
+		if (cbottom > ctop) cbottom = ctop;
+	}
+	// apply
+	if (*top    >= ctop   ) *top    = ctop;
+	if (*bottom >= cbottom) *bottom = cbottom;
+	if (*left   >= cleft  ) *left   = cleft;
+	if (*right  >= cright ) *right  = cright;
 }
+#endif
 
 /*-----------------------------------------------------------------------*/
 /**
@@ -714,7 +752,7 @@ static bool Screen_SetSDLVideoSize(int width, int height, int bitdepth, bool bFo
 		sdlscrn = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, bitdepth,
 		                               rm, gm, bm, am);
 		// make sure core has valid pointer to screen data (even if not yet initialized)
-		core_video_update(sdlscrn->pixels, sdlscrn->w, sdlscrn->h, sdlscrn->pitch, STRes);
+		core_video_update(sdlscrn->pixels, sdlscrn->w, sdlscrn->h, sdlscrn->pitch, coreRes);
 		if (SDL_MUSTLOCK(sdlscrn))
 			core_error_msg("Screen display may fail: sdlscrn SWSURFACE has MUSTLOCK");
 	#endif
@@ -794,16 +832,23 @@ static void Screen_SetSTResolution(bool bForceChange)
 	Resolution_GetLimits(&maxW, &maxH, &BitCount, ConfigureParams.Screen.bKeepResolution);
 
 #ifdef __LIBRETRO__
+	int nZoomY = nZoom;
+	bLibretroDoubleYEnable = 1;
+	core_video_aspect_adjust = 0;
 	maxW = 2*NUM_VISIBLE_LINE_PIXELS;
-	maxH = 2*(NUM_VISIBLE_LINES+STATUSBAR_MAX_HEIGHT);
-	if (!ConfigureParams.Screen.bLowResolutionDouble)
+	maxH = 2*NUM_VISIBLE_LINES+STATUSBAR_MAX_HEIGHT;
+	if (!ConfigureParams.Screen.bLowResolutionDouble && STRes == ST_LOW_RES)
 	{
-		if (STRes == ST_LOW_RES)
-		{
-			maxW /= 2;
-			maxH /= 2;
-		}
+		maxW /= 2;
+		maxH /= 2;
 	}
+	else if (!ConfigureParams.Screen.bMedResolutionDouble && STRes == ST_MEDIUM_RES)
+	{
+		maxH /= 2;
+		Height /= 2;
+		bLibretroDoubleYEnable = 0;
+	}
+	coreRes = STRes;
 #endif
 
 	/* Zoom if necessary, factors used for scaling mouse motions */
@@ -816,6 +861,9 @@ static void Screen_SetSTResolution(bool bForceChange)
 		nScreenZoomX = 2;
 		nScreenZoomY = 2;
 		bDoubleLowRes = true;
+#ifdef __LIBRETRO__
+		nZoomY = nZoom;
+#endif
 	}
 	else if (STRes == ST_MEDIUM_RES)
 	{
@@ -826,6 +874,14 @@ static void Screen_SetSTResolution(bool bForceChange)
 		 */
 		nScreenZoomX = 1;
 		nScreenZoomY = 2;
+#ifdef __LIBRETRO__
+		if (!ConfigureParams.Screen.bMedResolutionDouble)
+		{
+			nScreenZoomY = 1;
+			nZoomY = 1;
+			core_video_aspect_adjust = 1;
+		}
+#endif
 	}
 
 	/* Adjust width/height for overscan borders, if mono or VDI we have no overscan */
@@ -836,15 +892,18 @@ static void Screen_SetSTResolution(bool bForceChange)
 
 #ifndef __LIBRETRO__
 		Screen_SetBorderPixels(leftX/nZoom, leftY/nZoom);
-#else
-		Screen_SetBorderPixels(leftX/nZoom, leftY/nZoom, nZoom, Height, Statusbar_GetHeightForSize(Width, Height));
-#endif
 		DEBUGPRINT(("resolution limit:\n\t%d x %d\nlimited resolution:\n\t", maxW, maxH));
 		DEBUGPRINT(("%d * (%d + %d + %d) x (%d + %d + %d)\n", nZoom,
 			    nBorderPixelsLeft, Width/nZoom, nBorderPixelsRight,
 			    nBorderPixelsTop, Height/nZoom, nBorderPixelsBottom));
 		Width += (nBorderPixelsRight + nBorderPixelsLeft)*nZoom;
 		Height += (nBorderPixelsTop + nBorderPixelsBottom)*nZoom;
+#else
+		Screen_SetBorderPixels(leftX/nZoom, leftY/nZoomY);
+		core_border_crop(Width, Height, nZoom, nZoomY, &nBorderPixelsTop, &nBorderPixelsBottom, &nBorderPixelsLeft, &nBorderPixelsRight, Statusbar_GetHeightForSize(Width, Height));
+		Width += (nBorderPixelsRight + nBorderPixelsLeft)*nZoom;
+		Height += (nBorderPixelsTop + nBorderPixelsBottom)*nZoomY;
+#endif
 		DEBUGPRINT(("\t= %d x %d (+ statusbar)\n", Width, Height));
 	}
 
@@ -1582,6 +1641,7 @@ void Screen_SetGenConvSize(int width, int height, int bpp, bool bForceChange)
 
 	nScreenZoomX = nScreenZoomY = 1;
 
+#ifndef __LIBRETRO__
 	if (ConfigureParams.Screen.bAspectCorrect) {
 		/* Falcon (and TT) pixel scaling factors seem to 2^x
 		 * (quarter/half pixel, interlace/double line), so
@@ -1616,6 +1676,38 @@ void Screen_SetGenConvSize(int width, int height, int bpp, bool bForceChange)
 			nScreenZoomY *= scaley;
 		}
 	}
+#else
+	coreRes = ST_HIGH_RES;
+	core_video_aspect_adjust = 0;
+	if (2*width  <= maxw) nScreenZoomX = 2;
+	if (2*height <= maxh) nScreenZoomY = 2;
+	// if X is zoomed, use low resolution doubling setting
+	if (nScreenZoomX > 1)
+	{
+		coreRes = ST_LOW_RES;
+		if (!ConfigureParams.Screen.bLowResolutionDouble)
+		{
+			if (nScreenZoomX > 1 && nScreenZoomY <= 1) // TT/Falcon "tall" 320x400
+			{
+				core_video_aspect_adjust = 2;
+			}
+			nScreenZoomX = 1;
+			nScreenZoomY = 1;
+		}
+	}
+	// if only Y is zoomed, use medium resolution doubling setting
+	else if (nScreenZoomY > 1)
+	{
+		coreRes = ST_MEDIUM_RES;
+		if (!ConfigureParams.Screen.bMedResolutionDouble)
+		{
+			nScreenZoomY = 1;
+			core_video_aspect_adjust = 1;
+		}
+	}
+	(void)scalex;
+	(void)scaley;
+#endif
 
 	genconv_width_req = width;
 	genconv_height_req = height;
@@ -1777,6 +1869,11 @@ static Uint32* Double_ScreenLine32(Uint32 *line, int size)
 	Uint32 *next;
 	Uint32 mask;
 
+#ifdef __LIBRETRO__
+	if (!bLibretroDoubleYEnable)
+		return line + fmt_size;
+#endif
+
 	next = line + fmt_size;
 	/* copy as-is */
 	if (bScrDoubleY)
@@ -1806,6 +1903,11 @@ static Uint16* Double_ScreenLine16(Uint16 *line, int size)
 	int fmt_size = size/2;
 	Uint16 *next;
 	Uint16 mask;
+
+#ifdef __LIBRETRO__
+	if (!bLibretroDoubleYEnable)
+		return line + fmt_size;
+#endif
 
 	next = line + fmt_size;
 	/* copy as-is */

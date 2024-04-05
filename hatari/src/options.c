@@ -958,6 +958,18 @@ bool Opt_IsAtariProgram(const char *path)
 	return ret;
 }
 
+#ifdef __LIBRETRO__
+extern int Reset_Cold(void);
+extern bool core_first_reset;
+extern void core_auto_start(const char* path);
+void core_auto_start(const char* path)
+{
+	INF_SetAutoStart(path, OPT_AUTOSTART);
+	// needs a reset to apply
+	if (core_first_reset) Reset_Cold();
+}
+#endif
+
 /**
  * Handle last (non-option) argument.  It can be a path or filename.
  * Filename can be a disk image or Atari program.

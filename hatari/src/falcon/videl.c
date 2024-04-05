@@ -921,6 +921,11 @@ void Videl_ScreenModeChanged(bool bForceChange)
 }
 
 
+#ifdef __LIBRETRO__
+// from screen.c
+extern void core_border_crop(int width, int height, int zoomX, int zoomY, int *top, int *bottom, int *left, int *right, int statusH);
+#endif
+
 bool VIDEL_renderScreen(void)
 {
 	/* Atari screen infos */
@@ -936,6 +941,46 @@ bool VIDEL_renderScreen(void)
 	bool change = false;
 
 	Uint32 videoBase = Video_GetScreenBaseAddr();
+
+#ifdef __LIBRETRO__
+	{
+		int top = videl.upperBorderSize;
+		int bottom = videl.lowerBorderSize;
+		int left = videl.leftBorderSize;
+		int right = videl.rightBorderSize;
+		// predict zoom factors (replicating Screen_SetGenConvSize behaviour)
+		int zoomX = (videl.XSize <= NUM_VISIBLE_LINE_PIXELS) ? 2 : 1;
+		int zoomY = (videl.YSize <= (NUM_VISIBLE_LINES+(STATUSBAR_MAX_HEIGHT/2))) ? 2 : 1;
+		if (zoomX > 1)
+		{
+			if (!ConfigureParams.Screen.bLowResolutionDouble)
+			{
+				zoomX = 1;
+				zoomY = 1;
+			}
+		}
+		else if (zoomY > 1)
+		{
+			if (!ConfigureParams.Screen.bMedResolutionDouble)
+				zoomY = 1;
+		}
+		// crop borders
+		top *= zoomY;
+		bottom *= zoomY;
+		left *= zoomX;
+		right *= zoomX;
+		core_border_crop(
+			videl.XSize*zoomX,videl.YSize*zoomY,zoomX,zoomY,
+			&top,&bottom,&left,&right,
+			Statusbar_GetHeightForSize(videl.XSize*zoomX, videl.YSize*zoomY));
+		videl.upperBorderSize = top / zoomY;
+		videl.lowerBorderSize = bottom / zoomY;
+		videl.leftBorderSize = left / zoomX;
+		videl.rightBorderSize = right / zoomX;
+		vw = videl.leftBorderSize + videl.XSize + videl.rightBorderSize;
+		vh = videl.upperBorderSize + videl.YSize + videl.lowerBorderSize;
+	}
+#endif
 
 	if (vw > 0 && vw != videl.save_scrWidth) {
 		LOG_TRACE(TRACE_VIDEL, "Videl : width change from %d to %d\n", videl.save_scrWidth, vw);

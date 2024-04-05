@@ -76,7 +76,7 @@ const char MemorySnapShot_fileid[] = "Hatari memorySnapShot.c";
 #include <zlib.h>
 typedef gzFile MSS_File;
 
-#elifdef __LIBRETRO__
+#elif defined(__LIBRETRO__)
 typedef corefile* MSS_File;
 
 #else
@@ -107,7 +107,7 @@ static MSS_File MemorySnapShot_fopen(const char *pszFileName, const char *pszMod
 {
 #ifdef COMPRESS_MEMORYSNAPSHOT
 	return gzopen(pszFileName, pszMode);
-#elifdef __LIBRETRO__
+#elif defined(__LIBRETRO__)
 	core_snapshot_open();
 	(void)pszFileName;
 	(void)pszMode;
@@ -126,7 +126,7 @@ static void MemorySnapShot_fclose(MSS_File fhndl)
 {
 #ifdef COMPRESS_MEMORYSNAPSHOT
 	gzclose(fhndl);
-#elifdef __LIBRETRO__
+#elif defined(__LIBRETRO__)
 	core_snapshot_close();
 	(void)fhndl;
 #else
@@ -144,7 +144,7 @@ static int MemorySnapShot_fread(MSS_File fhndl, char *buf, int len)
 {
 #ifdef COMPRESS_MEMORYSNAPSHOT
 	return gzread(fhndl, buf, len);
-#elifdef __LIBRETRO__
+#elif defined(__LIBRETRO__)
 	core_snapshot_read(buf, len);
 	(void)fhndl;
 	return len;
@@ -164,7 +164,7 @@ static int MemorySnapShot_fwrite(MSS_File fhndl, const char *buf, int len)
 {
 #ifdef COMPRESS_MEMORYSNAPSHOT
 	return gzwrite(fhndl, buf, len);
-#elifdef __LIBRETRO__
+#elif defined(__LIBRETRO__)
 	core_snapshot_write(buf, len);
 	(void)fhndl;
 	return len;
@@ -183,7 +183,7 @@ static int MemorySnapShot_fseek(MSS_File fhndl, int pos)
 {
 #ifdef COMPRESS_MEMORYSNAPSHOT
 	return (int)gzseek(fhndl, pos, SEEK_CUR);	/* return -1 if error, new position >=0 if OK */
-#elifdef __LIBRETRO__
+#elif defined(__LIBRETRO__)
 	core_snapshot_seek(pos);
 	(void)fhndl;
 	return 0;
@@ -529,7 +529,9 @@ void MemorySnapShot_Restore_Do(void)
 		Crossbar_MemorySnapShot_Capture(false);
 		VIDEL_MemorySnapShot_Capture(false);
 		DSP_MemorySnapShot_Capture(false);
+#ifndef __LIBRETRO__
 		DebugUI_MemorySnapShot_Capture(Temp_FileName, false);
+#endif
 		IoMem_MemorySnapShot_Capture(false);
 		ScreenConv_MemorySnapShot_Capture(false);
 		SCC_MemorySnapShot_Capture(false);

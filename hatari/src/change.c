@@ -224,6 +224,7 @@ void Change_CopyChangedParamsToConfiguration(CNF_PARAMS *current, CNF_PARAMS *ch
 	     || changed->Screen.bUseVsync != current->Screen.bUseVsync
 #ifdef __LIBRETRO__
 	     || changed->Screen.bLowResolutionDouble != current->Screen.bLowResolutionDouble
+	     || changed->Screen.bMedResolutionDouble != current->Screen.bMedResolutionDouble
 	     || changed->Screen.nCropOverscan != current->Screen.nCropOverscan
 #endif
 	    ))

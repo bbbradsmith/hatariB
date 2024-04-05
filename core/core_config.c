@@ -92,7 +92,8 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	},
 	{
 		"hatarib_monitor", "Monitor", NULL,
-		"Causes restart!! Monitor type. Colour, monochrome, etc.",
+		"Causes restart!! Monitor type. Colour, Monochrome, VGA, TV."
+		" TV scanlines effect requires doubled low/medium resolution.",
 		NULL, "system",
 		{
 			{"0","Monochrome High-Resolution"},
@@ -101,35 +102,6 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{"3","TV"},
 			{NULL,NULL}
 		}, "1"
-	},
-	{
-		"hatarib_fast_floppy", "Fast Floppy", NULL,
-		"Artifically accelerate floppy disk access, reducing load times.",
-		NULL, "system",
-		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
-	},
-	{
-		"hatarib_save_floppy", "Save Floppy Disks", NULL,
-		"Changes to floppy disks will save a copy in saves/."
-		" If turned off, changes will be lost when the content is closed.",
-		NULL, "system",
-		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
-	},
-	{
-		"hatarib_savestate_floppy_modify", "Floppy Savestate Safety Save", NULL,
-		"Disable this for netplay or run-ahead. "
-		"Modified floppies are always saved during eject or content closing, "
-		" but this setting produces an extra save before/after restoring a savestate to prevent un-ejected data loss."
-		" Because netplay and run-ahead use savestates constantly, this should be turned off for those activities.",
-		NULL, "system",
-		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
-	},
-	{
-		"hatarib_soft_reset", "Soft Reset", NULL,
-		"Core Restart is full cold boot by default (power off, on),"
-		" but this will change it to a warm boot (reset button).",
-		NULL, "system",
-		{{"0","Off"},{"1","On"},{NULL,NULL}}, "0"
 	},
 	{
 		"hatarib_machine", "Machine Type", NULL,
@@ -161,6 +133,35 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{"14336","14 MB"},
 			{NULL,NULL},
 		}, "1024"
+	},
+	{
+		"hatarib_fast_floppy", "Fast Floppy", NULL,
+		"Artifically accelerate floppy disk access, reducing load times.",
+		NULL, "system",
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
+	},
+	{
+		"hatarib_save_floppy", "Save Floppy Disks", NULL,
+		"Changes to floppy disks will save a copy in saves/."
+		" If turned off, changes will be lost when the content is closed.",
+		NULL, "system",
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
+	},
+	{
+		"hatarib_savestate_floppy_modify", "Floppy Savestate Safety Save", NULL,
+		"Disable this for netplay or run-ahead. "
+		"Modified floppies are always saved during eject or content closing, "
+		" but this setting produces an extra save before/after restoring a savestate to prevent un-ejected data loss."
+		" Because netplay and run-ahead use savestates constantly, this should be turned off for those activities.",
+		NULL, "system",
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
+	},
+	{
+		"hatarib_soft_reset", "Soft Reset", NULL,
+		"Core Restart is full cold boot by default (power off, on),"
+		" but this will change it to a warm boot (reset button).",
+		NULL, "system",
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "0"
 	},
 	{
 		"hatarib_cartridge", "Cartridge ROM", NULL,
@@ -558,11 +559,17 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 	// Video
 	//
 	{
-		"hatarib_lowres2x", "Low Resolution Double", NULL,
-		"Low resolution pixel doubling for 640x400 screen output."
-		" Prevents video output size changes for resolution switch.",
+		"hatarib_res2x", "Resolution Double", NULL,
+		"Doubles pixels for low and/or medium resolution, "
+		" Prevents video output size changes for resolution switch,"
+		" and keeps the medium resolution PAR closer to square.",
 		NULL, "video",
-		{{"0","Off"},{"1","On"},{NULL,NULL},}, "0"
+		{
+			{"0","Off"},
+			{"1","Double Medium"},
+			{"2","Double Low + Medium"},
+			{NULL,NULL},
+		}, "1"
 	},
 	{
 		"hatarib_borders", "Screen Borders", NULL,
@@ -574,7 +581,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{"1","Small"},
 			{"2","Medium"},
 			{"3","Large"},
-			{"4","Extreme"},
+			{"4","Maximum"},
 			{"5","Crop 720p (240, 480)"},
 			{"6","Crop 1080p (270, 540)"},
 			{NULL,NULL}
@@ -602,6 +609,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{"1","Atari Monitor"},
 			{"2","NTSC TV"},
 			{"3","PAL TV"},
+			{"4","4:3"},
 			{NULL,NULL}
 		}, "0"
 	},
@@ -971,6 +979,73 @@ bool cfg_read_int_pad(int pad, const char* key, int* v)
 #define CFG_STR(key) if (cfg_read_str((key),&vs))
 #define CFG_INT_PAD(pad,key) if (cfg_read_int_pad((pad),(key),&vi))
 
+static void core_config_hard(CNF_PARAMS *param, const char* image, int ht)
+{
+	retro_log(RETRO_LOG_INFO,"core_config_hard(%p,'%s',%d)\n",param,image,ht);
+
+	// clear existing drives
+	param->HardDisk.bUseHardDiskDirectories = false;
+	param->Acsi[0].bUseDevice = false;
+	param->Scsi[0].bUseDevice = false;
+	param->Ide[0].bUseDevice = false;
+
+	// set new drive
+	switch(ht)
+	{
+	default:
+	case 0: // GemDOS
+	case 1: // GemDOS (Use 8-bit Filenames)
+		param->HardDisk.bFilenameConversion = (ht == 1);
+		param->HardDisk.bUseHardDiskDirectories = true;
+		strcpy_trunc(param->HardDisk.szHardDiskDirectories[0],image,sizeof(param->HardDisk.szHardDiskDirectories[0]));
+		break;
+	case 2: // ACSI
+		param->Acsi[0].bUseDevice = true;
+		strcpy_trunc(param->Acsi[0].sDeviceFile,image,sizeof(param->Acsi[0].sDeviceFile));
+		break;
+	case 3: // SCSI
+		param->Scsi[0].bUseDevice = true;
+		strcpy_trunc(param->Scsi[0].sDeviceFile,image,sizeof(param->Scsi[0].sDeviceFile));
+		break;
+	case 4: // IDE (Auto)
+	case 5: // IDE (Byte Swap Off)
+	case 6: // IDE (Byte Swap On)
+		param->Ide[0].bUseDevice = true;
+		strcpy_trunc(param->Ide[0].sDeviceFile,image,sizeof(param->Ide[0].sDeviceFile));
+		{
+			static const BYTESWAPPING BSMAP[3] = { BYTESWAP_AUTO, BYTESWAP_OFF, BYTESWAP_ON };
+			param->Ide[0].nByteSwap = BSMAP[ht-4];
+		}
+		break;
+	}
+}
+
+bool core_config_hard_content(const char* path, int ht)
+{
+	if (!core_first_reset)
+	{
+		core_signal_alert2("Hard drive change requires reset: ",path);
+		return false;
+	}
+
+	// GemDOS or IDE can alter their type from the core options menu
+	if (ht == 0) // GemDOS 8-bit filenames
+	{
+		if (ConfigureParams.HardDisk.bFilenameConversion) ht = 1;
+	}
+	else if (ht == 4) // IDE can be Auto (4), byte swap off (5) or on (6)
+	{
+		if (ConfigureParams.Ide[0].nByteSwap == BYTESWAP_OFF) ht = 5;
+		if (ConfigureParams.Ide[0].nByteSwap == BYTESWAP_ON ) ht = 6;
+	}
+
+	core_hard_content = true;
+	core_hard_content_type = ht;
+	strcpy_trunc(core_hard_content_path,path,sizeof(core_hard_content_path));
+	core_config_apply();
+	return true;
+}
+
 void core_config_read_newparam()
 {
 	int vi;
@@ -1040,34 +1115,7 @@ void core_config_read_newparam()
 		CFG_STR("hatarib_hardimg") image = vs;
 		if ((image[0] != 0) && strcmp(image,"<none>")) // don't configure unless we have an image to use
 		{
-			switch(ht)
-			{
-			default:
-			case 0: // GemDOS
-			case 1: // GemDOS (Use 8-bit Filenames)
-				newparam.HardDisk.bFilenameConversion = (ht == 1);
-				newparam.HardDisk.bUseHardDiskDirectories = true;
-				strcpy_trunc(newparam.HardDisk.szHardDiskDirectories[0],image,sizeof(newparam.HardDisk.szHardDiskDirectories[0]));
-				break;
-			case 2: // ACSI
-				newparam.Acsi[0].bUseDevice = true;
-				strcpy_trunc(newparam.Acsi[0].sDeviceFile,image,sizeof(newparam.Acsi[0].sDeviceFile));
-				break;
-			case 3: // SCSI
-				newparam.Scsi[0].bUseDevice = true;
-				strcpy_trunc(newparam.Scsi[0].sDeviceFile,image,sizeof(newparam.Scsi[0].sDeviceFile));
-				break;
-			case 4: // IDE (Auto)
-			case 5: // IDE (Byte Swap Off)
-			case 6: // IDE (Byte Swap On)
-				newparam.Ide[0].bUseDevice = true;
-				strcpy_trunc(newparam.Ide[0].sDeviceFile,image,sizeof(newparam.Ide[0].sDeviceFile));
-				{
-					static const BYTESWAPPING BSMAP[3] = { BYTESWAP_AUTO, BYTESWAP_OFF, BYTESWAP_ON };
-					newparam.Ide[0].nByteSwap = BSMAP[ht-4];
-				}
-				break;
-			}
+			core_config_hard(&newparam, image, ht);
 		}
 	}
 	CFG_INT("hatarib_hardboot") newparam.HardDisk.bBootFromHardDisk = vi;
@@ -1094,7 +1142,11 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_osk_press_len") core_osk_press_len = vi;
 	CFG_INT("hatarib_osk_repeat_delay") core_osk_repeat_delay = vi;
 	CFG_INT("hatarib_osk_repeat_rate") core_osk_repeat_rate = vi;
-	CFG_INT("hatarib_lowres2x") newparam.Screen.bLowResolutionDouble = vi;
+	CFG_INT("hatarib_res2x")
+	{
+		newparam.Screen.bLowResolutionDouble = (vi >= 2) ? 1 : 0;
+		newparam.Screen.bMedResolutionDouble = (vi >= 1) ? 1 : 0;
+	}
 	CFG_INT("hatarib_borders") { newparam.Screen.bAllowOverscan = (vi != 0); newparam.Screen.nCropOverscan = vi; }
 	CFG_INT("hatarib_statusbar") { newparam.Screen.bShowStatusbar = (vi==1); newparam.Screen.bShowDriveLed = (vi==2); }
 	CFG_INT("hatarib_aspect") { if (core_video_aspect_mode != vi) { core_video_aspect_mode = vi; core_video_changed = true; } }
@@ -1150,6 +1202,8 @@ void core_config_read_newparam()
 	memcpy(newparam.DiskImage.szDiskFileName[0],ConfigureParams.DiskImage.szDiskFileName[0],sizeof(newparam.DiskImage.szDiskFileName[0]));
 	memcpy(newparam.DiskImage.szDiskFileName[1],ConfigureParams.DiskImage.szDiskFileName[1],sizeof(newparam.DiskImage.szDiskFileName[1]));
 	newparam.System.nCpuFreq = ConfigureParams.System.nCpuFreq;
+	if (core_hard_content)
+		core_config_hard(&newparam, core_hard_content_path, core_hard_content_type);
 }
 
 void config_cycle_cpu_speed(void)

@@ -654,10 +654,10 @@ static int bdrv_open(BlockDriverState *bs, const char *filename, unsigned long b
 #else
 	bs->fhndl = NULL;
 	if (core_hard_readonly != 1)
-		bs->fhndl = core_file_open_system(filename, CORE_FILE_REVISE);
+		bs->fhndl = core_file_open_hard(filename, CORE_FILE_REVISE);
 	if (!bs->fhndl) {
 		/* Maybe the file is read-only? */
-		bs->fhndl = core_file_open_system(filename, CORE_FILE_READ);
+		bs->fhndl = core_file_open_hard(filename, CORE_FILE_READ);
 #endif
 		if (!bs->fhndl)
 		{
