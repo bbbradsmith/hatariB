@@ -113,6 +113,7 @@ int core_crashtime = 10;
 int core_crash_frames = 0; // reset to 0 whenever CORE_RUNFLAG_HALT
 bool core_option_soft_reset = false;
 bool core_show_welcome = true;
+bool core_boot_alert = true;
 bool core_first_reset = true;
 bool core_perf_display = false;
 bool core_midi_enable = true;
@@ -1180,7 +1181,7 @@ RETRO_API void retro_run(void)
 		PERF_START(PERF_RUN_RESET);
 		core_config_reset(); // can apply boot parameters (e.g. CPU Freq)
 		bool cold = core_runflags & CORE_RUNFLAG_RESET_COLD;
-		if (!core_first_reset)
+		if (!core_first_reset && core_boot_alert)
 			core_signal_alert(cold ? "Cold Boot" : "Warm Boot");
 		else
 			core_first_reset = false;

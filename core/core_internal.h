@@ -20,6 +20,7 @@ extern bool core_option_soft_reset;
 extern bool core_serialize_write; // current serialization direction
 extern int core_crashtime;
 extern bool core_show_welcome;
+extern bool core_boot_alert;
 extern bool core_first_reset;
 extern bool core_perf_display;
 extern bool core_midi_enable;

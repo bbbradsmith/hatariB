@@ -633,6 +633,12 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		NULL, "video",
 		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
 	},
+	{
+		"hatarib_boot_alert", "Boot Notification", NULL,
+		"Show notification for reset/reboot.",
+		NULL, "video",
+		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
+	},
 	//
 	// Audio
 	//
@@ -1152,6 +1158,7 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_aspect") { if (core_video_aspect_mode != vi) { core_video_aspect_mode = vi; core_video_changed = true; } }
 	CFG_INT("hatarib_pause_osk") core_pause_osk = vi;
 	CFG_INT("hatarib_show_welcome") core_show_welcome = vi;
+	CFG_INT("hatarib_boot_alert") core_boot_alert = vi;
 	CFG_INT("hatarib_samplerate") newparam.Sound.nPlaybackFreq = vi;
 	CFG_INT("hatarib_ymmix") newparam.Sound.YmVolumeMixing = vi;
 	CFG_INT("hatarib_lpf") newparam.Sound.YmLpf = vi;
