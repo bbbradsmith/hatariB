@@ -727,7 +727,7 @@ static bool set_initial_image(unsigned index, const char* path)
 	return false;
 }
 
-static bool get_image_path(unsigned index, char* path, size_t len)
+bool get_image_path(unsigned index, char* path, size_t len)
 {
 	//retro_log(RETRO_LOG_DEBUG,"get_image_path(%d,%p,%d)\n",index,path,(int)len);
 	if (index >= MAX_DISKS) return false;
