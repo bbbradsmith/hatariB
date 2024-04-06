@@ -106,6 +106,8 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
       * `Midi.bEnableMidi = true` - Allows MIDI signals to be sent through Libretro's MIDI interface.
     * Remove `File_MakeAbsoluteSpecialName` path conversions, which modify the paths we provide directly. Since all file access is through our core's file system, absolute paths are inappropriate. This also prevents Hatari from making modifications to the paths which might have caused a reset check, disk re-insertion, etc. on options change.
   * Saved `MachineClocks` (from clocks_timings.c) to prevent state divergence.
+  * Use standardized path length for snapshot of filenames.
+  * Remove unsupported Lilo and DiskZip paths.
 * **hatari/src/crossbar.c**
   * Removed `Crossbar_Recalculate_Clocks_Cycles()` from savestate restore because it seemed to be unnecessary and caused state divergence.
 * **hatari/src/cycInt.c**
@@ -131,6 +133,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Provide extern access to core file system in header.
   * Use added `FDC_FloppyInsertRestore` to restore some FDC state after savestate restore re-insertion.
   * Prevent extra write to disks when the safety savestate option is disabled for faster restore.
+  * Use standardized path length for snapshot of filenames.
 * **hatari/src/floppy_ipf.c**
   * Use core's file system to load floppy image.
   * Convert implicit capsimg linking to one loaded at runtime if available.
@@ -204,6 +207,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Suppress saving `DebugUI` information.
   * Add `LIBRETRO_DEBUG_SNAPSHOT` macro to debug snapshot memory regions.
   * Create inline MemorySnapShot_Store to accelerate savestate load and save.
+  * Create inline MemorySnapShot_StoreFilename to store filenames of a standardized length.
 * **hatari/src/mfp.c**
   * Save `PendingCyclesOver` to prevent state divergence.
   * Replace use of `rand()` with deterministic `core_rand()`.

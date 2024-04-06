@@ -258,6 +258,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Hard disk images can be loaded as content.
   * M3U can be used to auto-run a program at boot.
   * Fixes to savestates on non-Windows platforms.
+  * Attempting to make savestates as cross-platform compatible as possible.
 * [hatariB v0.2](https://github.com/bbbradsmith/hatariB/releases/tag/0.2) - 2023-09-07
   * Second beta test version.
   * IPF support via dynamic loading of capsimg library.

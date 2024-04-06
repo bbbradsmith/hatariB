@@ -10,18 +10,17 @@
 #include "../hatari/src/includes/unzip.h"
 
 #define MAX_DISKS 32
-#define MAX_FILENAME 256
 
 struct disk_image
 {
 	// primary file
 	uint8_t* data;
 	unsigned int size;
-	char filename[MAX_FILENAME];
+	char filename[CORE_MAX_FILENAME];
 	// secondary file (used for STX save)
 	uint8_t* extra_data;
 	unsigned int extra_size;
-	char extra_filename[MAX_FILENAME];
+	char extra_filename[CORE_MAX_FILENAME];
 	// whether the file has a save
 	bool saved;
 };
@@ -115,7 +114,7 @@ static bool set_eject_state_drive(bool ejected, int d)
 		disks[image_index[d]].data, disks[image_index[d]].size,
 		disks[image_index[d]].extra_data, disks[image_index[d]].extra_size))
 	{
-		static char floppy_error_msg[MAX_FILENAME+256];
+		static char floppy_error_msg[CORE_MAX_FILENAME+256];
 		struct retro_message_ext msg;
 		snprintf(floppy_error_msg, sizeof(floppy_error_msg), "%c: disk failure: %s",d?'B':'A',disks[image_index[d]].filename);
 		msg.msg = floppy_error_msg;
@@ -505,7 +504,7 @@ static bool load_hard(const char* path, const char* filename, unsigned index, co
 {
 	retro_log(RETRO_LOG_INFO,"load_hard('%s','%s',%d,'%s')\n",path?path:"NULL",filename?filename:"NULL",index,ext);
 
-	strcpy_trunc(disks[index].filename,"<HD>",MAX_FILENAME);
+	strcpy_trunc(disks[index].filename,"<HD>",CORE_MAX_FILENAME);
 	strcat_trunc(disks[index].filename,filename,sizeof(disks[index].filename));
 
 	// find the base path
@@ -628,10 +627,10 @@ static bool replace_image_index(unsigned index, const struct retro_game_info* ga
 		}
 		if (ext && !strcasecmp(ext,"stx")) // STX has a secondary save file used as an overlay
 		{
-			strcpy_trunc(disks[index].extra_filename,path,MAX_FILENAME);
+			strcpy_trunc(disks[index].extra_filename,path,CORE_MAX_FILENAME);
 			int l = strlen(disks[index].extra_filename);
 			if (l >= 3) disks[index].extra_filename[l-3] = 0;
-			strcat_trunc(disks[index].extra_filename,"wd1772",MAX_FILENAME);
+			strcat_trunc(disks[index].extra_filename,"wd1772",CORE_MAX_FILENAME);
 			unsigned int extra_size = 0;
 			uint8_t* extra_data = core_read_file_save(disks[index].extra_filename,&extra_size);
 			if (extra_data != NULL)
@@ -699,7 +698,7 @@ static bool replace_image_index(unsigned index, const struct retro_game_info* ga
 	}
 	else
 	{
-		strcpy_trunc(disks[index].filename,path,MAX_FILENAME);
+		strcpy_trunc(disks[index].filename,path,CORE_MAX_FILENAME);
 	}
 	return true;
 }
@@ -1044,7 +1043,7 @@ bool core_disk_save(const char* filename, uint8_t* data, unsigned int size, bool
 
 void* disk_save_advanced_file = NULL;
 char disk_save_advanced_path[2048] = "";
-char disk_save_advanced_filename[MAX_FILENAME] = "";
+char disk_save_advanced_filename[CORE_MAX_FILENAME] = "";
 
 // buffer to 
 uint8_t* disk_save_advanced_buffer = NULL;

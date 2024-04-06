@@ -36,6 +36,9 @@ extern uint8_t core_runflags;
 // PAUSE = user paused emulation
 // OSK = on-screen keyboard or other overlay active
 
+// this should be less than FILENAME_MAX used in configuration and floppy
+#define CORE_MAX_FILENAME   256
+
 // print to Libretro log
 extern void core_debug_msg(const char* msg);
 extern void core_debug_int(const char* msg, int num); // msg followed by num
