@@ -24,4 +24,17 @@ inline void MemorySnapShot_Store(void *pData, int Size)
 	if (bCaptureSave) core_snapshot_write(pData, Size);
   else              core_snapshot_read( pData, Size);
 }
+inline void MemorySnapShot_StoreFilename(char *pData, int Size)
+{
+  if (Size > CORE_MAX_FILENAME) Size = CORE_MAX_FILENAME;
+	if (bCaptureSave)
+  {
+    core_snapshot_write(pData, Size-1);
+  }
+  else
+  {
+    core_snapshot_read(pData, Size-1);
+    pData[Size-1] = 0;
+  }
+}
 #endif

@@ -10,7 +10,6 @@
 #include "core_internal.h"
 
 #define MAX_PATH          2048
-#define MAX_FILENAME      256
 #define MAX_SYSTEM_FILE   128
 #define MAX_SYSTEM_DIR     16
 
@@ -22,10 +21,10 @@
 #define CORE_FILE_DEBUG   0
 
 static int sf_count = 0;
-static char sf_filename[MAX_SYSTEM_FILE][MAX_FILENAME];
+static char sf_filename[MAX_SYSTEM_FILE][CORE_MAX_FILENAME];
 static int sf_dir_count = 0;
-static char sf_dirname[MAX_SYSTEM_DIR][MAX_FILENAME];
-static char sf_dirlabel[MAX_SYSTEM_DIR][MAX_FILENAME];
+static char sf_dirname[MAX_SYSTEM_DIR][CORE_MAX_FILENAME];
+static char sf_dirlabel[MAX_SYSTEM_DIR][CORE_MAX_FILENAME];
 
 struct retro_vfs_interface* retro_vfs = NULL;
 int retro_vfs_version = 0;
@@ -709,8 +708,8 @@ static void core_file_system_add(const char* filename, bool prefix_hatarib)
 	if (sf_count >= MAX_SYSTEM_FILE) return;
 	sf_filename[sf_count][0] = 0;
 	if (prefix_hatarib)
-		strcpy_trunc(sf_filename[sf_count],"hatarib/",MAX_FILENAME);
-	strcat_trunc(sf_filename[sf_count],filename,MAX_FILENAME);
+		strcpy_trunc(sf_filename[sf_count],"hatarib/",CORE_MAX_FILENAME);
+	strcat_trunc(sf_filename[sf_count],filename,CORE_MAX_FILENAME);
 	//retro_log(RETRO_LOG_DEBUG,"core_file_system_add: %s\n",sf_filename[sf_count]);
 	++sf_count;
 }
@@ -720,10 +719,10 @@ static void core_file_system_add_dir(const char* filename)
 	if (sf_dir_count >= MAX_SYSTEM_DIR) return;
 	if (!strcmp(filename,".")) return;
 	if (!strcmp(filename,"..")) return;
-	strcpy_trunc(sf_dirname[sf_dir_count],"hatarib/",MAX_FILENAME);
-	strcat_trunc(sf_dirname[sf_dir_count],filename,MAX_FILENAME);
-	strcpy_trunc(sf_dirlabel[sf_dir_count],filename,MAX_FILENAME);
-	strcat_trunc(sf_dirlabel[sf_dir_count],"/",MAX_FILENAME);
+	strcpy_trunc(sf_dirname[sf_dir_count],"hatarib/",CORE_MAX_FILENAME);
+	strcat_trunc(sf_dirname[sf_dir_count],filename,CORE_MAX_FILENAME);
+	strcpy_trunc(sf_dirlabel[sf_dir_count],filename,CORE_MAX_FILENAME);
+	strcat_trunc(sf_dirlabel[sf_dir_count],"/",CORE_MAX_FILENAME);
 	//retro_log(RETRO_LOG_DEBUG,"core_file_system_add_dir: %s\n",sf_filename[sf_count]);
 	++sf_dir_count;
 }
