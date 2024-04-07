@@ -153,7 +153,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
 * **hatari/src/includes/hdc.h**
   * Use core's file system to provide ACSI/SCSI image hard disk support.
   * Replace `FILE` with `corefile`.
-  * Unused variable warning suppression for `ENABLE_TRACING`.
+  * Unused variable/function warning suppression for `ENABLE_TRACING`.
 * **hatari/src/ide.c**
   * Use core's file system to provide IDE image hard disk support.
   * File locking is not directly provided by the virtual file system (though the host OS might do it automatically).

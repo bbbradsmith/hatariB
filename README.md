@@ -260,6 +260,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Attempting to make savestates as cross-platform compatible as possible.
   * Option to disable boot notification.
   * Fixed out-of-date screen image during pause/one-shot and savestate/netplay/run-ahead.
+  * Android builds.
 * [hatariB v0.2](https://github.com/bbbradsmith/hatariB/releases/tag/0.2) - 2023-09-07
   * Second beta test version.
   * IPF support via dynamic loading of capsimg library.
@@ -289,6 +290,9 @@ This project includes [zlib](https://zlib.net/) under the [zlib license](https:/
 ## Authors
 
 This Libretro core was begun by [Brad Smith](https://github.com/bbbradsmith).
+
+Other contributors:
+* [DJM75](https://github.com/DJM75) - [Android build](https://github.com/bbbradsmith/hatariB/issues/26).
 
 Authors of incorporated works:
 * [Hatari](hatari/doc/authors.txt)

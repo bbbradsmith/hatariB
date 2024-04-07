@@ -585,6 +585,7 @@ static bool Screen_SetSDLVideoSize(int width, int height, int bitdepth, bool bFo
 	psSdlVideoDriver = NULL;
 	bUseSdlRenderer = true;
 	bUseDummyMode = false;
+	(void)sdlVideoFlags;
 	(void)psSdlVideoDriver;
 	(void)bUseDummyMode;
 #endif

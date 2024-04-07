@@ -97,6 +97,7 @@ static unsigned long HDC_GetLBA(SCSI_CTRLR *ctr)
 		return HDC_ReadInt32(ctr->command, 2);	/* Class 1 */
 }
 
+#if !defined(__LIBRETRO__) || defined(ENABLE_TRACING)
 /**
  * Return number of bytes for a command block.
  */
@@ -120,6 +121,7 @@ static int HDC_GetCommandByteCount(SCSI_CTRLR *ctr)
 		return 6;
 	}
 }
+#endif
 
 
 /**
@@ -151,6 +153,7 @@ static Uint8 *HDC_PrepRespBuf(SCSI_CTRLR *ctr, int size)
 	return ctr->buffer;
 }
 
+#if !defined(__LIBRETRO__) || defined(ENABLE_TRACING)
 /**
  * Get info string for SCSI/ACSI command packets.
  */
@@ -172,6 +175,7 @@ static inline char *HDC_CmdInfoStr(SCSI_CTRLR *ctr)
 
 	return str;
 }
+#endif
 
 
 /**
@@ -818,6 +822,7 @@ int HDC_PartitionCount(corefile* fp, const Uint64 tracelevel, int *pIsByteSwappe
 			#ifndef ENABLE_TRACING
 				(void)boot;
 				(void)start;
+				(void)total;
 			#endif
 #endif
 			if (ptype)

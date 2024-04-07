@@ -31,6 +31,7 @@ CFLAGS += \
 LDFLAGS += \
 	-shared $(WERROR) -static-libgcc
 
+CMAKE ?= cmake
 CMAKEFLAGS += \
 	-DZLIB_INCLUDE_DIR=$(ZLIB_INCLUDE) \
 	-DZLIB_LIBRARY=$(ZLIB_LIB) \
@@ -127,8 +128,8 @@ $(BD)core/%.o: core/%.c hatarilib
 	$(CC) -o $@ $(CFLAGS) -c $< 
 
 hatarilib: directories
-	(cd hatari/build && export CFLAGS="$(CFLAGS)" && cmake .. $(CMAKEFLAGS))
-	(cd hatari/build && export CFLAGS="$(CFLAGS)" && cmake --build . $(CMAKEBUILDFLAGS))
+	(cd hatari/build && export CFLAGS="$(CFLAGS)" && $(CMAKE) .. $(CMAKEFLAGS))
+	(cd hatari/build && export CFLAGS="$(CFLAGS)" && $(CMAKE) --build . $(CMAKEBUILDFLAGS))
 
 clean:
 	rm -f -r $(BD)

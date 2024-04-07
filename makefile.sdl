@@ -3,6 +3,8 @@ CFLAGS += -fPIC
 # -fPIC needed to link into a shared object
 CONFIGURE_FLAGS +=
 MULTITHREAD ?= -j
+SDL_JOYSTICK_DISABLE ?= --enable-joystick=no
+SDL_HAPTIC_DISABLE ?= --enable-haptic=no
 
 default: sdl
 
@@ -16,7 +18,8 @@ sdl: submodules
 		--enable-audio=no --enable-power=no --enable-filesystem=no --enable-timers=no --enable-file=no \
 		--enable-events=no --enable-render=no --enable-loadso=no --enable-cpuinfo=no --enable-assembly=no --enable-atomic=no \
 		--enable-system-iconv=no --enable-misc=no --enable-locale=no \
-		--enable-joystick=no --enable-haptic=no --enable-hidapi=no --enable-sensor=no \
+		$(SDL_JOYSTICK_DISABLE) $(SDL_HAPTIC_DISABLE) \
+		--enable-hidapi=no --enable-sensor=no \
 		--enable-video-wayland=no \
 		--enable-video-rpi=no \
 		--enable-video-x11=no \
