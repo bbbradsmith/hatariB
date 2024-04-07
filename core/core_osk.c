@@ -620,7 +620,7 @@ void core_osk_render(void* video_buffer, int w, int h, int pitch)
 	screen_h = (uint32_t)h;
 	screen_p = (uint32_t)pitch;
 
-	screen_copy_allocate();
+	screen_copy_allocate(screen_size);
 
 	// save a copy
 	if (screen_copy)
