@@ -319,7 +319,7 @@ jobs:
         run: |
           export ANDROID_VER=26
           export TOOLCHAIN=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin
-          export CC="$TOOLCHAIN/arm7va-linux-androideabi$ANDROID_VER-clang"
+          export CC="$TOOLCHAIN/armv7a-linux-androideabi$ANDROID_VER-clang"
           export CMAKEFLAGS="-DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_ARCH_ABI=armeabi-v7a -DCMAKE_ANDROID_NDK=$ANDROID_NDK_ROOT -DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_VERSION=$ANDROID_VER"
           make
       - name: Prepare Artifact
