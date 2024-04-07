@@ -97,6 +97,7 @@ static unsigned long HDC_GetLBA(SCSI_CTRLR *ctr)
 		return HDC_ReadInt32(ctr->command, 2);	/* Class 1 */
 }
 
+#if !defined(__LIBRETRO__) || defined(ENABLE_TRACING)
 /**
  * Return number of bytes for a command block.
  */
@@ -120,6 +121,7 @@ static int HDC_GetCommandByteCount(SCSI_CTRLR *ctr)
 		return 6;
 	}
 }
+#endif
 
 
 /**
