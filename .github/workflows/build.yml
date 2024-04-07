@@ -256,9 +256,11 @@ jobs:
         run: |
           export CC=aarch64-linux-android-clang
           export AR=aarch64-linux-android-clang-ar
+          export WERROR=-Wall
           make -f makefile.zlib
           export RANLIB=aarch64-linux-android-clang-ranlib
           export CONFIGURE_FLAGS="--build=x86_64-linux --host=aarch64-linux-android --target=aarch64-linux-android-clang"
+          export WERROR="-Wall -Werror"
           make -f makefile.sdl
       - name: Build hatariB
         run: |
