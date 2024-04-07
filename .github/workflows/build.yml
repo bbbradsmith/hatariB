@@ -254,17 +254,15 @@ jobs:
         uses: android-actions/setup-android@v3
       - name: Build SDL2 and zlib
         run: |
-          export CC=aarch64-linux-android-clang
-          export AR=aarch64-linux-android-clang-ar
-          export WERROR=-Wall
+          export CC=aarch64-linux-android26-clang
+          export AR=aarch64-linux-android26-clang-ar
           make -f makefile.zlib
-          export RANLIB=aarch64-linux-android-clang-ranlib
-          export CONFIGURE_FLAGS="--build=x86_64-linux --host=aarch64-linux-android --target=aarch64-linux-android-clang"
-          export WERROR="-Wall -Werror"
+          export RANLIB=aarch64-linux-android26-clang-ranlib
+          export CONFIGURE_FLAGS="--build=x86_64-linux --host=aarch64-linux-android --target=aarch64-linux-android26-clang"
           make -f makefile.sdl
       - name: Build hatariB
         run: |
-          export CC=aarch64-linux-android-clang
+          export CC=aarch64-linux-android26-clang
           export CMAKEFLAGS="-DCMAKE_SYSTEM_NAME=aarch64-linux-android"
           make
       - name: Prepare Artifact
