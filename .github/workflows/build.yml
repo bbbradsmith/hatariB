@@ -12,7 +12,7 @@ concurrency:
 jobs:
 
   build-win64:
-  if: false
+    if: false
     name: Windows 64-bit
     runs-on: windows-latest
     steps:
@@ -48,7 +48,7 @@ jobs:
           path: artifact/
 
   build-win32:
-  if: false
+    if: false
     name: Windows 32-bit
     runs-on: windows-latest
     steps:
@@ -84,7 +84,7 @@ jobs:
           path: artifact/
 
   build-ubuntu:
-  if: false
+    if: false
     name: Ubuntu Linux
     runs-on: ubuntu-latest
     steps:
@@ -116,7 +116,7 @@ jobs:
           path: artifact/
 
   build-macos:
-  if: false
+    if: false
     name: MacOS 10.13
     runs-on: macos-latest
     steps:
@@ -155,7 +155,7 @@ jobs:
           path: artifact/
 
   build-rpi64:
-  if: false
+    if: false
     name: Raspberry Pi OS 64-bit
     runs-on: ubuntu-20.04
     steps:
@@ -194,7 +194,7 @@ jobs:
           path: artifact/
 
   build-rpi32:
-  if: false
+    if: false
     name: Raspberry Pi OS 32-bit
     runs-on: ubuntu-20.04
     # ubuntu-latest was building with a newer GLIBC than current Rpi images, making them incompatible,
@@ -443,7 +443,7 @@ jobs:
           path: artifact/
 
   build-android32:
-  if: false
+    if: false
     name: Android 32-bit
     runs-on: ubuntu-latest
     steps:
