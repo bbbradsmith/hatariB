@@ -818,6 +818,7 @@ int HDC_PartitionCount(corefile* fp, const Uint64 tracelevel, int *pIsByteSwappe
 			#ifndef ENABLE_TRACING
 				(void)boot;
 				(void)start;
+				(void)total;
 			#endif
 #endif
 			if (ptype)
