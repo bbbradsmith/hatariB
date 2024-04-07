@@ -151,6 +151,7 @@ static Uint8 *HDC_PrepRespBuf(SCSI_CTRLR *ctr, int size)
 	return ctr->buffer;
 }
 
+#if !defined(__LIBRETRO__) || defined(ENABLE_TRACING)
 /**
  * Get info string for SCSI/ACSI command packets.
  */
@@ -172,6 +173,7 @@ static inline char *HDC_CmdInfoStr(SCSI_CTRLR *ctr)
 
 	return str;
 }
+#endif
 
 
 /**
