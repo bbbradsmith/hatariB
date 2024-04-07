@@ -30,7 +30,7 @@ jobs:
       - name: Build hatariB
         shell: msys2 {0}
         #run: make
-        run:
+        run: |
           export VERBOSE_CMAKE=1
           make
       - name: Prepare Artifact
@@ -68,7 +68,7 @@ jobs:
       - name: Build hatariB
         shell: msys2 {0}
         #run: make
-        run:
+        run: |
           export VERBOSE_CMAKE=1
           make
       - name: Prepare Artifact
@@ -103,7 +103,7 @@ jobs:
           make -f makefile.sdl
       - name: Build hatariB
         #run: make
-        run:
+        run: |
           export VERBOSE_CMAKE=1
           make
       - name: Prepare Artifact
