@@ -12,6 +12,7 @@ concurrency:
 jobs:
 
   build-win64:
+    if: false
     name: Windows 64-bit
     runs-on: windows-latest
     steps:
@@ -47,6 +48,7 @@ jobs:
           path: artifact/
 
   build-win32:
+    if: false
     name: Windows 32-bit
     runs-on: windows-latest
     steps:
@@ -82,6 +84,7 @@ jobs:
           path: artifact/
 
   build-ubuntu:
+    if: false
     name: Ubuntu Linux
     runs-on: ubuntu-latest
     steps:
@@ -113,6 +116,7 @@ jobs:
           path: artifact/
 
   build-macos:
+    if: false
     name: MacOS 10.13
     runs-on: macos-latest
     steps:
@@ -151,6 +155,7 @@ jobs:
           path: artifact/
 
   build-rpi32:
+    if: false
     name: Raspberry Pi OS 32-bit
     runs-on: ubuntu-20.04
     # ubuntu-latest was building with a newer GLIBC than current Rpi images, making them incompatible,
@@ -191,8 +196,8 @@ jobs:
           name: hatarib-rpi32--${{ env.BUILD_TAG }}
           path: artifact/
 
-
   build-rpi64:
+    if: false
     name: Raspberry Pi OS 64-bit
     runs-on: ubuntu-20.04
     steps:
@@ -228,4 +233,46 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: hatarib-rpi64--${{ env.BUILD_TAG }}
+          path: artifact/
+
+  build-android64:
+    name: Android 64-bit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Files
+        uses: actions/checkout@v4
+      - name: Setup Ubuntu
+        run: |
+          sudo apt-get update
+          sudo apt-get install make gcc cmake
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'cmdline-tools'
+      - name: Build SDL2 and zlib
+        run: |
+          export CC=aarch64-linux-android-clang
+          export AR=aarch64-linux-android-clang-ar
+          make -f makefile.zlib
+          export RANLIB=aarch64-linux-android-clang-ranlib
+          export CONFIGURE_FLAGS="--build=x86_64-linux --host=aarch64-linux-android --target=aarch64-linux-android-clang"
+          make -f makefile.sdl
+      - name: Build hatariB
+        run: |
+          export CC=aarch64-linux-android-clang
+          export CMAKEFLAGS="-DCMAKE_SYSTEM_NAME=aarch64-linux-android"
+          make
+      - name: Prepare Artifact
+        run: |
+          mkdir artifact
+          cp README.md artifact
+          mkdir artifact/cores
+          cp build/*.so artifact/cores
+          mkdir artifact/info
+          cp info/*.* artifact/info
+          echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $GITHUB_ENV
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hatarib-android64--${{ env.BUILD_TAG }}
           path: artifact/
