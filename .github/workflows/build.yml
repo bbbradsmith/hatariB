@@ -267,8 +267,7 @@ jobs:
         run: |
           export TOOLCHAIN=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin
           export CC="$TOOLCHAIN/aarch64-linux-android26-clang"
-          export CMAKE=$TOOLCHAIN/cmake
-          export CMAKEFLAGS="-DCMAKE_SYSTEM_NAME=aarch64-linux-android"
+          export CMAKEFLAGS="-DCMAKE_SYSTEM_NAME=aarch64-linux-android -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake"
           make
       - name: Prepare Artifact
         run: |
