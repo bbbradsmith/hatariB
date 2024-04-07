@@ -246,7 +246,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install make gcc cmake
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -254,7 +254,7 @@ jobs:
         uses: android-actions/setup-android@v3
       - name: Build SDL2 and zlib
         run: |
-          export TOOLCHAIN=$NDK/toolchains/llvm/prebuilt/linux-x86_64
+          export TOOLCHAIN=$ANDROID_SDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64
           ls $TOOLCHAIN/bin
           export CC="$TOOLCHAIN/bin/aarch64-linux-android26-clang"
           export AR="$TOOLCHAIN/bin/$HOST-ar"
@@ -264,7 +264,7 @@ jobs:
           make -f makefile.sdl
       - name: Build hatariB
         run: |
-          export TOOLCHAIN=$NDK/toolchains/llvm/prebuilt/linux-x86_64
+          export TOOLCHAIN=$ANDROID_SDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64
           export CC="$TOOLCHAIN/bin/aarch64-linux-android26-clang"
           export CMAKEFLAGS="-DCMAKE_SYSTEM_NAME=aarch64-linux-android"
           make
