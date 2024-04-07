@@ -27,14 +27,15 @@ int32_t core_osk_pos_r;
 int32_t core_osk_pos_c;
 int32_t core_osk_pos_space; // last column before moving to spacebar so up can return to it and not always Z
 uint8_t core_osk_pos_display;
+bool core_osk_screen_restore = false;
 
 void* screen = NULL;
 void* screen_copy = NULL;
-unsigned int screen_size = 0;
-unsigned int screen_copy_size = 0;
-unsigned int screen_w = 0;
-unsigned int screen_h = 0;
-unsigned int screen_p = 0;
+uint32_t screen_size = 0;
+uint32_t screen_copy_size = 0;
+uint32_t screen_w = 0;
+uint32_t screen_h = 0;
+uint32_t screen_p = 0;
 
 #define OSK_ROWS    6
 #define OSK_COLS   45
@@ -85,6 +86,19 @@ const char* const HELPTEXT[] = {
 #include "core_osk_keyboards.h"
 // defines:
 //   static const struct OSKey* const * const OSK_LAYOUTS[];
+
+static inline void screen_copy_allocate(uint32_t size)
+{
+	// reallocate screen_copy if needed
+	if (screen_copy == NULL || screen_copy_size < size)
+	{
+		free(screen_copy);
+		screen_copy_size = 0;
+		screen_copy = malloc(size);
+		if (screen_copy) screen_copy_size = size;
+		else retro_log(RETRO_LOG_WARN,"Unable to allocate screen_copy for on-screen overlay.\n");
+	}
+}
 
 //
 // 50% efficient screen darkening by bit shifting and masking
@@ -583,30 +597,30 @@ void core_osk_render(void* video_buffer, int w, int h, int pitch)
 	{
 		retro_log(RETRO_LOG_ERROR,"Unexpected core_osk_render mode? %d\n",core_osk_mode);
 		core_input_osk_close();
+		core_osk_screen_restore = false;
 		return;
 	}
 
 	screen = video_buffer;
-	screen_size = (unsigned int)(h * pitch);
+	screen_size = (uint32_t)(h * pitch);
 	if (screen == NULL)
 	{
 		retro_log(RETRO_LOG_WARN,"No video_buffer, unable to render on-screen overlay.\n");
 		screen_size = 0;
 		return;
 	}
-	screen_w = (unsigned int)w;
-	screen_h = (unsigned int)h;
-	screen_p = (unsigned int)pitch;
 
-	// reallocate screen_copy if needed
-	if (screen_copy == NULL || screen_copy_size < screen_size)
+	// refresh screen if reloaded
+	if (core_osk_screen_restore)
 	{
-		free(screen_copy);
-		screen_copy_size = 0;
-		screen_copy = malloc(screen_size);
-		if (screen_copy) screen_copy_size = screen_size;
-		else retro_log(RETRO_LOG_WARN,"Unable to allocate screen_copy for on-screen overlay.\n");
+		core_osk_restore(screen,w,h,pitch);
 	}
+
+	screen_w = (uint32_t)w;
+	screen_h = (uint32_t)h;
+	screen_p = (uint32_t)pitch;
+
+	screen_copy_allocate();
 
 	// save a copy
 	if (screen_copy)
@@ -631,6 +645,8 @@ void core_osk_render(void* video_buffer, int w, int h, int pitch)
 
 void core_osk_restore(void* video_buffer, int w, int h, int pitch)
 {
+	core_osk_screen_restore = false;
+
 	// don't restore if screen has changed
 	if (screen != video_buffer || screen_w != w || screen_h != h || screen_p != pitch)
 		return;
@@ -641,6 +657,8 @@ void core_osk_restore(void* video_buffer, int w, int h, int pitch)
 
 void core_osk_serialize(void)
 {
+	int32_t core_osk_mode_old = core_osk_mode;
+
 	// pause screen static state doesn't matter, no impact on emulation
 	// but the on-screen keyboard state does, and needs its status restored
 	core_serialize_int32(&core_osk_layout);
@@ -653,6 +671,50 @@ void core_osk_serialize(void)
 	core_serialize_int32(&core_osk_pos_c);
 	core_serialize_int32(&core_osk_pos_space);
 	core_serialize_uint8(&core_osk_pos_display);
+
+	// if restoring out of pause, we need to redraw the status bar
+	if (!core_serialize_write && core_osk_mode != core_osk_mode_old && core_osk_mode_old == CORE_OSK_PAUSE)
+	{
+		core_statusbar_restore = true;
+	}
+}
+
+void core_osk_serialize_screen(void)
+{
+	// only append screen if in pause/one-shot, otherwise it is not needed
+	uint32_t serial_screen_size = 0;
+	if (core_osk_mode == CORE_OSK_PAUSE || core_osk_mode == CORE_OSK_KEY_SHOT)
+	{
+		core_serialize_uint32(&screen_w);
+		core_serialize_uint32(&screen_h);
+		core_serialize_uint32(&screen_p);
+		if (core_serialize_write)
+		{
+			if (screen && screen_copy_size >= screen_size)
+			{
+				serial_screen_size = screen_size;
+				core_serialize_uint32(&serial_screen_size);
+				core_serialize_data(screen_copy,serial_screen_size);
+			}
+			else core_serialize_uint32(&serial_screen_size); // 0
+		}
+		else
+		{
+			core_serialize_uint32(&serial_screen_size);
+			core_osk_screen_restore = false;
+			if (serial_screen_size > 0)
+			{
+				screen_copy_allocate(serial_screen_size);
+				if (screen_copy && screen_copy_size >= serial_screen_size)
+				{
+					core_serialize_data(screen_copy,serial_screen_size);
+					core_osk_screen_restore = true;
+				}
+				else
+					core_serialize_skip(serial_screen_size);
+			}
+		}
+	}
 }
 
 void core_osk_init()
@@ -665,4 +727,5 @@ void core_osk_init()
 	core_osk_button_last = 0;
 	core_osk_repeat_time = 0;
 	core_osk_hold_ready = 0;
+	core_osk_screen_restore = false;
 }

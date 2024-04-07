@@ -25,6 +25,7 @@ extern bool core_first_reset;
 extern bool core_perf_display;
 extern bool core_midi_enable;
 extern int core_video_fps;
+extern bool core_statusbar_restore;
 
 extern bool core_midi_read(uint8_t* data);
 extern bool core_midi_write(uint8_t data);
@@ -33,6 +34,8 @@ extern bool core_midi_write(uint8_t data);
 extern void core_serialize_uint8(uint8_t *x);
 extern void core_serialize_int32(int32_t *x);
 extern void core_serialize_uint32(uint32_t *x);
+extern void core_serialize_data(void* d, size_t size);
+extern void core_serialize_skip(size_t size);
 
 // core_file.c
 extern void strcpy_trunc(char* dest, const char* src, unsigned int len);
@@ -215,6 +218,7 @@ extern void core_osk_input(uint32_t osk_new, uint32_t osk_now); // bitfield of n
 extern void core_osk_render(void* video_buffer, int w, int h, int pitch); // call to render overlay over video_buffer
 extern void core_osk_restore(void* video_buffer, int w, int h, int pitch); // call to restore buffer before overlay
 extern void core_osk_serialize(void);
+extern void core_osk_serialize_screen(void);
 extern void core_osk_init(void);
 
 extern int core_pause_osk; // pause screen appearance setting
@@ -224,6 +228,7 @@ extern int32_t core_osk_press_len; // frames to press key
 extern int32_t core_osk_repeat_delay; // ms before direction repeat
 extern int32_t core_osk_repeat_rate; // ms between direction repeat
 extern uint32_t core_osk_button_last;
+extern bool core_osk_screen_restore;
 
 #define CORE_OSK_OFF        0
 #define CORE_OSK_PAUSE      1

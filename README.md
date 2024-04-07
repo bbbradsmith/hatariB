@@ -228,7 +228,6 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Make sure your core options match, especially the TOS image, before attempting to connect.
   * The IPF format appears to have drive state that cannot be completely restored. Netplay may stutter during activity if using IPF disk images due to savestate divergence.
 * Quirks:
-  * Restoring a savestate, or using netplay/run-ahead into the pause or one-shot keyboard will have an outdated/blank background until unpaused, as Hatari can't rebuild the image until it runs a frame. We could consider adding the framebuffer to the savestate to prevent this, though it would significantly increase the data size.
   * If the on-screen keyboard confirm/cancel buttons aren't mapped to dedicated buttons, you might end up suddenly holding the underlying button when the keyboard closes. (Inputs from buttons mapped to the on-screen keyboard are suppressed while it remains open.)
   * Though the on-screen keyboard is available in [several language layouts](https://tho-otto.de/keyboards/), for your physical keyboard there aren't any direct configuration options, currently. RetroArch ignores the OS keyboard layout, and [all keys report as-if in US layout](https://github.com/libretro/RetroArch/issues/13838) (e.g. German Z reports as RETROK_y). Because of this, if you pick a TOS that matches your keyboard language, the mappings are likely to be mostly compatible. Otherwise, if you need finer control of the mapping, RetroArch's *Input* settings can be used to remap individual keys.
   * The *Floppy Disk List* pause screen won't display unicode filenames correctly, though they can still be viewed through RetroArch's *Disk Control* menu when the selected drive is ejected.
@@ -260,6 +259,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Fixes to savestates on non-Windows platforms.
   * Attempting to make savestates as cross-platform compatible as possible.
   * Option to disable boot notification.
+  * Fixed out-of-date screen image during pause/one-shot and savestate/netplay/run-ahead.
 * [hatariB v0.2](https://github.com/bbbradsmith/hatariB/releases/tag/0.2) - 2023-09-07
   * Second beta test version.
   * IPF support via dynamic loading of capsimg library.

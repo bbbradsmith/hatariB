@@ -251,6 +251,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * LED and message timers changed to count frames instead of using `SDL_GetTicks`.
   * Make floppy LED in top right slightly larger.
   * Fix LED logic that caused its apperance to corrupt on resolution changes. Also [submitted to Hatari](https://github.com/hatari/hatari/pull/27).
+  * Added `core_statusbar_refresh` for manual refresh after savestate restore when needed.
 * **hatari/src/tos.c**
   * Add EmuTOS built-in ROMs.
   * Prevent Hatari from switching the machine configuration due to TOS mismatch. Display the notification onscreen, but let the user modify their own config. This prevents Libretro's core options model from causing spurious resets in these cases (Hatari is modelled on just modifying the config live, but Libretro core options should be provided by the user only, not modified by the running emulation).

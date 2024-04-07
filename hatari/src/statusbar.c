@@ -1118,3 +1118,15 @@ SDL_Rect* Statusbar_Update(SDL_Surface *surf, bool do_update)
 	}
 	return last_rect;
 }
+
+#ifdef __LIBRETRO__
+extern void core_statusbar_update(void);
+void core_statusbar_update(void)
+{
+	if(sdlscrn && StatusbarHeight && ConfigureParams.Screen.bShowStatusbar)
+	{
+		core_debug_msg("core_statusbar_update: yes");
+		Statusbar_Init(sdlscrn);
+	}
+}
+#endif
