@@ -29,10 +29,7 @@ jobs:
           make -f makefile.sdl
       - name: Build hatariB
         shell: msys2 {0}
-        #run: make
-        run: |
-          export VERBOSE_CMAKE=1
-          make
+        run: make
       - name: Prepare Artifact
         shell: pwsh
         run: |
@@ -67,10 +64,7 @@ jobs:
           make -f makefile.sdl
       - name: Build hatariB
         shell: msys2 {0}
-        #run: make
-        run: |
-          export VERBOSE_CMAKE=1
-          make
+        run: make
       - name: Prepare Artifact
         shell: pwsh
         run: |
@@ -102,10 +96,7 @@ jobs:
           make -f makefile.zlib
           make -f makefile.sdl
       - name: Build hatariB
-        #run: make
-        run: |
-          export VERBOSE_CMAKE=1
-          make
+        run: make
       - name: Prepare Artifact
         run: |
           mkdir artifact
@@ -143,7 +134,6 @@ jobs:
           export CC=/usr/local/bin/gcc-13
           export CFLAGS=-mmacosx-version-min=10.13
           export CMAKEFLAGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13"
-          export VERBOSE_CMAKE=1
           gmake
       - name: Prepare Artifact
         run: |
@@ -182,7 +172,6 @@ jobs:
         run: |
           export CC=aarch64-linux-gnu-gcc
           export CMAKEFLAGS="-DCMAKE_SYSTEM_NAME=aarch64-linux-gnu"
-          export VERBOSE_CMAKE=1
           make
       - name: Prepare Artifact
         run: |
@@ -223,7 +212,6 @@ jobs:
         run: |
           export CC=arm-linux-gnueabihf-gcc
           export CMAKEFLAGS="-DCMAKE_SYSTEM_NAME=arm-linux-gnueabihf"
-          export VERBOSE_CMAKE=1
           make
         # CMAKE_SYSTEM_NAME informs cmake that we are cross-compiling, so that it knows to build and run cpugen natively.
       - name: Prepare Artifact
