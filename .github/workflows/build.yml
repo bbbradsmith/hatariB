@@ -254,8 +254,9 @@ jobs:
         uses: android-actions/setup-android@v3
       - name: Build SDL2 and zlib
         run: |
+          export ANDROID_VER=26
           export TOOLCHAIN=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin
-          export CC="$TOOLCHAIN/aarch64-linux-android26-clang"
+          export CC="$TOOLCHAIN/aarch64-linux-android$ANDROID_VER-clang"
           export AR="$TOOLCHAIN/llvm-ar"
           make -f makefile.zlib
           export RANLIB="$TOOLCHAIN/llvm-ranlib"
@@ -265,10 +266,11 @@ jobs:
           make -f makefile.sdl
       - name: Build hatariB
         run: |
+          export ANDROID_VER=26
           export TOOLCHAIN=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin
-          export CC="$TOOLCHAIN/aarch64-linux-android26-clang"
+          export CC="$TOOLCHAIN/aarch64-linux-android$ANDROID_VER-clang"
           export VERBOSE_CMAKE=1
-          export CMAKEFLAGS="-DCMAKE_SYSTEM_NAME=aarch64-linux-android -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake"
+          export CMAKEFLAGS="-DCMAKE_SYSTEM_NAME=aarch64-linux-android -DCMAKE_ANDROID_ARCH_ABI=arm64-v8a -DCMAKE_ANDROID_NDK=$ANDROID_NDK_ROOT -DCMAKE_SYSTEM_VERSION=$ANDROID_VER"
           make
       - name: Prepare Artifact
         run: |
