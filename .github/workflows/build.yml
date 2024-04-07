@@ -254,8 +254,8 @@ jobs:
         uses: android-actions/setup-android@v3
       - name: Build SDL2 and zlib
         run: |
+          tree $ANDROID_SDK_ROOT
           export TOOLCHAIN=$ANDROID_SDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64
-          ls $TOOLCHAIN/bin
           export CC="$TOOLCHAIN/bin/aarch64-linux-android26-clang"
           export AR="$TOOLCHAIN/bin/$HOST-ar"
           make -f makefile.zlib
