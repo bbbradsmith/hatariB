@@ -2954,7 +2954,7 @@ void Video_InterruptHandler_HBL ( void )
 	int FrameCycles , HblCounterVideo , LineCycles;
 	int PendingCyclesOver;
 	int NewHBLPos;
-#ifndef __LIBRETRO__
+#ifdef __LIBRETRO__
 	(void)PendingCyclesOver;
 #endif
 
