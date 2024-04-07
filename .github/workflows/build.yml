@@ -247,8 +247,6 @@ jobs:
           sudo apt-get install make gcc cmake
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
-        with:
-          packages: 'cmdline-tools'
       - name: Build SDL2 and zlib
         run: |
           export CC=aarch64-linux-android-clang
