@@ -18,7 +18,7 @@ sdl: submodules
 		--enable-audio=no --enable-power=no --enable-filesystem=no --enable-timers=no --enable-file=no \
 		--enable-events=no --enable-render=no --enable-loadso=no --enable-cpuinfo=no --enable-assembly=no --enable-atomic=no \
 		--enable-system-iconv=no --enable-misc=no --enable-locale=no \
-		$SDL_JOYSTICK_DISABLE $SDL_HAPTIC_DISABLE \
+		$(SDL_JOYSTICK_DISABLE) $(SDL_HAPTIC_DISABLE) \
 		--enable-hidapi=no --enable-sensor=no \
 		--enable-video-wayland=no \
 		--enable-video-rpi=no \
