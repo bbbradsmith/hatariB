@@ -12,7 +12,6 @@ concurrency:
 jobs:
 
   build-win64:
-    if: false
     name: Windows 64-bit
     runs-on: windows-latest
     steps:
@@ -48,7 +47,6 @@ jobs:
           path: artifact/
 
   build-win32:
-    if: false
     name: Windows 32-bit
     runs-on: windows-latest
     steps:
@@ -84,7 +82,6 @@ jobs:
           path: artifact/
 
   build-ubuntu:
-    if: false
     name: Ubuntu Linux
     runs-on: ubuntu-latest
     steps:
@@ -116,7 +113,6 @@ jobs:
           path: artifact/
 
   build-macos:
-    if: false
     name: MacOS 10.13
     runs-on: macos-latest
     steps:
@@ -155,7 +151,6 @@ jobs:
           path: artifact/
 
   build-rpi64:
-    if: false
     name: Raspberry Pi OS 64-bit
     runs-on: ubuntu-20.04
     steps:
@@ -194,7 +189,6 @@ jobs:
           path: artifact/
 
   build-rpi32:
-    if: false
     name: Raspberry Pi OS 32-bit
     runs-on: ubuntu-20.04
     # ubuntu-latest was building with a newer GLIBC than current Rpi images, making them incompatible,
@@ -254,9 +248,9 @@ jobs:
         uses: android-actions/setup-android@v3
       - name: Build SDL2 and zlib
         run: |
-          export ANDROID_VER=26
+          export API=26
           export TOOLCHAIN=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin
-          export CC="$TOOLCHAIN/aarch64-linux-android$ANDROID_VER-clang"
+          export CC="$TOOLCHAIN/aarch64-linux-android$API-clang"
           export AR="$TOOLCHAIN/llvm-ar"
           make -f makefile.zlib
           export RANLIB="$TOOLCHAIN/llvm-ranlib"
@@ -266,10 +260,10 @@ jobs:
           make -f makefile.sdl
       - name: Build hatariB
         run: |
-          export ANDROID_VER=26
+          export API=26
           export TOOLCHAIN=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin
-          export CC="$TOOLCHAIN/aarch64-linux-android$ANDROID_VER-clang"
-          export CMAKEFLAGS="-DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_ARCH_ABI=arm64-v8a -DCMAKE_ANDROID_NDK=$ANDROID_NDK_ROOT -DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_VERSION=$ANDROID_VER"
+          export CC="$TOOLCHAIN/aarch64-linux-android$API-clang"
+          export CMAKEFLAGS="-DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_ARCH_ABI=arm64-v8a -DCMAKE_ANDROID_NDK=$ANDROID_NDK_ROOT -DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_VERSION=$API"
           make
       - name: Prepare Artifact
         run: |
@@ -305,9 +299,9 @@ jobs:
         uses: android-actions/setup-android@v3
       - name: Build SDL2 and zlib
         run: |
-          export ANDROID_VER=26
+          export API=26
           export TOOLCHAIN=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin
-          export CC="$TOOLCHAIN/armv7a-linux-androideabi$ANDROID_VER-clang"
+          export CC="$TOOLCHAIN/armv7a-linux-androideabi$API-clang"
           export AR="$TOOLCHAIN/llvm-ar"
           make -f makefile.zlib
           export RANLIB="$TOOLCHAIN/llvm-ranlib"
@@ -317,10 +311,10 @@ jobs:
           make -f makefile.sdl
       - name: Build hatariB
         run: |
-          export ANDROID_VER=26
+          export API=26
           export TOOLCHAIN=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin
-          export CC="$TOOLCHAIN/armv7a-linux-androideabi$ANDROID_VER-clang"
-          export CMAKEFLAGS="-DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_ARCH_ABI=armeabi-v7a -DCMAKE_ANDROID_NDK=$ANDROID_NDK_ROOT -DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_VERSION=$ANDROID_VER"
+          export CC="$TOOLCHAIN/armv7a-linux-androideabi$API-clang"
+          export CMAKEFLAGS="-DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_ARCH_ABI=armeabi-v7a -DCMAKE_ANDROID_NDK=$ANDROID_NDK_ROOT -DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_VERSION=$API"
           make
       - name: Prepare Artifact
         run: |
