@@ -1048,6 +1048,7 @@ RETRO_API void retro_init(void)
 	//Log_SetTraceOptions("video_vbl,video_sync");
 
 	core_hard_content = false;
+	core_hard_content_count = 0;
 	core_first_reset = true;
 	core_runflags = 0;
 	core_statusbar_restore = false;

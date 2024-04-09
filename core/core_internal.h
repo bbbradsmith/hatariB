@@ -4,6 +4,7 @@
 // but not with Hatari. Avoids a full rebuild for each change.
 
 #define   CORE_ARRAY_SIZE(a_)   (sizeof(a_)/sizeof(a_[0]))
+#define   CORE_STRINGIFY(a_) #a_
 
 // adds a config option to dump all input polling to the log every frame
 #define CORE_INPUT_DEBUG   0
@@ -41,10 +42,13 @@ extern void core_serialize_skip(size_t size);
 extern void strcpy_trunc(char* dest, const char* src, unsigned int len);
 extern void strcat_trunc(char* dest, const char* src, unsigned int len);
 extern bool has_extension(const char* fn, const char* exts); // case insensitive, exts = series of null terminated strings, then an extra 0 to finish the list
+// maximum supported hard drives through M3U or extra content
+#define CORE_HARD_MAX 4
 extern int core_hard_readonly;
 extern bool core_hard_content;
-extern int core_hard_content_type;
-extern char core_hard_content_path[2048];
+extern int core_hard_content_type[CORE_HARD_MAX];
+extern char core_hard_content_path[CORE_HARD_MAX][2048];
+extern int core_hard_content_count;
 
 extern uint8_t* core_read_file(const char* filename, unsigned int* size_out);
 extern bool core_write_file(const char* filename, unsigned int size, const uint8_t* data);

@@ -143,20 +143,20 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * A permanent hard disk in your *system/* folder can be configured from the *System* core options menu, but this setting can be overridden by a temporary hard disk loaded from the content menu, or using an M3U playlist.
   * *GemDOS* type hard disks can select a subdirectory within *system/hatarib/* to use as a simulated drive.
   * Permanent hard disks:
-    * A *GemDOS* folder can represent multiple paritions by having its base directory contain only   single-letter folder names representing drive letters. *C/*, *D/*, etc.
+    * A *GemDOS* folder can represent multiple paritions by having its base directory contain only single-letter folder names representing drive letters. *C/*, *D/*, etc.
     * *ACSI*, *SCSI* and *IDE* hard disks use a binary image file chosen from *system/hatarib/*.
   * Temporary hard disks:
-    * You can also load a temporary hard disk image directly as content, or through an M3U playlist. The type of hard disk is selected by the filename extension.
+    * You can also load one or more temporary hard disk images directly as content, or through an M3U playlist. The type of hard disk is selected by the filename extension.
     * *ACSI* images use an *ACSI*, *AHD* or *VHD* extension.
     * *SCSI* images use an *SCSI* or *SHD* extension.
     * *IDE* images use an *IDE* extension.
     * *GemDOS* folders use a dummy file with a *GEM* extension. Place this file next to a folder with the same name. The file can be empty, as its contents will not be used.
     * The *GemDOS* and *IDE* hard disk types can be adjusted futher in the core options.
-    * An M3U image can load a temporary hard disk image. Simply add another line with the name of the hard disk image, after any floppy disks.
-  *   Hard disks are read-only by default for safety. This can be disabled in the *System > Hard Disk Write Protect* core option. On some Libretro platforms, temporary hard drives may not be writable due to filesystem security settings.
+    * An M3U image can load one or more temporary hard disk images. Simply add another line with the name of the hard disk image, after any floppy disks.
+  * Hard disks are read-only by default for safety. This can be disabled in the *System > Hard Disk Write Protect* core option. On some Libretro platforms, temporary hard drives may not be writable due to filesystem security settings.
   * Because a hard disk image is not included with a savestate, file writes that are interrupted may cause corruption of the disk image's filesystem.
   * Later TOS versions (or EmuTOS) are recommended when using hard drives, as TOS 1.0 has only limited support for them. Without EmuTOS you may need to use a hard disk driver.
-  * Using more than one hard disk image at a time is unsupported, though a single image can have multiple partitions with individual drive letters.
+  * Using more than one permanent hard disk image at a time is unsupported, though a single image can have multiple partitions with individual drive letters. An M3U can be used for multiple temporary hard disks.
   * If you need an easy way to switch between permanent hard disk configurations, you could create a "boot" floppy disk to go along with the hard disk, and use *Manage Core Options > Save Game Options* to create a settings override associated with that floppy.
   * See [Hatari's Manual: Hard Disk Support](https://hatari.tuxfamily.org/doc/manual.html#Hard_disk_support) for further information.
 * M3U playlists and Auto-Run:
@@ -164,7 +164,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Each line of the M3U is the filename of a disk image, relative to the M3U file.
   * A line starting with `#` will normally be ignored, allowing you to write a comment on the rest of that line, if needed.
   * The first 2 disk images will be loaded into drives A and B when the content is opened.
-  * A temporary hard disk image can also be listed in the M3U. Place this line after any floppy disk mages.
+  * A temporary hard disk image can also be listed in the M3U. Place hard disks after any floppy disk mages.
   * `#AUTO:filename` can be used to automatically run a TOS file at boot. This is the same as [Hatari's --auto command line option](https://hatari.tuxfamily.org/doc/manual.html#General_options). **TOS 1.04** or later is required to use this feature. Example: `#AUTO:C:\GAMES\JOUST.PRG`
   * If using the `#AUTO` feature, technically `#EXTM3U` should be added as the first line of the M3U to indicate this is an [Extended M3U](https://en.wikipedia.org/wiki/M3U#Extended_M3U), but hatariB will not enforce this.
   * *Manage Core Options > Save Game Options* can be used to associate other core options with an M3U playlist.
@@ -261,6 +261,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Option to disable boot notification.
   * Fixed out-of-date screen image during pause/one-shot and savestate/netplay/run-ahead.
   * Android builds.
+  * Multiple hard disk support.
 * [hatariB v0.2](https://github.com/bbbradsmith/hatariB/releases/tag/0.2) - 2023-09-07
   * Second beta test version.
   * IPF support via dynamic loading of capsimg library.

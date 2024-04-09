@@ -35,8 +35,9 @@ static bool save_path_ready = false;
 
 int core_hard_readonly = 1;
 bool core_hard_content = false; // if hard disk image is loaded as content, this overrides the system path
-int core_hard_content_type;
-char core_hard_content_path[2048];
+int core_hard_content_type[CORE_HARD_MAX];
+char core_hard_content_path[CORE_HARD_MAX][2048];
+int core_hard_content_count = 0;
 
 #if CORE_FILE_DEBUG
 	#define CFD(_stuff_) {_stuff_;}
