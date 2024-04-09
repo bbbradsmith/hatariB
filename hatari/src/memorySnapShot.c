@@ -543,7 +543,14 @@ void MemorySnapShot_Restore_Do(void)
 		 */
 		MemorySnapShot_Store(&magic, sizeof(magic));
 		if (!bCaptureError && magic != SNAPSHOT_MAGIC)
+#ifndef __LIBRETRO__
 			bCaptureError = true;
+#else
+		{
+			core_error_msg("Savestate check failed.");
+			bCaptureError = true;
+		}
+#endif
 
 		/* And close */
 		MemorySnapShot_CloseFile();

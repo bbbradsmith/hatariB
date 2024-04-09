@@ -929,7 +929,7 @@ static bool core_serialize(bool write)
 	if (result != 0)
 	{
 		snapshot_error = true;
-		retro_log(RETRO_LOG_ERROR,"hatari state save/restore returned with error.\n");
+		retro_log(RETRO_LOG_ERROR,"hatari state save/restore error: %d bytes\n",snapshot_size);
 	}
 	return !snapshot_error;
 }

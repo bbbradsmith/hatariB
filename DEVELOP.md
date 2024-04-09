@@ -208,6 +208,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Add `LIBRETRO_DEBUG_SNAPSHOT` macro to debug snapshot memory regions.
   * Create inline MemorySnapShot_Store to accelerate savestate load and save.
   * Create inline MemorySnapShot_StoreFilename to store filenames of a standardized length.
+  * Add error log for SNAPSHOT_MAGIC failure.
 * **hatari/src/mfp.c**
   * Save `PendingCyclesOver` to prevent state divergence.
   * Replace use of `rand()` with deterministic `core_rand()`.
