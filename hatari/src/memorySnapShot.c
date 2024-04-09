@@ -493,7 +493,9 @@ void MemorySnapShot_Restore_Do(void)
 	/* Set to 'restore' */
 	if (MemorySnapShot_OpenFile(Temp_FileName, false, Temp_Confirm))
 	{
+	LIBRETRO_DEBUG_SNAPSHOT("Configuration");
 		Configuration_MemorySnapShot_Capture(false);
+	LIBRETRO_DEBUG_SNAPSHOT("TOS");
 		TOS_MemorySnapShot_Capture(false);
 
 		/* FIXME [NP] : Reset_Cold calls TOS_InitImage which calls */
@@ -509,38 +511,63 @@ void MemorySnapShot_Restore_Do(void)
 		Reset_Cold();
 
 		/* Capture each files details */
+	LIBRETRO_DEBUG_SNAPSHOT("STMemory");
 		STMemory_MemorySnapShot_Capture(false);
+	LIBRETRO_DEBUG_SNAPSHOT("Cycles");
 		Cycles_MemorySnapShot_Capture(false);			/* Before fdc (for CyclesGlobalClockCounter) */
+	LIBRETRO_DEBUG_SNAPSHOT("FDC");
 		FDC_MemorySnapShot_Capture(false);
+	LIBRETRO_DEBUG_SNAPSHOT("Floppy");
 		Floppy_MemorySnapShot_Capture(false);
+	LIBRETRO_DEBUG_SNAPSHOT("IPF");
 		IPF_MemorySnapShot_Capture(false);			/* After fdc/floppy are restored, as IPF depends on them */
+	LIBRETRO_DEBUG_SNAPSHOT("STX");
 		STX_MemorySnapShot_Capture(false);			/* After fdc/floppy are restored, as STX depends on them */
+	LIBRETRO_DEBUG_SNAPSHOT("GemDOS");
 		GemDOS_MemorySnapShot_Capture(false);
+	LIBRETRO_DEBUG_SNAPSHOT("ACIA");
 		ACIA_MemorySnapShot_Capture(false);
+	LIBRETRO_DEBUG_SNAPSHOT("IKBD");
 		IKBD_MemorySnapShot_Capture(false);			/* After ACIA */
+	LIBRETRO_DEBUG_SNAPSHOT("MIDI");
 		MIDI_MemorySnapShot_Capture(false);
+	LIBRETRO_DEBUG_SNAPSHOT("CycInt");
 		CycInt_MemorySnapShot_Capture(false);
+	LIBRETRO_DEBUG_SNAPSHOT("M68000");
 		M68000_MemorySnapShot_Capture(false);
+	LIBRETRO_DEBUG_SNAPSHOT("MFP");
 		MFP_MemorySnapShot_Capture(false);
+	LIBRETRO_DEBUG_SNAPSHOT("PSG");
 		PSG_MemorySnapShot_Capture(false);
+	LIBRETRO_DEBUG_SNAPSHOT("Sound");
 		Sound_MemorySnapShot_Capture(false);
+	LIBRETRO_DEBUG_SNAPSHOT("Video");
 		Video_MemorySnapShot_Capture(false);
+	LIBRETRO_DEBUG_SNAPSHOT("Blitter");
 		Blitter_MemorySnapShot_Capture(false);
+	LIBRETRO_DEBUG_SNAPSHOT("DmaSnd");
 		DmaSnd_MemorySnapShot_Capture(false);
+	LIBRETRO_DEBUG_SNAPSHOT("Crossbar");
 		Crossbar_MemorySnapShot_Capture(false);
+	LIBRETRO_DEBUG_SNAPSHOT("VIDEL");
 		VIDEL_MemorySnapShot_Capture(false);
+	LIBRETRO_DEBUG_SNAPSHOT("DSP");
 		DSP_MemorySnapShot_Capture(false);
 #ifndef __LIBRETRO__
 		DebugUI_MemorySnapShot_Capture(Temp_FileName, false);
 #endif
+	LIBRETRO_DEBUG_SNAPSHOT("IoMem");
 		IoMem_MemorySnapShot_Capture(false);
+	LIBRETRO_DEBUG_SNAPSHOT("ScreenConv");
 		ScreenConv_MemorySnapShot_Capture(false);
+	LIBRETRO_DEBUG_SNAPSHOT("SCC");
 		SCC_MemorySnapShot_Capture(false);
 
 		/* version string check catches release-to-release
 		 * state changes, bCaptureError catches too short
 		 * state file, this check a too long state file.
 		 */
+	LIBRETRO_DEBUG_SNAPSHOT("End Marker");
 		MemorySnapShot_Store(&magic, sizeof(magic));
 		if (!bCaptureError && magic != SNAPSHOT_MAGIC)
 #ifndef __LIBRETRO__
