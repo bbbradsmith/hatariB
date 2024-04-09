@@ -174,14 +174,17 @@ int core_save_state(void)
 int core_restore_state(void)
 {
 	int result = 0;
+core_debug_int("c0: ",bCaptureError);
 	// set a flag to restore at the next loop and quit the loop
 	MemorySnapShot_Restore("[libretro]",false);
+core_debug_int("c1: ",bCaptureError);
 	// sets:
 	//   quit_program = UAE_RESET
 	//   savestate_state = STATE_RESTORE
 	//   SPCFLAG_MODE_CHANGE
 	// restart the m68k loop
 	m68k_go_frame();
+core_debug_int("c2: ",bCaptureError);
 	// runs:
 	//   restore_state
 	//     MemorySnapShot_Restore_Do
@@ -198,22 +201,28 @@ int core_restore_state(void)
 	//     (does nothing)
 	//   exits
 	m68k_go_quit(); // quit the loop
+core_debug_int("c3: ",bCaptureError);
 	// in_m68k_go--
 	if (bCaptureError) // error: do a hard reset
 	{
+core_debug_msg("failure after c3");
 		result = 1;
 		Reset_Cold();
 		UAE_Set_Quit_Reset(true);
 	}
 	core_runflags &= ~CORE_RUNFLAG_RESET;
+core_debug_int("c4: ",bCaptureError);
 	m68k_go(true); // restart the loop
+core_debug_int("c5: ",bCaptureError);
 	// in_m68k_go++
 	// hardboot = 1
 	// startup = 1
 	core_init_return = true;
 	m68k_go_frame();
+core_debug_int("c6: ",bCaptureError);
 	core_init_return = false;
 	core_flush_audio();
+core_debug_int("c7: ",bCaptureError);
 	return result;
 }
 #endif
