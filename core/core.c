@@ -862,6 +862,7 @@ static bool core_serialize(bool write)
 	result = 0;
 	if (write) result = core_save_state();
 	else       result = core_restore_state();
+core_debug_int("result: ",result);
 
 	if (write)
 	{

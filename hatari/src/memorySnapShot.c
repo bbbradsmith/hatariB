@@ -493,6 +493,7 @@ void MemorySnapShot_Restore_Do(void)
 	/* Set to 'restore' */
 	if (MemorySnapShot_OpenFile(Temp_FileName, false, Temp_Confirm))
 	{
+core_debug_int("r0: ",bCaptureError);
 	LIBRETRO_DEBUG_SNAPSHOT("Configuration");
 		Configuration_MemorySnapShot_Capture(false);
 	LIBRETRO_DEBUG_SNAPSHOT("TOS");
@@ -510,6 +511,7 @@ void MemorySnapShot_Restore_Do(void)
 		IoMem_UnInit();  IoMem_Init();
 		Reset_Cold();
 
+core_debug_int("r1: ",bCaptureError);
 		/* Capture each files details */
 	LIBRETRO_DEBUG_SNAPSHOT("STMemory");
 		STMemory_MemorySnapShot_Capture(false);
@@ -519,8 +521,10 @@ void MemorySnapShot_Restore_Do(void)
 		FDC_MemorySnapShot_Capture(false);
 	LIBRETRO_DEBUG_SNAPSHOT("Floppy");
 		Floppy_MemorySnapShot_Capture(false);
+core_debug_int("r2: ",bCaptureError);
 	LIBRETRO_DEBUG_SNAPSHOT("IPF");
 		IPF_MemorySnapShot_Capture(false);			/* After fdc/floppy are restored, as IPF depends on them */
+core_debug_int("r3: ",bCaptureError);
 	LIBRETRO_DEBUG_SNAPSHOT("STX");
 		STX_MemorySnapShot_Capture(false);			/* After fdc/floppy are restored, as STX depends on them */
 	LIBRETRO_DEBUG_SNAPSHOT("GemDOS");
@@ -535,6 +539,7 @@ void MemorySnapShot_Restore_Do(void)
 		CycInt_MemorySnapShot_Capture(false);
 	LIBRETRO_DEBUG_SNAPSHOT("M68000");
 		M68000_MemorySnapShot_Capture(false);
+core_debug_int("r4: ",bCaptureError);
 	LIBRETRO_DEBUG_SNAPSHOT("MFP");
 		MFP_MemorySnapShot_Capture(false);
 	LIBRETRO_DEBUG_SNAPSHOT("PSG");
@@ -545,6 +550,7 @@ void MemorySnapShot_Restore_Do(void)
 		Video_MemorySnapShot_Capture(false);
 	LIBRETRO_DEBUG_SNAPSHOT("Blitter");
 		Blitter_MemorySnapShot_Capture(false);
+core_debug_int("r5: ",bCaptureError);
 	LIBRETRO_DEBUG_SNAPSHOT("DmaSnd");
 		DmaSnd_MemorySnapShot_Capture(false);
 	LIBRETRO_DEBUG_SNAPSHOT("Crossbar");
@@ -556,12 +562,14 @@ void MemorySnapShot_Restore_Do(void)
 #ifndef __LIBRETRO__
 		DebugUI_MemorySnapShot_Capture(Temp_FileName, false);
 #endif
+core_debug_int("r6: ",bCaptureError);
 	LIBRETRO_DEBUG_SNAPSHOT("IoMem");
 		IoMem_MemorySnapShot_Capture(false);
 	LIBRETRO_DEBUG_SNAPSHOT("ScreenConv");
 		ScreenConv_MemorySnapShot_Capture(false);
 	LIBRETRO_DEBUG_SNAPSHOT("SCC");
 		SCC_MemorySnapShot_Capture(false);
+core_debug_int("r7: ",bCaptureError);
 
 		/* version string check catches release-to-release
 		 * state changes, bCaptureError catches too short
@@ -578,6 +586,7 @@ void MemorySnapShot_Restore_Do(void)
 			bCaptureError = true;
 		}
 #endif
+core_debug_int("r8: ",bCaptureError);
 
 		/* And close */
 		MemorySnapShot_CloseFile();
@@ -592,6 +601,7 @@ void MemorySnapShot_Restore_Do(void)
 			return;
 		}
 #endif
+core_debug_int("r9: ",bCaptureError);
 	}
 
 //fprintf ( stderr , "MemorySnapShot_Restore_Do out\n" );
