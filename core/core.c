@@ -62,7 +62,7 @@ const uint64_t QUIRKS = RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT;
 // Turn off hatarib_savestate_floppy_modify (Floppy Savestate Safety Save) in the core settings before testing savestates,
 // because it causes bContentsChanged divergence for any floppies that have save files.
 
-#define DEBUG_SAVESTATE   (DEBUG_SAVESTATE_DUMP | DEBUG_SAVESTATE_DUMP_AUTO | DEBUG_SAVESTATE_SIMPLE)
+#define DEBUG_SAVESTATE   (DEBUG_SAVESTATE_DUMP | DEBUG_SAVESTATE_DUMP_AUTO | DEBUG_SAVESTATE_SIMPLE | 1)
 
 //
 // Libretro
@@ -931,6 +931,8 @@ static bool core_serialize(bool write)
 		snapshot_error = true;
 		retro_log(RETRO_LOG_ERROR,"hatari state save/restore error: %d bytes\n",snapshot_size);
 	}
+	core_debug_int("serialize: ",write);
+	core_debug_snapshot_sections_list();
 	return !snapshot_error;
 }
 
