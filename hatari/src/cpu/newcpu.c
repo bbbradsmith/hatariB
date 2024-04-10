@@ -7391,7 +7391,6 @@ bool is_keyboardreset(void)
 #ifdef __LIBRETRO__
 static int hardboot;
 static int startup;
-extern bool bCaptureError;
 void m68k_go (int may_quit)
 {
 	hardboot = 1;
@@ -7430,7 +7429,6 @@ void m68k_go_frame(void)
 {
 	for (int loop_count=1;loop_count;--loop_count) {
 #endif
-core_debug_int("x-3:",bCaptureError);
 		int restored = 0;
 		void (*run_func)(void);
 
@@ -7440,7 +7438,6 @@ core_debug_int("x-3:",bCaptureError);
 			break;
 #endif
 
-core_debug_int("x-2:",bCaptureError);
 		cputrace.state = -1;
 
 #ifndef WINUAE_FOR_HATARI
@@ -7472,7 +7469,6 @@ core_debug_int("x-2:",bCaptureError);
 #ifdef __LIBRETRO__
 			blitter_x_funcs = false;
 #endif
-core_debug_int("x-1:",bCaptureError);
 
 #ifdef SAVESTATE
 			if (savestate_state == STATE_DORESTORE)
@@ -7484,30 +7480,22 @@ core_debug_int("x-1:",bCaptureError);
 				savestate_rewind ();
 #endif
 #endif
-core_debug_int("x0:",bCaptureError);
 			if (cpu_hardreset)
 				m68k_reset_restore();
-core_debug_int("x1:",bCaptureError);
 			prefs_changed_cpu();
-core_debug_int("x2:",bCaptureError);
 			build_cpufunctbl();
-core_debug_int("x3:",bCaptureError);
 			set_x_funcs();
 #ifndef WINUAE_FOR_HATARI
 			set_cycles (start_cycles);
 #endif
-core_debug_int("x4:",bCaptureError);
 			custom_reset (cpu_hardreset != 0, cpu_keyboardreset);
-core_debug_int("x5:",bCaptureError);
 			m68k_reset2 (cpu_hardreset != 0);
-core_debug_int("x6:",bCaptureError);
 			if (cpu_hardreset) {
 				memory_clear ();
 				write_log (_T("hardreset, memory cleared\n"));
 			}
 			cpu_hardreset = false;
 #ifdef SAVESTATE
-core_debug_int("x7:",bCaptureError);
 			/* We may have been restoring state, but we're done now.  */
 			if (isrestore ()) {
 #ifndef WINUAE_FOR_HATARI
@@ -7516,12 +7504,10 @@ core_debug_int("x7:",bCaptureError);
 					record_dma_reset ();
 				}
 #endif
-core_debug_int("x8:",bCaptureError);
 				restored = savestate_restore_finish ();
 #ifndef WINUAE_FOR_HATARI
 				memory_map_dump ();
 #endif
-core_debug_int("x9:",bCaptureError);
 				if (currprefs.mmu_model == 68030) {
 					mmu030_decode_tc (tc_030, true);
 				} else if (currprefs.mmu_model >= 68040) {
@@ -7542,7 +7528,6 @@ core_debug_int("x9:",bCaptureError);
 				input_record = INPREC_RECORD_NORMAL;
 			statusline_clear();
 #else
-core_debug_int("x10:",bCaptureError);
 			m68k_setpc_normal (regs.pc);
 #endif
 		} else {
@@ -7565,7 +7550,6 @@ core_debug_int("x10:",bCaptureError);
 			debug_init_trainer(changed_prefs.trainerfile);
 #endif
 
-core_debug_int("x11:",bCaptureError);
 		set_cpu_tracer (false);
 
 #ifdef DEBUGGER
@@ -7597,7 +7581,6 @@ core_debug_int("x11:",bCaptureError);
 			cpu_prefs_changed_flag = 0;
 		}
 
-core_debug_int("x12:",bCaptureError);
 		set_x_funcs();
 #ifndef WINUAE_FOR_HATARI
 		if (startup) {
@@ -7607,11 +7590,9 @@ core_debug_int("x12:",bCaptureError);
 		startup = 0;
 		event_wait = true;
 #endif
-core_debug_int("x13:",bCaptureError);
 		unset_special(SPCFLAG_MODE_CHANGE);
 
 #ifdef SAVESTATE
-core_debug_int("x14:",bCaptureError);
 		if (restored) {
 			restored = 0;
 			savestate_restore_final();
@@ -7623,7 +7604,6 @@ core_debug_int("x14:",bCaptureError);
 #endif
 
 		if (!regs.halted) {
-core_debug_int("x15:",bCaptureError);
 			// check that PC points to something that looks like memory.
 			uaecptr pc = m68k_getpc();
 #ifndef WINUAE_FOR_HATARI
@@ -7636,7 +7616,6 @@ core_debug_int("x15:",bCaptureError);
 			}
 		}
 		if (regs.halted) {
-core_debug_int("x16:",bCaptureError);
 			cpu_halt (regs.halted);
 			if (regs.halted < 0) {
 				haltloop();
@@ -7644,7 +7623,6 @@ core_debug_int("x16:",bCaptureError);
 			}
 		}
 
-core_debug_int("x17:",bCaptureError);
 #ifdef WINUAE_FOR_HATARI
 		/* Apply patches for gemdos HD if needed (we need to do it after */
 		/* cpu tables for all opcodes were rebuilt in build_cpufunctbl() ) */
@@ -7683,16 +7661,13 @@ core_debug_int("x17:",bCaptureError);
 		}
 #endif
 #ifdef __LIBRETRO__
-core_debug_int("x18:",bCaptureError);
 		if (core_init_return) break;
 #endif
 
-core_debug_int("x19:",bCaptureError);
 		run_func();
 		Log_Printf(LOG_DEBUG, "exit m68k_run\n");
 	}
 #ifdef __LIBRETRO__
-core_debug_int("x20:",bCaptureError);
 }
 void m68k_go_quit(void)
 {
