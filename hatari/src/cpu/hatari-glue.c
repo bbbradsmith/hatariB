@@ -159,7 +159,7 @@ extern int core_restore_state(void);
 extern void core_flush_audio(void);
 extern int Reset_Cold(void);
 extern void Sound_Update( Uint64 CPU_Clock);
-extern int bCaptureError;
+extern bool bCaptureError;
 void core_flush_audio(void)
 {
 	// flush audio up until now
