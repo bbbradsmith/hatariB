@@ -3,12 +3,11 @@
 A [Libretro](https://www.libretro.com/) core integrating the [Hatari](https://hatari.tuxfamily.org/) emulation of Atari ST, STE, TT, and Falcon computers.
 
 * Current Build Platforms:
-  * Windows 64-bit
-  * Windows 32-bit
+  * Windows 64-bit, 32-bit
   * Ubuntu
   * MacOS
-  * Raspberry Pi OS 32-bit
-  * Raspberry Pi OS 64-bit
+  * Raspberry Pi OS 64-bit, 32-bit
+  * Android 64-bit, 32-bit
 * Current Release:
   * **[hatariB v0.2](https://github.com/bbbradsmith/hatariB/releases/tag/0.2)** - 2023-09-07
 * Unstable Build:
@@ -52,6 +51,17 @@ The `capsimg.so` for IPF support can be placed next to the `hatarib.dylib` file,
 * You can drag the `capsimg.so` into the terminal to copy its filename path there.
 * Use `xattr` to remove the quarantine:
   * `xattr -d com.apple.quarantine Users/[username]/Library/Application\ Support/RetroArch/cores/capsimg.so`
+
+### Android
+
+You can use this core with the [latest RetroArch APK](https://www.retroarch.com/?page=platforms), or with the older *RetroArch Plus* build from the Google Play store.
+
+* After setting up RetroArch, place `hatarib.so` in your RetroArch downloads folder. You can use the *Directory* settings to find it, or choose a custom downloads location. Go to *Load Core* and choose *Install or Restore a Core* to install it from the downloads folder. If installed correctly, you should now be able to load it and start it.
+* The included `hatarib.info` file allows the core to be associated with content files, but it can be inconvenient to add this to your RetroArch setup. The easiest alternative is to rename the core to `hatari_libretro.so` before installing so that it will instead use the existing info file belonging to the [other Hatari core](https://github.com/libretro/hatari).
+* If you want to be more thorough, use the *Directory* settings to relocate *Core Info* to a folder that you can access and place it there. However, I've found that *Update Core Info Files* in the *Online Updater* doesn't work with a custom directory, so I had to manually download and place the info files for other cores there. If you rename the RetroArch APK to be a zip file, you can open it up and find the info files there inside the contained assets folder.
+* To delete the core, you can go to *Core > Manage Cores* in the settings.
+* It is not yet verified whether IPF files can be made to work by installing `capsimg.so`. I believe the way to do this would be to build your own RetroArch APK from source code, and include it in the `lib` folder inside, but I have not attempted this. It might also be possible to do this after install with a rooted device. Please let me know if you've tried it.
+* I would recommend disabling *Input > Host Mouse Enabled* in the core options, as using a touchscreen overlay gamepad will also generate host mouse inputs at the same time. *Retropad 1 > Left Analog Stick* can be set to *Mouse* to allow mouse control that way instead.
 
 ### Manual Build
 
