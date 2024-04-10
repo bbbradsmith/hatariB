@@ -58,11 +58,14 @@ const uint64_t QUIRKS = RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT;
 // (Usually the DIFF will indicate core_input in this case.)
 #define DEBUG_SAVESTATE_SIMPLE   0
 
+// Will print the savestate section list each time the savestate is saved or restored.
+#define DEBUG_SAVESTATE_LIST   0
+
 // Enable LIBRETRO_DEBUG_SNAPSHOT in memorySnapshot.c to list the the data locations and structure of snapshots.
 // Turn off hatarib_savestate_floppy_modify (Floppy Savestate Safety Save) in the core settings before testing savestates,
 // because it causes bContentsChanged divergence for any floppies that have save files.
 
-#define DEBUG_SAVESTATE   (DEBUG_SAVESTATE_DUMP | DEBUG_SAVESTATE_DUMP_AUTO | DEBUG_SAVESTATE_SIMPLE)
+#define DEBUG_SAVESTATE   (DEBUG_SAVESTATE_DUMP | DEBUG_SAVESTATE_DUMP_AUTO | DEBUG_SAVESTATE_SIMPLE | DEBUG_SAVESTATE_LIST)
 
 //
 // Libretro
@@ -923,6 +926,10 @@ static bool core_serialize(bool write)
 			++count;
 		}
 	}
+#endif
+#if DEBUG_SAVESTATE_LIST
+	core_debug_int("core_serialize: ",write);
+	core_debug_snapshot_sections_list();
 #endif
 
 	//retro_log(RETRO_LOG_DEBUG,"core_serialized: %d of %d used\n",snapshot_max,snapshot_size);
