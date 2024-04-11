@@ -10,7 +10,7 @@ default: sdl
 
 submodules:
 	git submodule init
-	git submodule update
+	git submodule update --depth 1
 
 sdl: submodules
 	mkdir -p SDL/build

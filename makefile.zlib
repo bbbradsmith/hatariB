@@ -6,7 +6,7 @@ default: $(ZLIB_BUILD)/libz.a
 
 submodules:
 	git submodule init
-	git submodule update
+	git submodule update --depth 1
 
 $(ZLIB_BUILD)/libz.a: submodules
 	mkdir -p $(ZLIB_BUILD)
