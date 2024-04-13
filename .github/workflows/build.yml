@@ -31,7 +31,9 @@ jobs:
         id: cache-sub
         uses: actions/cache@v4
         with:
-          path: SDL/build zlib_build
+          path: |
+            SDL/build
+            zlib_build
           key: sub-win64-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
       - name: Build SDL2 and zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
@@ -78,7 +80,9 @@ jobs:
         id: cache-sub
         uses: actions/cache@v4
         with:
-          path: SDL/build zlib_build
+          path: |
+            SDL/build
+            zlib_build
           key: sub-win32-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
       - name: Build SDL2 and zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
@@ -123,7 +127,9 @@ jobs:
         id: cache-sub
         uses: actions/cache@v4
         with:
-          path: SDL/build zlib_build
+          path: |
+            SDL/build
+            zlib_build
           key: sub-ubuntu-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
       - name: Build SDL2 and zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
@@ -164,7 +170,9 @@ jobs:
         id: cache-sub
         uses: actions/cache@v4
         with:
-          path: SDL/build zlib_build
+          path: |
+            SDL/build
+            zlib_build
           key: sub-macos-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
       - name: Build SDL2 and zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
@@ -214,7 +222,9 @@ jobs:
         id: cache-sub
         uses: actions/cache@v4
         with:
-          path: SDL/build zlib_build
+          path: |
+            SDL/build
+            zlib_build
           key: sub-rpi64-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
       - name: Build SDL2 and zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
@@ -265,7 +275,9 @@ jobs:
         id: cache-sub
         uses: actions/cache@v4
         with:
-          path: SDL/build zlib_build
+          path: |
+            SDL/build
+            zlib_build
           key: sub-rpi32-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
       - name: Build SDL2 and zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
@@ -322,7 +334,9 @@ jobs:
         id: cache-sub
         uses: actions/cache@v4
         with:
-          path: SDL/build zlib_build
+          path: |
+            SDL/build
+            zlib_build
           key: sub-android64-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
       - name: Build SDL2 and zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
@@ -384,7 +398,9 @@ jobs:
         id: cache-sub
         uses: actions/cache@v4
         with:
-          path: SDL/build zlib_build
+          path: |
+            SDL/build
+            zlib_build
           key: sub-android32-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
       - name: Build SDL2 and zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
