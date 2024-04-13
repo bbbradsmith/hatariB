@@ -233,6 +233,8 @@ jobs:
           make -f makefile.sdl
       - name: Build hatariB
         run: |
+          export VERBOSE_CMAKE=1
+          export CC=gcc-13
           export CMAKEFLAGS="-DCMAKE_C_COMPILER=clang -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 -DCMAKE_OSX_ARCHITECTURES=arm64"
           make hatarilib
           export CC=clang
