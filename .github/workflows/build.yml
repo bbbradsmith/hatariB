@@ -22,7 +22,21 @@ jobs:
         with:
           msystem: UCRT64
           install: git make mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake
+      - name: Submodule Cache Key
+        shell: pwsh
+        run: |
+          echo "SDLHASH=$($(git submodule status SDL) -replace '\s','')" >> $env:GITHUB_ENV
+          echo "ZLIBHASH=$($(git submodule status zlib) -replace '\s','')" >> $env:GITHUB_ENV
+      - name: Cache Submodules
+        id: cache-sub
+        uses: actions/cache@v4
+        with:
+          path: |
+            SDL/build
+            zlib_build
+          key: sub-win64-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
       - name: Build SDL2 and zlib
+        if: steps.cache-sub.outputs.cache-hit != 'true'
         shell: msys2 {0}
         run: |
           make -f makefile.zlib
@@ -57,7 +71,21 @@ jobs:
         with:
           msystem: MINGW32
           install: git make mingw-w64-i686-gcc mingw-w64-i686-cmake
+      - name: Submodule Cache Key
+        shell: pwsh
+        run: |
+          echo "SDLHASH=$($(git submodule status SDL) -replace '\s','')" >> $env:GITHUB_ENV
+          echo "ZLIBHASH=$($(git submodule status zlib) -replace '\s','')" >> $env:GITHUB_ENV
+      - name: Cache Submodules
+        id: cache-sub
+        uses: actions/cache@v4
+        with:
+          path: |
+            SDL/build
+            zlib_build
+          key: sub-win32-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
       - name: Build SDL2 and zlib
+        if: steps.cache-sub.outputs.cache-hit != 'true'
         shell: msys2 {0}
         run: |
           make -f makefile.zlib
@@ -91,7 +119,20 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install make gcc cmake
+      - name: Submodule Cache Key
+        run: |
+          echo "SDLHASH=$(git submodule status SDL | tr -d '[:blank:]')" >> $GITHUB_ENV
+          echo "ZLIBHASH=$(git submodule status zlib | tr -d '[:blank:]')" >> $GITHUB_ENV
+      - name: Cache Submodules
+        id: cache-sub
+        uses: actions/cache@v4
+        with:
+          path: |
+            SDL/build
+            zlib_build
+          key: sub-ubuntu-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
       - name: Build SDL2 and zlib
+        if: steps.cache-sub.outputs.cache-hit != 'true'
         run: |
           make -f makefile.zlib
           make -f makefile.sdl
@@ -121,7 +162,20 @@ jobs:
       - name: Setup MacOS
         run: brew install make gcc@13 cmake
         # brew's gcc has to be a specific version, make sure to update 13 above and below if upgrading
+      - name: Submodule Cache Key
+        run: |
+          echo "SDLHASH=$(git submodule status SDL | tr -d '[:blank:]')" >> $GITHUB_ENV
+          echo "ZLIBHASH=$(git submodule status zlib | tr -d '[:blank:]')" >> $GITHUB_ENV
+      - name: Cache Submodules
+        id: cache-sub
+        uses: actions/cache@v4
+        with:
+          path: |
+            SDL/build
+            zlib_build
+          key: sub-macos-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
       - name: Build SDL2 and zlib
+        if: steps.cache-sub.outputs.cache-hit != 'true'
         run: |
           export CC=/usr/local/bin/gcc-13
           export CFLAGS=-mmacosx-version-min=10.13
@@ -160,7 +214,20 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install make gcc gcc-aarch64-linux-gnu cmake
+      - name: Submodule Cache Key
+        run: |
+          echo "SDLHASH=$(git submodule status SDL | tr -d '[:blank:]')" >> $GITHUB_ENV
+          echo "ZLIBHASH=$(git submodule status zlib | tr -d '[:blank:]')" >> $GITHUB_ENV
+      - name: Cache Submodules
+        id: cache-sub
+        uses: actions/cache@v4
+        with:
+          path: |
+            SDL/build
+            zlib_build
+          key: sub-rpi64-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
       - name: Build SDL2 and zlib
+        if: steps.cache-sub.outputs.cache-hit != 'true'
         run: |
           export CC=aarch64-linux-gnu-gcc
           export AR=aarch64-linux-gnu-gcc-ar
@@ -200,7 +267,20 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install make gcc gcc-arm-linux-gnueabihf cmake
+      - name: Submodule Cache Key
+        run: |
+          echo "SDLHASH=$(git submodule status SDL | tr -d '[:blank:]')" >> $GITHUB_ENV
+          echo "ZLIBHASH=$(git submodule status zlib | tr -d '[:blank:]')" >> $GITHUB_ENV
+      - name: Cache Submodules
+        id: cache-sub
+        uses: actions/cache@v4
+        with:
+          path: |
+            SDL/build
+            zlib_build
+          key: sub-rpi32-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
       - name: Build SDL2 and zlib
+        if: steps.cache-sub.outputs.cache-hit != 'true'
         run: |
           export CC=arm-linux-gnueabihf-gcc
           export AR=arm-linux-gnueabihf-gcc-ar
@@ -246,7 +326,20 @@ jobs:
           distribution: 'temurin'
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+      - name: Submodule Cache Key
+        run: |
+          echo "SDLHASH=$(git submodule status SDL | tr -d '[:blank:]')" >> $GITHUB_ENV
+          echo "ZLIBHASH=$(git submodule status zlib | tr -d '[:blank:]')" >> $GITHUB_ENV
+      - name: Cache Submodules
+        id: cache-sub
+        uses: actions/cache@v4
+        with:
+          path: |
+            SDL/build
+            zlib_build
+          key: sub-android64-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
       - name: Build SDL2 and zlib
+        if: steps.cache-sub.outputs.cache-hit != 'true'
         run: |
           export API=26
           export TOOLCHAIN=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin
@@ -297,7 +390,20 @@ jobs:
           distribution: 'temurin'
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+      - name: Submodule Cache Key
+        run: |
+          echo "SDLHASH=$(git submodule status SDL | tr -d '[:blank:]')" >> $GITHUB_ENV
+          echo "ZLIBHASH=$(git submodule status zlib | tr -d '[:blank:]')" >> $GITHUB_ENV
+      - name: Cache Submodules
+        id: cache-sub
+        uses: actions/cache@v4
+        with:
+          path: |
+            SDL/build
+            zlib_build
+          key: sub-android32-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
       - name: Build SDL2 and zlib
+        if: steps.cache-sub.outputs.cache-hit != 'true'
         run: |
           export API=26
           export TOOLCHAIN=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin
