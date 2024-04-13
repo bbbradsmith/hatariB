@@ -19,14 +19,21 @@ enum
 };
 
 //#define DRIVESOUND_ENABLE_SDL
+
 #define DRIVESOUND_DEBUG_PRINT
 #define DRIVESOUND_DEBUG_PRINT_MSG
 
 #ifdef DRIVESOUND_DEBUG_PRINT
 #include <stdarg.h>
 extern int Q_vsnprintf( char *str, int size, const char *format, va_list ap );
-char *__cdecl va( const char *format, ... );
+extern char *va( const char *format, ... );
+
+#ifdef __GNUC__
+#define _vsnprintf vsnprintf
+#endif
+
 #else
+#define Q_vsnprintf(a,b,c,d) ;
 #define va(x) ;
 #endif
 

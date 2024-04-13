@@ -8,7 +8,9 @@
 #ifdef __DRIVESOUND__
 
 #include "../hatari/src/includes/main.h"
+#include "../libretro/libretro.h"
 #include "../core/core.h"
+#include "../core/core_internal.h"
 
 #include "../drivesound/drivesound.h"
 
@@ -65,7 +67,7 @@ int Q_vsnprintf( char *str, int size, const char *format, va_list ap )
 	return retval;
 }
 
-char *__cdecl va( const char *format, ... )
+char *va( const char *format, ... )
 {
 	va_list		argptr;
 	static char	string[ MAX_VA_BUFFERS ][ MAX_VA_STRING ];
@@ -365,8 +367,10 @@ int drivesound_init( void )
 {
 	wav_header_t *wav = NULL;
 	drivesound_snd_t *snd = NULL;
-	FILE *file = NULL;
+	corefile *file = NULL;
+	int64_t bytes_read = 0;
 	char path[ 512 ] = "";
+	char msg[ 512 ] = "";
 
 	drivesound_loaded = 0;
 
@@ -374,25 +378,28 @@ int drivesound_init( void )
 	{
 		snd = &g_drivesound_snd[ i ];
 
-		snprintf( path, 512, DRIVESOUND_PATH_PREFIX "/%s_%i.wav",
+		snprintf( path, 512, "drivesound/%s_%i.wav",
 			snd->name, core_audio_samplerate );
 
-		file = fopen( path, "rb+" );
+		file = core_file_open_system( path, CORE_FILE_READ );
 
 		if( !file )
 		{
-			core_signal_alert( va( "[DriveSound] Failed to open %s!", path ) );
+			snprintf( msg, 512, "[DriveSound] Failed to open %s!", path );
+			core_signal_alert( msg );
 			return -1;
 		}
 
-		fseek( file, 0, SEEK_END );
-		snd->size = ftell( file );
-		fseek( file, 0, SEEK_SET );
+		core_file_seek( file, 0, SEEK_END );
+		snd->size = core_file_tell( file );
+		core_file_seek( file, 0, SEEK_SET );
 
 		if( !snd->size )
 		{
-			fclose( file );
-			core_signal_alert( va( "[DriveSound] %s is empty!", path ) );
+			core_file_close( file );
+
+			snprintf( msg, 512, "[DriveSound] %s is empty!", path );
+			core_signal_alert( msg );
 			return -2;
 		}
 
@@ -400,13 +407,24 @@ int drivesound_init( void )
 
 		if( !snd->buf )
 		{
-			fclose( file );
+			core_file_close( file );
+
 			core_signal_alert( "[DriveSound] Memory allocation failed!" );
 			return -3;
 		}
 
-		fread( snd->buf, 1, snd->size, file );
-		fclose( file );
+		bytes_read = core_file_read( snd->buf, 1, snd->size, file );
+		core_file_close( file );
+
+		if( bytes_read != snd->size )
+		{
+			free( snd->buf );
+			snd->buf = NULL;
+
+			snprintf( msg, 512, "[DriveSound] Failed to read %s!", path );
+			core_signal_alert( msg );
+			return -4;
+		}
 
 		//
 
@@ -420,7 +438,6 @@ int drivesound_init( void )
 
 	drivesound_samplerate = core_audio_samplerate;
 	drivesound_loaded = 1;
-	//core_signal_alert( "[DriveSound] OK" );
 
 	return 0;
 }

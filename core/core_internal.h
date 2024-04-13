@@ -49,7 +49,7 @@ extern uint8_t* core_read_file_save(const char* filename, unsigned int* size_out
 extern uint8_t* core_read_file_hard(const char* filename, unsigned int* size_out);
 extern bool core_write_file_save(const char* filename, unsigned int size, const uint8_t* data);
 extern bool core_write_file_system(const char* filename, unsigned int size, const uint8_t* data);
-const char* get_temp_fn(); // gets the last temporary path created for a save/system read or write (use carefully)
+const char* get_temp_fn(void); // gets the last temporary path created for a save/system read or write (use carefully)
 
 // direct file access
 // file access types:
@@ -93,9 +93,9 @@ extern struct coredirent* core_file_readdir(coredir* dir);
 extern int core_file_closedir(coredir* dir);
 
 extern void core_file_set_environment(retro_environment_t cb); // scans system/ folder, includes "tos.img" and everything in"hatarib/" (non-recursive)
-extern int core_file_system_count(); // number of files found
+extern int core_file_system_count(void); // number of files found
 extern const char* core_file_system_filename(int index); // file list, first is "tos.img" if it exists, and "hatarib/" files follow (with "hatarib/ prefix)
-extern int core_file_system_dir_count();
+extern int core_file_system_dir_count(void);
 extern const char* core_file_system_dirname(int index); // "hatarib/dir"
 extern const char* core_file_system_dirlabel(int index); // "dir/"
 
