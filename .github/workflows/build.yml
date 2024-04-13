@@ -167,7 +167,6 @@ jobs:
           echo "SDLHASH=$(git submodule status SDL | tr -d '[:blank:]')" >> $GITHUB_ENV
           echo "ZLIBHASH=$(git submodule status zlib | tr -d '[:blank:]')" >> $GITHUB_ENV
       - name: Cache Submodules
-        if: false # TODO enable this
         id: cache-sub
         uses: actions/cache@v4
         with:
@@ -234,12 +233,12 @@ jobs:
           make -f makefile.sdl
       - name: Build hatariB
         run: |
-          export VERBOSE_CMAKE=1
+          export CMAKEFLAGS="-DCMAKE_C_COMPILER=clang -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 -DCMAKE_OSX_ARCHITECTURES=arm64"
+          make hatarilib
           export CC=clang
           export CFLAGS="-target arm64-apple-macos11"
           export LDFLAGS="-target arm64-apple-macos11"
-          export CMAKEFLAGS="-DCMAKE_C_COMPILER=clang -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_CROSS_COMPILING=TRUE"
-          make
+          make core
       - name: Prepare Artifact
         run: |
           mkdir artifact

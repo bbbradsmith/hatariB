@@ -94,7 +94,11 @@ HATARILIBS = \
 	$(ZLIB_LINK) $(SDL2_LINK)
 # note: libcore is linked twice to allow other hatari internal libraries to resolve references within it.
 
-default: $(CORE)
+.PHONY: default core
+
+default: core
+
+core: $(CORE)
 
 # clean and rebuild everything (including static libs)
 full:
