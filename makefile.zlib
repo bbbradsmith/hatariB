@@ -15,4 +15,4 @@ $(ZLIB_BUILD)/libz.a: submodules
 	cd zlib_build && $(MAKE) install
 
 clean:
-	rm -f -r zlib
+	rm -f -r $(ZLIB_BUILD)

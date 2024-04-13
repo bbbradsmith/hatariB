@@ -13,7 +13,7 @@ submodules:
 	git submodule update --depth 1
 
 sdl: submodules
-	mkdir -p SDL/build
+	mkdir -p $(SDL_PREFIX)
 	export CFLAGS="$(CFLAGS)" && cd SDL/build && ../configure --disable-shared --prefix=$(SDL_PREFIX) $(CONFIGURE_FLAGS) \
 		--enable-audio=no --enable-power=no --enable-filesystem=no --enable-timers=no --enable-file=no \
 		--enable-events=no --enable-render=no --enable-loadso=no --enable-cpuinfo=no --enable-assembly=no --enable-atomic=no \
@@ -40,4 +40,4 @@ sdl: submodules
 	cd SDL/build && $(MAKE) install
 
 clean:
-	rm -f -r SDL
+	rm -f -r $(SDL_PREFIX)
