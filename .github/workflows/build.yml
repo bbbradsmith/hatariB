@@ -158,7 +158,6 @@ jobs:
 
   build-macos-intel:
     name: MacOS Intel 64-bit 10.13
-    if: false
     runs-on: macos-latest
     steps:
       - name: Checkout Files
@@ -185,10 +184,12 @@ jobs:
           make -f makefile.sdl
       - name: Build hatariB
         run: |
+          export CMAKEFLAGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DCMAKE_OSX_ARCHITECTURES=x86_64 -DCMAKE_SYSTEM_NAME=Darwin"
+          make hatarilib
           export CC=/usr/local/bin/gcc-13
           export CFLAGS=-mmacosx-version-min=10.13
-          export CMAKEFLAGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DCMAKE_OSX_ARCHITECTURES=x86_64"
-          make
+          export LDFLAGS=-mmacosx-version-min=10.13 -static-libcc
+          make core
       - name: Prepare Artifact
         run: |
           mkdir artifact
@@ -235,7 +236,7 @@ jobs:
       - name: Build hatariB
         run: |
           export VERBOSE_CMAKE=1
-          export CMAKEFLAGS="-DCMAKE_C_COMPILER=clang -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_CROSSCOMPILING=TRUE"
+          export CMAKEFLAGS="-DCMAKE_C_COMPILER=clang -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_SYSTEM_NAME=Darwin"
           make hatarilib
           export CC=clang
           export CFLAGS="-target arm64-apple-macos11"
