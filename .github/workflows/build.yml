@@ -158,6 +158,7 @@ jobs:
 
   build-macos-intel:
     name: MacOS Intel 64-bit 10.13
+    if: false
     runs-on: macos-latest
     steps:
       - name: Checkout Files
@@ -234,8 +235,7 @@ jobs:
       - name: Build hatariB
         run: |
           export VERBOSE_CMAKE=1
-          export CC=gcc-13
-          export CMAKEFLAGS="-DCMAKE_C_COMPILER=clang -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 -DCMAKE_OSX_ARCHITECTURES=arm64"
+          export CMAKEFLAGS="-DCMAKE_C_COMPILER=clang -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_CROSSCOMPILING=TRUE"
           make hatarilib
           export CC=clang
           export CFLAGS="-target arm64-apple-macos11"
