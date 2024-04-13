@@ -50,7 +50,7 @@ ifneq ($(DEBUG),0)
 	LDFLAGS += -g
 	CMAKEFLAGS += -DENABLE_TRACING=1
 else
-ifneq ($(OS),MacOS)
+ifneq ($(shell uname),Darwin)
 	LDFLAGS += -Wl,--strip-debug
 endif
 	CMAKEFLAGS += -DENABLE_TRACING=0

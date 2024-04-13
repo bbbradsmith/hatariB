@@ -13,6 +13,7 @@ jobs:
 
   build-win64:
     name: Windows 64-bit
+    if: false
     runs-on: windows-latest
     steps:
       - name: Checkout Files
@@ -62,6 +63,7 @@ jobs:
 
   build-win32:
     name: Windows 32-bit
+    if: false
     runs-on: windows-latest
     steps:
       - name: Checkout Files
@@ -111,6 +113,7 @@ jobs:
 
   build-ubuntu:
     name: Ubuntu Linux
+    if: false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Files
@@ -153,8 +156,8 @@ jobs:
           name: hatarib-ubuntu--${{ env.BUILD_TAG }}
           path: artifact/
 
-  build-macos:
-    name: MacOS 10.13
+  build-macos-intel:
+    name: MacOS Intel 64-bit 10.13
     runs-on: macos-latest
     steps:
       - name: Checkout Files
@@ -173,7 +176,7 @@ jobs:
           path: |
             SDL/build
             zlib_build
-          key: sub-macos-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
+          key: sub-macos-intel-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
       - name: Build SDL2 and zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
         run: |
@@ -184,10 +187,9 @@ jobs:
           make -f makefile.sdl
       - name: Build hatariB
         run: |
-          export OS=MacOS
           export CC=/usr/local/bin/gcc-13
           export CFLAGS=-mmacosx-version-min=10.13
-          export CMAKEFLAGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13"
+          export CMAKEFLAGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DCMAKE_OSX_ARCHITECTURES=x86_64"
           gmake
       - name: Prepare Artifact
         run: |
@@ -201,11 +203,63 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: hatarib-macos--${{ env.BUILD_TAG }}
+          name: hatarib-macos-intel--${{ env.BUILD_TAG }}
+          path: artifact/
+
+  build-macos-arm:
+    name: MacOS Apple Silicon 11.0
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Files
+        uses: actions/checkout@v4
+      - name: Setup MacOS
+        run: brew install make cmake
+      - name: Submodule Cache Key
+        run: |
+          echo "SDLHASH=$(git submodule status SDL | tr -d '[:blank:]')" >> $GITHUB_ENV
+          echo "ZLIBHASH=$(git submodule status zlib | tr -d '[:blank:]')" >> $GITHUB_ENV
+      - name: Cache Submodules
+        if: false # TODO enable this
+        id: cache-sub
+        uses: actions/cache@v4
+        with:
+          path: |
+            SDL/build
+            zlib_build
+          key: sub-macos-arm-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
+      - name: Build SDL2 and zlib
+        if: steps.cache-sub.outputs.cache-hit != 'true'
+        run: |
+          export CC=clang
+          export CFLAGS="-target arm64-apple-macos11"
+          make -f makefile.zlib
+          export CC=$(PWD)/SDL/build-scripts/clang-fat.sh
+          make -f makefile.sdl
+      - name: Build hatariB
+        run: |
+          export CC=clang
+          export CFLAGS="-target arm64-apple-macos11"
+          export LDFLAGS="-target arm64-apple-macos11"
+          export CMAKEFLAGS="-DCMAKE_C_COMPILER=clang -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 -DCMAKE_OSX_ARCHITECTURES=arm64"
+          gmake
+      - name: Prepare Artifact
+        run: |
+          mkdir artifact
+          cp README.md artifact
+          mkdir artifact/cores
+          cp build/*.dylib artifact/cores
+          mkdir artifact/info
+          cp info/*.* artifact/info
+          echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $GITHUB_ENV
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hatarib-macos-arm--${{ env.BUILD_TAG }}
           path: artifact/
 
   build-rpi64:
     name: Raspberry Pi OS 64-bit
+    if: false
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout Files
@@ -257,6 +311,7 @@ jobs:
 
   build-rpi32:
     name: Raspberry Pi OS 32-bit
+    if: false
     runs-on: ubuntu-20.04
     # ubuntu-latest was building with a newer GLIBC than current Rpi images, making them incompatible,
     # but 20.04 builds seem to have an older GLIBC that is compatible.
@@ -311,6 +366,7 @@ jobs:
 
   build-android64:
     name: Android 64-bit
+    if: false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Files
@@ -375,6 +431,7 @@ jobs:
 
   build-android32:
     name: Android 32-bit
+    if: false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Files
