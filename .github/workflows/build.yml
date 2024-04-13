@@ -167,6 +167,7 @@ jobs:
           echo "SDLHASH=$(git submodule status SDL | tr -d '[:blank:]')" >> $GITHUB_ENV
           echo "ZLIBHASH=$(git submodule status zlib | tr -d '[:blank:]')" >> $GITHUB_ENV
       - name: Cache Submodules
+        if: false # TODO enable this
         id: cache-sub
         uses: actions/cache@v4
         with:
@@ -194,7 +195,7 @@ jobs:
           cp README.md artifact
           mkdir artifact/cores
           cp build/*.dylib artifact/cores
-          strip artifact/cores/*.dylib
+          strip -u -r artifact/cores/*.dylib
           mkdir artifact/info
           cp info/*.* artifact/info
           echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $GITHUB_ENV
@@ -233,10 +234,11 @@ jobs:
           make -f makefile.sdl
       - name: Build hatariB
         run: |
+          export VERBOSE_CMAKE=1
           export CC=clang
           export CFLAGS="-target arm64-apple-macos11"
           export LDFLAGS="-target arm64-apple-macos11"
-          export CMAKEFLAGS="-DCMAKE_C_COMPILER=clang -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 -DCMAKE_OSX_ARCHITECTURES=arm64"
+          export CMAKEFLAGS="-DCMAKE_C_COMPILER=clang -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_CROSS_COMPILING=TRUE"
           make
       - name: Prepare Artifact
         run: |
@@ -244,7 +246,7 @@ jobs:
           cp README.md artifact
           mkdir artifact/cores
           cp build/*.dylib artifact/cores
-          strip artifacts/cores/*.dylib
+          strip -u -r artifacts/cores/*.dylib
           mkdir artifact/info
           cp info/*.* artifact/info
           echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $GITHUB_ENV
