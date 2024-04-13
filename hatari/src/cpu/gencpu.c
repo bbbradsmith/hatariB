@@ -2767,6 +2767,9 @@ static int gence020cycles_ciea (struct instr *curi, wordsizes ssize, amodes dmod
 static int gence020cycles_fea (amodes mode)
 {
 	int h = 0, t = 0, c = 0, ws = 0;
+#ifdef __LIBRETRO__
+	(void)ws;
+#endif
 	switch ((int)mode)
 	{
 	case Dreg:

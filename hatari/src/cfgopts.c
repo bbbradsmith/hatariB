@@ -301,6 +301,9 @@ int update_config(const char *filename, const struct Config_Tag configs[], const
 	char line[1024];
 	bool bUseTempCfg = false;
 	const char *sTempCfgName = "_temp_.cfg";
+#ifdef __LIBRETRO__
+	(void)lineno;
+#endif
 
 	cfgfile = fopen(filename, "r");
 

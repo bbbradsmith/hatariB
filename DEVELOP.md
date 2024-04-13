@@ -108,6 +108,8 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Saved `MachineClocks` (from clocks_timings.c) to prevent state divergence.
   * Use standardized path length for snapshot of filenames.
   * Remove unsupported Lilo and DiskZip paths.
+* **hatari/src/cfgopts.c**
+  * Suppress unused variable warning.
 * **hatari/src/crossbar.c**
   * Removed `Crossbar_Recalculate_Clocks_Cycles()` from savestate restore because it seemed to be unnecessary and caused state divergence.
 * **hatari/src/cycInt.c**
@@ -270,13 +272,15 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Replace use of `rand()` with deterministic `core_rand()`.
 * **hatari/src/zip.c**
   * Disable use of `unzOpen` which was modified (see: unzip.c) and not needed by this core.
-* **hatari/cpu/custom.c**
+* **hatari/src/cpu/custom.c**
   * Make `extra_cycle` externally accessible for savestate.
+* **hatari/src/cpu/gencpui.c**
+  * Suppress unused variable warning.
 * **hatari/cpu/hatari-glue.c**
   * Added `core_save_state`, `core_restore_state` and `core_flush_audio` to facilitate seamless savestates.
-* **hatari/cpu/memory.c**
+* **hatari/src/cpu/memory.c**
   * Disable `SDL_Quit`.
-* **hatari/cpu/newcpu.c**
+* **hatari/src/cpu/newcpu.c**
   * Split `m68k_go` into `m68k_go`, `m68k_go_frame`, and `m68k_go_quit` to allow emulation loop to return to the Libretro core after each frame.
     * `m68k_go` initializes the CPU and prepares to emulate the first frame before it exits. This is the last thing done during `retro_init`.
     * `m68k_go_frame` runs the main emulation loop, returning after one frame. This is called once each frame from `retro_run`.
