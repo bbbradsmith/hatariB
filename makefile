@@ -29,7 +29,7 @@ CFLAGS += \
 	-D__LIBRETRO__ -DSHORTHASH=\"$(SHORTHASH)\" \
 	-Ihatari/build -I$(SDL2_INCLUDE)
 LDFLAGS += \
-	-shared $(WERROR) -static-libgcc
+	-shared $(WERROR)
 
 CMAKE ?= cmake
 CMAKEFLAGS += \
@@ -50,9 +50,9 @@ ifneq ($(DEBUG),0)
 	LDFLAGS += -g
 	CMAKEFLAGS += -DENABLE_TRACING=1
 else
-ifneq ($(shell uname),Darwin)
-	LDFLAGS += -Wl,--strip-debug
-endif
+	ifneq ($(shell uname),Darwin)
+		LDFLAGS += -Wl,--strip-debug
+	endif
 	CMAKEFLAGS += -DENABLE_TRACING=0
 endif
 
@@ -65,10 +65,12 @@ endif
 
 ifeq ($(OS),Windows_NT)
 	SO_SUFFIX=.dll
-else ifeq ($(OS),MacOS)
+	LDFLAGS += -static-libgcc
+else ifeq ($(shell uname),Darwin)
 	SO_SUFFIX=.dylib
 else
 	SO_SUFFIX=.so
+	LDFLAGS += -static-libgcc
 endif
 
 BD=build/

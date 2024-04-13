@@ -162,9 +162,6 @@ jobs:
     steps:
       - name: Checkout Files
         uses: actions/checkout@v4
-      - name: Setup MacOS
-        run: brew install make gcc@13 cmake
-        # brew's gcc has to be a specific version, make sure to update 13 above and below if upgrading
       - name: Submodule Cache Key
         run: |
           echo "SDLHASH=$(git submodule status SDL | tr -d '[:blank:]')" >> $GITHUB_ENV
@@ -197,6 +194,7 @@ jobs:
           cp README.md artifact
           mkdir artifact/cores
           cp build/*.dylib artifact/cores
+          strip artifact/cores/*.dylib
           mkdir artifact/info
           cp info/*.* artifact/info
           echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $GITHUB_ENV
@@ -212,8 +210,6 @@ jobs:
     steps:
       - name: Checkout Files
         uses: actions/checkout@v4
-      - name: Setup MacOS
-        run: brew install make cmake
       - name: Submodule Cache Key
         run: |
           echo "SDLHASH=$(git submodule status SDL | tr -d '[:blank:]')" >> $GITHUB_ENV
@@ -248,6 +244,7 @@ jobs:
           cp README.md artifact
           mkdir artifact/cores
           cp build/*.dylib artifact/cores
+          strip artifacts/cores/*.dylib
           mkdir artifact/info
           cp info/*.* artifact/info
           echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $GITHUB_ENV
