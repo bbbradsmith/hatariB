@@ -1,4 +1,4 @@
-ZLIB_BUILD = $(PWD)/zlib_build
+ZLIB_BUILD ?= $(PWD)/zlib_build
 CFLAGS += -fPIC
 # -fPIC needed to link into a shared object
 
