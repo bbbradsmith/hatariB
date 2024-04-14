@@ -177,18 +177,18 @@ jobs:
       - name: Build SDL2 and zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
         run: |
-          export CC=/usr/local/bin/gcc-13
+          export CC=gcc-13
           export CFLAGS=-mmacosx-version-min=10.13
           make -f makefile.zlib
           export CC=$(PWD)/SDL/build-scripts/clang-fat.sh
           make -f makefile.sdl
       - name: Build hatariB
         run: |
-          export CMAKEFLAGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DCMAKE_OSX_ARCHITECTURES=x86_64 -DCMAKE_SYSTEM_NAME=Darwin"
+          export CMAKEFLAGS="-DCMAKE_C_COMPILER=gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DCMAKE_OSX_ARCHITECTURES=x86_64 -DCMAKE_SYSTEM_NAME=Darwin"
           make hatarilib
-          export CC=/usr/local/bin/gcc-13
+          export CC=gcc-13
           export CFLAGS=-mmacosx-version-min=10.13
-          export LDFLAGS=-mmacosx-version-min=10.13 -static-libgcc
+          export LDFLAGS="-mmacosx-version-min=10.13 -static-libgcc"
           make core
       - name: Prepare Artifact
         run: |
