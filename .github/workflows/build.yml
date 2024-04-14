@@ -154,14 +154,11 @@ jobs:
           path: artifact/
 
   build-macos:
-    name: MacOS 10.13
+    name: MacOS Fat
     runs-on: macos-latest
     steps:
       - name: Checkout Files
         uses: actions/checkout@v4
-      - name: Setup MacOS
-        run: brew install make gcc@13 cmake
-        # brew's gcc has to be a specific version, make sure to update 13 above and below if upgrading
       - name: Submodule Cache Key
         run: |
           echo "SDLHASH=$(git submodule status SDL | tr -d '[:blank:]')" >> $GITHUB_ENV
@@ -172,23 +169,51 @@ jobs:
         with:
           path: |
             SDL/build
-            zlib_build
+            zlib_build_arm
+            zlib_build_intel
           key: sub-macos-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
       - name: Build SDL2 and zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
         run: |
-          export CC=/usr/local/bin/gcc-13
-          export CFLAGS=-mmacosx-version-min=10.13
+          export CC=clang
+          export CFLAGS="-target arm64-apple-macos11"
+          export ZLIB_BUILD=zlib_build_arm
           make -f makefile.zlib
+          export CC=gcc-13
+          export CFLAGS=-mmacosx-version-min=10.13
+          export ZLIB_BUILD=zlib_build_intel
+          make -f makefile.zlib
+          export CFLAGS=
           export CC=$(PWD)/SDL/build-scripts/clang-fat.sh
           make -f makefile.sdl
       - name: Build hatariB
         run: |
-          export OS=MacOS
-          export CC=/usr/local/bin/gcc-13
+          export CC_OLD=$CC
+          export BD=build_arm
+          export HBD=build_arm
+          export ZLIB_BUILD=zlib_build_arm
+          export CMAKEFLAGS="-DCMAKE_C_COMPILER=clang -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_SYSTEM_NAME=Darwin"
+          make hatarilib
+          export CC=clang
+          export CFLAGS="-target arm64-apple-macos11"
+          export LDFLAGS="-target arm64-apple-macos11"
+          make core
+          export BD=build_intel
+          export HBD=build_intel
+          export ZLIB_BUILD=zlib_build_intel
+          export CC=$CC_OLD
+          export CFLAGS=
+          export LDFLAGS=
+          export CMAKEFLAGS="-DCMAKE_C_COMPILER=gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DCMAKE_OSX_ARCHITECTURES=x86_64 -DCMAKE_SYSTEM_NAME=Darwin"
+          make hatarilib
+          export CC=gcc-13
           export CFLAGS=-mmacosx-version-min=10.13
-          export CMAKEFLAGS="-DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13"
-          gmake
+          export LDFLAGS="-mmacosx-version-min=10.13 -static-libgcc"
+          make core
+          strip -u -r build_arm/hatarib.dylib
+          strip -u -r build_intel/hatarib.dylib
+          mkdir -p build
+          lipo -create -output build/hatarib.dylib build_arm/hatarib.dylib build_intel/hatarib.dylib
       - name: Prepare Artifact
         run: |
           mkdir artifact

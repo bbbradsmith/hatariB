@@ -5,7 +5,7 @@ A [Libretro](https://www.libretro.com/) core integrating the [Hatari](https://ha
 * Current Build Platforms:
   * Windows 64-bit, 32-bit
   * Ubuntu
-  * MacOS
+  * MacOS 11.0 Apple Arm, 10.13 Intel 64-bit
   * Raspberry Pi OS 64-bit, 32-bit
   * Android 64-bit, 32-bit
 * Current Release:
@@ -272,6 +272,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Fixed out-of-date screen image during pause/one-shot and savestate/netplay/run-ahead.
   * Android builds.
   * Multiple hard disk support.
+  * MacOS Fat build (Intel 64-bit, Apple Arm).
 * [hatariB v0.2](https://github.com/bbbradsmith/hatariB/releases/tag/0.2) - 2023-09-07
   * Second beta test version.
   * IPF support via dynamic loading of capsimg library.
