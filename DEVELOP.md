@@ -274,7 +274,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Disable use of `unzOpen` which was modified (see: unzip.c) and not needed by this core.
 * **hatari/src/cpu/custom.c**
   * Make `extra_cycle` externally accessible for savestate.
-* **hatari/src/cpu/gencpui.c**
+* **hatari/src/cpu/gencpu.c**
   * Suppress unused variable warning.
 * **hatari/cpu/hatari-glue.c**
   * Added `core_save_state`, `core_restore_state` and `core_flush_audio` to facilitate seamless savestates.
