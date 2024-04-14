@@ -43,14 +43,17 @@ If you have trouble getting the builds to work, you can turn on logging under *S
 ### MacOS
 
 Installing for MacOS requires a different method for giving permission:
-* After downloading the core, right click on `cores/hatarib.dylib` and open it, here you can give it permission to run.
-* On MacOS the cores and info folders are likely at `Users/[username]/Library/Application Support/RetroArch`.
+* On older versions of MacOS, you may be able to right click (or ctrl+click) on `cores/hatarib.dylib` and open it, after which you can give it permission to run.
+* On newer versions, you may have to [remove a download quarantine](https://cycling74.com/articles/using-unsigned-max-externals-on-mac-os-10-15-catalina):
+  * Open the Terminal utility, navigate to the folder where `hatarib.dylib` was extracted.
+  * Type: `xattr -d com.apple.quarantine hatarib.dylib`
+  * Type: `chmod +x hatarib.dylib`
+  * To make it easier, instead of navigating to the directory, instead of typing `hatarib.dylib` you can drag it into the terminal window, which will automatically paste its full path there.
 
-The `capsimg.so` for IPF support can be placed next to the `hatarib.dylib` file, but it also must be given permission, in [a slightly more difficult way](https://cycling74.com/articles/using-unsigned-max-externals-on-mac-os-10-15-catalina):
-* Open the Terminal utility.
-* You can drag the `capsimg.so` into the terminal to copy its filename path there.
-* Use `xattr` to remove the quarantine:
-  * `xattr -d com.apple.quarantine Users/[username]/Library/Application\ Support/RetroArch/cores/capsimg.so`
+Once the file is un-quarantined, and given permission to execute, you can copy it to your RetroArch cores folder.
+* On MacOS the cores and info folders are usually at: `Users/[username]/Library/Application Support/RetroArch`.
+
+The `capsimg.so` for IPF support can be placed next to the `hatarib.dylib` file, but it must also be given permission in the same way.
 
 ### Android
 
@@ -143,7 +146,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * TOS ROM: TOS, IMG, ROM, BIN
   * Cartridge: IMG, ROM, BIN, CART
   * TOS, Cartridge, and Hard disk files should be placed in **system/hatarib/**.
-  * When loading multiple disks, the best method is to use M3U playlists to specify all needed disks at once during *Load Content*. Information: [M3U file tutorial](https://docs.retroachievements.org/Multi-Disc-Games-Tutorial/). This can also include a hard disk image.
+  * When loading multiple disks, the best method is to use M3U playlists to specify all needed disks at once during *Load Content*. This can also include hard disk images. Information: [M3U file tutorial](https://docs.retroachievements.org/Multi-Disc-Games-Tutorial/).
   * *Load New Disk* can add additional disks while running, but has several caveats, especially regarding savestates. See below.
   * The first two disks of an M3U list will be loaded into drive A and B at startup.
   * Libretro only has an interface for one disk drive, but you can use the Select button to switch between whether the Disc Control menu currently shows drive A or drive B.
