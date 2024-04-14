@@ -2,6 +2,7 @@
 # HBD = hatari build subdirectory
 BD ?= build
 HBD ?= build
+ZLIB_BUILD ?= zlib_build
 
 # enables debug symbols, CPU trace logging
 DEBUG ?= 0
@@ -19,9 +20,9 @@ WERROR ?= -Wall -Werror
 SHORTHASH = "$(shell git rev-parse --short HEAD || unknown)"
 
 # static libraries
-ZLIB_INCLUDE ?= $(PWD)/zlib_build/include
+ZLIB_INCLUDE ?= $(PWD)/$(ZLIB_BUILD)/include
 SDL2_INCLUDE ?= $(PWD)/SDL/build/include/SDL2
-ZLIB_LIB ?= $(PWD)/zlib_build/lib/libz.a
+ZLIB_LIB ?= $(PWD)/$(ZLIB_BUILD)/lib/libz.a
 SDL2_LIB ?= $(PWD)/SDL/build/lib/libSDL2.a
 SDL2_LINK ?= $(shell $(PWD)/SDL/build/bin/sdl2-config --static-libs)
 ZLIB_LINK ?= $(ZLIB_LIB)
