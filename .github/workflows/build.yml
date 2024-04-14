@@ -13,7 +13,6 @@ jobs:
 
   build-win64:
     name: Windows 64-bit
-    if: false
     runs-on: windows-latest
     steps:
       - name: Checkout Files
@@ -63,7 +62,6 @@ jobs:
 
   build-win32:
     name: Windows 32-bit
-    if: false
     runs-on: windows-latest
     steps:
       - name: Checkout Files
@@ -113,7 +111,6 @@ jobs:
 
   build-ubuntu:
     name: Ubuntu Linux
-    if: false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Files
@@ -234,7 +231,6 @@ jobs:
 
   build-rpi64:
     name: Raspberry Pi OS 64-bit
-    if: false
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout Files
@@ -286,7 +282,6 @@ jobs:
 
   build-rpi32:
     name: Raspberry Pi OS 32-bit
-    if: false
     runs-on: ubuntu-20.04
     # ubuntu-latest was building with a newer GLIBC than current Rpi images, making them incompatible,
     # but 20.04 builds seem to have an older GLIBC that is compatible.
@@ -341,7 +336,6 @@ jobs:
 
   build-android64:
     name: Android 64-bit
-    if: false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Files
@@ -406,7 +400,6 @@ jobs:
 
   build-android32:
     name: Android 32-bit
-    if: false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Files
