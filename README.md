@@ -235,13 +235,16 @@ See [DEVELOP.md](DEVELOP.md) for more details.
       * It is generally recommended to use M3U playlists instead of *Load New Disk* when possible ([tutorial](https://docs.retroachievements.org/Multi-Disc-Games-Tutorial/)).
   * Hard Disk modifications are written directly to their source files, and are not included in savestates. Try to avoid making savestates during a hard disk write.
   * If you increase the size of memory, you should close content and restart the core before using savestates, to allow RetroArch to update the savestate size.
-  * For run-ahead or netplay disable *System > Floppy Savestate Safety Save* to prevent high disk activity.
+  * For run-ahead or netplay disable *System > Floppy Savestate Safety Save* to prevent high disk activity. When enabled, this option causes any savestate reload to always rewrite a disk to your saves folder if a save file for it already exists here. This helps prevent losing unsaved data when reloading longer term save states, but makes the rapid savestates needed for run-ahead significantly slower.
+    * Enabling *Advanced > Write Protect Floppy Disks* will also prevent the safety save feature, as it will not allow the disk to be modified at all.
 * Netplay:
-  * Disable *System > Floppy Savestate Safety Save* to prevent unnecessary disk activity.
+  * Disable *System > Floppy Savestate Safety Save*, or consider enabling *Advanced > Write Protect Floppy Disks*. See note about savestates above.
   * Disable *Input > Host Mouse Enabled* and *Input > Host Keyboard Enabled*, because RetroArch netplay does not send this activity over the network. Instead, use the onscreen keyboard and gamepad to operate the ST keyboard and mouse.
   * RetroArch does not allow analog stick inputs during netplay. The *RetroPad > Joystick / Mouse Toggle* button assignment may be useful for switching between mouse and joystick d-pad input during netplay.
   * Make sure your core options match, especially the TOS image, before attempting to connect.
-  * The IPF format appears to have drive state that cannot be completely restored. Netplay may stutter during activity if using IPF disk images due to savestate divergence.
+  * The IPF format appears to have drive state that cannot be completely restored. Netplay may stutter during disk activity if using using IPF disk images due to savestate divergence.
+  * Netplay for hatariB may be more network and CPU intensive than other retro sytems, due to the large onboard RAM of the ST, and volatile floppy disk media.
+  * The Libretro API does not provide a way to detect whether netplay is active, so appropriate setting changes like the safety save unfortunately can't be done automatically.
 * Quirks:
   * If the on-screen keyboard confirm/cancel buttons aren't mapped to dedicated buttons, you might end up suddenly holding the underlying button when the keyboard closes. (Inputs from buttons mapped to the on-screen keyboard are suppressed while it remains open.)
   * Though the on-screen keyboard is available in [several language layouts](https://tho-otto.de/keyboards/), for your physical keyboard there aren't any direct configuration options, currently. RetroArch ignores the OS keyboard layout, and [all keys report as-if in US layout](https://github.com/libretro/RetroArch/issues/13838) (e.g. German Z reports as RETROK_y). Because of this, if you pick a TOS that matches your keyboard language, the mappings are likely to be mostly compatible. Otherwise, if you need finer control of the mapping, RetroArch's *Input* settings can be used to remap individual keys.
