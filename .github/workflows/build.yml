@@ -487,7 +487,6 @@ jobs:
     runs-on: ubuntu-latest
     container: devkitpro/devkitppc:latest
     steps:
-    steps:
       - name: Checkout Files
         uses: actions/checkout@v4
       - name: Setup Ubuntu
