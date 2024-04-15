@@ -256,6 +256,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
 
 * hatariB v0.4 - Unreleased
   * EmuTOS 192uk chosen as default for best compatibility.
+  * EmuTOS 1.3 ROMs.
 * [hatariB v0.3](https://github.com/bbbradsmith/hatariB/releases/tag/0.3) - 2024-04-15
   * On-screen keyboard improvements:
     * Can now hold the key continuously.
