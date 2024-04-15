@@ -200,11 +200,11 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * The TT and Falcon machines have a small non-volatile RAM (NVRAM) that stores system settings. This is saved to **system/hatarib.nvram** when the content is closed.
 * TOS ROMs:
   * The TOS ROM can be chosen in the core option *Sstem > TOS ROM*.
-  * The default TOS ROM is **system/tos.img**, but *[EmuTOS 1024k](https://emutos.sourceforge.io/)* is provided as a free substitute.
+  * The default TOS ROM is **system/tos.img**, but *[EmuTOS](https://emutos.sourceforge.io/)* is provided built-in as a free substitute.
   * Additional TOS ROMs can be supplied in **system/hatarib/**, up to a limit of 100 files.
   * *EmuTOS* is compatible with most software, but not all. In most incompatibility cases it will show a "Panic" message at boot.
-  * *EmuTOS 1024k* is the default, with a full feature set, and univeral support for all emulated machine types.
-  * *EmuTOS 192uk* may be slightly more compatible with *ST* software, but provides fewer features. With a colour monitor it starts up in 50hz by default.
+  * *EmuTOS 1024k* has a full feature set, and univeral support for all emulated machine types.
+  * *EmuTOS 192uk* may be slightly more compatible with *ST* software, but provides fewer features. With a colour monitor it starts up in 50hz. This was chosen as a default for the greatest compatibility with games.
   * *EmuTOS 192us* is similar to *192uk* but instead starts in 60hz.
   * Most other TOS files are only compatible with certain machines.
 * On-Screen Keyboard:
@@ -255,7 +255,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
 ## History
 
 * hatariB v0.4 - Unreleased
-  * No changes yet.
+  * EmuTOS 192uk chosen as default for best compatibility.
 * [hatariB v0.3](https://github.com/bbbradsmith/hatariB/releases/tag/0.3) - 2024-04-15
   * On-screen keyboard improvements:
     * Can now hold the key continuously.
@@ -315,7 +315,7 @@ This Libretro core was begun by [Brad Smith](https://github.com/bbbradsmith).
 Other contributors:
 * [DJM75](https://github.com/DJM75) - [Android build](https://github.com/bbbradsmith/hatariB/issues/26).
 
-Authors of incorporated works:
+Incorporated works:
 * [Hatari](hatari/doc/authors.txt)
 * [EmuTOS](https://raw.githubusercontent.com/emutos/emutos/master/doc/authors.txt)
 * [libretro.h](https://github.com/libretro/libretro-common/blob/7edbfaf17baffa1b8a00231762aa7ead809711b5/include/libretro.h)

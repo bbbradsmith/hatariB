@@ -88,7 +88,7 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},
 			{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},{NULL,NULL},
 			{NULL,NULL}
-		}, "<etos1024k>" // replace with <tos.img> if system/tos.img exists
+		}, "<etos192uk>" // replace with <tos.img> if system/tos.img exists
 	},
 	{
 		"hatarib_monitor", "Monitor", NULL,
