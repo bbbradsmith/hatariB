@@ -492,7 +492,7 @@ jobs:
       - name: Setup Ubuntu
         run: |
           sudo apt-get update
-          sudo apt-get install make gcc cmake
+          sudo apt-get install --assume-yes gcc
       - name: Test devkitPro
         run: |
           echo DEVKITPRO=$DEVKITPRO
