@@ -315,7 +315,7 @@ This Libretro core was begun by [Brad Smith](https://github.com/bbbradsmith).
 Other contributors:
 * [DJM75](https://github.com/DJM75) - [Android build](https://github.com/bbbradsmith/hatariB/issues/26).
 
-Incorporated works:
+Incorporated works contributor documentation:
 * [Hatari](hatari/doc/authors.txt)
 * [EmuTOS](https://raw.githubusercontent.com/emutos/emutos/master/doc/authors.txt)
 * [libretro.h](https://github.com/libretro/libretro-common/blob/7edbfaf17baffa1b8a00231762aa7ead809711b5/include/libretro.h)

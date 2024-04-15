@@ -7,7 +7,7 @@ This is intended as reference documentation for future maintenance of this proje
 Incorporated sources:
 
 * [Hatari/](https://git.tuxfamily.org/hatari/hatari.git/tag/?id=v2.4.1) 2.4.1 2022-08-03
-* [EmuTOS/](https://emutos.sourceforge.io/) 1.2.1 2022-08-16
+* [EmuTOS/](https://emutos.sourceforge.io/) 1.3 2024-03-17
 * [libretro/libretro.h](https://github.com/libretro/libretro-common/blob/7edbfaf17baffa1b8a00231762aa7ead809711b5/include/libretro.h) 24a9210 2023-07-16
 * [libretro/libretro_sdl_keymap.h](https://github.com/libretro/RetroArch/blob/b4143882245edd737c7e7c522b25e32f8d1f64ad/input/input_keymaps.c#L607) 9ca5c5e 2023-07-08
 * [SDL2](https://github.com/libsdl-org/SDL/releases/tag/release-2.28.2) 2.28.2 2023-08-02
