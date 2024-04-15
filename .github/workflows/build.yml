@@ -487,8 +487,18 @@ jobs:
     runs-on: ubuntu-latest
     container: devkitpro/devkitppc:latest
     steps:
+    steps:
+      - name: Checkout Files
+        uses: actions/checkout@v4
+      - name: Setup Ubuntu
+        run: |
+          sudo apt-get update
+          sudo apt-get install make gcc cmake
       - name: Test devkitPro
         run: |
           echo DEVKITPRO=$DEVKITPRO
-          tree
-          tree /opt/devkitpro
+          ls -R /opt/devkitpro
+          make --version
+          cmake --version
+          gcc --version
+
