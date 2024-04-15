@@ -9,7 +9,7 @@ A [Libretro](https://www.libretro.com/) core integrating the [Hatari](https://ha
   * Raspberry Pi OS 64-bit, 32-bit
   * Android 64-bit, 32-bit
 * Current Release:
-  * **[hatariB v0.2](https://github.com/bbbradsmith/hatariB/releases/tag/0.2)** - 2023-09-07
+  * **[hatariB v0.3](https://github.com/bbbradsmith/hatariB/releases/tag/0.3)** - 2024-04-15
 * Unstable Build:
   * [Download](https://nightly.link/bbbradsmith/hatariB/workflows/build/main)
 * Recent Builds:
@@ -176,10 +176,12 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * M3U playlists can be used to specify a collection of disk images, accessible via *Disc Control* in the *Quick Menu* of RetroArch.
   * Each line of the M3U is the filename of a disk image, relative to the M3U file.
   * A line starting with `#` will normally be ignored, allowing you to write a comment on the rest of that line, if needed.
-  * The first 2 disk images will be loaded into drives A and B when the content is opened.
-  * A temporary hard disk image can also be listed in the M3U. Place hard disks after any floppy disk mages.
+  * The first 2 disk images will be loaded into drives A and B when the content is opened, but this behaviour can be overridden.
+    * A temporary hard disk image can also be listed in the M3U. Place hard disks after any floppy disk mages.
   * `#AUTO:filename` can be used to automatically run a TOS file at boot. This is the same as [Hatari's --auto command line option](https://hatari.tuxfamily.org/doc/manual.html#General_options). **TOS 1.04** or later is required to use this feature. Example: `#AUTO:C:\GAMES\JOUST.PRG`
-  * If using the `#AUTO` feature, technically `#EXTM3U` should be added as the first line of the M3U to indicate this is an [Extended M3U](https://en.wikipedia.org/wiki/M3U#Extended_M3U), but hatariB will not enforce this.
+  * `#BOOTA:number` can be used to select an image from the list to insert into drive A at boot. 1 is the first image in the list. 0 will leave the drive empty.
+  * `#BOOTB:number` selects the image for drive B at boot.
+  * If using the `#AUTO`/`#BOOTA`/`#BOOTB` features, technically `#EXTM3U` should be added as the first line of the M3U to indicate this is an [Extended M3U](https://en.wikipedia.org/wiki/M3U#Extended_M3U), but hatariB will not enforce this.
   * *Manage Core Options > Save Game Options* can be used to associate other core options with an M3U playlist.
 * Saving:
   * When a modified floppy disk is ejected, or the core is closed, a modified copy of that disk image will be written to the *saves/* folder.
@@ -251,7 +253,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
 
 ## History
 
-* hatariB v0.3 - Unreleased
+* [hatariB v0.3](https://github.com/bbbradsmith/hatariB/releases/tag/0.3) - 2024-04-15
   * On-screen keyboard improvements:
     * Can now hold the key continuously.
     * Auto-repeat for a held direction.
@@ -276,6 +278,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Android builds.
   * Multiple hard disk support.
   * MacOS Fat build (Intel 64-bit, Apple Arm).
+  * M3U can be used to select disk image or empty drive at boot.
 * [hatariB v0.2](https://github.com/bbbradsmith/hatariB/releases/tag/0.2) - 2023-09-07
   * Second beta test version.
   * IPF support via dynamic loading of capsimg library.

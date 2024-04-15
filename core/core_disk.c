@@ -36,6 +36,7 @@ static unsigned int image_index[2];
 static bool image_insert[2];
 static unsigned int image_count;
 static int initial_image;
+static int boot_index[2];
 
 //
 // Hatari interface
@@ -71,6 +72,8 @@ void disks_clear()
 	// Hatari ejects both disks
 	core_floppy_eject(0);
 	core_floppy_eject(1);
+	boot_index[0] = -1;
+	boot_index[1] = -1;
 }
 
 //
@@ -286,6 +289,21 @@ static bool load_m3u(uint8_t* data, unsigned int size, const char* m3u_path, uns
 				const char* auto_start = line+6;
 				while (*auto_start == ' ' || *auto_start == '\t') ++auto_start; // skip leading whitespace
 				core_auto_start(auto_start);
+			}
+			else if (lp != 0 && (!strncasecmp(line,"#BOOTA:",7) || !strncasecmp(line,"#BOOTB:",7))) // EXTM3U BOOTA/BOOTB directive
+			{
+				const char* boot = line+7;
+				int d = line[5] - 'A';
+				while (*boot == ' ' || *boot == '\t') ++boot;
+				if (*boot == 0)
+				{
+					boot_index[d] = 0; // empty drive
+				}
+				else
+				{
+					boot_index[d] = strtol(boot,NULL,10);
+					if (boot_index[d] < 0) boot_index[d] = 0; // treat negative values as empty
+				}
 			}
 			// ready for next line
 			lp = 0;
@@ -812,33 +830,68 @@ void core_disk_load_game(const struct retro_game_info *game)
 	add_image_index(); // add one disk
 	replace_image_index(0,game); // load it there (may load multiple if M3U/Zip)
 
-	// ensure initial image has data, if possible (avoids selecting hard disk or other invalid image)
-	for (int i=0; i<2; ++i) // two passes to be thorough, in case initial_image is not 0
+	// out of bounds = empty drive
+	for (int i=0; i<2; ++i)
 	{
-		while (initial_image < image_count && disks[initial_image].data == NULL) ++initial_image;
-		if (initial_image >= image_count) initial_image = 0;
+		if (boot_index[i] > (int)image_count) boot_index[i] = 0;
 	}
-	// insert first disk
-	set_image_index(initial_image);
-	set_eject_state(false); // insert it
 
-	// insert second disk if available
-	if (core_disk_enable_b)
+	// fill drives selected by #BOOTA/#BOOTB
+	// reverse order gives BOOTA precedence if they were both the same
+	if (boot_index[1] > 0 && core_disk_enable_b)
 	{
-		int second_image = initial_image + 1;
-		for (int i=0; i<2; ++i)
+		drive = 1;
+		set_image_index(boot_index[1]-1);
+		set_eject_state(false);
+	}
+	if (boot_index[0] > 0)
+	{
+		drive = 0;
+		set_image_index(boot_index[0]-1);
+		set_eject_state(false);
+		initial_image = image_index[0];
+	}
+
+	// automatic boot disk selection
+	if (boot_index[0] < 0)
+	{
+		// ensure initial image has data, if possible (avoids selecting hard disk or other invalid image)
+		for (int i=0; i<2; ++i) // two passes, in case initial_image is not 0
 		{
-			while(second_image < image_count && disks[second_image].data == NULL) ++second_image;
-			if (second_image >= image_count) second_image = 0;
+			while (initial_image < image_count &&
+				(disks[initial_image].data == NULL || (image_insert[1] == true && initial_image == image_index[1])))
+				++initial_image;
+			if (initial_image >= image_count) initial_image = 0;
 		}
-		if (second_image != initial_image && disks[second_image].data != NULL)
+		// insert first disk, if it's not already the second disk
+		if (image_insert[1] == false || (initial_image != image_index[1]))
+		{
+			drive = 0;
+			set_image_index(initial_image);
+			set_eject_state(false);
+		}
+	}
+
+	// automatic second disk selection
+	if (boot_index[1] < 0 && core_disk_enable_b)
+	{
+		int second_image = 0;
+		while(second_image < image_count &&
+			(disks[second_image].data == NULL || (image_insert[0] == true && second_image == image_index[0])))
+			++second_image;
+		if (second_image >= image_count) second_image = 0;
+		// insert second disk, if it exists, and it's not already inserted in drive A
+		if (disks[second_image].data != NULL &&
+			(image_insert[0] == false || (second_image != image_index[0])))
 		{
 			drive = 1;
 			set_image_index(second_image);
 			set_eject_state(false);
-			drive = 0;
 		}
 	}
+
+	// set initial drive
+	drive = 0;
 }
 
 void core_disk_unload_game(void)

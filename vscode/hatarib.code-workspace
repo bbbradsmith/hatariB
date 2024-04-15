@@ -39,7 +39,7 @@
 		"files.associations": {
 			"*.h": "c",
 		},
-		"powershell.cwd": ".",
+		"powershell.cwd": "vscode",
 		"workbench.colorCustomizations":{
 			"statusBar.background": "#101010",
 			"statusBar.foreground": "#FFFFFF",
