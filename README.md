@@ -245,6 +245,11 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * The IPF format appears to have drive state that cannot be completely restored. Netplay may stutter during disk activity if using using IPF disk images due to savestate divergence.
   * Netplay for hatariB may be more network and CPU intensive than other retro sytems, due to the large onboard RAM of the ST, and volatile floppy disk media.
   * The Libretro API does not provide a way to detect whether netplay is active, so appropriate setting changes like the safety save unfortunately can't be done automatically.
+* Unsupported Features:
+  * [Printer](https://github.com/bbbradsmith/hatariB/issues/23)
+  * [RS232](https://github.com/bbbradsmith/hatariB/issues/22)
+  * [Host keyboard remapping](https://github.com/bbbradsmith/hatariB/issues/21)
+  * [Falcon microphone](https://github.com/bbbradsmith/hatariB/issues/20)
 * Quirks:
   * If the on-screen keyboard confirm/cancel buttons aren't mapped to dedicated buttons, you might end up suddenly holding the underlying button when the keyboard closes. (Inputs from buttons mapped to the on-screen keyboard are suppressed while it remains open.)
   * Though the on-screen keyboard is available in [several language layouts](https://tho-otto.de/keyboards/), for your physical keyboard there aren't any direct configuration options, currently. RetroArch ignores the OS keyboard layout, and [all keys report as-if in US layout](https://github.com/libretro/RetroArch/issues/13838) (e.g. German Z reports as RETROK_y). Because of this, if you pick a TOS that matches your keyboard language, the mappings are likely to be mostly compatible. Otherwise, if you need finer control of the mapping, RetroArch's *Input* settings can be used to remap individual keys.
