@@ -485,17 +485,10 @@ jobs:
   build-wii-u:
     name: Wii U
     runs-on: ubuntu-latest
+    container: devkitpro/devkitppc:latest
     steps:
-      - name: Install devkitPro
+      - name: Test devkitPro
         run: |
-          mkdir dkp
-          cd dkp
-          wget https://apt.devkitpro.org/install-devkitpro-pacman
-          chmod +x ./install-devkitpro-pacman
-          echo WGET COMPLETE
-          sudo ./install-devkitpro-pacman
-          echo INSTALL DKP COMPLETE
-          sudo dkp-pacman -S wiiu-dev
-          echo WIIU-DEV COMPLETE
-          tree /opt/devkitpro
           echo DEVKITPRO=$DEVKITPRO
+          tree
+          tree /opt/devkitpro
