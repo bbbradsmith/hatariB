@@ -492,12 +492,9 @@ jobs:
       - name: Setup Ubuntu
         run: |
           sudo apt-get update
-          sudo apt-get install --assume-yes gcc
-      - name: Test devkitPro
+          sudo apt-get install --assume-yes git gcc
+      - name: Build Wii U Core
         run: |
-          echo DEVKITPRO=$DEVKITPRO
-          ls -R /opt/devkitpro
-          make --version
-          cmake --version
-          gcc --version
-
+          git clone https://github.com/libretro/RetroArch.git retroarch --depth 1
+          cd retroarch
+          make -f Makefile.wiiu
