@@ -488,10 +488,14 @@ jobs:
     steps:
       - name: Install devkitPro
         run: |
+          mkdir dkp
+          cd dkp
           wget https://apt.devkitpro.org/install-devkitpro-pacman
           chmod +x ./install-devkitpro-pacman
+          echo WGET COMPLETE
           sudo ./install-devkitpro-pacman
-          sudo dkp-packman -Sy
+          echo INSTALL DKP COMPLETE
           sudo dkp-pacman -S wiiu-dev
+          echo WIIU-DEV COMPLETE
           tree /opt/devkitpro
           echo DEVKITPRO=$DEVKITPRO
