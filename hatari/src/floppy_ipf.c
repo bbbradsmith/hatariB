@@ -317,7 +317,11 @@ const struct SoImport CAPSIMPORT[CAPSIMPORT_COUNT] = {
 };
 
 static SO_HANDLE capsHandle = NULL;
-static bool capsValid = false;
+static bool capsValid = false; // whether capsHandle has all needed imports
+static bool capsInitialized = false; // whether capsimg has completed IPF_Init
+
+static bool core_ipf_load(void);
+static bool core_ipf_ready(void);
 
 #ifdef WIN32
 #define CAPS_SONAME "capsimg.dll"
@@ -396,20 +400,20 @@ void IPF_MemorySnapShot_Capture(bool bSave)
 #ifdef __LIBRETRO__
 	if ( bSave )
 	{
-		MemorySnapShot_Store(&capsValid, sizeof(capsValid));
-		if (!capsValid) return; // don't store anything more
+		MemorySnapShot_Store(&capsInitialized, sizeof(capsInitialized));
+		if (!capsInitialized) return; // don't store anything more
 	}
 	else
 	{
 		bool hadCaps = false;
 		MemorySnapShot_Store(&hadCaps, sizeof(hadCaps));
-		if (!hadCaps && capsValid)
+		if (!hadCaps && capsInitialized)
 		{
 			IPF_Exit();
 		}
-		else if (hadCaps && !capsValid)
+		else if (hadCaps && !capsInitialized)
 		{
-			if (!IPF_Init())
+			if (!core_ipf_ready())
 			{
 				core_error_msg("Savestate used IPF which is unavailable here.");
 				MemorySnapShot_Store(&StructSize, sizeof(StructSize));
@@ -610,7 +614,7 @@ static char *IPF_FilenameFindTrackSide (char *FileName)
 Uint8 *IPF_ReadDisk(int Drive, const char *pszFileName, long *pImageSize, int *pImageType)
 {
 #ifdef __LIBRETRO__
-	if (!IPF_Init())
+	if (!core_ipf_ready())
 	{
 		core_signal_alert("Could not load the capsimg 5.1 DLL/SO library. IPF disk format is unavailable.");
 		return NULL;
@@ -655,18 +659,21 @@ bool IPF_WriteDisk(int Drive, const char *pszFileName, Uint8 *pBuffer, int Image
 
 
 
-
-/*
- * Init the FDC and the drives used to handle IPF images
- */
-bool	IPF_Init ( void )
-{
 #ifdef __LIBRETRO__
+
+// core_ipf_load loads the capsimg.dll if available, or just returns quickly if already loaded
+//   capsHandle -> not NULL if capsimage has been loaded
+//   capsValid -> true if capsimage is loaded, and all functions found
+//   capsInitialized -> false after first time load (IPF_Init must now be called to initialize)
+static bool core_ipf_load(void)
+{
 	// load CAPSIMG on demand, if available
 	if (capsHandle) // already loaded
 	{
-		return capsValid;
+		return capsValid; // already valid
 	}
+	capsValid = false;
+	capsInitialized = false;
 #ifdef WIN32
 	capsHandle = LoadLibrary(CAPS_SONAME);
 #else
@@ -683,7 +690,6 @@ bool	IPF_Init ( void )
 		return false;
 	}
 	core_info_msg(CAPS_SONAME " loaded.");
-	capsValid = false;
 	for (int i=0; i<CAPSIMPORT_COUNT; ++i)
 	{
 		*CAPSIMPORT[i].funcptr = 
@@ -698,21 +704,46 @@ bool	IPF_Init ( void )
 #endif
 		if (*CAPSIMPORT[i].funcptr == NULL)
 		{
-			capsValid = false;
 			core_error_msg(CAPSIMPORT[i].funcname);
 			core_error_msg(CAPS_SONAME " missing function.");
 			return false;
 		}
 		core_debug_msg(CAPSIMPORT[i].funcname);
 	}
+
 	// DLL and needed functions are now loaded
+	capsValid = true;
+	return capsValid;
+}
+
+// deferred check for capsimg, tries loading it if needed, and initializes it if needed
+static bool core_ipf_ready(void)
+{
+	if (!capsHandle) core_ipf_load();
+	if (!capsHandle || !capsValid) return false;
+	if (!capsInitialized) IPF_Init();
+	return capsInitialized;
+}
+
 #endif
+
+
+/*
+ * Init the FDC and the drives used to handle IPF images
+ */
+bool	IPF_Init ( void )
+{
 #ifndef HAVE_CAPSIMAGE
 	return true;
 
 #else
 	int	i;
 	struct CapsVersionInfo	caps_vi;
+
+#ifdef __LIBRETRO__
+	// make sure capsimg is loaded
+	if (!core_ipf_load()) return false;
+#endif
 
 	Log_Printf ( LOG_DEBUG , "IPF : IPF_Init\n" );
 
@@ -777,19 +808,21 @@ bool	IPF_Init ( void )
 	CAPSFdcReset ( &IPF_State.Fdc );
 
 #ifdef __LIBRETRO__
-	// CAPSIMAGE is available
-	capsValid = true;
+	// CAPSIMAGE is ready
+	capsInitialized = true;
 
-	// make sure the configuration state is up to date
+	// hatariB defers loading capslib until an IPF is first inserted,
+	// but Hatari normally calls these functions during setup
 	IPF_Drive_Set_Enable ( 0 , ConfigureParams.DiskImage.EnableDriveA );
 	IPF_Drive_Set_Enable ( 1 , ConfigureParams.DiskImage.EnableDriveB );
 	IPF_Drive_Set_DoubleSided ( 0 , ConfigureParams.DiskImage.DriveA_NumberOfHeads==2 ? true : false );
 	IPF_Drive_Set_DoubleSided ( 1 , ConfigureParams.DiskImage.DriveB_NumberOfHeads==2 ? true : false );
+	IPF_Reset();
 #endif
+
 	return true;
 #endif
 }
-
 
 
 
@@ -813,6 +846,7 @@ void	IPF_Exit ( void )
 		capsHandle = NULL;
 	}
 	capsValid = false;
+	capsInitialized = false;
 #else
 #ifndef HAVE_CAPSIMAGE
 #else
@@ -1110,7 +1144,7 @@ void IPF_Reset ( void )
 {
 #ifdef HAVE_CAPSIMAGE
 #ifdef __LIBRETRO__
-	if (!capsValid) return;
+	if (!capsInitialized) return;
 #endif
 	CAPSFdcReset ( &IPF_State.Fdc );
 
@@ -1215,7 +1249,7 @@ void	IPF_Drive_Set_Enable ( int Drive , bool value )
 
 #else
 #ifdef __LIBRETRO__
-	if (!capsValid) return;
+	if (!capsInitialized) return;
 #endif
 	IPF_State.DriveEnabled[ Drive ] = value;			/* Store the new state */
 
@@ -1235,7 +1269,7 @@ void	IPF_Drive_Set_DoubleSided ( int Drive , bool value )
 
 #else
 #ifdef __LIBRETRO__
-	if (!capsValid) return;
+	if (!capsInitialized) return;
 #endif
 	IPF_State.DoubleSided[ Drive ] = value;				/* Store the new state */
 
@@ -1282,7 +1316,7 @@ void	IPF_SetDriveSide ( Uint8 io_porta_old , Uint8 io_porta_new )
 
 #else
 #ifdef __LIBRETRO__
-	if (!capsValid) return;
+	if (!capsInitialized) return;
 #endif
 	int	Side;
 
@@ -1324,7 +1358,7 @@ void	IPF_FDC_WriteReg ( Uint8 Reg , Uint8 Byte )
 
 #else
 #ifdef __LIBRETRO__
-	if (!capsValid) return;
+	if (!capsInitialized) return;
 #endif
 	if ( Reg == 0 )					/* more detailed logs for command register */
 		IPF_FDC_LogCommand ( Byte );
@@ -1371,7 +1405,7 @@ Uint8	IPF_FDC_ReadReg ( Uint8 Reg )
 	return 0;					/* This should not be reached (an IPF image can't be inserted without capsimage) */
 #else
 #ifdef __LIBRETRO__
-	if (!capsValid) return 0;
+	if (!capsInitialized) return 0;
 #endif
 	Uint8	Byte;
 
@@ -1397,7 +1431,7 @@ void	IPF_FDC_StatusBar ( Uint8 *pCommand , Uint8 *pHead , Uint8 *pTrack , Uint8 
 	return;						/* This should not be reached (an IPF image can't be inserted without capsimage) */
 #else
 #ifdef __LIBRETRO__
-	if (!capsValid) return;
+	if (!capsInitialized) return;
 #endif
 	int	Drive;
 
@@ -1525,7 +1559,7 @@ void	IPF_Emulate ( void )
 
 #else
 #ifdef __LIBRETRO__
-	if (!capsValid) return;
+	if (!capsInitialized) return;
 #endif
 	int	NbCycles;
 	int	Drive;
