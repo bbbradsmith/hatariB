@@ -179,8 +179,7 @@ jobs:
           export CFLAGS="-target arm64-apple-macos11"
           export ZLIB_BUILD=zlib_build_arm
           make -f makefile.zlib
-          export CC=gcc-13
-          export CFLAGS=-mmacosx-version-min=10.13
+          export CFLAGS="-target x86_64-apple-macos10.13"
           export ZLIB_BUILD=zlib_build_intel
           make -f makefile.zlib
           export CFLAGS=
@@ -204,11 +203,11 @@ jobs:
           export CC=$CC_OLD
           export CFLAGS=
           export LDFLAGS=
-          export CMAKEFLAGS="-DCMAKE_C_COMPILER=gcc-13 -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DCMAKE_OSX_ARCHITECTURES=x86_64 -DCMAKE_SYSTEM_NAME=Darwin"
+          export CMAKEFLAGS="-DCMAKE_C_COMPILER=clang -DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 -DCMAKE_OSX_ARCHITECTURES=x86_64 -DCMAKE_SYSTEM_NAME=Darwin"
           make hatarilib
-          export CC=gcc-13
-          export CFLAGS=-mmacosx-version-min=10.13
-          export LDFLAGS="-mmacosx-version-min=10.13 -static-libgcc"
+          export CC=clang
+          export CFLAGS="-target x86_64-apple-macos10.13"
+          export LDFLAGS="-target x86_64-apple-macos10.13"
           make core
           strip -u -r build_arm/hatarib.dylib
           strip -u -r build_intel/hatarib.dylib
