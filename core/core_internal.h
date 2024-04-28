@@ -6,9 +6,6 @@
 #define   CORE_ARRAY_SIZE(a_)   (sizeof(a_)/sizeof(a_[0]))
 #define   CORE_STRINGIFY(a_) #a_
 
-// adds a config option to dump all input polling to the log every frame
-#define CORE_INPUT_DEBUG   0
-
 // core.c
 extern retro_environment_t environ_cb;
 extern retro_input_poll_t input_poll_cb;
@@ -27,6 +24,9 @@ extern bool core_perf_display;
 extern bool core_midi_enable;
 extern int core_video_fps;
 extern bool core_statusbar_restore;
+#if CORE_DEBUG
+extern int core_tracing;
+#endif
 
 extern bool core_midi_read(uint8_t* data);
 extern bool core_midi_write(uint8_t data);
@@ -152,8 +152,7 @@ extern void core_input_post(void); // call to force hatari to process the input 
 extern void core_input_finish(void); // call at end of retro_run
 extern void core_input_serialize(void);
 extern void core_input_osk_close(void); // call to set core_osk_mode = CORE_OSK_OFF
-
-#if CORE_INPUT_DEBUG
+#if CORE_DEBUG
 extern bool core_input_debug;
 #endif
 

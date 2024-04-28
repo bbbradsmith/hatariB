@@ -5,6 +5,10 @@
 // use core_internal.h instead for stuff that only the core needs to know about
 // (or just extern stuff piecemeal)
 
+#ifndef CORE_DEBUG
+	#define CORE_DEBUG 0
+#endif
+
 // fake structures used only as pointers (for compiler type checking)
 typedef struct { int dummy; } corefile;
 typedef struct { int dummy; } coredir;
@@ -47,10 +51,14 @@ extern void core_error_msg(const char* msg);
 extern void core_info_msg(const char* msg);
 extern void core_debug_bin(const char* data, int len, int offset); // hex dump to log (offset is added to the address display)
 extern void core_debug_hatari(bool error, const char* msg); // log message from hatari
-extern void core_trace_next(int count); // if ENABLE_TRACING=1 will print the next "count" lines of CPU trace to log
 extern void core_debug_printf(const char* fmt, ...); // DEBUG log, expects newline in fmt.
 extern void core_debug_snapshot(const char* name); // prints the current write position of snapshot (for debugging savestate dumps)
 extern void core_debug_profile(const char* name); // prints name with time since previous
+
+#if CORE_DEBUG
+extern void core_trace_next(int count); // if ENABLE_TRACING=1 will print the next "count" lines of CPU trace to log
+extern int core_trace_countdown; // set to automatically cancel tracing after this number of messages
+#endif
 
 // send video/audio frame update to core
 extern void core_video_update(void* data, int width, int height, int pitch, int resolution);

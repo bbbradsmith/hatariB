@@ -255,7 +255,7 @@ void core_input_keyboard_event(bool down, unsigned keycode, uint32_t character, 
 
 void core_input_keyboard_event_callback(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers)
 {
-	#if CORE_INPUT_DEBUG
+	#if CORE_DEBUG
 	if (core_input_debug)
 		retro_log(RETRO_LOG_INFO,"core_input_keyboard_event_callback(%d,%d,%d,%04X)\n",down,keycode,character,key_modifiers);
 	#endif
@@ -284,7 +284,7 @@ void core_input_keyboard_unstick() // release any keys that don't currently matc
 		{
 			core_input_keyboard_event(false,i,0,mod); // release key
 			//retro_log(RETRO_LOG_DEBUG,"core_input_keyboard_unstick() released: %d\n",i);
-			#if CORE_INPUT_DEBUG
+			#if CORE_DEBUG
 			if (core_input_debug)
 				retro_log(RETRO_LOG_INFO,"core_input_keyboard_unstick() released: %d\n",i);
 			#endif
@@ -347,7 +347,7 @@ void core_input_init(void)
 
 void core_input_update(void)
 {
-	#if CORE_INPUT_DEBUG
+	#if CORE_DEBUG
 	static int framecount = 0;
 	if (core_input_debug)
 	{
@@ -426,7 +426,7 @@ void core_input_update(void)
 	// have each joystick update its mapped controls
 	for (int i=0; i<4; ++i)
 	{
-		#if CORE_INPUT_DEBUG
+		#if CORE_DEBUG
 		static int debug_ax[3];
 		static int debug_ay[3];
 		static int debug_b[12];
@@ -469,7 +469,7 @@ void core_input_update(void)
 				ay = input_state_cb(i, RETRO_DEVICE_ANALOG, DEVICE[k], RETRO_DEVICE_ID_ANALOG_Y);
 			}
 
-			#if CORE_INPUT_DEBUG
+			#if CORE_DEBUG
 			debug_ax[k] = ax;
 			debug_ay[k] = ay;	
 			if (ax > 0x2000 || ax < -0x2000 || ay > 0x2000 || ay <-0x2000)
@@ -556,7 +556,7 @@ void core_input_update(void)
 			};
 			if (input_state_cb(i, RETRO_DEVICE_JOYPAD, 0, DEVICE[k]))
 			{
-				#if CORE_INPUT_DEBUG
+				#if CORE_DEBUG
 				debug_b[k] = 1;
 				debug_pad = true;
 				#endif
@@ -804,11 +804,11 @@ void core_input_update(void)
 					}
 				}
 			}
-			#if CORE_INPUT_DEBUG
+			#if CORE_DEBUG
 			else debug_b[k] = 0;
 			#endif
 		}
-		#if CORE_INPUT_DEBUG
+		#if CORE_DEBUG
 		if (core_input_debug && debug_pad)
 			retro_log(RETRO_LOG_INFO,"P%d %c%c%c%c%c%c%c%c%c%c%c%c %2d%2d %2d%2d %2d%2d\n",
 				i,
@@ -864,7 +864,7 @@ void core_input_update(void)
 			vm_r |= pm_r;
 			vm_rx += pm_x * MOUSE_PRECISION;
 			vm_ry += pm_y * MOUSE_PRECISION;
-			#if CORE_INPUT_DEBUG
+			#if CORE_DEBUG
 			if (core_input_debug && (pm_l || pm_r || pm_x || pm_y))
 				retro_log(RETRO_LOG_INFO,"M %c%c %3d %3d\n",
 					pm_l ? 'L' : '.',
@@ -897,7 +897,7 @@ void core_input_update(void)
 			event.button.y = vm_y / MOUSE_PRECISION;
 			event_queue_push(&event);
 			AUX_SET(vm_l,MOUSE_L);
-			#if CORE_INPUT_DEBUG
+			#if CORE_DEBUG
 			if (core_input_debug)
 				retro_log(RETRO_LOG_INFO,"Mouse L %s\n",vm_l ? "DOWN" : "UP");
 			#endif
@@ -914,7 +914,7 @@ void core_input_update(void)
 			event.button.y = vm_y / MOUSE_PRECISION;
 			event_queue_push(&event);
 			AUX_SET(vm_r,MOUSE_R);
-			#if CORE_INPUT_DEBUG
+			#if CORE_DEBUG
 			if (core_input_debug)
 				retro_log(RETRO_LOG_INFO,"Mouse R %s\n",vm_r ? "DOWN" : "UP");
 			#endif
@@ -934,7 +934,7 @@ void core_input_update(void)
 			event_queue_push(&event);
 			vmouse_x = vm_x;
 			vmouse_y = vm_y;
-			#if CORE_INPUT_DEBUG
+			#if CORE_DEBUG
 			if (core_input_debug)
 				retro_log(RETRO_LOG_INFO,"Mouse Move %3d %3d\n",vm_x/MOUSE_PRECISION,vm_y/MOUSE_PRECISION);
 			#endif
@@ -1048,7 +1048,7 @@ void core_input_update(void)
 		core_osk_input(osk_new, aux_buttons & AUX_OSK_ALL);
 	}
 
-	#if CORE_INPUT_DEBUG
+	#if CORE_DEBUG
 	if (core_input_debug)
 	{
 		retro_log(RETRO_LOG_INFO,"--- J01: %02X %02X  M: %c%c %5d %5d\n",

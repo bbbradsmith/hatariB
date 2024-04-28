@@ -71,7 +71,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
     * Disable `Readline`, `X11`, `PNG`, `PortMidi` and `CapsImage` library dependencies.
     * `ENABLE_SMALL_MEM=0` allocates 16MB always instead of ST configured memory size (typically 1MB), allowing speed optimizations. If building for a platform with very limited RAM we might reconsider this.
   * `CMAKEBUILDFLAGS` provides -j` allowing faster parallel builds.
-  * `DEBUG=1` adds `ENABLE_TRACING=1` which can log an emulation trace, sometimes useful when debugging behaviour, especially savestate consistency, but at significant CPU overhead.
+  * `DEBUG=1` adds debug symbols, and also some debug core options in the Advanced category.
   * `VERBOSE_CMAKE=1` will show all the cmake build steps, `=2` will also show the cmake configuration trace.
 
 * **hatari/src/acia.c**

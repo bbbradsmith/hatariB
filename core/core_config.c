@@ -862,9 +862,22 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL}}, "0"
 	},
-	#if CORE_INPUT_DEBUG
+	#if CORE_DEBUG
 	{
-		"hatarib_input_debug", "Input Debug Log", NULL,
+		"hatarib_tracing", "Debug Tracing", NULL,
+		"Enable INFO in Hatari Logging first.",
+		NULL, "advanced",
+		{
+			{"0","none"},
+			{"1","video_vbl,video_sync"},
+			{"2","cpu_disasm"},
+			{"3","cpu_all"},
+			{"4","all"},
+			{NULL,NULL}
+		}, "0",
+	},
+	{
+		"hatarib_input_debug", "Debug Input Log", NULL,
 		"For debugging input, dump polled inputs to the log every frame.",
 		NULL, "advanced",
 		{{"0","Off"},{"1","On"},{NULL,NULL}}, "0"
@@ -1201,7 +1214,8 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_mmu") newparam.System.bMMU = vi;
 	CFG_INT("hatarib_log_hatari") newparam.Log.nTextLogLevel = vi;
 	CFG_INT("hatarib_perf_counters") core_perf_display = (vi != 0);
-	#if CORE_INPUT_DEBUG
+	#if CORE_DEBUG
+		CFG_INT("hatarib_tracing") core_tracing = vi;
 		CFG_INT("hatarib_input_debug") core_input_debug = vi;
 	#endif
 	for (int i=0; i<4; ++i)

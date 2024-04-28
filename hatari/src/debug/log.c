@@ -240,7 +240,6 @@ void Log_UnInit(void)
 
 #ifdef __LIBRETRO__
 // libretro log redirections
-extern int core_trace_countdown;
 static char corelog[2048];
 void corelog_printf(const char* fmt, ...)
 {
@@ -257,13 +256,15 @@ void corelog_trace_printf(const char* fmt, ...)
 	vsnprintf(corelog,sizeof(corelog),fmt,args);
 	core_debug_hatari(false,corelog);
 	va_end(args);
-	// if countdown active, disables trace when it counts to 0
-	if (core_trace_countdown > 0)
-	{
-		--core_trace_countdown;
-		if (core_trace_countdown == 0)
-			LogTraceFlags = TRACE_NONE;
-	}
+	#if CORE_DEBUG
+		// if countdown active, disables trace when it counts to 0
+		if (core_trace_countdown > 0)
+		{
+			--core_trace_countdown;
+			if (core_trace_countdown == 0)
+				LogTraceFlags = TRACE_NONE;
+		}
+	#endif
 }
 static void corelog_prefix_va(LOGTYPE t, const char* fmt, va_list args)
 {

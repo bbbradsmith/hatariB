@@ -92,6 +92,8 @@ static const enum retro_pixel_format RPF_RGB565   = RETRO_PIXEL_FORMAT_RGB565;
 
 extern uint8_t* STRam;
 extern uint32_t STRamEnd;
+extern uint64_t LogTraceFlags;
+
 extern int TOS_DefaultLanguage(void);
 extern int Reset_Warm(void);
 extern int Reset_Cold(void);
@@ -111,7 +113,6 @@ extern void core_statusbar_update(void);
 int core_pixel_format = 0;
 bool core_init_return = false;
 uint8_t core_runflags = 0;
-int core_trace_countdown = 0;
 uint8_t* core_rom_mem_pointer = NULL;
 int core_crashtime = 10;
 int core_crash_frames = 0; // reset to 0 whenever CORE_RUNFLAG_HALT
@@ -152,6 +153,12 @@ bool core_statusbar_restore = false;
 // This is because they can sometimes be updated multiple times
 // in a single frame, and onl the last one matters.
 // (Savestate tends to set them once spuriously during its reset phase.)
+
+#if CORE_DEBUG
+int core_tracing = 0;
+int core_tracing_last = 0;
+int core_trace_countdown = 0;
+#endif
 
 static void retro_log_init()
 {
@@ -219,11 +226,13 @@ void core_debug_hatari(bool error, const char* msg)
 		msg);
 }
 
+#if CORE_DEBUG
 void core_trace_next(int count)
 {
 	Log_SetTraceOptions("cpu_all");
 	core_trace_countdown = count;
 }
+#endif
 
 void core_debug_bin(const char* data, int len, int offset)
 {
@@ -1050,10 +1059,6 @@ RETRO_API void retro_init(void)
 	core_osk_init();
 	midi_delta_time = 0;
 
-	// for trace debugging (requires -DENABLE_TRACING=1)
-	//Log_SetTraceOptions("cpu_disasm");
-	//Log_SetTraceOptions("video_vbl,video_sync");
-
 	core_hard_content = false;
 	core_hard_content_count = 0;
 	core_first_reset = true;
@@ -1167,6 +1172,34 @@ RETRO_API void retro_reset(void)
 RETRO_API void retro_run(void)
 {
 	PERF_START(PERF_RUN);
+
+	#if CORE_DEBUG
+		// for trace debugging:
+		//   set DEBUG=1 for the make (causes -DENABLE_TRACING=1, -DCORE_DEBUG)
+		//   Core Options > Advanced > Hatari Logging > INFO
+		//   Core Options > Advanced > Debug Tracing
+		// - Log_SetTraceOptions is included in core.h so it can be manually added to the code
+		//   almost anywhere, however. This is probably the best option, since most tracing
+		//   will have intolerable amounts of output.
+		// - core_trace_countdown can also be set to automatically turn off tracing after
+		//   a counted number of messages.
+		if (core_trace_countdown == 0)
+		{
+			if (core_tracing == 0 && core_trace_countdown) LogTraceFlags = 0; // make sure it's always off if requested off
+			if (core_tracing != core_tracing_last)
+			{
+				const char* TRACE_OPTS[] = {
+					"none",
+					"video_vbl,video_sync",
+					"cpu_disasm",
+					"cpu_all",
+					"all",
+				};
+				Log_SetTraceOptions(TRACE_OPTS[core_tracing]);
+				core_tracing_last = core_tracing;
+			}
+		}
+	#endif
 
 	// undo overlay
 	//   would have done this directly after video_cb,
@@ -1450,7 +1483,7 @@ RETRO_API bool retro_serialize(void *data, size_t size)
 		// to test a broken savestate, corrupt its version string
 		//++snapshot_buffer[SNAPSHOT_HEADER_SIZE+1];
 		//core_debug_bin(data,size,0); // dump uncompressed contents to log
-		//core_trace_next(20); // use to verify instructions after savestate are the same as after restore
+		//core_trace_next(20); // use to verify instructions after savestate are the same as after restore (make with DEBUG=1)
 		//core_write_file_save("hatarib_serialize_debug.bin",size,data); // for analyzing the uncompressed contents
 		result = true;
 	}
@@ -1473,7 +1506,7 @@ RETRO_API bool retro_unserialize(const void *data, size_t size)
 	if (core_serialize(false))
 	{
 		core_audio_samples_pending = 0; // clear all pending audio
-		//core_trace_next(20); // verify instructions after savestate are the same as after restore
+		//core_trace_next(20); // verify instructions after savestate are the same as after restore (make with DEBUG=1)
 		result = true;
 	}
 	PERF_STOP(PERF_UNSERIALIZE);
