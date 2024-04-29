@@ -242,7 +242,6 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Disable *Input > Host Mouse Enabled* and *Input > Host Keyboard Enabled*, because RetroArch netplay does not send this activity over the network. Instead, use the onscreen keyboard and gamepad to operate the ST keyboard and mouse.
   * RetroArch does not allow analog stick inputs during netplay. The *RetroPad > Joystick / Mouse Toggle* button assignment may be useful for switching between mouse and joystick d-pad input during netplay.
   * Make sure your core options match, especially the TOS image, before attempting to connect.
-  * The IPF format appears to have drive state that cannot be completely restored. Netplay may stutter during disk activity if using using IPF disk images due to savestate divergence.
   * Netplay for hatariB may be more network and CPU intensive than other retro sytems, due to the large onboard RAM of the ST, and volatile floppy disk media.
   * The Libretro API does not provide a way to detect whether netplay is active, so appropriate setting changes like the safety save unfortunately can't be done automatically.
 * Unsupported Features:
@@ -265,6 +264,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
 * hatariB v0.4 - Unreleased
   * EmuTOS 192uk chosen as default for best compatibility.
   * EmuTOS 1.3 ROMs.
+  * Fixed problems with IPF emulation.
 * [hatariB v0.3](https://github.com/bbbradsmith/hatariB/releases/tag/0.3) - 2024-04-15
   * On-screen keyboard improvements:
     * Can now hold the key continuously.

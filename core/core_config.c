@@ -707,10 +707,10 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		{{"0","Off"},{"1","On"},{NULL,NULL}}, "1"
 	},
 	{
-		"hatarib_drivesingle","Single-Sided Drives", NULL,
+		"hatarib_drivesides","Single-Sided Drives", NULL,
 		"Single-Sided floppy drives instead of Double-Sided.",
 		NULL, "advanced",
-		{{"0","Off"},{"1","On"},{NULL,NULL}}, "0"
+		{{"1","Single-Sided"},{"2","Double-Sided"},{NULL,NULL}}, "2"
 	},
 	{
 		"hatarib_readonly_floppy","Write Protect Floppy Disks", NULL,
@@ -1200,7 +1200,7 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_hpf") newparam.Sound.YmHpf = vi;
 	CFG_INT("hatarib_midi") core_midi_enable = (vi != 0);
 	CFG_INT("hatarib_driveb") { newparam.DiskImage.EnableDriveB = vi; core_disk_enable_b = vi; }
-	CFG_INT("hatarib_drivesingle") { newparam.DiskImage.DriveA_NumberOfHeads = newparam.DiskImage.DriveB_NumberOfHeads = vi; }
+	CFG_INT("hatarib_drivesides") { newparam.DiskImage.DriveA_NumberOfHeads = newparam.DiskImage.DriveB_NumberOfHeads = vi; }
 	CFG_INT("hatarib_readonly_floppy") newparam.DiskImage.nWriteProtection = vi;
 	//CFG_INT("hatarib_cpu") // handle within machine
 	//CFG_INT("hatarib_cpu_clock") // handle within machine
