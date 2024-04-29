@@ -54,7 +54,7 @@ CMAKEBUILDFLAGS += $(MULTITHREAD)
 ifeq ($(DEBUG),1)
 	CFLAGS += -g -DCORE_DEBUG=1
 	LDFLAGS += -g
-	CMAKEFLAGS += -DENABLE_TRACING=1
+	CMAKEFLAGS += -DENABLE_TRACING=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo
 else
 	ifneq ($(shell uname),Darwin)
 		LDFLAGS += -Wl,--strip-debug

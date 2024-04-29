@@ -2,6 +2,9 @@
   mklink hatariB /D C:\path_to_hatariB
 2. Create a test_core.bat that copies the built files
   del C:\Users\username\Documents\RetroArch\cores\hatarib.dll
+  REM for VS debugging you can use cv2pdb:
+  REM     ..\cv2pdb\cv2pdb64.exe ..\build\hatarib.dll
+  REM     copy ..\build\hatarib.pdb C:\Users\username\Documents\RetroArch\cores
   copy ..\build\hatarib.dll C:\Users\username\Documents\RetroArch\cores
   @IF ERRORLEVEL 1 GOTO error
   copy ..\info\*.* C:\Users\username\Documents\RetroArch\info /y
