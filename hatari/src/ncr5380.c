@@ -312,7 +312,6 @@ static void raw_scsi_set_signal_phase(struct raw_scsi *rs, bool busy, bool selec
 			}
 #if RAW_SCSI_DEBUG
 			if (rs->target_id < 0) {
-				int i;
 				for (i = 0; i < 8; i++) {
 					if (i == rs->initiator_id)
 						continue;
@@ -576,12 +575,7 @@ static void raw_scsi_write_data(struct raw_scsi *rs, uae_u8 data)
 			if (ScsiBus.dmawrite_to_fh)
 			{
 				int r;
-#ifndef __LIBRETRO__
 				r = fwrite(ScsiBus.buffer, 1, ScsiBus.data_len, ScsiBus.dmawrite_to_fh);
-#else
-				r = 0;
-				if (core_hard_readonly != 1) r = core_file_write(ScsiBus.buffer, 1, ScsiBus.data_len, ScsiBus.dmawrite_to_fh);
-#endif
 				if (r != ScsiBus.data_len)
 				{
 					Log_Printf(LOG_ERROR, "Could not write bytes to HD image (%d/%d).\n",
@@ -660,7 +654,7 @@ static void Ncr5380_UpdateDmaAddrAndLen(uint32_t nDmaAddr, uint32_t nDataLen)
 		IoMem[0xff8705] = nNewAddr >> 8;
 		IoMem[0xff8707] = nNewAddr;
 
-		nNewLen = (Uint32)IoMem[0xff8709] << 24 | IoMem[0xff870b] << 16
+		nNewLen = (uint32_t)IoMem[0xff8709] << 24 | IoMem[0xff870b] << 16
 		          | IoMem[0xff870d] << 8 | IoMem[0xff870f];
 		assert(nDataLen <= nNewLen);
 		nNewLen -= nDataLen;
@@ -695,9 +689,9 @@ static void dma_check(struct soft_scsi *ncr)
 	{
 		if ((IoMem[0xff8715] & 2) == 0)
 			return;
-		nDmaAddr = (Uint32)IoMem[0xff8701] << 24 | IoMem[0xff8703] << 16
+		nDmaAddr = (uint32_t)IoMem[0xff8701] << 24 | IoMem[0xff8703] << 16
 		           | IoMem[0xff8705] << 8 | IoMem[0xff8707];
-		nDataLen = (Uint32)IoMem[0xff8709] << 24 | IoMem[0xff870b] << 16
+		nDataLen = (uint32_t)IoMem[0xff8709] << 24 | IoMem[0xff870b] << 16
 		           | IoMem[0xff870d] << 8 | IoMem[0xff870f];
 	}
 
@@ -740,7 +734,7 @@ static void dma_check(struct soft_scsi *ncr)
 			{
 				/* For more precise emulation, we should not
 				 * pre-write the bytes to the STRam ... */
-				const Uint32 addr = nDmaAddr + nDataLen - nRemainingBytes;
+				const uint32_t addr = nDmaAddr + nDataLen - nRemainingBytes;
 				IoMem[0xff8710 + i] = STMemory_ReadByte(addr + i);
 			}
 		}
@@ -1048,14 +1042,7 @@ bool Ncr5380_Init(void)
 			bScsiEmuOn = true;
 		}
 		else
-#ifdef __LIBRETRO__
-		{
-			core_signal_error("Failed to open SCSI hard disk image: ",ConfigureParams.Scsi[i].sDeviceFile);
 			ConfigureParams.Scsi[i].bUseDevice = false;
-		}
-#else
-			ConfigureParams.Scsi[i].bUseDevice = false;
-#endif
 	}
 	nNumDrives += nScsiPartitions;
 #endif
@@ -1075,13 +1062,8 @@ void Ncr5380_UnInit(void)
 	{
 		if (!ScsiBus.devs[i].enabled)
 			continue;
-#ifndef __LIBRETRO__
 		File_UnLock(ScsiBus.devs[i].image_file);
 		fclose(ScsiBus.devs[i].image_file);
-#else
-		// file locking not available to libretro vfs
-		core_file_close(ScsiBus.devs[i].image_file);
-#endif
 		ScsiBus.devs[i].image_file = NULL;
 		ScsiBus.devs[i].enabled = false;
 	}
@@ -1121,7 +1103,7 @@ void Ncr5380_Reset(void)
 /**
  * Write a command byte to the NCR 5380 SCSI controller
  */
-void Ncr5380_WriteByte(int addr, Uint8 byte)
+void Ncr5380_WriteByte(int addr, uint8_t byte)
 {
 #if WITH_NCR5380
 	ncr5380_bput(&ncr_soft_scsi, addr, byte);
@@ -1131,7 +1113,7 @@ void Ncr5380_WriteByte(int addr, Uint8 byte)
 /**
  * Read a command byte from the NCR 5380 SCSI controller
  */
-Uint8 Ncr5380_ReadByte(int addr)
+uint8_t Ncr5380_ReadByte(int addr)
 {
 #if WITH_NCR5380
 	return ncr5380_bget(&ncr_soft_scsi, addr);

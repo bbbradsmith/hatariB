@@ -23,7 +23,6 @@ const char floppy_stx_fileid[] = "Hatari floppy_stx.c";
 #include "fdc.h"
 #include "log.h"
 #include "memorySnapShot.h"
-#include "screen.h"
 #include "video.h"
 #include "cycles.h"
 #include "str.h"
@@ -56,11 +55,11 @@ typedef struct
 {
 	STX_MAIN_STRUCT		*ImageBuffer[ MAX_FLOPPYDRIVES ];	/* For the STX disk images */
 
-	Uint32			NextSectorStruct_Nbr;		/* Sector Number in pSectorsStruct after a call to FDC_NextSectorID_FdcCycles_STX() */
-	Uint8			NextSector_ID_Field_TR;		/* Track value in the next ID Field after a call to FDC_NextSectorID_FdcCycles_STX() */
-	Uint8			NextSector_ID_Field_SR;		/* Sector value in the next ID Field after a call to FDC_NextSectorID_FdcCycles_STX() */
-	Uint8			NextSector_ID_Field_LEN;	/* Sector's length in the next ID Field after a call to FDC_NextSectorID_FdcCycles_STX() */
-	Uint8			NextSector_ID_Field_CRC_OK;	/* CRC OK or not in the next ID Field after a call to FDC_NextSectorID_FdcCycles_STX() */
+	uint32_t			NextSectorStruct_Nbr;		/* Sector Number in pSectorsStruct after a call to FDC_NextSectorID_FdcCycles_STX() */
+	uint8_t			NextSector_ID_Field_TR;		/* Track value in the next ID Field after a call to FDC_NextSectorID_FdcCycles_STX() */
+	uint8_t			NextSector_ID_Field_SR;		/* Sector value in the next ID Field after a call to FDC_NextSectorID_FdcCycles_STX() */
+	uint8_t			NextSector_ID_Field_LEN;	/* Sector's length in the next ID Field after a call to FDC_NextSectorID_FdcCycles_STX() */
+	uint8_t			NextSector_ID_Field_CRC_OK;	/* CRC OK or not in the next ID Field after a call to FDC_NextSectorID_FdcCycles_STX() */
 
 } STX_STRUCT;
 
@@ -74,7 +73,7 @@ static STX_SAVE_STRUCT	STX_SaveStruct[ MAX_FLOPPYDRIVES ];	/* To save 'write sec
 /* Default timing table for Macrodos when revision=0 */
 /* 1 unit of timing means 32 FDC cycles ; + 28 cycles every 16 bytes, so a standard block of 16 bytes */
 /* should have a value of 0x7f or 0x80, which gives 4092-4124 cycles */
-static Uint8	TimingDataDefault[] = {
+static uint8_t	TimingDataDefault[] = {
 	0x00,0x7f,0x00,0x7f,0x00,0x7f,0x00,0x7f,0x00,0x7f,0x00,0x7f,0x00,0x7f,0x00,0x7f,
 	0x00,0x85,0x00,0x85,0x00,0x85,0x00,0x85,0x00,0x85,0x00,0x85,0x00,0x85,0x00,0x85,
 	0x00,0x79,0x00,0x79,0x00,0x79,0x00,0x79,0x00,0x79,0x00,0x79,0x00,0x79,0x00,0x79,
@@ -88,30 +87,30 @@ static Uint8	TimingDataDefault[] = {
 /*--------------------------------------------------------------*/
 
 static bool	STX_LoadSaveFile ( int Drive , const char *FilenameSave );
-static bool	STX_LoadSaveFile_SECT ( int Drive, STX_SAVE_SECTOR_STRUCT *pStxSaveSector , Uint8 *p );
-static bool	STX_LoadSaveFile_TRCK ( int Drive , STX_SAVE_TRACK_STRUCT *pStxSaveTrack , Uint8 *p );
+static bool	STX_LoadSaveFile_SECT ( int Drive, STX_SAVE_SECTOR_STRUCT *pStxSaveSector , uint8_t *p );
+static bool	STX_LoadSaveFile_TRCK ( int Drive , STX_SAVE_TRACK_STRUCT *pStxSaveTrack , uint8_t *p );
 
-static bool	STX_Insert_internal ( int Drive , const char *FilenameSTX , Uint8 *pImageBuffer , long ImageSize );
+static bool	STX_Insert_internal ( int Drive , const char *FilenameSTX , uint8_t *pImageBuffer , long ImageSize );
 
-static Uint16	STX_ReadU16_LE ( Uint8 *p );
-static Uint32	STX_ReadU32_LE ( Uint8 *p );
-static Uint16	STX_ReadU16_BE ( Uint8 *p );
-static Uint32	STX_ReadU32_BE ( Uint8 *p );
-static void	STX_WriteU16_BE ( Uint8 *p , Uint16 val );
-static void	STX_WriteU32_BE ( Uint8 *p , Uint32 val );
+static uint16_t	STX_ReadU16_LE ( uint8_t *p );
+static uint32_t	STX_ReadU32_LE ( uint8_t *p );
+static uint16_t	STX_ReadU16_BE ( uint8_t *p );
+static uint32_t	STX_ReadU32_BE ( uint8_t *p );
+static void	STX_WriteU16_BE ( uint8_t *p , uint16_t val );
+static void	STX_WriteU32_BE ( uint8_t *p , uint32_t val );
 
 static void	STX_FreeStruct ( STX_MAIN_STRUCT *pStxMain );
 static void	STX_FreeSaveStruct ( int Drive );
-static void	STX_FreeSaveSectorsStructAll ( STX_SAVE_SECTOR_STRUCT *pSaveSectorsStruct , Uint32 SaveSectorsCount );
+static void	STX_FreeSaveSectorsStructAll ( STX_SAVE_SECTOR_STRUCT *pSaveSectorsStruct , uint32_t SaveSectorsCount );
 static void	STX_FreeSaveSectorsStruct ( STX_SAVE_SECTOR_STRUCT *pSaveSectorsStruct , int Nb );
-static void	STX_FreeSaveTracksStructAll ( STX_SAVE_TRACK_STRUCT *pSaveTracksStruct , Uint32 SaveTracksCount );
+static void	STX_FreeSaveTracksStructAll ( STX_SAVE_TRACK_STRUCT *pSaveTracksStruct , uint32_t SaveTracksCount );
 static void	STX_FreeSaveTracksStruct ( STX_SAVE_TRACK_STRUCT *pSaveTracksStruct , int Nb );
 
-static void	STX_BuildSectorsSimple ( STX_TRACK_STRUCT *pStxTrack , Uint8 *p );
-static Uint16	STX_BuildSectorID_CRC ( STX_SECTOR_STRUCT *pStxSector );
-static STX_TRACK_STRUCT	*STX_FindTrack ( Uint8 Drive , Uint8 Track , Uint8 Side );
-static STX_SECTOR_STRUCT *STX_FindSector ( Uint8 Drive , Uint8 Track , Uint8 Side , Uint8 SectorStruct_Nb );
-static STX_SECTOR_STRUCT *STX_FindSector_By_Position ( Uint8 Drive , Uint8 Track , Uint8 Side , Uint16 BitPosition );
+static void	STX_BuildSectorsSimple ( STX_TRACK_STRUCT *pStxTrack , uint8_t *p );
+static uint16_t	STX_BuildSectorID_CRC ( STX_SECTOR_STRUCT *pStxSector );
+static STX_TRACK_STRUCT	*STX_FindTrack ( uint8_t Drive , uint8_t Track , uint8_t Side );
+static STX_SECTOR_STRUCT *STX_FindSector ( uint8_t Drive , uint8_t Track , uint8_t Side , uint8_t SectorStruct_Nb );
+static STX_SECTOR_STRUCT *STX_FindSector_By_Position ( uint8_t Drive , uint8_t Track , uint8_t Side , uint16_t BitPosition );
 
 
 
@@ -122,21 +121,13 @@ static STX_SECTOR_STRUCT *STX_FindSector_By_Position ( Uint8 Drive , Uint8 Track
 void STX_MemorySnapShot_Capture(bool bSave)
 {
 	int	Drive;
-	Uint32	i;
+	uint32_t	i;
 	STX_SECTOR_STRUCT	*pStxSector;
 	STX_TRACK_STRUCT	*pStxTrack;
 
 	if ( bSave )					/* Saving snapshot */
 	{
-		#ifdef __LIBRETRO__
-			// pointers can't go to savestate, they cause divergence, temporarily setting to 0
-			STX_MAIN_STRUCT* temp_ImageBuffer[MAX_FLOPPYDRIVES];
-			for (int j=0; j<MAX_FLOPPYDRIVES; ++j) { temp_ImageBuffer[j] = STX_State.ImageBuffer[j]; STX_State.ImageBuffer[j] = 0; }
-		#endif
 		MemorySnapShot_Store( &STX_State , sizeof (STX_State) );
-		#ifdef __LIBRETRO__
-			for (int j=0; j<MAX_FLOPPYDRIVES; ++j) STX_State.ImageBuffer[j] = temp_ImageBuffer[j];
-		#endif
 
 		/* Also save the 'write sector' and 'write track' buffers */
 		for ( Drive=0 ; Drive < MAX_FLOPPYDRIVES ; Drive++ )
@@ -151,14 +142,7 @@ void STX_MemorySnapShot_Capture(bool bSave)
 				{
 //Str_Dump_Hex_Ascii ( (char *) &STX_SaveStruct[ Drive ].pSaveSectorsStruct[ i ], sizeof( STX_SAVE_SECTOR_STRUCT ), 16, "" , stderr );
 					/* Save the structure */
-					#ifdef __LIBRETRO__
-						Uint8* temp_data = STX_SaveStruct[Drive].pSaveSectorsStruct[i].pData;
-						STX_SaveStruct[Drive].pSaveSectorsStruct[i].pData = 0;
-					#endif
 					MemorySnapShot_Store ( &STX_SaveStruct[ Drive ].pSaveSectorsStruct[ i ] , sizeof( STX_SAVE_SECTOR_STRUCT ) );
-					#ifdef __LIBRETRO__
-						STX_SaveStruct[Drive].pSaveSectorsStruct[i].pData = temp_data;
-					#endif
 					/* Save the sector's data */
 					MemorySnapShot_Store ( STX_SaveStruct[ Drive ].pSaveSectorsStruct[ i ].pData ,
 							STX_SaveStruct[ Drive ].pSaveSectorsStruct[ i ].SectorSize );
@@ -176,17 +160,7 @@ void STX_MemorySnapShot_Capture(bool bSave)
 				{
 //Str_Dump_Hex_Ascii ( (char *) &STX_SaveStruct[ Drive ].pSaveTracksStruct[ i ], sizeof( STX_SAVE_TRACK_STRUCT ), 16, "" , stderr );
 					/* Save the structure */
-					#ifdef __LIBRETRO__
-						Uint8* temp_datar = STX_SaveStruct[Drive].pSaveTracksStruct[i].pDataRead;
-						Uint8* temp_dataw = STX_SaveStruct[Drive].pSaveTracksStruct[i].pDataWrite;
-						STX_SaveStruct[Drive].pSaveTracksStruct[i].pDataRead  = 0;
-						STX_SaveStruct[Drive].pSaveTracksStruct[i].pDataWrite = 0;
-					#endif
 					MemorySnapShot_Store ( &STX_SaveStruct[ Drive ].pSaveTracksStruct[ i ] , sizeof( STX_SAVE_TRACK_STRUCT ) );
-					#ifdef __LIBRETRO__
-						STX_SaveStruct[Drive].pSaveTracksStruct[i].pDataRead  = temp_datar;
-						STX_SaveStruct[Drive].pSaveTracksStruct[i].pDataWrite = temp_dataw;
-					#endif
 					/* Save the track's data (as it was written, don't save the interpreted track) */
 					MemorySnapShot_Store ( STX_SaveStruct[ Drive ].pSaveTracksStruct[ i ].pDataWrite ,
 							STX_SaveStruct[ Drive ].pSaveTracksStruct[ i ].TrackSizeWrite );
@@ -355,18 +329,14 @@ bool	STX_FileNameToSave ( const char *FilenameSTX , char *FilenameSave )
  * Load .STX file into memory, set number of bytes loaded and return a pointer
  * to the buffer.
  */
-Uint8 *STX_ReadDisk(int Drive, const char *pszFileName, long *pImageSize, int *pImageType)
+uint8_t *STX_ReadDisk(int Drive, const char *pszFileName, long *pImageSize, int *pImageType)
 {
-	Uint8		*pSTXFile;
+	uint8_t		*pSTXFile;
 
 	*pImageSize = 0;
 
 	/* Just load directly a buffer, and set ImageSize accordingly */
-#ifndef __LIBRETRO__
 	pSTXFile = File_Read(pszFileName, pImageSize, NULL);
-#else
-	pSTXFile = core_floppy_file_read(pszFileName, pImageSize, false);
-#endif
 	if (!pSTXFile)
 	{
 		*pImageSize = 0;
@@ -397,23 +367,19 @@ Uint8 *STX_ReadDisk(int Drive, const char *pszFileName, long *pImageSize, int *p
  * If there're no sector and no track to save, return true and don't create
  * the save file
  */
-bool STX_WriteDisk ( int Drive , const char *pszFileName , Uint8 *pBuffer , int ImageSize )
+bool STX_WriteDisk ( int Drive , const char *pszFileName , uint8_t *pBuffer , int ImageSize )
 {
-#ifndef __LIBRETRO__
 	FILE		*FileOut;
-#else
-	void*		FileOut;
-#endif
 	char		FilenameSave[ FILENAME_MAX ];
-	Uint8		buf[ 100 ];
-	Uint8		*p;
-	Uint32		Sector;
-	Uint32		Track;
-	Uint32		BlockLen;
-        Uint32                  SaveSectorsCount_real;
+	uint8_t		buf[ 100 ];
+	uint8_t		*p;
+	uint32_t		Sector;
+	uint32_t		Track;
+	uint32_t		BlockLen;
+        uint32_t                  SaveSectorsCount_real;
 	STX_SAVE_SECTOR_STRUCT	*pStxSaveSector;
 	STX_SAVE_TRACK_STRUCT	*pStxSaveTrack;
-	Uint32		i;
+	uint32_t		i;
 
 	Log_Printf ( LOG_DEBUG , "stx write <%s>\n" , pszFileName );
 
@@ -446,11 +412,7 @@ bool STX_WriteDisk ( int Drive , const char *pszFileName , Uint8 *pBuffer , int 
 	Log_Printf ( LOG_DEBUG , "stx write <%s>\n" , FilenameSave );
 
 	
-#ifndef __LIBRETRO__
 	FileOut = fopen ( FilenameSave , "wb+" );
-#else
-	FileOut = core_disk_save_open( FilenameSave );
-#endif
 	if ( !FileOut )
 	{
 		Log_Printf ( LOG_ERROR , "STX_WriteDisk drive=%d file=%s, error fopen\n" , Drive , pszFileName );
@@ -470,18 +432,10 @@ bool STX_WriteDisk ( int Drive , const char *pszFileName , Uint8 *pBuffer , int 
 	STX_WriteU32_BE ( p , STX_SaveStruct[ Drive ].SaveTracksCount );	/* +12 ... +15 */
 	p += 4;
 	
-#ifndef __LIBRETRO__
 	if ( fwrite ( buf , p-buf , 1 , FileOut ) != 1 )
-#else
-	if ( !core_disk_save_write( buf, p-buf, FileOut ) )
-#endif
 	{
 		Log_Printf ( LOG_ERROR , "STX_WriteDisk drive=%d file=%s, error fwrite header\n" , Drive , pszFileName );
-	#ifndef __LIBRETRO__
 		fclose(FileOut);
-	#else
-		core_disk_save_close_extra(FileOut, false);
-	#endif
 		return false;
 	}
 
@@ -523,35 +477,19 @@ bool STX_WriteDisk ( int Drive , const char *pszFileName , Uint8 *pBuffer , int 
 
 		/* Write the header */
 //Str_Dump_Hex_Ascii ( (char *) buf , p-buf, 16, "" , stderr );
-	#ifndef __LIBRETRO__
 		if ( fwrite ( buf , p-buf , 1 , FileOut ) != 1 )
-	#else
-		if ( !core_disk_save_write( buf, p-buf, FileOut ) )
-	#endif
 		{
 			Log_Printf ( LOG_ERROR , "STX_WriteDisk drive=%d file=%s, error fwrite sector header\n" , Drive , pszFileName );
-		#ifndef __LIBRETRO__
 			fclose(FileOut);
-		#else
-			core_disk_save_close_extra(FileOut, false);
-		#endif
 			return false;
 		}
 
 		/* Write the data */
 //Str_Dump_Hex_Ascii ( (char *) pStxSaveSector->pData , pStxSaveSector->SectorSize, 16, "" , stderr );
-#ifndef __LIBRETRO__
 		if ( fwrite ( pStxSaveSector->pData , pStxSaveSector->SectorSize , 1 , FileOut ) != 1 )
-#else
-		if ( !core_disk_save_write( pStxSaveSector->pData, pStxSaveSector->SectorSize, FileOut ) )
-#endif
 		{
 			Log_Printf ( LOG_ERROR , "STX_WriteDisk drive=%d file=%s, error fwrite sector data\n" , Drive , pszFileName );
-		#ifndef __LIBRETRO__
 			fclose(FileOut);
-		#else
-			core_disk_save_close_extra(FileOut, false);
-		#endif
 			return false;
 		}
 
@@ -582,35 +520,19 @@ bool STX_WriteDisk ( int Drive , const char *pszFileName , Uint8 *pBuffer , int 
 
 		/* Write the header */
 //Str_Dump_Hex_Ascii ( (char *) buf , p-buf, 16, "" , stderr );
-	#ifndef __LIBRETRO__
 		if ( fwrite ( buf , p-buf , 1 , FileOut ) != 1 )
-	#else
-		if ( !core_disk_save_write( buf, p-buf, FileOut ) )
-	#endif
 		{
 			Log_Printf ( LOG_ERROR , "STX_WriteDisk drive=%d file=%s, error fwrite track header\n" , Drive , pszFileName );
-		#ifndef __LIBRETRO__
 			fclose(FileOut);
-		#else
-			core_disk_save_close_extra(FileOut, false);
-		#endif
 			return false;
 		}
 
 		/* Write the data at +12 */
 //Str_Dump_Hex_Ascii ( (char *) pStxSaveTrack->pDataWrite , pStxSaveTrack->TrackSizeWrite, 16, "" , stderr );
-	#ifndef __LIBRETRO__
 		if ( fwrite ( pStxSaveTrack->pDataWrite , pStxSaveTrack->TrackSizeWrite , 1 , FileOut ) != 1 )
-	#else
-		if ( !core_disk_save_write( pStxSaveTrack->pDataWrite, pStxSaveTrack->TrackSizeWrite, FileOut ) )
-	#endif
 		{
 			Log_Printf ( LOG_ERROR , "STX_WriteDisk drive=%d file=%s, error fwrite track data\n" , Drive , pszFileName );
-		#ifndef __LIBRETRO__
 			fclose(FileOut);
-		#else
-			core_disk_save_close_extra(FileOut, false);
-		#endif
 			return false;
 		}
 
@@ -618,11 +540,7 @@ bool STX_WriteDisk ( int Drive , const char *pszFileName , Uint8 *pBuffer , int 
 	}
 
 
-#ifndef __LIBRETRO__
 	fclose ( FileOut );
-#else
-	core_disk_save_close_extra(FileOut, true);
-#endif
 
 	return true;
 }
@@ -635,22 +553,18 @@ bool STX_WriteDisk ( int Drive , const char *pszFileName , Uint8 *pBuffer , int 
  */
 static bool	STX_LoadSaveFile ( int Drive , const char *FilenameSave )
 {
-	Uint8		*SaveFileBuffer;
+	uint8_t		*SaveFileBuffer;
 	long		SaveFileSize;
-	Uint8		*p;
-	Uint8		*p_save;
-	Uint8		version , revision;
-	Uint32		SectorNb;
-	Uint32		TrackNb;
+	uint8_t		*p;
+	uint8_t		*p_save;
+	uint8_t		version , revision;
+	uint32_t		SectorNb;
+	uint32_t		TrackNb;
 	STX_SECTOR_STRUCT	*pStxSector;
 	STX_TRACK_STRUCT	*pStxTrack;
 
 
-#ifndef __LIBRETRO__
 	SaveFileBuffer = File_Read ( FilenameSave, &SaveFileSize, NULL );
-#else
-	SaveFileBuffer = core_floppy_file_read( FilenameSave, &SaveFileSize, true );
-#endif
 	if (!SaveFileBuffer)
 	{
 		Log_Printf ( LOG_ERROR , "STX_LoadSaveFile drive=%d file=%s error\n" , Drive , FilenameSave );
@@ -801,7 +715,7 @@ static bool	STX_LoadSaveFile ( int Drive , const char *FilenameSave )
  * Parse the "SECT" block from a ".wd1772" save file
  * Return true if OK.
  */
-static bool	STX_LoadSaveFile_SECT ( int Drive, STX_SAVE_SECTOR_STRUCT *pStxSaveSector , Uint8 *p )
+static bool	STX_LoadSaveFile_SECT ( int Drive, STX_SAVE_SECTOR_STRUCT *pStxSaveSector , uint8_t *p )
 {
 	pStxSaveSector->Track = *p++;
 	pStxSaveSector->Side = *p++;
@@ -841,7 +755,7 @@ static bool	STX_LoadSaveFile_SECT ( int Drive, STX_SAVE_SECTOR_STRUCT *pStxSaveS
  * Parse the "TRCK" block from a ".wd1772" save file
  * Return true if OK.
  */
-static bool	STX_LoadSaveFile_TRCK ( int Drive , STX_SAVE_TRACK_STRUCT *pStxSaveTrack , Uint8 *p )
+static bool	STX_LoadSaveFile_TRCK ( int Drive , STX_SAVE_TRACK_STRUCT *pStxSaveTrack , uint8_t *p )
 {
 	pStxSaveTrack->Track = *p++;
 	pStxSaveTrack->Side = *p++;
@@ -896,7 +810,7 @@ bool	STX_Init ( void )
  * We also look for an optional save file with the ".wd1772" extension.
  * If this file exists, then we load it too.
  */
-bool	STX_Insert ( int Drive , const char *FilenameSTX , Uint8 *pImageBuffer , long ImageSize )
+bool	STX_Insert ( int Drive , const char *FilenameSTX , uint8_t *pImageBuffer , long ImageSize )
 {
 	char		FilenameSave[ FILENAME_MAX ];
 
@@ -906,11 +820,7 @@ bool	STX_Insert ( int Drive , const char *FilenameSTX , Uint8 *pImageBuffer , lo
 
 	/* Try to load an optional ".wd1772" save file. In case of error, we continue anyway with the current STX image */
 	if ( ( STX_FileNameToSave ( FilenameSTX , FilenameSave ) )
-#ifndef __LIBRETRO__
 	  && ( File_Exists ( FilenameSave ) ) )
-#else
-	  && ( core_disk_enable_save && core_floppy_file_extra() ) )
-#endif
 	{
 		Log_Printf ( LOG_INFO , "STX : STX_Insert drive=%d file=%s buf=%p size=%ld load wd1172 %s\n" , Drive , FilenameSTX , pImageBuffer , ImageSize , FilenameSave );
 		if ( STX_LoadSaveFile ( Drive , FilenameSave ) == false )
@@ -930,7 +840,7 @@ bool	STX_Insert ( int Drive , const char *FilenameSTX , Uint8 *pImageBuffer , lo
  * an optional ".wd1772" save file (the saved data are already in the memory
  * snapshot)
  */
-static bool	STX_Insert_internal ( int Drive , const char *FilenameSTX , Uint8 *pImageBuffer , long ImageSize )
+static bool	STX_Insert_internal ( int Drive , const char *FilenameSTX , uint8_t *pImageBuffer , long ImageSize )
 {
 	Log_Printf ( LOG_DEBUG , "STX : STX_Insert_internal drive=%d file=%s buf=%p size=%ld\n" , Drive , FilenameSTX , pImageBuffer , ImageSize );
 
@@ -969,12 +879,12 @@ bool	STX_Eject ( int Drive )
 /*
  * Read words and longs stored in little endian order
  */
-static Uint16	STX_ReadU16_LE ( Uint8 *p )
+static uint16_t	STX_ReadU16_LE ( uint8_t *p )
 {
 	return (p[1]<<8) +p [0];
 }
 
-static Uint32	STX_ReadU32_LE ( Uint8 *p )
+static uint32_t	STX_ReadU32_LE ( uint8_t *p )
 {
 	return (p[3]<<24) + (p[2]<<16) + (p[1]<<8) +p[0];
 }
@@ -984,12 +894,12 @@ static Uint32	STX_ReadU32_LE ( Uint8 *p )
 /*
  * Read words and longs stored in big endian order
  */
-static Uint16	STX_ReadU16_BE ( Uint8 *p )
+static uint16_t	STX_ReadU16_BE ( uint8_t *p )
 {
 	return (p[0]<<8) + p[1];
 }
 
-static Uint32	STX_ReadU32_BE ( Uint8 *p )
+static uint32_t	STX_ReadU32_BE ( uint8_t *p )
 {
 	return (p[0]<<24) + (p[1]<<16) + (p[2]<<8) +p[3];
 }
@@ -999,14 +909,14 @@ static Uint32	STX_ReadU32_BE ( Uint8 *p )
 /*
  * Store words and longs in big endian order
  */
-static void	STX_WriteU16_BE ( Uint8 *p , Uint16 val )
+static void	STX_WriteU16_BE ( uint8_t *p , uint16_t val )
 {
 	p[ 1 ] = val & 0xff;
 	val >>= 8;
 	p[ 0 ] = val & 0xff;
 }
 
-static void	STX_WriteU32_BE ( Uint8 *p , Uint32 val )
+static void	STX_WriteU32_BE ( uint8_t *p , uint32_t val )
 {
 	p[ 3 ] = val & 0xff;
 	val >>= 8;
@@ -1064,9 +974,9 @@ static void	STX_FreeSaveStruct ( int Drive )
 /**
  * Free the memory allocated to store all the STX_SAVE_SECTOR_STRUCT
  */
-static void	STX_FreeSaveSectorsStructAll ( STX_SAVE_SECTOR_STRUCT *pSaveSectorsStruct , Uint32 SaveSectorsCount )
+static void	STX_FreeSaveSectorsStructAll ( STX_SAVE_SECTOR_STRUCT *pSaveSectorsStruct , uint32_t SaveSectorsCount )
 {
-	Uint32	i;
+	uint32_t	i;
 
 	if ( !pSaveSectorsStruct )
 		return;
@@ -1099,9 +1009,9 @@ static void	STX_FreeSaveSectorsStruct ( STX_SAVE_SECTOR_STRUCT *pSaveSectorsStru
 /**
  * Free the memory allocated to store all the STX_SAVE_TRACK_STRUCT
  */
-static void	STX_FreeSaveTracksStructAll ( STX_SAVE_TRACK_STRUCT *pSaveTracksStruct , Uint32 SaveTracksCount )
+static void	STX_FreeSaveTracksStructAll ( STX_SAVE_TRACK_STRUCT *pSaveTracksStruct , uint32_t SaveTracksCount )
 {
-	Uint32	i;
+	uint32_t	i;
 
 	if ( !pSaveTracksStruct )
 		return;
@@ -1134,19 +1044,19 @@ static void	STX_FreeSaveTracksStruct ( STX_SAVE_TRACK_STRUCT *pSaveTracksStruct 
  * Some internal variables/pointers are also computed, to speed up
  * data access when the FDC emulates an STX file.
  */
-STX_MAIN_STRUCT	*STX_BuildStruct ( Uint8 *pFileBuffer , int Debug )
+STX_MAIN_STRUCT	*STX_BuildStruct ( uint8_t *pFileBuffer , int Debug )
 {
 
 	STX_MAIN_STRUCT		*pStxMain;
 	STX_TRACK_STRUCT	*pStxTrack;
 	STX_SECTOR_STRUCT	*pStxSector;
-	Uint8			*p;
-	Uint8			*p_cur;
+	uint8_t			*p;
+	uint8_t			*p_cur;
 	int			Track;
 	int			Sector;
-	Uint8			*pFuzzyData;
-	Uint8			*pTimingData;
-	Uint32			MaxOffsetSectorEnd;
+	uint8_t			*pFuzzyData;
+	uint8_t			*pTimingData;
+	uint32_t			MaxOffsetSectorEnd;
 	int			VariableTimings;
 
 	pStxMain = malloc ( sizeof ( STX_MAIN_STRUCT ) );
@@ -1171,14 +1081,8 @@ STX_MAIN_STRUCT	*STX_BuildStruct ( Uint8 *pFileBuffer , int Debug )
 			pStxMain->ImagingTool  , pStxMain->Reserved_1 , pStxMain->TracksCount , pStxMain->Revision ,
 			pStxMain->Reserved_2 );
 
-#ifndef __LIBRETRO__
 	pStxMain->WarnedWriteSector = false;
 	pStxMain->WarnedWriteTrack = false;
-#else
-	// suppress alert about the STX overlay, this isn't an issue with how the Libretro core saves elsewhere
-	pStxMain->WarnedWriteSector = true;
-	pStxMain->WarnedWriteTrack = true;
-#endif
 
 	pStxTrack = malloc ( sizeof ( STX_TRACK_STRUCT ) * pStxMain->TracksCount );
 	if ( !pStxTrack )
@@ -1421,11 +1325,11 @@ next_track:
  * sector, as well as the position of the corresponding 512 bytes of data.
  * This is only used when storing unprotected tracks.
  */
-static void	STX_BuildSectorsSimple ( STX_TRACK_STRUCT *pStxTrack , Uint8 *p )
+static void	STX_BuildSectorsSimple ( STX_TRACK_STRUCT *pStxTrack , uint8_t *p )
 {
 	int	Sector;
 	int	BytePosition;
-	Uint16	CRC;
+	uint16_t	CRC;
 
 	BytePosition = FDC_TRACK_LAYOUT_STANDARD_GAP1 + FDC_TRACK_LAYOUT_STANDARD_GAP2;		/* Points to the 3x$A1 before the 1st IDAM $FE */
 	BytePosition += 4;						/* Pasti seems to point after the 3x$A1 and the IDAM $FE */
@@ -1460,9 +1364,9 @@ static void	STX_BuildSectorsSimple ( STX_TRACK_STRUCT *pStxTrack , Uint8 *p )
 /**
  * Compute the CRC of the Address Field for a given sector.
  */
-static Uint16	STX_BuildSectorID_CRC ( STX_SECTOR_STRUCT *pStxSector )
+static uint16_t	STX_BuildSectorID_CRC ( STX_SECTOR_STRUCT *pStxSector )
 {
-        Uint16  CRC;
+        uint16_t  CRC;
 
 	crc16_reset ( &CRC );
 	crc16_add_byte ( &CRC , 0xa1 );
@@ -1483,7 +1387,7 @@ static Uint16	STX_BuildSectorID_CRC ( STX_SECTOR_STRUCT *pStxSector )
 /**
  * Find a track in the floppy image inserted into a drive.
  */
-static STX_TRACK_STRUCT	*STX_FindTrack ( Uint8 Drive , Uint8 Track , Uint8 Side )
+static STX_TRACK_STRUCT	*STX_FindTrack ( uint8_t Drive , uint8_t Track , uint8_t Side )
 {
 	int	i;
 
@@ -1504,7 +1408,7 @@ static STX_TRACK_STRUCT	*STX_FindTrack ( Uint8 Drive , Uint8 Track , Uint8 Side 
  * Find a sector in the floppy image inserted into a drive.
  * SectorStruct_Nb is a value set by a previous call to FDC_NextSectorID_FdcCycles_STX()
  */
-static STX_SECTOR_STRUCT	*STX_FindSector ( Uint8 Drive , Uint8 Track , Uint8 Side , Uint8 SectorStruct_Nb )
+static STX_SECTOR_STRUCT	*STX_FindSector ( uint8_t Drive , uint8_t Track , uint8_t Side , uint8_t SectorStruct_Nb )
 {
 	STX_TRACK_STRUCT	*pStxTrack;
 
@@ -1528,7 +1432,7 @@ static STX_SECTOR_STRUCT	*STX_FindSector ( Uint8 Drive , Uint8 Track , Uint8 Sid
  * Find a sector in the floppy image inserted into a drive.
  * The sector is identified by its BitPosition which is unique per track/side
  */
-static STX_SECTOR_STRUCT	*STX_FindSector_By_Position ( Uint8 Drive , Uint8 Track , Uint8 Side , Uint16 BitPosition )
+static STX_SECTOR_STRUCT	*STX_FindSector_By_Position ( uint8_t Drive , uint8_t Track , uint8_t Side , uint16_t BitPosition )
 {
 	STX_TRACK_STRUCT	*pStxTrack;
 	int			Sector;
@@ -1560,9 +1464,9 @@ static STX_SECTOR_STRUCT	*STX_FindSector_By_Position ( Uint8 Drive , Uint8 Track
  * for different protections)
  * NOTE : Although STX format was supposed to handle only DD floppies, some tools like HxC
  * allow to convert a HD floppy image to an STX equivalent. In that case
- * TrackSize will be approximatively 2 x FDC_TRACK_BYTES_STANDARD
+ * TrackSize will be approximately 2 x FDC_TRACK_BYTES_STANDARD
  */
-int	FDC_GetBytesPerTrack_STX ( Uint8 Drive , Uint8 Track , Uint8 Side )
+int	FDC_GetBytesPerTrack_STX ( uint8_t Drive , uint8_t Track , uint8_t Side )
 {
 	STX_TRACK_STRUCT	*pStxTrack;
 	int			TrackSize;
@@ -1592,7 +1496,7 @@ int	FDC_GetBytesPerTrack_STX ( Uint8 Drive , Uint8 Track , Uint8 Side )
  * factor into account (it should take the same time to read a DD track and a HD track
  * as the drive spins at 300 RPM in both cases)
  */
-Uint32	FDC_GetCyclesPerRev_FdcCycles_STX ( Uint8 Drive , Uint8 Track , Uint8 Side )
+uint32_t	FDC_GetCyclesPerRev_FdcCycles_STX ( uint8_t Drive , uint8_t Track , uint8_t Side )
 {
 	int			TrackSize;
 
@@ -1617,7 +1521,7 @@ Uint32	FDC_GetCyclesPerRev_FdcCycles_STX ( Uint8 Drive , Uint8 Track , Uint8 Sid
  * using BitPosition.
  * If there's no available drive/floppy or no ID field in the track, we return -1
  */
-int	FDC_NextSectorID_FdcCycles_STX ( Uint8 Drive , Uint8 NumberOfHeads , Uint8 Track , Uint8 Side )
+int	FDC_NextSectorID_FdcCycles_STX ( uint8_t Drive , uint8_t NumberOfHeads , uint8_t Track , uint8_t Side )
 {
 	STX_TRACK_STRUCT	*pStxTrack;
 	int			CurrentPos_FdcCycles;
@@ -1699,7 +1603,7 @@ int	FDC_NextSectorID_FdcCycles_STX ( Uint8 Drive , Uint8 NumberOfHeads , Uint8 T
  * Return the value of the track number in the next ID field set by
  * FDC_NextSectorID_FdcCycles_STX.
  */
-Uint8	FDC_NextSectorID_TR_STX ( void )
+uint8_t	FDC_NextSectorID_TR_STX ( void )
 {
 	return STX_State.NextSector_ID_Field_TR;
 }
@@ -1710,7 +1614,7 @@ Uint8	FDC_NextSectorID_TR_STX ( void )
  * Return the value of the sector number in the next ID field set by
  * FDC_NextSectorID_FdcCycles_STX.
  */
-Uint8	FDC_NextSectorID_SR_STX ( void )
+uint8_t	FDC_NextSectorID_SR_STX ( void )
 {
 	return STX_State.NextSector_ID_Field_SR;
 }
@@ -1721,7 +1625,7 @@ Uint8	FDC_NextSectorID_SR_STX ( void )
  * Return the value of the sector's length in the next ID field set by
  * FDC_NextSectorID_FdcCycles_STX.
  */
-Uint8	FDC_NextSectorID_LEN_STX ( void )
+uint8_t	FDC_NextSectorID_LEN_STX ( void )
 {
 	return STX_State.NextSector_ID_Field_LEN;
 }
@@ -1733,7 +1637,7 @@ Uint8	FDC_NextSectorID_LEN_STX ( void )
  * FDC_NextSectorID_FdcCycles_STX.
  * If '0', CRC is bad, else CRC is OK
  */
-Uint8	FDC_NextSectorID_CRC_OK_STX ( void )
+uint8_t	FDC_NextSectorID_CRC_OK_STX ( void )
 {
 	return STX_State.NextSector_ID_Field_CRC_OK;
 }
@@ -1756,16 +1660,16 @@ Uint8	FDC_NextSectorID_CRC_OK_STX ( void )
  * Return RNF if sector was not found, else return CRC and RECORD_TYPE values
  * for the status register.
  */
-Uint8	FDC_ReadSector_STX ( Uint8 Drive , Uint8 Track , Uint8 Sector , Uint8 Side , int *pSectorSize )
+uint8_t	FDC_ReadSector_STX ( uint8_t Drive , uint8_t Track , uint8_t Sector , uint8_t Side , int *pSectorSize )
 {
 	STX_SECTOR_STRUCT	*pStxSector;
 	int			i;
-	Uint8			Byte;
-	Uint16			Timing;
-	Uint32			Sector_ReadTime;
+	uint8_t			Byte;
+	uint16_t			Timing;
+	uint32_t			Sector_ReadTime;
 	double			Total_cur;				/* To compute closest integer timings for each byte */
 	double			Total_prev;
-	Uint8			*pSector_WriteData;
+	uint8_t			*pSector_WriteData;
 
 	pStxSector = STX_FindSector ( Drive , Track , Side , STX_State.NextSectorStruct_Nbr );
 	if ( pStxSector == NULL )
@@ -1807,11 +1711,7 @@ Uint8	FDC_ReadSector_STX ( Uint8 Drive , Uint8 Track , Uint8 Sector , Uint8 Side
 		{
 			Byte = pStxSector->pData[ i ];
 			if ( pStxSector->pFuzzyData )
-#ifndef __LIBRETRO__
-				Byte = ( Byte & pStxSector->pFuzzyData[ i ] ) | ( rand() & ~pStxSector->pFuzzyData[ i ] );
-#else
-				Byte = ( Byte & pStxSector->pFuzzyData[ i ] ) | ( core_rand() & ~pStxSector->pFuzzyData[ i ] );
-#endif
+				Byte = ( Byte & pStxSector->pFuzzyData[ i ] ) | ( Hatari_rand() & ~pStxSector->pFuzzyData[ i ] );
 		}
 
 		else							/* Use data from 'write sector' */
@@ -1868,11 +1768,11 @@ Uint8	FDC_ReadSector_STX ( Uint8 Drive , Uint8 Track , Uint8 Sector , Uint8 Side
  * Return RNF if sector was not found or CRC if ID field has a CRC error.
  * Return 0 if OK.
  */
-Uint8	FDC_WriteSector_STX ( Uint8 Drive , Uint8 Track , Uint8 Sector , Uint8 Side , int SectorSize )
+uint8_t	FDC_WriteSector_STX ( uint8_t Drive , uint8_t Track , uint8_t Sector , uint8_t Side , int SectorSize )
 {
 	STX_SECTOR_STRUCT	*pStxSector;
 	int			i;
-	Uint8			*pSector_WriteData;
+	uint8_t			*pSector_WriteData;
 	void			*pNewBuf;
 	STX_SAVE_SECTOR_STRUCT	*pStxSaveSector;
 
@@ -1937,7 +1837,7 @@ Uint8	FDC_WriteSector_STX ( Uint8 Drive , Uint8 Track , Uint8 Sector , Uint8 Sid
 		pStxSaveSector->ID_CRC		= pStxSector->ID_CRC;
 
 		pStxSaveSector->SectorSize	= SectorSize;
-		pStxSaveSector->pData		= (Uint8 *) pNewBuf;
+		pStxSaveSector->pData		= (uint8_t *) pNewBuf;
 
 		pStxSaveSector->StructIsUsed	= 1;
 	}
@@ -1977,7 +1877,7 @@ Uint8	FDC_WriteSector_STX ( Uint8 Drive , Uint8 Track , Uint8 Sector , Uint8 Sid
  * (32 microsec)
  * Return 0 if OK, or a CRC error
  */
-Uint8	FDC_ReadAddress_STX ( Uint8 Drive , Uint8 Track , Uint8 Sector , Uint8 Side )
+uint8_t	FDC_ReadAddress_STX ( uint8_t Drive , uint8_t Track , uint8_t Sector , uint8_t Side )
 {
 	STX_SECTOR_STRUCT	*pStxSector;
 
@@ -2017,21 +1917,21 @@ Uint8	FDC_ReadAddress_STX ( Uint8 Drive , Uint8 Track , Uint8 Sector , Uint8 Sid
  * a standard track by using the available sectors and standard GAP values.
  * Return 0 if OK
  */
-Uint8	FDC_ReadTrack_STX ( Uint8 Drive , Uint8 Track , Uint8 Side )
+uint8_t	FDC_ReadTrack_STX ( uint8_t Drive , uint8_t Track , uint8_t Side )
 {
 	STX_TRACK_STRUCT	*pStxTrack;
 	STX_SECTOR_STRUCT	*pStxSector;
 	int			i;
-	Uint16			Timing;
-	Uint32			Track_ReadTime;
+	uint16_t			Timing;
+	uint32_t			Track_ReadTime;
 	double			Total_cur;				/* To compute closest integer timings for each byte */
 	double			Total_prev;
 	int			TrackSize;
 	int			Sector;
 	int			SectorSize;
-	Uint16  		CRC;
-	Uint8			*pData;
-	Uint8			Byte;
+	uint16_t  		CRC;
+	uint8_t			*pData;
+	uint8_t			Byte;
 	
 	if ( STX_State.ImageBuffer[ Drive ] == NULL )
 	{
@@ -2044,11 +1944,7 @@ Uint8	FDC_ReadTrack_STX ( Uint8 Drive , Uint8 Track , Uint8 Side )
 	{
 		Log_Printf ( LOG_WARN , "fdc stx : track info not found for read track drive=%d track=%d side=%d, returning random bytes\n" , Drive , Track , Side );
 		for ( i=0 ; i<FDC_GetBytesPerTrack_STX ( Drive , Track , Side ) ; i++ )
-#ifndef __LIBRETRO__
-			FDC_Buffer_Add ( rand() & 0xff );		/* Fill the track buffer with random bytes */
-#else
-			FDC_Buffer_Add ( core_rand() & 0xff );		/* Fill the track buffer with random bytes */
-#endif
+			FDC_Buffer_Add ( Hatari_rand() & 0xff );	/* Fill the track buffer with random bytes */
 		return 0;
 	}
 
@@ -2086,7 +1982,7 @@ Uint8	FDC_ReadTrack_STX ( Uint8 Drive , Uint8 Track , Uint8 Side )
 		{
 			Log_Printf ( LOG_WARN , "fdc stx : no track image and no sector for read track drive=%d track=%d side=%d, building an unformatted track\n" , Drive , Track , Side );
 			for ( i=0 ; i<TrackSize ; i++ )
-				FDC_Buffer_Add ( rand() & 0xff );	/* Fill the track buffer with random bytes */
+				FDC_Buffer_Add ( Hatari_rand() & 0xff ); /* Fill the track buffer with random bytes */
 			return 0;
 		}
 
@@ -2185,11 +2081,11 @@ Uint8	FDC_ReadTrack_STX ( Uint8 Drive , Uint8 Track , Uint8 Side )
  *
  * Return 0 if track was written without error, or LOST_DATA if an error occurred
  */
-Uint8	FDC_WriteTrack_STX ( Uint8 Drive , Uint8 Track , Uint8 Side , int TrackSize )
+uint8_t	FDC_WriteTrack_STX ( uint8_t Drive , uint8_t Track , uint8_t Side , int TrackSize )
 {
 	STX_TRACK_STRUCT	*pStxTrack;
 	int			i;
-	Uint8			*pTrack_DataWrite;
+	uint8_t			*pTrack_DataWrite;
 	void			*pNewBuf;
 	STX_SAVE_TRACK_STRUCT	*pStxSaveTrack;
 	int			Sector;
@@ -2248,7 +2144,7 @@ Uint8	FDC_WriteTrack_STX ( Uint8 Drive , Uint8 Track , Uint8 Side , int TrackSiz
 	pStxSaveTrack->Side = Side;
 
 	pStxSaveTrack->TrackSizeWrite = TrackSize;
-	pStxSaveTrack->pDataWrite = (Uint8 *) pNewBuf;
+	pStxSaveTrack->pDataWrite = (uint8_t *) pNewBuf;
 
 
 	/* Get the track's data (ignore timings) */

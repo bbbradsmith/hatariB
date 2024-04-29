@@ -27,13 +27,15 @@
 	[window setDelegate:self];
 
 	// Change emulation and UI state
-	GuiOsx_Pause(true);
+	bool bWasRunning = GuiOsx_Pause(true);
 	
 	// Run it as modal
 	[NSApp runModalForWindow:window];
 
 	// Restore emulation and UI state
-	GuiOsx_Resume();
+	if (bWasRunning) {
+		GuiOsx_Resume();
+	}
 }
 
 // On closure of the NSWindow, end the modal session
@@ -67,10 +69,10 @@ void GuiOsx_ExportPathString(NSString* path, char* szTarget, size_t cchTarget)
 /*Pauses emulation														*/
 /* Added the visualize option for 2.0.0									*/
 /*----------------------------------------------------------------------*/
-void GuiOsx_Pause(bool visualize)
+bool GuiOsx_Pause(bool visualize)
 {
 	// Pause emulation
-	Main_PauseEmulation(visualize);
+	return Main_PauseEmulation(visualize);
 }
 
 /*-----------------------------------------------------------------------*/
@@ -90,13 +92,13 @@ void GuiOsx_Resume(void)
 
 // Open file or directory
 //
-- (NSString *)hopenfile:(BOOL)chooseDir defoDir:(NSString *)defoDir defoFile:(NSString *)defoFile types:(NSArray *)types
+- (NSString *)hopenfile:(BOOL)chooseDir defoDir:(NSString *)defoDir defoFile:(NSString *)defoFile
 {
-	return [self hopenfile:chooseDir defoDir:defoDir defoFile:defoFile types:types titre:nil] ;
+	return [self hopenfile:chooseDir defoDir:defoDir defoFile:defoFile titre:nil] ;
 }
 
 /*----------------------------------------------------------------------*/
-- (NSString *)hopenfile:(BOOL)chooseDir defoDir:(NSString *)defoDir defoFile:(NSString *)defoFile types:(NSArray *)types titre:(NSString *)titre
+- (NSString *)hopenfile:(BOOL)chooseDir defoDir:(NSString *)defoDir defoFile:(NSString *)defoFile titre:(NSString *)titre
 {
 NSOpenPanel *openPanel ;
 	NSArray     *lesURLs = nil ;
@@ -106,9 +108,7 @@ NSOpenPanel *openPanel ;
 	openPanel.canChooseDirectories = chooseDir ;
 	openPanel.canChooseFiles = !chooseDir;
 	openPanel.allowsMultipleSelection = NO ;
-	if (types != nil) 
-	 {	openPanel.allowedFileTypes = types ;
-		openPanel.allowsOtherFileTypes = YES ;  } ;
+
 	if (titre != nil) openPanel.title = titre ;
 
 //	if ([openPanel respondsToSelector:@selector(setDirectoryURL:)])

@@ -1,7 +1,7 @@
 /*
   Hatari - evaluate.c
 
-  Copyright (C) 1994, 2009-2014 by Eero Tamminen
+  Copyright (C) 1994, 2009-2014, 2022-2023 by Eero Tamminen
 
   This file is distributed under the GNU General Public License, version 2
   or at your option any later version. Read the file gpl.txt for details.
@@ -20,7 +20,6 @@ const char Eval_fileid[] = "Hatari calculate.c";
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <SDL_types.h>
 #include <inttypes.h>
 #include "configuration.h"
 #include "dsp.h"
@@ -47,6 +46,7 @@ const char Eval_fileid[] = "Hatari calculate.c";
 #define CLAC_OVF_ERR "Overflow"
 #define CLAC_OVR_ERR "Mode overflow"
 #define CLAC_PRG_ERR "Internal program error"
+#define CLAC_WDT_ERR "Invalid address width"
 
 /* define internal allocation sizes (should be enough ;-)		*/
 #define PARDEPTH_MAX	16		/* max. parenth. nesting depth	*/
@@ -113,7 +113,9 @@ static long long apply_op(char op, long long x, long long y);
 /* increase parenthesis level	*/
 static void open_bracket(void);
 /* decrease parenthesis level	*/
-static long long close_bracket(long long x);
+static long long close_bracket(long long x, char width);
+/* parse (addr).[bwl] width	*/
+static int get_width (const char *str, char *width);
 
 
 /**
@@ -125,7 +127,7 @@ static long long close_bracket(long long x);
  * - '0o' => octal decimal
  * Return how many characters were parsed or zero for error.
  */
-static int getNumber(const char *str, Uint32 *number, int *nbase)
+static int getNumber(const char *str, uint32_t *number, int *nbase)
 {
 	char *end;
 	const char *start = str;
@@ -201,11 +203,11 @@ static int getNumber(const char *str, Uint32 *number, int *nbase)
  * and the number base used for parsing to "base".
  * Return how many characters were parsed or zero for error.
  */
-static int getValue(const char *str, Uint32 *number, int *base, bool bForDsp)
+static int getValue(const char *str, uint32_t *number, int *base, bool bForDsp)
 {
 	char name[64];
 	const char *end;
-	Uint32 mask, *addr;
+	uint32_t mask, *addr;
 	int len;
 
 	for (end = str; *end == '_' || isalnum((unsigned char)*end); end++);
@@ -230,7 +232,7 @@ static int getValue(const char *str, Uint32 *number, int *base, bool bForDsp)
 		/* DSP register or symbol? */
 		switch (regsize) {
 		case 16:
-			*number = (*((Uint16*)addr) & mask);
+			*number = (*((uint16_t*)addr) & mask);
 			return len;
 		case 32:
 			*number = (*addr & mask);
@@ -308,7 +310,7 @@ static bool isNumberOK(const char *str, int offset, int base)
  * default number base unless it has a suitable prefix.
  * Return true for success and false for failure.
  */
-bool Eval_Number(const char *str, Uint32 *number)
+bool Eval_Number(const char *str, uint32_t *number)
 {
 	int offset, base;
 	/* TODO: add CPU/DSP flag and use getValue() instead of getNumber()
@@ -332,7 +334,7 @@ bool Eval_Number(const char *str, Uint32 *number)
  *  0 if single address,
  * +1 if a range.
  */
-int Eval_Range(char *str1, Uint32 *lower, Uint32 *upper, bool fordsp)
+int Eval_Range(char *str1, uint32_t *lower, uint32_t *upper, bool fordsp)
 {
 	int offset, base, ret;
 	bool fDash = false;
@@ -383,7 +385,7 @@ int Eval_Range(char *str1, Uint32 *lower, Uint32 *upper, bool fordsp)
  * are interpreted. Sets given value and parsing offset.
  * Return error string or NULL for success.
  */
-const char* Eval_Expression(const char *in, Uint32 *out, int *erroff, bool bForDsp)
+const char* Eval_Expression(const char *in, uint32_t *out, int *erroff, bool bForDsp)
 {
 	/* in	 : expression to evaluate				*/
 	/* out	 : final parsed value					*/
@@ -395,7 +397,7 @@ const char* Eval_Expression(const char *in, Uint32 *out, int *erroff, bool bForD
 
 	long long value;
 	int dummy, offset = 0;
-	char mark;
+	char mark, width;
 
 	/* Uses global variables:	*/
 
@@ -448,13 +450,15 @@ const char* Eval_Expression(const char *in, Uint32 *out, int *erroff, bool bForD
 			offset ++;
 			break;
 		case ')':
-			value = close_bracket (value);
 			offset ++;
+			/* check for .b/.w/.l width spec */
+			offset += get_width (in+offset, &width);
+			value = close_bracket (value, width);
 			break;
 		default:
 			/* register/symbol/number value needed? */
 			if (id.valid == false) {
-				Uint32 tmp;
+				uint32_t tmp;
 				int consumed;
 				consumed = getValue(&(in[offset]), &tmp, &dummy, bForDsp);
 				/* number parsed? */
@@ -715,21 +719,33 @@ static void open_bracket (void)
  * close parenthesis, and evaluate / pop stacks
  */
 /* last parsed value, last param. flag, trigonometric mode	*/
-static long long close_bracket (long long value)
+static long long close_bracket (long long value, char width)
 {
 	/* returns the value of the parenthesised expression	*/
 
 	if (id.valid) {			/* preceded by an operator	*/
 		if (par.idx > 0) {	/* parenthesis has a pair	*/
-			Uint32 addr;
+			uint32_t addr;
 
 			/* calculate the value of parenthesised exp.	*/
 			operation (value, LOWEST_PREDECENCE);
 			/* fetch the indirect ST RAM value */
 			addr = val.buf[val.idx];
-			value = STMemory_ReadLong(addr);
-			fprintf(stderr, "  value in RAM at ($%x).l = $%"PRIx64"\n",
-				addr, (uint64_t)value);
+			switch (width) {
+			case 'b':
+				value = STMemory_ReadByte(addr);
+				break;
+			case 'w':
+				value = STMemory_ReadWord(addr);
+				break;
+			case 'l':
+				value = STMemory_ReadLong(addr);
+				break;
+			default:
+				id.error = CLAC_PRG_ERR;
+			}
+			fprintf(stderr, "  value at ($%x).%c = $%"PRIx64"\n",
+				addr, width, (uint64_t)value);
 			/* restore state before parenthesis */
 			op.idx = par.opx[par.idx] - 1;
 			val.idx = par.vax[par.idx] - 1;
@@ -743,4 +759,23 @@ static long long close_bracket (long long value)
 		id.error = CLAC_GEN_ERR;
 
 	return value;
+}
+
+/* parse 'str' for '.[bwl]' pattern, set lower-case width char
+ * to 'width', or if there was no match, use 'l'.  Return number
+ * of parsed characters.
+ */
+static int get_width(const char *str, char *width)
+{
+	*width = 'l';
+	if (str[0] != '.')
+		return 0;
+
+	char lower = tolower(str[1]);
+	if (lower != 'b' && lower != 'w' && lower != 'l') {
+		id.error = CLAC_WDT_ERR;
+		return 1;
+	}
+	*width = lower;
+	return 2;
 }

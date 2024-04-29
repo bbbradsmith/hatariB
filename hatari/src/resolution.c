@@ -32,7 +32,6 @@ static int DesktopWidth, DesktopHeight;
  */
 void Resolution_Init(void)
 {
-#ifndef __LIBRETRO__
 	SDL_DisplayMode dm;
 	if (SDL_GetDesktopDisplayMode(0, &dm) == 0)
 	{
@@ -42,9 +41,6 @@ void Resolution_Init(void)
 	else
 	{
 		Log_Printf(LOG_ERROR, "SDL_GetDesktopDisplayMode failed: %s", SDL_GetError());
-#else
-	{
-#endif
 		DesktopWidth = 2*NUM_VISIBLE_LINE_PIXELS;
 		DesktopHeight = 2*NUM_VISIBLE_LINES+STATUSBAR_MAX_HEIGHT;
 	}
@@ -86,7 +82,7 @@ static void Resolution_GetMaxSize(int *width, int *height)
  * Set given width & height arguments to maximum size allowed in the
  * configuration.
  */
-void Resolution_GetLimits(int *width, int *height, int *bpp, bool keep)
+void Resolution_GetLimits(int *width, int *height, bool keep)
 {
 	*width = *height = 0;
 

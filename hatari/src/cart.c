@@ -18,7 +18,7 @@ const char Cart_fileid[] = "Hatari cart.c";
 
 /* 2007/12/09	[NP]	Change the function associated to opcodes $8, $a and $c only if hard drive	*/
 /*			emulation is ON. Else, these opcodes should give illegal instructions (also	*/
-/*			see uae-cpu/newcpu.c).								*/
+/*			see cpu/newcpu.c).								*/
 
 
 #include "main.h"
@@ -36,10 +36,6 @@ const char Cart_fileid[] = "Hatari cart.c";
 
 #include "cartData.c"
 
-#ifdef __LIBRETRO__
-extern uint8_t* core_read_file_system(const char* filename, unsigned int* size_out);
-#endif
-
 
 /* Possible cartridge file extensions to scan for */
 static const char * const psCartNameExts[] =
@@ -56,19 +52,12 @@ static const char * const psCartNameExts[] =
  */
 static void Cart_LoadImage(void)
 {
-	Uint8 *pCartData;
+	uint8_t *pCartData;
 	long nCartSize;
 	char *pCartFileName = ConfigureParams.Rom.szCartridgeImageFileName;
 
 	/* Try to load the image file: */
-#ifndef __LIBRETRO__
 	pCartData = File_Read(pCartFileName, &nCartSize, psCartNameExts);
-#else
-	unsigned int size;
-	pCartData = core_read_file_system(pCartFileName, &size);
-	nCartSize = size;
-	(void)psCartNameExts;
-#endif
 	if (!pCartData)
 	{
 		Log_Printf(LOG_ERROR, "Failed to load '%s'.\n", pCartFileName);

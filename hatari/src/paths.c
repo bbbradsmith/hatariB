@@ -21,7 +21,7 @@ const char Paths_fileid[] = "Hatari paths.c";
 #define mkdir(name,mode) mkdir(name)
 #endif  /* WIN32 */
 
-#if defined(__MACOSX__)
+#if defined(__APPLE__)
 	#define HATARI_HOME_DIR "Library/Application Support/Hatari"
 #elif defined(WIN32)
 	#define HATARI_HOME_DIR "AppData\\Local\\Hatari"
@@ -127,7 +127,7 @@ static void Paths_GetExecDirFromPATH(const char *argv0, char *pExecDir, int nMax
 		if (File_Exists(pTmpName))
 		{
 			/* Found the executable - so use the corresponding path: */
-			strlcpy(pExecDir, pAct, nMaxLen);
+			Str_Copy(pExecDir, pAct, nMaxLen);
 			break;
 		}
 		pAct = strtok (NULL, pToken);
@@ -190,7 +190,7 @@ static char *Paths_InitExecDir(const char *argv0)
 			/* There was a path separator in argv[0], so let's assume a
 			 * relative or absolute path to the current directory in argv[0] */
 			char *p;
-			strlcpy(psExecDir, argv0, FILENAME_MAX);
+			Str_Copy(psExecDir, argv0, FILENAME_MAX);
 			p = strrchr(psExecDir, PATHSEP);  /* Search last slash */
 			if (p)
 				*p = 0;                       /* Strip file name from path */
@@ -261,7 +261,7 @@ static void Paths_InitHomeDirs(void)
 
 	/* Hatari home directory does not exists yet...
 	 * ... so let's try to create it: */
-#if !defined(__MACOSX__) && !defined(WIN32)
+#if !defined(__APPLE__) && !defined(WIN32)
 	sprintf(sHatariHomeDir, "%s%c.config", sUserHomeDir, PATHSEP);
 	if (!File_DirExists(sHatariHomeDir))
 	{
@@ -291,7 +291,6 @@ static void Paths_InitHomeDirs(void)
  */
 void Paths_Init(const char *argv0)
 {
-#ifndef __LIBRETRO__
 	char *psExecDir;  /* Path string where the hatari executable can be found */
 
 	/* Init working directory string */
@@ -306,7 +305,7 @@ void Paths_Init(const char *argv0)
 	Paths_InitHomeDirs();
 
 	/* Init screenshot directory string */
-#if !defined(__MACOSX__)
+#if !defined(__APPLE__)
 	sScreenShotDir = Str_Dup(sWorkingDir);
 #else
 	sScreenShotDir = Paths_GetMacScreenShotDir();
@@ -340,28 +339,13 @@ void Paths_Init(const char *argv0)
 
 	/* fprintf(stderr, " WorkingDir = %s\n DataDir = %s\n UserHomeDir = %s\n HatariHomeDir = %s\n ScrenShotDir = %s\n",
 	        sWorkingDir, sDataDir, sUserHomeDir, sHatariHomeDir, sScreenShotDir); */
-#else
-	// libretro core should not use any of these paths,
-	// using this name to help spot accidental usage
-	static char BADPATH[16] = "<nopath>";
-	sWorkingDir = BADPATH;
-	sDataDir = BADPATH;
-	sUserHomeDir = BADPATH;
-	sHatariHomeDir = BADPATH;
-	sScreenShotDir = BADPATH;
-	(void)argv0;
-	(void)Paths_InitHomeDirs;
-	(void)Paths_InitExecDir;
-#endif
 }
 
 void Paths_UnInit(void)
 {
-#ifndef __LIBRETRO__
 	Str_Free(sWorkingDir);
 	Str_Free(sDataDir);
 	Str_Free(sUserHomeDir);
 	Str_Free(sHatariHomeDir);
 	Str_Free(sScreenShotDir);
-#endif
 }

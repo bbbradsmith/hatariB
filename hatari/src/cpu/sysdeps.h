@@ -50,7 +50,14 @@ using namespace std;
 #define UAE
 #endif
 
-#if defined(__x86_64__) || defined(_M_AMD64)
+#if defined(_M_ARM64) || defined(_M_ARM64EC) || defined(__aarch64__)
+#define CPU_arm 1
+#define ARM_ASSEMBLY 1
+#define CPU_64_BIT 1
+#elif defined(__arm__) || defined(_M_ARM)
+#define CPU_arm 1
+#define ARM_ASSEMBLY 1
+#elif defined(__x86_64__) || defined(_M_AMD64)
 #define CPU_x86_64 1
 #define CPU_64_BIT 1
 #define X86_64_ASSEMBLY 1
@@ -59,8 +66,6 @@ using namespace std;
 #define CPU_i386 1
 #define X86_ASSEMBLY 1
 #define SAHF_SETO_PROFITABLE
-#elif defined(__arm__) || defined(_M_ARM) || defined(__aarch64__)
-#define CPU_arm 1
 #elif defined(__powerpc__) || defined(_M_PPC) || defined(__ppc__) || defined(__ppc64__)
 #define CPU_powerpc 1
 #elif defined(__mips__) || defined(mips) || defined(__mips64)
@@ -93,6 +98,12 @@ using namespace std;
 #include "uae/types.h"
 #else
 #include <tchar.h>
+#endif
+
+#if CPU_64_BIT
+#define addrdiff(a, b) ((int)((a) - (b)))
+#else
+#define addrdiff(a, b) ((a) - (b))
 #endif
 
 #ifndef __STDC__
@@ -273,6 +284,8 @@ extern TCHAR *utf8u (const char *s);
 extern void unicode_init (void);
 extern void to_lower (TCHAR *s, int len);
 extern void to_upper (TCHAR *s, int len);
+extern int uaestrlen(const char*);
+extern int uaetcslen(const TCHAR*);
 
 #define ENUMDECL typedef enum
 #define ENUMNAME(name) name
@@ -549,8 +562,7 @@ extern bool use_long_double;
 
 /* Try to use system bswap_16/bswap_32 functions. */
 #if defined HAVE_BSWAP_16 && defined HAVE_BSWAP_32
-# include <byteswap.h>
-#  ifdef HAVE_BYTESWAP_H
+# ifdef HAVE_BYTESWAP_H
 #  include <byteswap.h>
 # endif
 #else

@@ -31,16 +31,18 @@ enum {
       TOS_LANG_NL = 14,
       TOS_LANG_CS = 15,
       TOS_LANG_HU = 16,
+      TOS_LANG_PL = 17,
       TOS_LANG_RU = 19,
+      TOS_LANG_RO = 24,
       TOS_LANG_GR = 31,
       TOS_LANG_ALL = 127,
       TOS_LANG_UNKNOWN = -1
 };
 
 extern bool bIsEmuTOS;
-extern Uint32 EmuTosVersion;
-extern Uint16 TosVersion;
-extern Uint32 TosAddress, TosSize;
+extern uint32_t EmuTosVersion;
+extern uint16_t TosVersion;
+extern uint32_t TosAddress, TosSize;
 extern bool bTosImageLoaded;
 extern bool bRamTosImage;
 extern bool bUseTos;

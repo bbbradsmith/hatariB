@@ -20,11 +20,7 @@ INSTALL(FILES hatari-icon.png hatari-logo.png
 
 # Hatari UI Help menu items are searched from docdir.
 # Changing their target dir would require change also in uihelpers.py
-INSTALL(FILES README TODO release-notes.txt hatari-ui.html
-	DESTINATION ${DOCDIR}/hatariui/)
-
-# images/ must be where hatari-ui.html is
-INSTALL(DIRECTORY images
+INSTALL(FILES README TODO release-notes.txt
 	DESTINATION ${DOCDIR}/hatariui/)
 
 INSTALL(FILES hatariui.desktop
@@ -37,9 +33,3 @@ if(ENABLE_MAN_PAGES)
 		DEPENDS hatariui.1)
 	INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/hatariui.1.gz DESTINATION ${MANDIR})
 endif(ENABLE_MAN_PAGES)
-
-find_program(TIDY tidy)
-if(TIDY)
-	add_test(NAME tidy-hatariui
-	         COMMAND tidy -q -e ${CMAKE_CURRENT_SOURCE_DIR}/hatari-ui.html)
-endif()

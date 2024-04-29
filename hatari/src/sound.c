@@ -281,7 +281,7 @@ static ymu16	Vol3Voices = 0;				/* volume 0-0x1f for voices having a constant vo
 
 
 /* Global variables that can be changed/read from other parts of Hatari */
-Uint8		SoundRegs[ 14 ];
+uint8_t		SoundRegs[ 14 ];
 
 int		YmVolumeMixing = YM_TABLE_MIXING;
 
@@ -294,10 +294,14 @@ int		YM2149_HPF_Filter = YM2149_HPF_FILTER_IIR;
 //int		YM2149_Resample_Method = YM2149_RESAMPLE_METHOD_WEIGHTED_AVERAGE_2;
 int		YM2149_Resample_Method = YM2149_RESAMPLE_METHOD_WEIGHTED_AVERAGE_N;
 
+static double	pos_fract_nearest;			/* For YM2149_Next_Resample_Nearest */
+static double	pos_fract_weighted_2;			/* For YM2149_Next_Resample_Weighted_Average_2 */
+static uint32_t	pos_fract_weighted_n;			/* YM2149_Next_Resample_Weighted_Average_N */
+
 
 bool		bEnvelopeFreqFlag;			/* Cleared each frame for YM saving */
 
-Sint16		AudioMixBuffer[AUDIOMIXBUFFER_SIZE][2];	/* Ring buffer to store mixed audio output (YM2149, DMA sound, ...) */
+int16_t		AudioMixBuffer[AUDIOMIXBUFFER_SIZE][2];	/* Ring buffer to store mixed audio output (YM2149, DMA sound, ...) */
 int		AudioMixBuffer_pos_write;		/* Current writing position into above buffer */
 int		AudioMixBuffer_pos_read;		/* Current reading position into above buffer */
 
@@ -317,8 +321,9 @@ ymsample	YM_Buffer_250[ YM_BUFFER_250_SIZE ];	/* Ring buffer to store YM samples
 static int	YM_Buffer_250_pos_write;		/* Current writing position into above buffer */
 static int	YM_Buffer_250_pos_read;			/* Current reading position into above buffer */
 
-static Uint64	YM2149_Clock_250;			/* 250 kHz counter */
-static Uint64	YM2149_Clock_250_CpuClock;		/* Corresponding value of CyclesGlobalClockCounter at the time YM2149_Clock_250 was updated */
+static uint64_t	YM2149_Clock_250;			/* 250 kHz counter */
+static uint64_t	YM2149_Clock_250_CpuClock;		/* Corresponding value of CyclesGlobalClockCounter at the time YM2149_Clock_250 was updated */
+static ymu16	YM2149_Freq_div_2 = 0;			/* Used for noise's generator which uses half the main freq (125 KHz) */
 
 
 
@@ -338,12 +343,6 @@ static CLOCKS_CYCLES_STRUCT	YM2149_ConvertCycles_250;
 
 static ymsample	LowPassFilter		(ymsample x0);
 static ymsample	PWMaliasFilter		(ymsample x0);
-#ifdef __LIBRETRO__
-static ymsample	IIRLowPassFilter	(ymsample x0);
-static double pos_fract = 0; // a local static variable made global because it needs to go in the savestate
-static Uint32 pos_fract2 = 0;
-static ymu16 Freq_div_2 = 0;
-#endif
 
 static void	interpolate_volumetable	(ymu16 volumetable[32][32][32]);
 
@@ -353,7 +352,7 @@ static void	YM2149_Normalise_5bit_Table(ymu16 *in_5bit , yms16 *out_5bit, unsign
 
 static void	YM2149_EnvBuild		(void);
 static void	Ym2149_BuildVolumeTable	(void);
-static void	YM2149_UpdateClock_250	( Uint64 CpuClock );
+static void	YM2149_UpdateClock_250	( uint64_t CpuClock );
 static void	Ym2149_Init		(void);
 static void	Ym2149_Reset		(void);
 
@@ -362,8 +361,8 @@ static ymu16	YM2149_TonePer		(ymu8 rHigh , ymu8 rLow);
 static ymu16	YM2149_NoisePer		(ymu8 rNoise);
 static ymu16	YM2149_EnvPer		(ymu8 rHigh , ymu8 rLow);
 
-static void	YM2149_Run		( Uint64 CPU_Clock );
-static int	Sound_GenerateSamples	( Uint64 CPU_Clock);
+static void	YM2149_Run		( uint64_t CPU_Clock );
+static int	Sound_GenerateSamples	( uint64_t CPU_Clock);
 static void	YM2149_DoSamples_250	( int SamplesToGenerate_250 );
 #ifdef YM_250_DEBUG
 static void	YM2149_DoSamples_250_Debug ( int SamplesToGenerate , int pos );
@@ -492,17 +491,7 @@ static ymsample	PWMaliasFilter(ymsample x0)
 	return y0;
 }
 
-#ifdef __LIBRETRO__
-// A simpler IIR LPF filter which doesn't have the asymmterical
-// push-pull distortion of the filters above.
-static ymsample	IIRLowPassFilter(ymsample x0)
-{
-	static	yms32 y0 = 0, x1 = 0;
-	y0 = (3*(x0 + x1) + (y0<<1)) >> 3;
-	x1 = x0;
-	return y0;
-}
-#endif
+
 
 /*--------------------------------------------------------------*/
 /* Build the volume conversion table used to simulate the	*/
@@ -816,11 +805,11 @@ static void	Ym2149_BuildVolumeTable(void)
 #if 0
 /* integer version : use it when YM2149's clock is the same as CPU's clock (eg STF) */
 
-static void	YM2149_UpdateClock_250_int ( Uint64 CpuClock )
+static void	YM2149_UpdateClock_250_int ( uint64_t CpuClock )
 {
-	Uint64		CpuClockDiff;
-	Uint64		YM_Div;
-	Uint64		YM_Inc;
+	uint64_t		CpuClockDiff;
+	uint64_t		YM_Div;
+	uint64_t		YM_Inc;
 
 	/* We divide CpuClockDiff by YM_Div to get a 250 Hz YM clock increment (YM_Div=32 for an STF with a 8 MHz CPU) */
 	YM_Div = 32 << nCpuFreqShift;
@@ -844,11 +833,11 @@ static void	YM2149_UpdateClock_250_int ( Uint64 CpuClock )
 
 /* floating point version : use it when YM2149's clock is different from CPU's clock (eg STE) */
 
-static void	YM2149_UpdateClock_250_float ( Uint64 CpuClock )
+static void	YM2149_UpdateClock_250_float ( uint64_t CpuClock )
 {
-	Uint64		CpuClockDiff;
+	uint64_t		CpuClockDiff;
 	double		YM_Div;
-	Uint64		YM_Inc;
+	uint64_t		YM_Inc;
 
 	/* We divide CpuClockDiff by YM_Div to get a 250 Hz YM clock increment (YM_Div=32.0425 for an STE with a 8 MHz CPU) */
 	YM_Div = ((double)MachineClocks.CPU_Freq_Emul) / YM_ATARI_CLOCK_COUNTER;
@@ -858,7 +847,7 @@ static void	YM2149_UpdateClock_250_float ( Uint64 CpuClock )
 	CpuClockDiff = CpuClock - YM2149_Clock_250_CpuClock;
 	if ( CpuClockDiff >= YM_Div )
 	{
-		YM_Inc = CpuClockDiff / YM_Div;			/* will truncate to lower integer when casting to Uint64 */
+		YM_Inc = CpuClockDiff / YM_Div;			/* will truncate to lower integer when casting to uint64_t */
 //fprintf ( stderr , "update_250  in div=%f clock_cpu=%lu cpu_diff=%lu inc=%lu clock_250_in=%lu\n" , YM_Div, CpuClock, CpuClockDiff, YM_Inc, YM2149_Clock_250 );
 		YM2149_Clock_250 += YM_Inc;
 		YM2149_Clock_250_CpuClock = CpuClock - round ( fmod ( CpuClockDiff , YM_Div ) );
@@ -870,9 +859,9 @@ static void	YM2149_UpdateClock_250_float ( Uint64 CpuClock )
 #endif
 
 
-static void	YM2149_UpdateClock_250_int_new ( Uint64 CpuClock )
+static void	YM2149_UpdateClock_250_int_new ( uint64_t CpuClock )
 {
-	Uint64		CpuClockDiff;
+	uint64_t		CpuClockDiff;
 
 
 	CpuClockDiff = CpuClock - YM2149_Clock_250_CpuClock;
@@ -884,10 +873,6 @@ static void	YM2149_UpdateClock_250_int_new ( Uint64 CpuClock )
 
 
 //fprintf ( stderr , "update_250 clock_cpu=%ld -> ym_inc=%ld clock_250=%ld clock_250_cpu_clock=%ld\n" , CpuClock , YM2149_ConvertCycles_250.Cycles , YM2149_Clock_250 , YM2149_Clock_250_CpuClock );
-#ifdef __LIBRETRO__
-	// reset to 0 because these cycles have been processed, prevents savestate divergence when paused and not processing
-	YM2149_ConvertCycles_250.Cycles = 0;
-#endif
 }
 
 
@@ -900,7 +885,7 @@ static void	YM2149_UpdateClock_250_int_new ( Uint64 CpuClock )
  * In the end, 'integer' and 'floating point' versions will sound the same because
  * floating point precision should be good enough to avoid rounding errors.
  */
-static void	YM2149_UpdateClock_250 ( Uint64 CpuClock )
+static void	YM2149_UpdateClock_250 ( uint64_t CpuClock )
 {
 	if ( ConfigureParams.System.nMachineType == MACHINE_ST || ConfigureParams.System.nMachineType == MACHINE_MEGA_ST )
 {
@@ -1040,9 +1025,6 @@ static void	YM2149_DoSamples_250 ( int SamplesToGenerate_250 )
 	ymu32		bt;
 	ymu16		Env3Voices;			/* 0x00CCBBAA */
 	ymu16		Tone3Voices;			/* 0x00CCBBAA */
-#ifndef __LIBRETRO__
-	static ymu16	Freq_div_2 = 0;
-#endif
 	int		pos;
 	int		n;
 
@@ -1064,8 +1046,8 @@ static void	YM2149_DoSamples_250 ( int SamplesToGenerate_250 )
 		/* which gives the same result when per=1 and when per=0 */
 
 		/* Special case for noise counter, it's increased at 125 KHz, not 250 KHz */
-		Freq_div_2 ^= 1;
-		if ( Freq_div_2 == 0 )
+		YM2149_Freq_div_2 ^= 1;
+		if ( YM2149_Freq_div_2 == 0 )
 			Noise_count++;
 		if ( Noise_count >= Noise_per )
 		{
@@ -1128,20 +1110,12 @@ static void	YM2149_DoSamples_250 ( int SamplesToGenerate_250 )
 
 		sample = ymout5[ Tone3Voices ];			/* 16 bits signed value */
 
-#ifndef __LIBRETRO__
-// this low pass filter is in the wrong place, these were designed for ~44100-48000 Hz but are being run here at 250000Hz!
-// moved to YM2149_NextSample_250 instead
 		/* Apply low pass filter ? */
 		if ( YM2149_LPF_Filter == YM2149_LPF_FILTER_LPF_STF )
 			sample = LowPassFilter ( sample );
 		else if ( YM2149_LPF_Filter == YM2149_LPF_FILTER_PWM )
 			sample = PWMaliasFilter ( sample );
-	#ifdef __LIBRETRO__
-		else if ( YM2149_LPF_Filter == YM2149_LPF_FILTER_IIR )
-			sample = IIRLowPassFilter ( sample );
-	#endif
-#endif
-	
+
 		/* Store sample */
 		YM_Buffer_250[ pos ] = sample;
 		pos = ( pos + 1 ) & YM_BUFFER_250_SIZE_MASK;
@@ -1168,7 +1142,7 @@ static void	YM2149_DoSamples_250 ( int SamplesToGenerate_250 )
  */
 static void	YM2149_DoSamples_250_Debug ( int SamplesToGenerate , int pos )
 {
-	static Uint8 WavHeader[] =
+	static uint8_t WavHeader[] =
 	{
 		/* RIFF chunk */
 		'R', 'I', 'F', 'F',      /* "RIFF" (ASCII Characters) */
@@ -1203,21 +1177,21 @@ static void	YM2149_DoSamples_250_Debug ( int SamplesToGenerate , int pos )
 	{
 		file_ptr = fopen( "hatari_250.wav", "wb");
 		/* Patch mono, 2 bytes per sample */
-		WavHeader[22] = (Uint8)0x01;
-		WavHeader[32] = (Uint8)0x02;
+		WavHeader[22] = (uint8_t)0x01;
+		WavHeader[32] = (uint8_t)0x02;
 
 		/* Patch sample frequency in header structure */
 		val = 250000;
-		WavHeader[24] = (Uint8)val;
-		WavHeader[25] = (Uint8)(val >> 8);
-		WavHeader[26] = (Uint8)(val >> 16);
-		WavHeader[27] = (Uint8)(val >> 24);
+		WavHeader[24] = (uint8_t)val;
+		WavHeader[25] = (uint8_t)(val >> 8);
+		WavHeader[26] = (uint8_t)(val >> 16);
+		WavHeader[27] = (uint8_t)(val >> 24);
 		/* Patch bytes per second in header structure */
 		val = 250000 * 2;
-		WavHeader[28] = (Uint8)val;
-		WavHeader[29] = (Uint8)(val >> 8);
-		WavHeader[30] = (Uint8)(val >> 16);
-		WavHeader[31] = (Uint8)(val >> 24);
+		WavHeader[28] = (uint8_t)val;
+		WavHeader[29] = (uint8_t)(val >> 8);
+		WavHeader[30] = (uint8_t)(val >> 16);
+		WavHeader[31] = (uint8_t)(val >> 24);
 
 		fwrite ( &WavHeader, sizeof(WavHeader), 1, file_ptr );
 	}
@@ -1232,15 +1206,15 @@ static void	YM2149_DoSamples_250_Debug ( int SamplesToGenerate , int pos )
 
 	/* Update sizes in header */
 	val = 12+24+8+wav_size-8;			/* RIFF size */
-	WavHeader[4] = (Uint8)val;
-	WavHeader[5] = (Uint8)(val >> 8);
-	WavHeader[6] = (Uint8)(val >> 16);
-	WavHeader[7] = (Uint8)(val >> 24);
+	WavHeader[4] = (uint8_t)val;
+	WavHeader[5] = (uint8_t)(val >> 8);
+	WavHeader[6] = (uint8_t)(val >> 16);
+	WavHeader[7] = (uint8_t)(val >> 24);
 	val = wav_size;					/* data size */
-	WavHeader[40] = (Uint8)val;
-	WavHeader[41] = (Uint8)(val >> 8);
-	WavHeader[42] = (Uint8)(val >> 16);
-	WavHeader[43] = (Uint8)(val >> 24);
+	WavHeader[40] = (uint8_t)val;
+	WavHeader[41] = (uint8_t)(val >> 8);
+	WavHeader[42] = (uint8_t)(val >> 16);
+	WavHeader[43] = (uint8_t)(val >> 24);
 
 	rewind ( file_ptr );
 	fwrite ( &WavHeader, sizeof(WavHeader), 1, file_ptr );
@@ -1264,9 +1238,9 @@ static void	YM2149_DoSamples_250_Debug ( int SamplesToGenerate , int pos )
  * On each call, we consider samples were already generated up to (and including) counter value
  * YM2149_Clock_250_prev. We must generate as many samples to reach (and include) YM2149_Clock_250.
  */
-static void	YM2149_Run ( Uint64 CPU_Clock )
+static void	YM2149_Run ( uint64_t CPU_Clock )
 {
-	Uint64		YM2149_Clock_250_prev;
+	uint64_t		YM2149_Clock_250_prev;
 	int		YM2149_Nb_Updates_250;
 
 
@@ -1298,23 +1272,20 @@ static void	YM2149_Run ( Uint64 CPU_Clock )
  */
 static ymsample	YM2149_Next_Resample_Nearest ( void )
 {
-#ifndef __LIBRETRO__
-	static double	pos_fract = 0;
-#endif
 	ymsample	sample;
 
 
 	/* Get the nearest sample at pos_read or pos_read+1 */
-	if ( pos_fract < 0.5 )
+	if ( pos_fract_nearest < 0.5 )
 		sample = YM_Buffer_250[ YM_Buffer_250_pos_read ];
 	else
 		sample = YM_Buffer_250[ ( YM_Buffer_250_pos_read + 1 ) & YM_BUFFER_250_SIZE_MASK ];
 
 	/* Increase fractional pos and integer pos */
-	pos_fract += ( (double)YM_ATARI_CLOCK_COUNTER ) / YM_REPLAY_FREQ;
+	pos_fract_nearest += ( (double)YM_ATARI_CLOCK_COUNTER ) / YM_REPLAY_FREQ;
 
-	YM_Buffer_250_pos_read = ( YM_Buffer_250_pos_read + (int)pos_fract ) & YM_BUFFER_250_SIZE_MASK;
-	pos_fract -= (int)pos_fract;			/* 0 <= pos_fract < 1 */
+	YM_Buffer_250_pos_read = ( YM_Buffer_250_pos_read + (int)pos_fract_nearest ) & YM_BUFFER_250_SIZE_MASK;
+	pos_fract_nearest -= (int)pos_fract_nearest;		/* 0 <= pos_fract_nearest < 1 */
 
 	return sample;
 }
@@ -1333,9 +1304,6 @@ static ymsample	YM2149_Next_Resample_Nearest ( void )
  */
 static ymsample	YM2149_Next_Resample_Weighted_Average_2 ( void )
 {
-#ifndef __LIBRETRO__
-	static double	pos_fract = 0;
-#endif
 	ymsample	sample_before , sample_after;
 	ymsample	sample;
 
@@ -1343,14 +1311,14 @@ static ymsample	YM2149_Next_Resample_Weighted_Average_2 ( void )
 	/* Get the 2 samples that surround pos_read and do a weighted average */
 	sample_before = YM_Buffer_250[ YM_Buffer_250_pos_read ];
 	sample_after = YM_Buffer_250[ ( YM_Buffer_250_pos_read + 1 ) & YM_BUFFER_250_SIZE_MASK ];
-	sample = round ( ( 1.0 - pos_fract ) * sample_before + pos_fract * sample_after );
-//fprintf ( stderr , "b=%04x a=%04x frac=%f -> res=%04x\n" , sample_before , sample_after , pos_fract , sample );
+	sample = round ( ( 1.0 - pos_fract_weighted_2 ) * sample_before + pos_fract_weighted_2 * sample_after );
+//fprintf ( stderr , "b=%04x a=%04x frac=%f -> res=%04x\n" , sample_before , sample_after , pos_fract_weighted_2 , sample );
 
 	/* Increase fractional pos and integer pos */
-	pos_fract += ( (double)YM_ATARI_CLOCK_COUNTER ) / YM_REPLAY_FREQ;
+	pos_fract_weighted_2 += ( (double)YM_ATARI_CLOCK_COUNTER ) / YM_REPLAY_FREQ;
 
-	YM_Buffer_250_pos_read = ( YM_Buffer_250_pos_read + (int)pos_fract ) & YM_BUFFER_250_SIZE_MASK;
-	pos_fract -= (int)pos_fract;			/* 0 <= pos_fract < 1 */
+	YM_Buffer_250_pos_read = ( YM_Buffer_250_pos_read + (int)pos_fract_weighted_2 ) & YM_BUFFER_250_SIZE_MASK;
+	pos_fract_weighted_2 -= (int)pos_fract_weighted_2;	/* 0 <= pos_fract < 1 */
 
 	return sample;
 }
@@ -1378,13 +1346,8 @@ static ymsample	YM2149_Next_Resample_Weighted_Average_2 ( void )
  */
  static ymsample	YM2149_Next_Resample_Weighted_Average_N ( void )
 {
-#ifndef __LIBRETRO__
-	static Uint32	pos_fract = 0;
-#else
-	#define pos_fract pos_fract2
-#endif
-	Uint32		interval_fract;
-	Sint64		total;
+	uint32_t	interval_fract;
+	int64_t		total;
 	ymsample	sample;
 
 
@@ -1393,40 +1356,36 @@ static ymsample	YM2149_Next_Resample_Weighted_Average_2 ( void )
 
 //fprintf ( stderr , "next 1 clock=%d freq=%d interval=%x  %d\n" , YM_ATARI_CLOCK_COUNTER , YM_REPLAY_FREQ , interval_fract , YM_Buffer_250_pos_read );
 
-	if ( pos_fract )				/* start position : 0xffff <= pos_fract <= 0 */
+	if ( pos_fract_weighted_n )			/* start position : 0xffff <= pos_fract_weighted_n <= 0 */
 	{
-		total += ((Sint64)YM_Buffer_250[ YM_Buffer_250_pos_read ]) * ( 0x10000 - pos_fract );
+		total += ((int64_t)YM_Buffer_250[ YM_Buffer_250_pos_read ]) * ( 0x10000 - pos_fract_weighted_n );
 		YM_Buffer_250_pos_read = ( YM_Buffer_250_pos_read + 1 ) & YM_BUFFER_250_SIZE_MASK;
-		pos_fract -= 0x10000;			/* next sample */
+		pos_fract_weighted_n -= 0x10000;	/* next sample */
 	}
 
-	pos_fract += interval_fract;			/* end position */
+	pos_fract_weighted_n += interval_fract;		/* end position */
 
-	while ( pos_fract & 0xffff0000 )		/* check integer part */
+	while ( pos_fract_weighted_n & 0xffff0000 )	/* check integer part */
 	{
-		total += ((Sint64)YM_Buffer_250[ YM_Buffer_250_pos_read ]) * 0x10000;
+		total += ((int64_t)YM_Buffer_250[ YM_Buffer_250_pos_read ]) * 0x10000;
 		YM_Buffer_250_pos_read = ( YM_Buffer_250_pos_read + 1 ) & YM_BUFFER_250_SIZE_MASK;
-		pos_fract -= 0x10000;			/* next sample */
+		pos_fract_weighted_n -= 0x10000;	/* next sample */
 	}
 
-	if ( pos_fract )				/* partial end sample if 0xffff <= pos_fract < 0 */
+	if ( pos_fract_weighted_n )				/* partial end sample if 0xffff <= pos_fract_weighted_n < 0 */
 	{
-		total += ((Sint64)YM_Buffer_250[ YM_Buffer_250_pos_read ]) * pos_fract;
+		total += ((int64_t)YM_Buffer_250[ YM_Buffer_250_pos_read ]) * pos_fract_weighted_n;
 	}
 
 //fprintf ( stderr , "next 2 %d\n" , YM_Buffer_250_pos_read );
 	sample = total / interval_fract;
 	return sample;
-#ifdef __LIBRETRO__
-#undef pos_fract
-#endif
 }
 
 
 
 static ymsample	YM2149_NextSample_250 ( void )
 {
-#ifndef __LIBRETRO__
 	if ( YM2149_Resample_Method == YM2149_RESAMPLE_METHOD_WEIGHTED_AVERAGE_2 )
 		return YM2149_Next_Resample_Weighted_Average_2 ();
 
@@ -1438,26 +1397,6 @@ static ymsample	YM2149_NextSample_250 ( void )
 
 	else
 		return 0;
-#else
-	// filters were mistakenly applied at the wrong frequency above
-	ymsample sample = 0;
-	switch (YM2149_Resample_Method)
-	{
-		case YM2149_RESAMPLE_METHOD_NEAREST:            sample = YM2149_Next_Resample_Nearest();            break;
-		case YM2149_RESAMPLE_METHOD_WEIGHTED_AVERAGE_2: sample = YM2149_Next_Resample_Weighted_Average_2(); break;
-		case YM2149_RESAMPLE_METHOD_WEIGHTED_AVERAGE_N: sample = YM2149_Next_Resample_Weighted_Average_N(); break;
-		default: break;
-	}
-	switch (YM2149_LPF_Filter)
-	{
-		default:
-		case YM2149_LPF_FILTER_NONE:                                          break;
-		case YM2149_LPF_FILTER_LPF_STF: sample = LowPassFilter ( sample );    break;
-		case YM2149_LPF_FILTER_PWM:     sample = PWMaliasFilter ( sample );   break;
-		case YM2149_LPF_FILTER_IIR:     sample = IIRLowPassFilter ( sample ); break;
-	}
-	return sample;
-#endif
 }
 
 
@@ -1467,7 +1406,7 @@ static ymsample	YM2149_NextSample_250 ( void )
  * time an YM register is changed.
  */
 #define BIT_SHIFT 24
-void	Sound_WriteReg( int reg , Uint8 data )
+void Sound_WriteReg(int reg, uint8_t data)
 {
 	switch (reg)
 	{
@@ -1683,26 +1622,14 @@ void Sound_MemorySnapShot_Capture(bool bSave)
 
 	MemorySnapShot_Store(&YmVolumeMixing, sizeof(YmVolumeMixing));
 
-#ifndef __LIBRETRO__
-	if ( !bSave )
-	{
-		/* Clear internal YM audio buffer at 250 kHz */
-		memset ( YM_Buffer_250 , 0 , sizeof(YM_Buffer_250) );
-		YM_Buffer_250_pos_write = 0;
-		YM_Buffer_250_pos_read = 0;
-	}
-#else
-	MemorySnapShot_Store(&YM2149_LPF_Filter, sizeof(YM2149_LPF_Filter));
-	MemorySnapShot_Store(&YM2149_HPF_Filter, sizeof(YM2149_HPF_Filter));
-	// this needs to be saved for seamless audio
 	MemorySnapShot_Store(&YM_Buffer_250, sizeof(YM_Buffer_250));
 	MemorySnapShot_Store(&YM_Buffer_250_pos_write, sizeof(YM_Buffer_250_pos_write));
 	MemorySnapShot_Store(&YM_Buffer_250_pos_read, sizeof(YM_Buffer_250_pos_read));
 	MemorySnapShot_Store(&YM2149_ConvertCycles_250, sizeof(YM2149_ConvertCycles_250));
-	MemorySnapShot_Store(&pos_fract, sizeof(pos_fract));
-	MemorySnapShot_Store(&pos_fract2, sizeof(pos_fract2));
-	MemorySnapShot_Store(&Freq_div_2, sizeof(Freq_div_2));
-#endif
+
+	MemorySnapShot_Store(&pos_fract_nearest, sizeof(pos_fract_nearest));
+	MemorySnapShot_Store(&pos_fract_weighted_2, sizeof(pos_fract_weighted_2));
+	MemorySnapShot_Store(&pos_fract_weighted_n, sizeof(pos_fract_weighted_n));
 }
 
 
@@ -1745,7 +1672,6 @@ void Sound_Stats_Show ( void )
 	vbl_per_sec /= pow ( 2 , CLOCKS_TIMINGS_SHIFT_VBL );
 
 	freq_gen = sum * vbl_per_sec;
-	freq_diff = YM_REPLAY_FREQ-freq_gen;
 	freq_diff = freq_gen - YM_REPLAY_FREQ;
 
 	/* Update min/max values, ignore big changes */
@@ -1765,7 +1691,7 @@ void Sound_Stats_Show ( void )
 /**
  * Generate output samples for all channels (YM2149, DMA or crossbar) during this time-frame
  */
-static int Sound_GenerateSamples(Uint64 CPU_Clock)
+static int Sound_GenerateSamples(uint64_t CPU_Clock)
 {
 	int	idx;
 	int	ym_margin;
@@ -1831,7 +1757,7 @@ static int Sound_GenerateSamples(Uint64 CPU_Clock)
  * This is called to built samples up until this clock cycle
  * Sound_Update() can be called several times during a VBL
  */
-void Sound_Update( Uint64 CPU_Clock)
+void Sound_Update(uint64_t CPU_Clock)
 {
 	int pos_write_prev = AudioMixBuffer_pos_write;
 	int Samples_Nbr;
@@ -1872,22 +1798,6 @@ void Sound_Update( Uint64 CPU_Clock)
 	/* Save to WAV file, if open */
 	if (bRecordingWav)
 		WAVFormat_Update(AudioMixBuffer, pos_write_prev, Samples_Nbr);
-
-#ifdef __LIBRETRO__
-	{
-		int remain = Samples_Nbr;
-		int pos = pos_write_prev;
-		while (remain > 0) { // split if wrapping over the end
-			int len = remain;
-			if ((pos + len) > AUDIOMIXBUFFER_SIZE) len = AUDIOMIXBUFFER_SIZE - pos;
-			core_audio_update(AudioMixBuffer, pos, len);
-			remain -= len;
-			pos = (pos + len) & AUDIOMIXBUFFER_SIZE_MASK;
-		}
-		nGeneratedSamples = 0;
-	}
-#endif
-
 }
 
 

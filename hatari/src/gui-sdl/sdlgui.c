@@ -30,11 +30,7 @@ const char SDLGui_fileid[] = "Hatari sdlgui.c";
 # define Dprintf(a)
 #endif
 
-#ifndef __LIBRETRO__
 static SDL_Surface *pSdlGuiScrn;            /* Pointer to the actual main SDL screen surface */
-#else
-SDL_Surface *pSdlGuiScrn; // make public
-#endif
 static SDL_Surface *pSmallFontGfx = NULL;   /* The small font graphics */
 static SDL_Surface *pBigFontGfx = NULL;     /* The big font graphics */
 static SDL_Surface *pFontGfx = NULL;        /* The actual font graphics */
@@ -69,11 +65,7 @@ static SDL_Surface *SDLGui_LoadXBM(int w, int h, const Uint8 *pXbmBits)
 	bitmap = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 8, 0, 0, 0, 0);
 	if (bitmap == NULL)
 	{
-#ifndef __LIBRETRO__
 		Log_Printf(LOG_ERROR, "SDLGui: failed to allocate bitmap: %s", SDL_GetError());
-#else
-		core_error_msg("SDLGui: failed to allocate bitmap (SDLGui_LoadXBM)");
-#endif
 		return NULL;
 	}
 
@@ -201,13 +193,6 @@ int SDLGui_SetScreen(SDL_Surface *pScrn)
 	else
 		colors.underline = SDL_MapRGB(pSdlGuiScrn->format,0,0,0);
 	colors.editfield = SDL_MapRGB(pSdlGuiScrn->format,160,160,160);
-
-#ifdef __LIBRETRO__
-	colors.focus     = SDL_MapRGB(pSdlGuiScrn->format,255,255,  0); // use yellow for more visible focus
-	colors.lightbar  = SDL_MapRGB(pSdlGuiScrn->format,200,140,  0); // dim orange for focus + selected
-	colors.darkgrey  = SDL_MapRGB(pSdlGuiScrn->format,100,100,100); // darken darkgrey to stand out better against 128,128,128 background
-	colors.midbar    = SDL_MapRGB(pSdlGuiScrn->format, 90, 90, 90); // darken midbar too
-#endif
 
 	return 0;
 }
@@ -362,16 +347,12 @@ static void SDLGui_DrawEditField(const SGOBJ *edlg, int objnum)
 }
 
 
-#ifdef __LIBRETRO__
-extern void SDLGui_DirectBox(int x, int y, int w, int h, int offset, bool focused, bool selected);
-#endif
 /*-----------------------------------------------------------------------*/
 /**
  * Draw a dialog box object.
  */
 static void SDLGui_DrawBox(const SGOBJ *bdlg, int objnum)
 {
-#ifndef __LIBRETRO__
 	SDL_Rect rect;
 	int x, y, w, h, offset;
 	Uint32 color, upleftc, downrightc;
@@ -380,9 +361,6 @@ static void SDLGui_DrawBox(const SGOBJ *bdlg, int objnum)
 		color = colors.focus;
 	else
 		color = colors.midgrey;
-#else
-	int x, y, w, h, offset;
-#endif
 
 	x = bdlg[objnum].x*sdlgui_fontwidth;
 	y = bdlg[objnum].y*sdlgui_fontheight;
@@ -395,7 +373,6 @@ static void SDLGui_DrawBox(const SGOBJ *bdlg, int objnum)
 	w = bdlg[objnum].w*sdlgui_fontwidth;
 	h = bdlg[objnum].h*sdlgui_fontheight;
 
-#ifndef __LIBRETRO__
 	if (bdlg[objnum].state & SG_SELECTED)
 	{
 		upleftc = colors.darkgrey;
@@ -406,7 +383,6 @@ static void SDLGui_DrawBox(const SGOBJ *bdlg, int objnum)
 		upleftc = colors.lightgrey;
 		downrightc = colors.darkgrey;
 	}
-#endif
 
 	/* The root box should be bigger than the screen, so we disable the offset there: */
 	if (objnum != 0)
@@ -414,21 +390,6 @@ static void SDLGui_DrawBox(const SGOBJ *bdlg, int objnum)
 	else
 		offset = 0;
 
-#ifdef __LIBRETRO__
-	SDLGui_DirectBox(x,y,w,h,offset,bdlg[objnum].state & SG_FOCUSED,bdlg[objnum].state & SG_SELECTED);
-}
-
-// making the box draw more directly available
-void SDLGui_DirectBox(int x, int y, int w, int h, int offset, bool focused, bool selected)
-{
-	SDL_Rect rect;
-	Uint32 color = focused ? colors.focus : colors.midgrey;
-	Uint32 upleftc = selected ? colors.darkgrey : colors.lightgrey;
-	Uint32 downrightc = selected ? colors.lightgrey : colors.darkgrey;
-
-	// make selected color darker (midbar), repurposed lightbar for focused+selected
-	if (selected) color = focused ? colors.lightbar : colors.midbar;
-#endif
 	/* Draw background: */
 	rect.x = x;
 	rect.y = y;
@@ -529,7 +490,7 @@ static void SDLGui_DrawRadioButton(const SGOBJ *rdlg, int objnum)
 	else
 		str[0]=SGRADIOBUTTON_NORMAL;
 	str[1]=' ';
-	strcpy(&str[2], rdlg[objnum].txt);
+	Str_Copy(&str[2], rdlg[objnum].txt, sizeof(str) - 2);
 
 	SDLGui_TextInt(x, y, str, true);
 }
@@ -553,7 +514,7 @@ static void SDLGui_DrawCheckBox(const SGOBJ *cdlg, int objnum)
 	else
 		str[0]=SGCHECKBOX_NORMAL;
 	str[1]=' ';
-	strcpy(&str[2], cdlg[objnum].txt);
+	Str_Copy(&str[2], cdlg[objnum].txt, sizeof(str) - 2);
 
 	SDLGui_TextInt(x, y, str, true);
 }
@@ -627,10 +588,6 @@ static void SDLGui_DrawPopupButton(const SGOBJ *pdlg, int objnum)
  */
 static void SDLGui_EditField(SGOBJ *dlg, int objnum)
 {
-#ifdef __LIBRETRO__
-	(void)dlg;
-	(void)objnum;
-#else
 	size_t cursorPos;                   /* Position of the cursor in the edit field */
 	int blinkState = 0;                 /* Used for cursor blinking */
 	int bStopEditing = false;           /* true if user wants to exit the edit field */
@@ -731,12 +688,11 @@ static void SDLGui_EditField(SGOBJ *dlg, int objnum)
 			SDL_FillRect(pSdlGuiScrn, &cursorrect, colors.cursor);
 		}
 		SDLGui_Text(rect.x, rect.y, dlg[objnum].txt);  /* Draw text */
-		SDL_UpdateRects(pSdlGuiScrn, 1, &rect);
+		Screen_UpdateRects(pSdlGuiScrn, 1, &rect);
 	}
 	while (!bStopEditing);
 
 	SDL_StopTextInput();
-#endif
 }
 
 
@@ -787,7 +743,7 @@ void SDLGui_DrawDialog(const SGOBJ *dlg)
 	{
 		SDLGui_DrawObj(dlg, i);
 	}
-	SDL_UpdateRect(pSdlGuiScrn, 0,0,0,0);
+	Screen_UpdateRect(pSdlGuiScrn, 0,0,0,0);
 }
 
 
@@ -984,7 +940,7 @@ static int SDLGui_FocusNext(SGOBJ *dlg, int i, int inc)
 		{
 			dlg[i].state |= SG_FOCUSED;
 			SDLGui_DrawObj(dlg, i);
-			SDL_UpdateRect(pSdlGuiScrn, 0,0,0,0);
+			Screen_UpdateRect(pSdlGuiScrn, 0,0,0,0);
 			return i;
 		}
 		/* wrapped around without even initial one matching */
@@ -1030,7 +986,7 @@ static int SDLGui_HandleSelection(SGOBJ *dlg, int obj, int oldbutton)
 			rct.h = sdlgui_fontheight;
 			SDL_FillRect(pSdlGuiScrn, &rct, colors.midgrey); /* Clear old */
 			SDLGui_DrawRadioButton(dlg, i);
-			SDL_UpdateRects(pSdlGuiScrn, 1, &rct);
+			Screen_UpdateRects(pSdlGuiScrn, 1, &rct);
 		}
 		for (i = obj+1; dlg[i].type == SGRADIOBUT; i++)
 		{
@@ -1041,7 +997,7 @@ static int SDLGui_HandleSelection(SGOBJ *dlg, int obj, int oldbutton)
 			rct.h = sdlgui_fontheight;
 			SDL_FillRect(pSdlGuiScrn, &rct, colors.midgrey); /* Clear old */
 			SDLGui_DrawRadioButton(dlg, i);
-			SDL_UpdateRects(pSdlGuiScrn, 1, &rct);
+			Screen_UpdateRects(pSdlGuiScrn, 1, &rct);
 		}
 		dlg[obj].state |= SG_SELECTED;  /* Select this radio button */
 		rct.x = (dlg[0].x+dlg[obj].x)*sdlgui_fontwidth;
@@ -1050,7 +1006,7 @@ static int SDLGui_HandleSelection(SGOBJ *dlg, int obj, int oldbutton)
 		rct.h = sdlgui_fontheight;
 		SDL_FillRect(pSdlGuiScrn, &rct, colors.midgrey); /* Clear old */
 		SDLGui_DrawRadioButton(dlg, obj);
-		SDL_UpdateRects(pSdlGuiScrn, 1, &rct);
+		Screen_UpdateRects(pSdlGuiScrn, 1, &rct);
 		break;
 	case SGCHECKBOX:
 		dlg[obj].state ^= SG_SELECTED;
@@ -1060,12 +1016,12 @@ static int SDLGui_HandleSelection(SGOBJ *dlg, int obj, int oldbutton)
 		rct.h = sdlgui_fontheight;
 		SDL_FillRect(pSdlGuiScrn, &rct, colors.midgrey); /* Clear old */
 		SDLGui_DrawCheckBox(dlg, obj);
-		SDL_UpdateRects(pSdlGuiScrn, 1, &rct);
+		Screen_UpdateRects(pSdlGuiScrn, 1, &rct);
 		break;
 	case SGPOPUP:
 		dlg[obj].state |= SG_SELECTED;
 		SDLGui_DrawPopupButton(dlg, obj);
-		SDL_UpdateRect(pSdlGuiScrn,
+		Screen_UpdateRect(pSdlGuiScrn,
 			       (dlg[0].x+dlg[obj].x)*sdlgui_fontwidth-2,
 			       (dlg[0].y+dlg[obj].y)*sdlgui_fontheight-2,
 			       dlg[obj].w*sdlgui_fontwidth+4,
@@ -1101,32 +1057,51 @@ static int SDLGui_HandleShortcut(SGOBJ *dlg, int key)
 }
 
 /**
- * Scale mouse coordinates in case we've got a re-sized SDL2 window
+ * Scale mouse state coordinates in case we've got a re-sized SDL2 window
+ *
+ * NOTE: while scaling done here fixes SDL2 reported mouse coords to
+ * match Hatari framebuffer coords in scaled SDL2 windows, there's
+ * another issue with (mouse _state_) coords in _fullscreen_.
+ *
+ * SDL2 deducts fullscreen letterboxing borders from those coords,
+ * but not from the values returns by SDL2 window size functions
+ * (and there's no function providing the letterbox border size).
+ *
+ * Atari resolutions are more narrow than today's widescreen monitor
+ * resolutions, so typically fullscreen letterboxing borders are on
+ * the sides => y-coord gets scaled OK, x-coord will be too small.
+ */
+void SDLGui_ScaleMouseStateCoordinates(int *x, int *y)
+{
+	int win_width, win_height;
+	SDL_GetWindowSize(sdlWindow, &win_width, &win_height);
+
+	*x = *x * pSdlGuiScrn->w / win_width;
+	*y = *y * pSdlGuiScrn->h / win_height;
+}
+
+/**
+ * Scale mouse event coordinates in case we've got a re-sized SDL2 window
  */
 static void SDLGui_ScaleMouseButtonCoordinates(SDL_MouseButtonEvent *bev)
 {
-#ifndef __LIBRETRO__
-	int win_width, win_height;
-
 	if (bInFullScreen)
 		return;
 
-	SDL_GetWindowSize(sdlWindow, &win_width, &win_height);
-	bev->x = bev->x * pSdlGuiScrn->w / win_width;
-	bev->y = bev->y * pSdlGuiScrn->h / win_height;
-#else
-	(void)bev;
-#endif
+	int x = bev->x, y = bev->y;
+	SDLGui_ScaleMouseStateCoordinates(&x, &y);
+	bev->x = x; bev->y = y;
 }
 
 /*-----------------------------------------------------------------------*/
 /**
  * Show and process a dialog.
  *
- * Dialogs using a scrollbar, must return the previous return value
- * in 'current_object' arg, as the same dialog is displayed in a loop
- * to handle scrolling. Other dialogs should give zero as 'current_object'
- * (ie no object selected at start when displaying the dialog)
+ * Dialogs using a scrollbar, or other objects with SG_REPEAT flag,
+ * must return the previous return value in 'current_object' arg, as
+ * the same dialog is displayed in a loop to handle scrolling. Other
+ * dialogs should give zero as 'current_object' (ie no object
+ * selected at start when displaying the dialog)
  *
  * Returns either:
  * - index of the GUI item that was invoked
@@ -1139,25 +1114,9 @@ static void SDLGui_ScaleMouseButtonCoordinates(SDL_MouseButtonEvent *bev)
  */
 int SDLGui_DoDialogExt(SGOBJ *dlg, bool (*isEventOut)(SDL_EventType), SDL_Event *pEventOut, int current_object)
 {
-#ifdef __LIBRETRO__
-	(void)dlg;
-	(void)isEventOut;
-	(void)pEventOut;
-	(void)current_object;
-	(void)SDLGui_ScaleMouseButtonCoordinates;
-	(void)SDLGui_HandleShortcut;
-	(void)SDLGui_FocusNext;
-	(void)SDLGui_RemoveFocus;
-	(void)SDLGui_SetShortcuts;
-	(void)SDLGui_DebugPrintDialog;
-	(void)SDLGui_SearchState;
-	(void)SDLGui_SearchFlags;
-	(void)SDLGui_FindObj;
-	return SDLGUI_QUIT;
-#else
 	int oldbutton = SDLGUI_NOTFOUND;
 	int retbutton = SDLGUI_NOTFOUND;
-	int i, j, b, value, obj;
+	int b, x, y, value, obj;
 	SDL_Keycode key;
 	int focused;
 	SDL_Event sdlEvent;
@@ -1220,11 +1179,12 @@ int SDLGui_DoDialogExt(SGOBJ *dlg, bool (*isEventOut)(SDL_EventType), SDL_Event 
 
 	/* Is the left mouse button still pressed? Yes -> Handle TOUCHEXIT objects here */
 	SDL_PumpEvents();
-	b = SDL_GetMouseState(&i, &j);
+	b = SDL_GetMouseState(&x, &y);
 
-	/* If current object is the scrollbar, and mouse is still down, we can scroll it */
-	/* also if the mouse pointer has left the scrollbar */
-	if (current_object >= 0 && dlg[current_object].type == SGSCROLLBAR) {
+	/* Report repeat objects until mouse button is released,
+	 * regardless of mouse position.  Used for scrollbar
+	 * object interactions */
+	if (current_object >= 0 && (dlg[current_object].flags & SG_REPEAT)) {
 		obj = current_object;
 		oldbutton = obj;
 		if (b & SDL_BUTTON(1))
@@ -1236,10 +1196,10 @@ int SDLGui_DoDialogExt(SGOBJ *dlg, bool (*isEventOut)(SDL_EventType), SDL_Event 
 		{
 			dlg[obj].state &= ~SG_MOUSEDOWN;
 		}
-	}
-	else {
-		obj = SDLGui_FindObj(dlg, i, j);
-		current_object = obj;
+	} else {
+		SDLGui_ScaleMouseStateCoordinates(&x, &y);
+		obj = SDLGui_FindObj(dlg, x, y);
+
 		if (obj != SDLGUI_NOTFOUND && (dlg[obj].flags&SG_TOUCHEXIT) )
 		{
 			oldbutton = obj;
@@ -1283,7 +1243,7 @@ int SDLGui_DoDialogExt(SGOBJ *dlg, bool (*isEventOut)(SDL_EventType), SDL_Event 
 					{
 						dlg[obj].state |= SG_SELECTED;
 						SDLGui_DrawButton(dlg, obj);
-						SDL_UpdateRect(pSdlGuiScrn, (dlg[0].x+dlg[obj].x)*sdlgui_fontwidth-2, (dlg[0].y+dlg[obj].y)*sdlgui_fontheight-2,
+						Screen_UpdateRect(pSdlGuiScrn, (dlg[0].x+dlg[obj].x)*sdlgui_fontwidth-2, (dlg[0].y+dlg[obj].y)*sdlgui_fontheight-2,
 						               dlg[obj].w*sdlgui_fontwidth+4, dlg[obj].h*sdlgui_fontheight+4);
 						oldbutton=obj;
 					}
@@ -1318,7 +1278,7 @@ int SDLGui_DoDialogExt(SGOBJ *dlg, bool (*isEventOut)(SDL_EventType), SDL_Event 
 				{
 					dlg[oldbutton].state &= ~SG_SELECTED;
 					SDLGui_DrawButton(dlg, oldbutton);
-					SDL_UpdateRect(pSdlGuiScrn, (dlg[0].x+dlg[oldbutton].x)*sdlgui_fontwidth-2, (dlg[0].y+dlg[oldbutton].y)*sdlgui_fontheight-2,
+					Screen_UpdateRect(pSdlGuiScrn, (dlg[0].x+dlg[oldbutton].x)*sdlgui_fontwidth-2, (dlg[0].y+dlg[oldbutton].y)*sdlgui_fontheight-2,
 					               dlg[oldbutton].w*sdlgui_fontwidth+4, dlg[oldbutton].h*sdlgui_fontheight+4);
 					oldbutton = SDLGUI_NOTFOUND;
 				}
@@ -1457,7 +1417,7 @@ int SDLGui_DoDialogExt(SGOBJ *dlg, bool (*isEventOut)(SDL_EventType), SDL_Event 
 				    || sdlEvent.window.event == SDL_WINDOWEVENT_RESTORED
 				    || sdlEvent.window.event == SDL_WINDOWEVENT_EXPOSED)
 				{
-					SDL_UpdateRect(pSdlGuiScrn, 0, 0, 0, 0);
+					Screen_UpdateRect(pSdlGuiScrn, 0, 0, 0, 0);
 				}
 				break;
 
@@ -1495,7 +1455,6 @@ int SDLGui_DoDialogExt(SGOBJ *dlg, bool (*isEventOut)(SDL_EventType), SDL_Event 
 
 	Dprintf(("EXIT - ret: %d\n", retbutton));
 	return retbutton;
-#endif
 }
 
 /*-----------------------------------------------------------------------*/

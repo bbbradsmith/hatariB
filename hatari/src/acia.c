@@ -161,7 +161,6 @@ const char ACIA_fileid[] = "Hatari acia.c";
 #include "ioMem.h"
 #include "clocks_timings.h"
 #include "mfp.h"
-#include "screen.h"
 #include "video.h"
 
 
@@ -232,22 +231,23 @@ ACIA_STRUCT		*pACIA_MIDI;
 
 static void		ACIA_Init_Pointers ( ACIA_STRUCT *pAllACIA );
 
-static void		ACIA_Set_Line_IRQ_MFP ( int bit );
-static Uint8 		ACIA_Get_Line_CTS_Dummy ( void );
-static Uint8 		ACIA_Get_Line_DCD_Dummy ( void );
+static void		ACIA_Set_Line_IRQ_MFP ( ACIA_STRUCT *pACIA , int bit );
+static uint8_t		ACIA_Get_Line_IRQ_MFP ( ACIA_STRUCT *pACIA );
+static uint8_t		ACIA_Get_Line_CTS_Dummy ( void );
+static uint8_t		ACIA_Get_Line_DCD_Dummy ( void );
 static void		ACIA_Set_Line_RTS_Dummy ( int bit );
 
-static void		ACIA_Set_Timers_IKBD ( void *pACIA );
+static void		ACIA_Set_Timers_IKBD ( ACIA_STRUCT *pACIA );
 static void		ACIA_Start_InterruptHandler_IKBD ( ACIA_STRUCT *pACIA , int InternalCycleOffset );
 
-static Uint8		ACIA_MasterReset ( ACIA_STRUCT *pACIA , Uint8 CR );
+static uint8_t		ACIA_MasterReset ( ACIA_STRUCT *pACIA , uint8_t CR );
 
 static void		ACIA_UpdateIRQ ( ACIA_STRUCT *pACIA );
 
-static Uint8		ACIA_Read_SR ( ACIA_STRUCT *pACIA );
-static void		ACIA_Write_CR ( ACIA_STRUCT *pACIA , Uint8 CR );
-static Uint8		ACIA_Read_RDR ( ACIA_STRUCT *pACIA );
-static void		ACIA_Write_TDR ( ACIA_STRUCT *pACIA , Uint8 TDR );
+static uint8_t		ACIA_Read_SR ( ACIA_STRUCT *pACIA );
+static void		ACIA_Write_CR ( ACIA_STRUCT *pACIA , uint8_t CR );
+static uint8_t		ACIA_Read_RDR ( ACIA_STRUCT *pACIA );
+static void		ACIA_Write_TDR ( ACIA_STRUCT *pACIA , uint8_t TDR );
 
 static void		ACIA_Prepare_TX ( ACIA_STRUCT *pACIA );
 static void		ACIA_Prepare_RX ( ACIA_STRUCT *pACIA );
@@ -269,7 +269,7 @@ static void		ACIA_Clock_RX ( ACIA_STRUCT *pACIA );
  * seem to be transmitted (maybe with errors ?). So we default
  * to 9600 bauds to avoid a lock if a program uses tx/rx after a reset.
  */
-void	ACIA_Init ( ACIA_STRUCT *pAllACIA , Uint32 TX_Clock , Uint32 RX_Clock )
+void	ACIA_Init ( ACIA_STRUCT *pAllACIA , uint32_t TX_Clock , uint32_t RX_Clock )
 {
 	int	i;
 
@@ -306,6 +306,7 @@ static void	ACIA_Init_Pointers ( ACIA_STRUCT *pAllACIA )
 	{
 		/* Set the default common callback functions */
 		pAllACIA[ i ].Set_Line_IRQ = ACIA_Set_Line_IRQ_MFP;
+		pAllACIA[ i ].Get_Line_IRQ = ACIA_Get_Line_IRQ_MFP;
 		pAllACIA[ i ].Get_Line_CTS = ACIA_Get_Line_CTS_Dummy;
 		pAllACIA[ i ].Get_Line_DCD = ACIA_Get_Line_DCD_Dummy;
 		pAllACIA[ i ].Set_Line_RTS = ACIA_Set_Line_RTS_Dummy;
@@ -352,26 +353,6 @@ void	ACIA_Reset ( ACIA_STRUCT *pAllACIA )
  */
 void	ACIA_MemorySnapShot_Capture ( bool bSave )
 {
-	#ifdef __LIBRETRO__
-		ACIA_STRUCT temp_acia[ACIA_MAX_NB];
-		if (bSave)
-		{
-			// hiding pointers from savesate to prevent divergence
-			memcpy(&temp_acia,&ACIA_Array,sizeof(ACIA_Array));
-			for (int i=0; i<ACIA_MAX_NB; ++i)
-			{
-				temp_acia[i].Get_Line_RX = 0;
-				temp_acia[i].Set_Line_TX = 0;
-				temp_acia[i].Set_Line_IRQ = 0;
-				temp_acia[i].Set_Timers = 0;
-				temp_acia[i].Get_Line_CTS = 0;
-				temp_acia[i].Get_Line_DCD = 0;
-				temp_acia[i].Set_Line_RTS = 0;
-			}
-			MemorySnapShot_Store(&temp_acia, sizeof(ACIA_Array));
-		}
-		else
-	#endif
 	MemorySnapShot_Store(&ACIA_Array, sizeof(ACIA_Array));
 
 	if ( !bSave )						/* If restoring */
@@ -384,14 +365,15 @@ void	ACIA_MemorySnapShot_Capture ( bool bSave )
 /*-----------------------------------------------------------------------*/
 /**
  * Set or reset the ACIA's IRQ signal.
- * IRQ signal is inverted (0/low sets irq, 1/high resets irq)
+ * IRQ signal is inverted (0/low sets irq, 1/high clears irq)
  * In the ST, the 2 ACIA's IRQ pins are connected to the same MFP input,
  * so they share the same IRQ bit in GPIP4.
  */
-static void	ACIA_Set_Line_IRQ_MFP ( int bit )
+static void	ACIA_Set_Line_IRQ_MFP ( ACIA_STRUCT *pACIA , int bit )
 {
-	LOG_TRACE ( TRACE_ACIA, "acia set irq line val=%d VBL=%d HBL=%d\n" , bit , nVBLs , nHBL );
+	LOG_TRACE ( TRACE_ACIA, "acia %s set irq line val=%d VBL=%d HBL=%d\n" , pACIA->ACIA_Name , bit , nVBLs , nHBL );
 
+	pACIA->IRQ_Line = bit;
 	if ( bit == 0 )
 	{
 		/* There's a small delay on a real ST between the point in time
@@ -407,6 +389,16 @@ static void	ACIA_Set_Line_IRQ_MFP ( int bit )
 }
 
 
+/*-----------------------------------------------------------------------*/
+/**
+ * Return the value of the ACIA's IRQ signal.
+ * IRQ signal is inverted (0/low sets irq, 1/high clears irq)
+ */
+static uint8_t		ACIA_Get_Line_IRQ_MFP ( ACIA_STRUCT *pACIA )
+{
+	return pACIA->IRQ_Line;
+}
+
 
 
 /*-----------------------------------------------------------------------*/
@@ -415,9 +407,9 @@ static void	ACIA_Set_Line_IRQ_MFP ( int bit )
  * When CTS is high, TDRE should always be set to 0
  * Note : this is not connected on an ST, so we always return 0.
  */
-static Uint8 	ACIA_Get_Line_CTS_Dummy ( void )
+static uint8_t ACIA_Get_Line_CTS_Dummy ( void )
 {
-	Uint8		bit;
+	uint8_t bit;
 
 	bit = 0;
 	LOG_TRACE ( TRACE_ACIA, "acia get cts=%d VBL=%d HBL=%d\n" , bit , nVBLs , nHBL );
@@ -429,9 +421,9 @@ static Uint8 	ACIA_Get_Line_CTS_Dummy ( void )
  * Read the Data Carrier Detect (DCD) pin
  * Note : this is not connected on an ST, so we always return 0.
  */
-static Uint8 	ACIA_Get_Line_DCD_Dummy ( void )
+static uint8_t ACIA_Get_Line_DCD_Dummy ( void )
 {
-	Uint8		bit;
+	uint8_t bit;
 
 	bit = 0;
 	LOG_TRACE ( TRACE_ACIA, "acia get dcd=%d VBL=%d HBL=%d\n" , bit , nVBLs , nHBL );
@@ -457,9 +449,9 @@ static void	ACIA_Set_Line_RTS_Dummy ( int bit )
  * value.
  * When CR is changed with a new CR_DIVIDE value, we restart the timers.
  */
-static void	ACIA_Set_Timers_IKBD ( void *pACIA )
+static void	ACIA_Set_Timers_IKBD ( struct ACIA *pACIA )
 {
-	ACIA_Start_InterruptHandler_IKBD ( (ACIA_STRUCT *)pACIA , 0 );
+	ACIA_Start_InterruptHandler_IKBD ( pACIA , 0 );
 }
 
 
@@ -674,11 +666,11 @@ void	ACIA_IKBD_Write_TDR ( void )
  * This also returns the new state of the RTS bit, that must be updated
  * in ACIA_Write_CR.
  */
-static Uint8	ACIA_MasterReset ( ACIA_STRUCT *pACIA , Uint8 CR )
+static uint8_t	ACIA_MasterReset ( ACIA_STRUCT *pACIA , uint8_t CR )
 {
-	Uint8		dcd_bit;
-	Uint8		cts_bit;
-	Uint8		rts_bit;
+	uint8_t		dcd_bit;
+	uint8_t		cts_bit;
+	uint8_t		rts_bit;
 
 
 	LOG_TRACE ( TRACE_ACIA, "acia %s master reset VBL=%d HBL=%d\n" , pACIA->ACIA_Name , nVBLs , nHBL );
@@ -700,7 +692,7 @@ static Uint8	ACIA_MasterReset ( ACIA_STRUCT *pACIA , Uint8 CR )
 
 	/* On Master Reset, IRQ line is high */
 	/* If it's the 1st reset, RTS should be high, else RTS depends on CR bit 5 and 6 */
-	pACIA->Set_Line_IRQ ( 1 );					/* IRQ line goes high */
+	pACIA->Set_Line_IRQ ( pACIA , 1 );				/* IRQ line goes high */
 	if ( pACIA->FirstMasterReset == 1 )
 	{
 		pACIA->FirstMasterReset = 0;
@@ -722,7 +714,7 @@ static Uint8	ACIA_MasterReset ( ACIA_STRUCT *pACIA , Uint8 CR )
  */
 static void	ACIA_UpdateIRQ ( ACIA_STRUCT *pACIA )
 {
-	Uint8		irq_bit_new;
+	uint8_t		irq_bit_new;
 
 	irq_bit_new = 0;
 
@@ -745,12 +737,12 @@ static void	ACIA_UpdateIRQ ( ACIA_STRUCT *pACIA )
 		if ( irq_bit_new )
 		{
 			pACIA->SR |= ACIA_SR_BIT_IRQ;			/* Set IRQ bit */
-			pACIA->Set_Line_IRQ ( 0 );			/* IRQ line goes low */
+			pACIA->Set_Line_IRQ ( pACIA , 0 );		/* IRQ line goes low */
 		}
 		else
 		{
 			pACIA->SR &= ~ACIA_SR_BIT_IRQ;			/* Clear IRQ bit */
-			pACIA->Set_Line_IRQ ( 1 );			/* IRQ line goes high */
+			pACIA->Set_Line_IRQ ( pACIA , 1 );		/* IRQ line goes high */
 		}
 	}
 }
@@ -762,9 +754,9 @@ static void	ACIA_UpdateIRQ ( ACIA_STRUCT *pACIA )
  * Read SR.
  * Also update CTS ; when CTS is high, TDRE should always be masked to 0.
  */
-static Uint8	ACIA_Read_SR ( ACIA_STRUCT *pACIA )
+static uint8_t	ACIA_Read_SR ( ACIA_STRUCT *pACIA )
 {
-	Uint8	SR;
+	uint8_t	SR;
 
 
 	if ( pACIA->Get_Line_CTS() == 1 )
@@ -790,11 +782,11 @@ static Uint8	ACIA_Read_SR ( ACIA_STRUCT *pACIA )
 /**
  * Write to CR.
  */
-static void	ACIA_Write_CR ( ACIA_STRUCT *pACIA , Uint8 CR )
+static void	ACIA_Write_CR ( ACIA_STRUCT *pACIA , uint8_t CR )
 {
 	int	Divide;
 	int	Force_rts_bit;
-	Uint8	rts_bit=0;
+	uint8_t	rts_bit=0;
 
 	LOG_TRACE ( TRACE_ACIA, "acia %s write cr data=0x%02x VBL=%d HBL=%d\n" , pACIA->ACIA_Name , CR , nVBLs , nHBL );
 
@@ -861,7 +853,7 @@ static void	ACIA_Write_CR ( ACIA_STRUCT *pACIA , Uint8 CR )
  * - IRQ bit should be updated depending on the new values of BIT_RDRF,
  *   BIT_DCD and BIT_OVRN.
  */
-static Uint8	ACIA_Read_RDR ( ACIA_STRUCT *pACIA )
+static uint8_t	ACIA_Read_RDR ( ACIA_STRUCT *pACIA )
 {
 	pACIA->SR &= ~( ACIA_SR_BIT_RDRF | ACIA_SR_BIT_PE );
 
@@ -898,7 +890,7 @@ static Uint8	ACIA_Read_RDR ( ACIA_STRUCT *pACIA )
  * immediately, to ensure that BIT_TDRE remains clear until the next bit
  * is sent (BIT_TDRE will be set again in ACIA_Clock_TX).
  */
-static void	ACIA_Write_TDR ( ACIA_STRUCT *pACIA , Uint8 TDR )
+static void	ACIA_Write_TDR ( ACIA_STRUCT *pACIA , uint8_t TDR )
 {
 	LOG_TRACE ( TRACE_ACIA, "acia %s write tdr data=0x%02x overwrite=%s tx_state=%d VBL=%d HBL=%d\n" , pACIA->ACIA_Name , TDR ,
 		( pACIA->SR & ACIA_SR_BIT_TDRE ) ? "no" : "yes" , pACIA->TX_State , nVBLs , nHBL );
@@ -962,7 +954,7 @@ static void	ACIA_Prepare_RX ( ACIA_STRUCT *pACIA )
 static void	ACIA_Clock_TX ( ACIA_STRUCT *pACIA )
 {
 	int	StateNext;
-	Uint8	tx_bit;
+	uint8_t	tx_bit;
 
 
 	LOG_TRACE ( TRACE_ACIA, "acia %s clock_tx tx_state=%d VBL=%d HBL=%d\n" , pACIA->ACIA_Name , pACIA->TX_State , nVBLs , nHBL );
@@ -1046,7 +1038,7 @@ static void	ACIA_Clock_TX ( ACIA_STRUCT *pACIA )
 static void	ACIA_Clock_RX ( ACIA_STRUCT *pACIA )
 {
 	int	StateNext;
-	Uint8	rx_bit;
+	uint8_t	rx_bit;
 
 
 	rx_bit = pACIA->Get_Line_RX();
@@ -1152,7 +1144,7 @@ static void	ACIA_Clock_RX ( ACIA_STRUCT *pACIA )
 }
 
 
-void ACIA_Info(FILE *fp, Uint32 dummy)
+void ACIA_Info(FILE *fp, uint32_t dummy)
 {
 	fprintf(fp, "Keyboard ACIA:\n");
 	fprintf(fp, "- Control / status: 0x%02x\n", IoMem[0xfffc00]);

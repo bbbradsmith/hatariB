@@ -25,7 +25,6 @@ const char Floppy_fileid[] = "Hatari floppy.c";
 
 #include <sys/stat.h>
 #include <assert.h>
-#include <SDL_endian.h>
 
 #include "main.h"
 #include "configuration.h"
@@ -42,7 +41,6 @@ const char Floppy_fileid[] = "Hatari floppy.c";
 #include "floppy_ipf.h"
 #include "floppy_stx.h"
 #include "zip.h"
-#include "screen.h"
 #include "str.h"
 #include "video.h"
 #include "fdc.h"
@@ -72,10 +70,6 @@ static const char * const pszDiskImageNameExts[] =
 static bool	Floppy_EjectBothDrives(void);
 static void	Floppy_DriveTransitionSetState ( int Drive , int State );
 
-#ifdef __LIBRETRO__
-extern bool core_savestate_floppy_modify;
-static bool core_prevent_eject_save = false;
-#endif
 
 /*-----------------------------------------------------------------------*/
 /**
@@ -133,16 +127,7 @@ void Floppy_MemorySnapShot_Capture(bool bSave)
 
 	/* If restoring then eject old drives first! */
 	if (!bSave)
-#ifdef __LIBRETRO__
-	{
-		// if savety save is disabled, prevent the savestate restore write to disk
-		if (!core_savestate_floppy_modify) core_prevent_eject_save = true;
 		Floppy_EjectBothDrives();
-		core_prevent_eject_save = false;
-	}
-#else	
-		Floppy_EjectBothDrives();
-#endif
 
 	/* Save/Restore details */
 	for (i = 0; i < MAX_FLOPPYDRIVES; i++)
@@ -158,11 +143,7 @@ void Floppy_MemorySnapShot_Capture(bool bSave)
 		}
 		if (EmulationDrives[i].pBuffer)
 			MemorySnapShot_Store(EmulationDrives[i].pBuffer, EmulationDrives[i].nImageBytes);
-#ifndef __LIBRETRO__
 		MemorySnapShot_Store(EmulationDrives[i].sFileName, sizeof(EmulationDrives[i].sFileName));
-#else
-		MemorySnapShot_StoreFilename(EmulationDrives[i].sFileName, sizeof(EmulationDrives[i].sFileName));
-#endif
 		MemorySnapShot_Store(&EmulationDrives[i].bContentsChanged,sizeof(EmulationDrives[i].bContentsChanged));
 		MemorySnapShot_Store(&EmulationDrives[i].bOKToSave,sizeof(EmulationDrives[i].bOKToSave));
 		MemorySnapShot_Store(&EmulationDrives[i].TransitionState1,sizeof(EmulationDrives[i].TransitionState1));
@@ -174,11 +155,7 @@ void Floppy_MemorySnapShot_Capture(bool bSave)
 		/* FDC_DRIVES[].DiskInserted that was restored just before), we must call FDC_InsertFloppy */
 		/* for each restored drive with an inserted disk to set FDC_DRIVES[].DiskInserted=true */
 		if ( !bSave && ( EmulationDrives[i].bDiskInserted ) )
-#ifndef __LIBRETRO__
 			FDC_InsertFloppy ( i );
-#else
-			FDC_InsertFloppyRestore ( i ); // insertion resets some state that must be restored
-#endif
 	}
 }
 
@@ -233,7 +210,6 @@ bool Floppy_IsWriteProtected(int Drive)
 	}
 	else
 	{
-#ifndef __LIBRETRO__
 		struct stat FloppyStat;
 		/* Check whether disk is writable */
 		if (stat(EmulationDrives[Drive].sFileName, &FloppyStat) == 0
@@ -241,10 +217,6 @@ bool Floppy_IsWriteProtected(int Drive)
 			return false;
 		else
 			return true;
-#else
-		// the image file read-only status is not accessible to the core, assume always yes
-		return false;
-#endif
 	}
 }
 
@@ -257,7 +229,7 @@ bool Floppy_IsWriteProtected(int Drive)
  */
 static bool Floppy_IsBootSectorExecutable(int Drive)
 {
-	Uint8 *pDiskBuffer;
+	uint8_t *pDiskBuffer;
 	int	sum , i;
 
 	if (EmulationDrives[Drive].bDiskInserted)
@@ -290,7 +262,7 @@ static bool Floppy_IsBootSectorExecutable(int Drive)
  */
 static bool Floppy_IsBootSectorOK(int Drive)
 {
-	Uint8 *pDiskBuffer;
+	uint8_t *pDiskBuffer;
 
 	/* Does our drive have a disk in? */
 	if (EmulationDrives[Drive].bDiskInserted)
@@ -386,7 +358,6 @@ const char* Floppy_SetDiskFileNameNone(int Drive)
  */
 const char* Floppy_SetDiskFileName(int Drive, const char *pszFileName, const char *pszZipPath)
 {
-#ifndef __LIBRETRO__
 	char *filename;
 	int i;
 
@@ -439,17 +410,10 @@ const char* Floppy_SetDiskFileName(int Drive, const char *pszFileName, const cha
 		strcpy(ConfigureParams.DiskImage.szDiskZipPath[Drive], pszZipPath);
 	else
 		ConfigureParams.DiskImage.szDiskZipPath[Drive][0] = '\0';
-	strlcpy(ConfigureParams.DiskImage.szDiskFileName[Drive], filename,
-	        sizeof(ConfigureParams.DiskImage.szDiskFileName[Drive]));
+	Str_Copy(ConfigureParams.DiskImage.szDiskFileName[Drive], filename,
+	         sizeof(ConfigureParams.DiskImage.szDiskFileName[Drive]));
 	free(filename);
 	//File_MakeAbsoluteName(ConfigureParams.DiskImage.szDiskFileName[Drive]);
-#else
-	(void)pszDiskImageNameExts;
-	(void)Floppy_CreateDiskBFileName;
-	strlcpy(ConfigureParams.DiskImage.szDiskFileName[Drive], pszFileName,
-	        sizeof(ConfigureParams.DiskImage.szDiskFileName[Drive]));
-	(void)pszZipPath;
-#endif
 	return ConfigureParams.DiskImage.szDiskFileName[Drive];
 }
 
@@ -546,63 +510,6 @@ int	Floppy_DriveTransitionUpdateState ( int Drive )
 }
 
 
-#ifdef __LIBRETRO__
-extern bool core_floppy_insert(int drive, const char* filename, void* data, unsigned int size, void* extra_data, unsigned int extra_size);
-extern void core_floppy_eject(int drive);
-extern Uint8* core_floppy_file_read(const char *pszFileName, long *pFileSize, bool extra);
-extern const char* core_floppy_inserted(int drive);
-extern void core_floppy_changed(int drive);
-static void* floppy_data[2] = {NULL,NULL};
-static void* floppy_extra_data[2] = {NULL,NULL};
-static unsigned int floppy_size[2] = {0,0};
-static unsigned int floppy_extra_size[2] = {0,0};
-static int floppy_read_drive = 0;
-extern bool core_floppy_insert(int drive, const char* filename, void* data, unsigned int size, void* extra_data, unsigned int extra_size)
-{
-	floppy_data[drive] = data;
-	floppy_size[drive] = size;
-	floppy_extra_data[drive] = extra_data;
-	floppy_extra_size[drive] = extra_size;
-	Floppy_SetDiskFileName(drive, filename, NULL);
-	return Floppy_InsertDiskIntoDrive(drive);
-}
-void core_floppy_eject(int drive)
-{
-	Floppy_EjectDiskFromDrive(drive);
-	Floppy_SetDiskFileNameNone(drive);
-	floppy_data[drive] = NULL;
-	floppy_size[drive] = 0;
-}
-bool core_floppy_file_extra(void)
-{
-	return floppy_extra_data[floppy_read_drive] != NULL;
-}
-Uint8* core_floppy_file_read(const char *pszFileName, long *pFileSize, bool extra)
-{
-	// replaces File_Read
-	// does not handle gz or zip files
-	const Uint8* data = extra ? floppy_extra_data[floppy_read_drive] : floppy_data[floppy_read_drive];
-	const unsigned int size = extra ? floppy_extra_size[floppy_read_drive] : floppy_size[floppy_read_drive];
-	Uint8* data_out;
-	(void)pszFileName;
-	if (data == NULL || size == 0) return NULL;
-	data_out = malloc(size);
-	if (data_out == NULL) return NULL;
-	memcpy(data_out,data,size);
-	if (pFileSize) *pFileSize = (long)size;
-	return data_out;
-}
-const char* core_floppy_inserted(int drive)
-{
-	if (!EmulationDrives[drive].bDiskInserted) return NULL;
-	return ConfigureParams.DiskImage.szDiskFileName[drive];
-}
-void core_floppy_changed(int drive)
-{
-	EmulationDrives[drive].bContentsChanged = true;
-}
-#endif
-
 /*-----------------------------------------------------------------------*/
 /**
  * Insert previously set disk file image into floppy drive.
@@ -625,15 +532,11 @@ bool Floppy_InsertDiskIntoDrive(int Drive)
 	{
 		return true; /* only do eject */
 	}
-#ifndef __LIBRETRO__
 	if (!File_Exists(filename))
 	{
 		Log_AlertDlg(LOG_INFO, "Image '%s' not found", filename);
 		return false;
 	}
-#else
-	floppy_read_drive = Drive;
-#endif
 
 	/* Check disk image type and read the file: */
 	if (MSA_FileNameIsMSA(filename, true))
@@ -646,13 +549,11 @@ bool Floppy_InsertDiskIntoDrive(int Drive)
 		EmulationDrives[Drive].pBuffer = IPF_ReadDisk(Drive, filename, &nImageBytes, &ImageType);
 	else if (STX_FileNameIsSTX(filename, true))
 		EmulationDrives[Drive].pBuffer = STX_ReadDisk(Drive, filename, &nImageBytes, &ImageType);
-#ifndef __LIBRETRO__
 	else if (ZIP_FileNameIsZIP(filename))
 	{
 		const char *zippath = ConfigureParams.DiskImage.szDiskZipPath[Drive];
 		EmulationDrives[Drive].pBuffer = ZIP_ReadDisk(Drive, filename, zippath, &nImageBytes, &ImageType);
 	}
-#endif
 
 	if ( (EmulationDrives[Drive].pBuffer == NULL) || ( ImageType == FLOPPY_IMAGE_TYPE_NONE ) )
 	{
@@ -729,12 +630,7 @@ bool Floppy_EjectDiskFromDrive(int Drive)
 		char *psFileName = EmulationDrives[Drive].sFileName;
 
 		/* OK, has contents changed? If so, need to save */
-#ifndef __LIBRETRO__
 		if (EmulationDrives[Drive].bContentsChanged)
-#else
-		// LIBRETRO can block saves during restore to prevent high disk activity
-		if (EmulationDrives[Drive].bContentsChanged && !core_prevent_eject_save)
-#endif
 		{
 			/* Is OK to save image (if boot-sector is bad, don't allow a save) */
 			if (EmulationDrives[Drive].bOKToSave)
@@ -750,10 +646,8 @@ bool Floppy_EjectDiskFromDrive(int Drive)
 					bSaved = IPF_WriteDisk(Drive, psFileName, EmulationDrives[Drive].pBuffer, EmulationDrives[Drive].nImageBytes);
 				else if (STX_FileNameIsSTX(psFileName, true))
 					bSaved = STX_WriteDisk(Drive, psFileName, EmulationDrives[Drive].pBuffer, EmulationDrives[Drive].nImageBytes);
-#ifndef __LIBRETRO__
 				else if (ZIP_FileNameIsZIP(psFileName))
 					bSaved = ZIP_WriteDisk(Drive, psFileName, EmulationDrives[Drive].pBuffer, EmulationDrives[Drive].nImageBytes);
-#endif
 				if (bSaved)
 					Log_Printf(LOG_INFO, "Updated the contents of floppy image '%s'.", psFileName);
 				else
@@ -790,9 +684,6 @@ bool Floppy_EjectDiskFromDrive(int Drive)
 	EmulationDrives[Drive].ImageType = FLOPPY_IMAGE_TYPE_NONE;
 	EmulationDrives[Drive].nImageBytes = 0;
 	EmulationDrives[Drive].bDiskInserted = false;
-#ifndef __LIBRETRO__
-	if (!core_prevent_eject_save)
-#endif
 	EmulationDrives[Drive].bContentsChanged = false;
 	EmulationDrives[Drive].bOKToSave = false;
 
@@ -825,7 +716,7 @@ static bool Floppy_EjectBothDrives(void)
  * NOTE - Pass information from boot-sector to this function (if we can't
  * decide we leave it alone).
  */
-static void Floppy_DoubleCheckFormat(long nDiskSize, long nSectorsPerDisk, Uint16 *pnSides, Uint16 *pnSectorsPerTrack)
+static void Floppy_DoubleCheckFormat(long nDiskSize, long nSectorsPerDisk, uint16_t *pnSides, uint16_t *pnSectorsPerTrack)
 {
 	long	TotalSectors;
 	int	Sides_fixed;
@@ -861,9 +752,22 @@ static void Floppy_DoubleCheckFormat(long nDiskSize, long nSectorsPerDisk, Uint1
 	else if ( TotalSectors == 82*12*Sides_fixed )	{ SectorsPerTrack_fixed = 12; }
 	else if ( TotalSectors == 83*12*Sides_fixed )	{ SectorsPerTrack_fixed = 12; }
 	else if ( TotalSectors == 84*12*Sides_fixed )	{ SectorsPerTrack_fixed = 12; }
-
-	/* unknown combination, assume boot sector is correct */
-	else						{ SectorsPerTrack_fixed = *pnSectorsPerTrack; }
+	else	/* unknown combination */
+	{
+		if (*pnSectorsPerTrack >= 5 && *pnSectorsPerTrack <= 48)
+		{
+			/* ED floppies could have up to 48 sectors per track,
+			 * so assume boot sector is correct for such values */
+			SectorsPerTrack_fixed = *pnSectorsPerTrack;
+		}
+		else
+		{
+			/* Looks like the boot sector contains completely bad
+			 * values, so try to calculate it instead, assuming
+			 * the disk has 80 tracks */
+			SectorsPerTrack_fixed = TotalSectors / 80 / Sides_fixed;
+		}
+	}
 
 	/* Valid new values if necessary */
 	if ( ( *pnSides != Sides_fixed ) || ( *pnSectorsPerTrack != SectorsPerTrack_fixed ) )
@@ -886,20 +790,21 @@ static void Floppy_DoubleCheckFormat(long nDiskSize, long nSectorsPerDisk, Uint1
  * is not actually correct with the image - some demos/game disks have incorrect bytes in the
  * boot sector and this attempts to find the correct values.
  */
-void Floppy_FindDiskDetails(const Uint8 *pBuffer, int nImageBytes,
-                            Uint16 *pnSectorsPerTrack, Uint16 *pnSides)
+void Floppy_FindDiskDetails(const uint8_t *pBuffer, int nImageBytes,
+                            uint16_t *pnSectorsPerTrack, uint16_t *pnSides)
 {
-	Uint16 nSectorsPerTrack, nSides, nSectorsPerDisk;
+	uint16_t nSectorsPerTrack, nSides, nSectorsPerDisk;
 
 	/* First do check to find number of sectors and bytes per sector */
-	nSectorsPerTrack = SDL_SwapLE16(*(const Uint16 *)(pBuffer+24));   /* SPT */
-	nSides = SDL_SwapLE16(*(const Uint16 *)(pBuffer+26));             /* SIDE */
-	nSectorsPerDisk = pBuffer[19] | (pBuffer[20] << 8);               /* total sectors */
+	nSectorsPerTrack = pBuffer[24] | (pBuffer[25] << 8);   /* SPT */
+	nSides = pBuffer[26] | (pBuffer[27] << 8);             /* SIDE */
+	nSectorsPerDisk = pBuffer[19] | (pBuffer[20] << 8);    /* total sectors */
 
-	/* If the number of sectors announced is incorrect, the boot-sector may
-	 * contain incorrect information, eg the 'Eat.st' demo, or wrongly imaged
+	/* If the boot sector information looks suspicious, it may contain
+	 * incorrect information, eg the 'Eat.st' demo, or wrongly imaged
 	 * single/double sided floppies... */
-	if (nSectorsPerDisk != nImageBytes/512)
+	if (nSectorsPerDisk != nImageBytes/512 || nSides == 0 || nSides > 2 ||
+	    nSectorsPerTrack == 0 || nSectorsPerTrack > 48)
 		Floppy_DoubleCheckFormat(nImageBytes, nSectorsPerDisk, &nSides, &nSectorsPerTrack);
 
 	/* And set values */
@@ -915,12 +820,12 @@ void Floppy_FindDiskDetails(const Uint8 *pBuffer, int nImageBytes,
  * Read sectors from floppy disk image, return TRUE if all OK
  * NOTE Pass -ve as Count to read whole track
  */
-bool Floppy_ReadSectors(int Drive, Uint8 **pBuffer, Uint16 Sector,
-                        Uint16 Track, Uint16 Side, short Count,
+bool Floppy_ReadSectors(int Drive, uint8_t **pBuffer, uint16_t Sector,
+                        uint16_t Track, uint16_t Side, short Count,
                         int *pnSectorsPerTrack, int *pSectorSize)
 {
-	Uint8 *pDiskBuffer;
-	Uint16 nSectorsPerTrack, nSides, nBytesPerTrack;
+	uint8_t *pDiskBuffer;
+	uint16_t nSectorsPerTrack, nSides, nBytesPerTrack;
 	long Offset;
 	int nImageTracks;
 
@@ -997,12 +902,12 @@ bool Floppy_ReadSectors(int Drive, Uint8 **pBuffer, Uint16 Sector,
  * Write sectors from floppy disk image, return TRUE if all OK
  * NOTE Pass -ve as Count to write whole track
  */
-bool Floppy_WriteSectors(int Drive, Uint8 *pBuffer, Uint16 Sector,
-                         Uint16 Track, Uint16 Side, short Count,
+bool Floppy_WriteSectors(int Drive, uint8_t *pBuffer, uint16_t Sector,
+                         uint16_t Track, uint16_t Side, short Count,
                          int *pnSectorsPerTrack, int *pSectorSize)
 {
-	Uint8 *pDiskBuffer;
-	Uint16 nSectorsPerTrack, nSides, nBytesPerTrack;
+	uint8_t *pDiskBuffer;
+	uint16_t nSectorsPerTrack, nSides, nBytesPerTrack;
 	long Offset;
 	int nImageTracks;
 

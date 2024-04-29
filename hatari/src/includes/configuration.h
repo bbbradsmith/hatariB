@@ -48,11 +48,6 @@ typedef struct
   char szTosImageFileName[FILENAME_MAX];
   bool bPatchTos;
   char szCartridgeImageFileName[FILENAME_MAX];
-#ifdef __LIBRETRO__
-  int nBuiltinTos;
-  int nEmuTosRegion;
-  int nEmuTosFramerate;
-#endif  
 } CNF_ROM;
 
 
@@ -79,23 +74,23 @@ typedef struct
   int SdlAudioBufferSize;
   char szYMCaptureFileName[FILENAME_MAX];
   int YmVolumeMixing;
-#ifdef __LIBRETRO__
-  int YmLpf;
-  int YmHpf;
-#endif  
 } CNF_SOUND;
 
 
 
-/* RS232 configuration */
+/* RS232 / SCC configuration */
+#define CNF_SCC_CHANNELS_MAX		3
+#define CNF_SCC_CHANNELS_A_SERIAL	0
+#define CNF_SCC_CHANNELS_A_LAN		1
+#define CNF_SCC_CHANNELS_B		2
 typedef struct
 {
   bool bEnableRS232;
-  bool bEnableSccB;
   char szOutFileName[FILENAME_MAX];
   char szInFileName[FILENAME_MAX];
-  char sSccBInFileName[FILENAME_MAX];
-  char sSccBOutFileName[FILENAME_MAX];
+  bool EnableScc[CNF_SCC_CHANNELS_MAX];
+  char SccInFileName[CNF_SCC_CHANNELS_MAX][FILENAME_MAX];
+  char SccOutFileName[CNF_SCC_CHANNELS_MAX][FILENAME_MAX];
 } CNF_RS232;
 
 
@@ -171,6 +166,7 @@ typedef enum
   JOYSTICK_KEYBOARD
 } JOYSTICKMODE;
 #define JOYSTICK_MODES 3
+#define JOYSTICK_BUTTONS 3
 
 typedef struct
 {
@@ -178,15 +174,18 @@ typedef struct
   bool bEnableAutoFire;
   bool bEnableJumpOnFire2;
   int nJoyId;
+  int nJoyButMap[JOYSTICK_BUTTONS];
   int nKeyCodeUp, nKeyCodeDown, nKeyCodeLeft, nKeyCodeRight, nKeyCodeFire;
+  int nKeyCodeB, nKeyCodeC, nKeyCodeOption, nKeyCodePause;
+  int nKeyCodeStar, nKeyCodeHash, nKeyCodeNum[10];
 } JOYSTICK;
 
 enum
 {
 	JOYID_JOYSTICK0,
 	JOYID_JOYSTICK1,
-	JOYID_STEPADA,
-	JOYID_STEPADB,
+	JOYID_JOYPADA,
+	JOYID_JOYPADB,
 	JOYID_PARPORT1,
 	JOYID_PARPORT2,
 	JOYSTICK_COUNT
@@ -295,6 +294,7 @@ typedef enum
   MONITOR_TYPE_TV
 } MONITORTYPE;
 
+
 /* Screen configuration */
 typedef struct
 {
@@ -313,20 +313,15 @@ typedef struct
   bool bResizable;
   bool bUseVsync;
   bool bUseSdlRenderer;
+  int ScreenShotFormat;
   float nZoomFactor;
   int nSpec512Threshold;
-  int nForceBpp;
   int nVdiColors;
   int nVdiWidth;
   int nVdiHeight;
   int nMaxWidth;
   int nMaxHeight;
   int nFrameSkips;
-#ifdef __LIBRETRO__
-  bool bLowResolutionDouble;
-  bool bMedResolutionDouble;
-  int nCropOverscan;
-#endif
 } CNF_SCREEN;
 
 
@@ -395,14 +390,12 @@ typedef struct
 {
   int nCpuLevel;
   int nCpuFreq;
-#ifdef __LIBRETRO__
-  int nBootCpuFreq;
-#endif
   bool bCompatibleCpu;            /* Prefetch mode */
   MACHINETYPE nMachineType;
   bool bBlitter;                  /* TRUE if Blitter is enabled */
   DSPTYPE nDSPType;               /* how to "emulate" DSP */
   VMETYPE nVMEType;               /* how to "emulate" SCU/VME */
+  int nRtcYear;
   bool bPatchTimerD;
   bool bFastBoot;                 /* Enable to patch TOS for fast boot */
   bool bFastForward;
@@ -487,5 +480,12 @@ extern void Configuration_Load(const char *psFileName);
 extern void Configuration_Save(void);
 extern void Configuration_MemorySnapShot_Capture(bool bSave);
 extern void Configuration_ChangeCpuFreq ( int CpuFreq_new );
+#ifdef EMSCRIPTEN
+extern void Configuration_ChangeMemory(int RamSizeKb);
+extern void Configuration_ChangeSystem(int nMachineType);
+extern void Configuration_ChangeTos(const char* szTosImageFileName);
+extern void Configuration_ChangeUseHardDiskDirectories(bool bUseHardDiskDirectories);
+extern void Configuration_ChangeFastForward(bool bFastForwardActive);
+#endif
 
 #endif

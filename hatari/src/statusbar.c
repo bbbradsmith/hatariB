@@ -198,11 +198,7 @@ int Statusbar_GetHeight(void)
 void Statusbar_EnableHDLed(drive_led_t state)
 {
 	/* leds are shown for 1/2 sec after enabling */
-#ifndef __LIBRETRO__
 	Led[DRIVE_LED_HD].expire = SDL_GetTicks() + 1000/2;
-#else
-	Led[DRIVE_LED_HD].expire = 25; // frames to remain onscreen
-#endif
 	Led[DRIVE_LED_HD].state = state;
 }
 
@@ -272,29 +268,15 @@ static void Statusbar_OverlayInit(const SDL_Surface *surf)
 	int h;
 	/* led size/pos needs to be re-calculated in case screen changed */
 	h = surf->h / 50;
-#ifndef __LIBRETRO__
 	OverlayLedRect.w = 2*h;
 	OverlayLedRect.h = h;
 	OverlayLedRect.x = surf->w - 5*h/2;
-#else
-	// make it bigger
-	OverlayLedRect.w = 4*h;
-	OverlayLedRect.h = (9*h)/5;
-	OverlayLedRect.x = surf->w - 9*h/2;
-#endif
 	OverlayLedRect.y = h/2;
 	/* free previous restore surface if it's incompatible */
-	if (OverlayUnderside &&
-#ifndef __LIBRETRO__
-	    OverlayUnderside->w == OverlayLedRect.w &&
-	    OverlayUnderside->h == OverlayLedRect.h &&
-	    OverlayUnderside->format->BitsPerPixel == surf->format->BitsPerPixel)
-#else
-	// logic was backwards
-	    (OverlayUnderside->w != OverlayLedRect.w ||
+	if (OverlayUnderside && (
+	    OverlayUnderside->w != OverlayLedRect.w ||
 	    OverlayUnderside->h != OverlayLedRect.h ||
 	    OverlayUnderside->format->BitsPerPixel != surf->format->BitsPerPixel))
-#endif
 	{
 		SDL_FreeSurface(OverlayUnderside);
 		OverlayUnderside = NULL;
@@ -474,7 +456,7 @@ void Statusbar_Init(SDL_Surface *surf)
 	bOldRecording = false;
 
 	/* and blit statusbar on screen */
-	SDL_UpdateRects(surf, 1, &FullRect);
+	Screen_UpdateRects(surf, 1, &FullRect);
 	DEBUGPRINT(("Drawn <- Statusbar_Init()\n"));
 }
 
@@ -498,26 +480,17 @@ void Statusbar_AddMessage(const char *msg, Uint32 msecs)
 	item->next = MessageList;
 	MessageList = item;
 
-	strncpy(item->msg, msg, MAX_MESSAGE_LEN);
-	item->msg[MAX_MESSAGE_LEN] = '\0';
+	Str_Copy(item->msg, msg, sizeof(item->msg));
 	DEBUGPRINT(("Add message: '%s'\n", item->msg));
 
 	if (msecs)
 	{
-#ifndef __LIBRETRO__
 		item->timeout = msecs;
-#else
-		item->timeout = (msecs * 55) / 1000; // apprxomiate number of frames
-#endif
 	}
 	else
 	{
 		/* show items by default for 2.5 secs */
-#ifndef __LIBRETRO__
 		item->timeout = 2500;
-#else
-		item->timeout = (2500 * 55) / 1000;
-#endif
 	}
 	item->shown = false;
 }
@@ -706,21 +679,12 @@ void Statusbar_UpdateInfo(void)
 
 	*end = '\0';
 
-	strlcpy(DefaultMessage.msg, buffer, MAX_MESSAGE_LEN);
+	Str_Copy(DefaultMessage.msg, buffer, MAX_MESSAGE_LEN);
 	DEBUGPRINT(("Set default message: '%s'\n", DefaultMessage.msg));
 	/* make sure default message gets (re-)drawn when next checked */
 	DefaultMessage.shown = false;
 }
 
-#ifndef LIBRETRO__
-// replaces default message
-extern void Statusbar_SetMessage(const char* msg);
-void Statusbar_SetMessage(const char* msg)
-{
-	strlcpy(DefaultMessage.msg, msg, MAX_MESSAGE_LEN);
-	DefaultMessage.shown = false;
-}
-#endif
 /*-----------------------------------------------------------------------*/
 /**
  * Draw 'msg' centered to the message area
@@ -757,12 +721,7 @@ static SDL_Rect* Statusbar_ShowMessage(SDL_Surface *surf, Uint32 ticks)
 			/* last/default message newer expires */
 			return NULL;
 		}
-#ifndef __LIBRETRO__
 		if (MessageList->expire > ticks)
-#else
-		--MessageList->expire;
-		if (MessageList->expire > 0)
-#endif
 		{
 			/* not timed out yet */
 			return NULL;
@@ -777,12 +736,7 @@ static SDL_Rect* Statusbar_ShowMessage(SDL_Surface *surf, Uint32 ticks)
 	MessageList->shown = true;
 	if (MessageList->timeout && !MessageList->expire)
 	{
-#ifndef __LIBRETRO__
 		MessageList->expire = ticks + MessageList->timeout;
-#else
-		MessageList->expire = MessageList->timeout;
-		(void)ticks;
-#endif
 	}
 	return Statusbar_DrawMessage(surf, MessageList->msg);
 }
@@ -872,9 +826,7 @@ static void Statusbar_OverlayDrawLed(SDL_Surface *surf, Uint32 color)
  */
 static SDL_Rect* Statusbar_OverlayDraw(SDL_Surface *surf)
 {
-#ifndef __LIBRETRO__
 	Uint32 currentticks = SDL_GetTicks();
-#endif
 	int i;
 
 	if (bRecordingYM || bRecordingWav || bRecordingAvi)
@@ -885,23 +837,11 @@ static SDL_Rect* Statusbar_OverlayDraw(SDL_Surface *surf)
 	{
 		if (Led[i].state)
 		{
-#ifndef __LIBRETRO__
 			if (Led[i].expire && Led[i].expire < currentticks)
 			{
 				Led[i].state = LED_STATE_OFF;
 				continue;
 			}
-#else
-			if (Led[i].expire > 0)
-			{
-				--Led[i].expire;
-				if (Led[i].expire <= 0)
-				{
-					Led[i].state = LED_STATE_OFF;
-					continue;
-				}
-			}
-#endif
 			Statusbar_OverlayDrawLed(surf, LedColor[ Led[i].state ]);
 			break;
 		}
@@ -959,7 +899,7 @@ SDL_Rect* Statusbar_Update(SDL_Surface *surf, bool do_update)
 			last_rect = Statusbar_OverlayDraw(surf);
 			if (do_update && last_rect)
 			{
-				SDL_UpdateRects(surf, 1, last_rect);
+				Screen_UpdateRects(surf, 1, last_rect);
 				last_rect = NULL;
 			}
 		}
@@ -975,32 +915,17 @@ SDL_Rect* Statusbar_Update(SDL_Surface *surf, bool do_update)
 #endif
 	assert(surf->h == ScreenHeight + StatusbarHeight);
 
-#ifndef __LIBRETRO__
 	currentticks = SDL_GetTicks();
-#else
-	currentticks = 0; // TODO need to resolve whatever ShowMessage needs for this
-#endif
 	last_rect = Statusbar_ShowMessage(surf, currentticks);
 	updates = last_rect ? 1 : 0;
 
 	rect = LedRect;
 	for (i = 0; i < MAX_DRIVE_LEDS; i++)
 	{
-#ifndef __LIBRETRO__
 		if (Led[i].expire && Led[i].expire < currentticks)
 		{
 			Led[i].state = LED_STATE_OFF;
 		}
-#else
-		if (Led[i].expire > 0)
-		{
-			--Led[i].expire;
-			if (Led[i].expire <= 0)
-			{
-				Led[i].state = LED_STATE_OFF;
-			}
-		}
-#endif
 		if (Led[i].state == Led[i].oldstate)
 		{
 			continue;
@@ -1113,20 +1038,8 @@ SDL_Rect* Statusbar_Update(SDL_Surface *surf, bool do_update)
 	}
 	if (do_update && last_rect)
 	{
-		SDL_UpdateRects(surf, 1, last_rect);
+		Screen_UpdateRects(surf, 1, last_rect);
 		last_rect = NULL;
 	}
 	return last_rect;
 }
-
-#ifdef __LIBRETRO__
-extern void core_statusbar_update(void);
-void core_statusbar_update(void)
-{
-	if(sdlscrn && StatusbarHeight && ConfigureParams.Screen.bShowStatusbar)
-	{
-		core_debug_msg("core_statusbar_update: yes");
-		Statusbar_Init(sdlscrn);
-	}
-}
-#endif

@@ -130,8 +130,7 @@ void Videl_Init(void)
 void VIDEL_reset(void)
 {
 	Videl_Init();
-	Screen_SetGenConvSize(videl.save_scrWidth, videl.save_scrHeight,
-	                      ConfigureParams.Screen.nForceBpp, false);
+	Screen_SetGenConvSize(videl.save_scrWidth, videl.save_scrHeight, false);
 
 	videl.bUseSTShifter = false;				/* Use Falcon color palette by default */
 	videl.reg_ffff8006_save = IoMem_ReadByte(0xff8006);
@@ -142,9 +141,6 @@ void VIDEL_reset(void)
 	/* Reset IO register (some are not initialized by TOS) */
 	IoMem_WriteWord(0xff820e, 0);    /* Line offset */
 	IoMem_WriteWord(0xff8264, 0);    /* Horizontal scroll */
-
-	/* Init sync mode register */
-	VIDEL_SyncMode_WriteByte();
 }
 
 /**
@@ -161,6 +157,48 @@ void VIDEL_MemorySnapShot_Capture(bool bSave)
 	if (!bSave)
 		Videl_SetDefaultSavedRes();
 }
+
+
+/**
+ * Return the vertical refresh rate for the current video mode
+ * We use the following formula :
+ *   VFreq = ( HFreq / (VFT+1) ) * 2
+ * HFreq is 15625 Hz in RGB/TV mode or 31250 Hz in VGA mode (in VGA mode HFreq can take other values in the same range)
+ *
+ * Some VFT values set by TOS :
+ *  - 320x200 16 colors, RGB : VFT = 625	-> 50 Hz
+ *  - 320x200 16 colors, VGA : VFT = 1049	-> 60 Hz
+ */
+int VIDEL_Get_VFreq(void)
+{
+	int	HFreq;
+	int	VFT;
+	int	VFreq;
+
+	if ( IoMem_ReadWord(0xff82c0) & 4 )		/* VC0 : bit2=0 32 MHz   bit2=1 25 MHz */
+		HFreq = 31250;				/* 25 MHz, VGA */
+	else
+		HFreq = 15625;				/* 32 MHz, RGB */
+
+	VFT = IoMem_ReadWord(0xff82a2);
+
+
+	VFreq = round ( ( (double)HFreq / ( VFT+1 ) ) * 2 );
+
+	return VFreq;
+}
+
+
+/**
+ * Return the content of videl.bUseSTShifter.
+ * This tells if the current video mode is compatible with ST/STE
+ * video mode or not
+ */
+bool VIDEL_Use_STShifter(void)
+{
+	return videl.bUseSTShifter;
+}
+
 
 /**
  * Monitor write access to Falcon color palette registers
@@ -186,22 +224,19 @@ void VIDEL_Monitor_WriteByte(void)
 }
 
 /**
- * VIDEL_SyncMode_WriteByte : Videl synchronization mode.
- *             $FFFF820A [R/W] _______0  .................................. SYNC-MODE
-                                     ||
-                                     |+--Synchronisation [ 0:internal / 1:external ]
-                                     +---Vertical frequency [ Read-only bit ]
-                                         [ Monochrome monitor:0 / Colour monitor:1 ]
+ * VIDEL_SyncMode_WriteByte:
+ * Videl synchronization mode. Bit 1 is used by TOS 4.04 to set either 50 Hz
+ * (bit set) or 60 Hz (bit cleared).
+ * Note: There are documentation files out there that claim that bit 1 is
+ * used to distinguish between monochrome or color monitor, but these are
+ * definitely wrong.
  */
 void VIDEL_SyncMode_WriteByte(void)
 {
 	Uint8 syncMode = IoMem_ReadByte(0xff820a);
 	LOG_TRACE(TRACE_VIDEL, "Videl : $ff820a Sync Mode write: 0x%02x\n", syncMode);
 
-	if (videl.monitor_type == FALCON_MONITOR_MONO)
-		syncMode &= 0xfd;
-	else
-		syncMode |= 0x2;
+	syncMode &= 0x03;	/* Upper bits are hard-wired to 0 */
 
 	IoMem_WriteByte(0xff820a, syncMode);
 }
@@ -896,35 +931,12 @@ void VIDEL_UpdateColors(void)
 
 void Videl_ScreenModeChanged(bool bForceChange)
 {
-	int bpp;
-
-	if (ConfigureParams.Screen.nForceBpp)
-	{
-		bpp = ConfigureParams.Screen.nForceBpp;
-	}
-	else if (Avi_AreWeRecording())
-	{
-		/* Avoid changing the bpp if we are recording */
-		bpp = sdlscrn->format->BitsPerPixel;
-	}
-	else
-	{
-		/* Using SDL's 16 bpp conversion function is a bit faster */
-		bpp = (videl.save_scrBpp == 16) ? 16 : 0;
-	}
-
 	LOG_TRACE(TRACE_VIDEL, "Videl : video mode change to %dx%d@%d\n",
 	          videl.save_scrWidth, videl.save_scrHeight, videl.save_scrBpp);
 
-	Screen_SetGenConvSize(videl.save_scrWidth, videl.save_scrHeight,
-	                      bpp, bForceChange);
+	Screen_SetGenConvSize(videl.save_scrWidth, videl.save_scrHeight, bForceChange);
 }
 
-
-#ifdef __LIBRETRO__
-// from screen.c
-extern void core_border_crop(int width, int height, int zoomX, int zoomY, int *top, int *bottom, int *left, int *right, int statusH);
-#endif
 
 bool VIDEL_renderScreen(void)
 {
@@ -941,46 +953,6 @@ bool VIDEL_renderScreen(void)
 	bool change = false;
 
 	Uint32 videoBase = Video_GetScreenBaseAddr();
-
-#ifdef __LIBRETRO__
-	{
-		int top = videl.upperBorderSize;
-		int bottom = videl.lowerBorderSize;
-		int left = videl.leftBorderSize;
-		int right = videl.rightBorderSize;
-		// predict zoom factors (replicating Screen_SetGenConvSize behaviour)
-		int zoomX = (videl.XSize <= NUM_VISIBLE_LINE_PIXELS) ? 2 : 1;
-		int zoomY = (videl.YSize <= (NUM_VISIBLE_LINES+(STATUSBAR_MAX_HEIGHT/2))) ? 2 : 1;
-		if (zoomX > 1)
-		{
-			if (!ConfigureParams.Screen.bLowResolutionDouble)
-			{
-				zoomX = 1;
-				zoomY = 1;
-			}
-		}
-		else if (zoomY > 1)
-		{
-			if (!ConfigureParams.Screen.bMedResolutionDouble)
-				zoomY = 1;
-		}
-		// crop borders
-		top *= zoomY;
-		bottom *= zoomY;
-		left *= zoomX;
-		right *= zoomX;
-		core_border_crop(
-			videl.XSize*zoomX,videl.YSize*zoomY,zoomX,zoomY,
-			&top,&bottom,&left,&right,
-			Statusbar_GetHeightForSize(videl.XSize*zoomX, videl.YSize*zoomY));
-		videl.upperBorderSize = top / zoomY;
-		videl.lowerBorderSize = bottom / zoomY;
-		videl.leftBorderSize = left / zoomX;
-		videl.rightBorderSize = right / zoomX;
-		vw = videl.leftBorderSize + videl.XSize + videl.rightBorderSize;
-		vh = videl.upperBorderSize + videl.YSize + videl.lowerBorderSize;
-	}
-#endif
 
 	if (vw > 0 && vw != videl.save_scrWidth) {
 		LOG_TRACE(TRACE_VIDEL, "Videl : width change from %d to %d\n", videl.save_scrWidth, vw);
@@ -1171,7 +1143,7 @@ void Videl_Color15_WriteWord(void)
 /**
  * display Videl registers values (for debugger info command)
  */
-void Videl_Info(FILE *fp, Uint32 dummy)
+void Videl_Info(FILE *fp, uint32_t dummy)
 {
 	if (ConfigureParams.System.nMachineType != MACHINE_FALCON) {
 		fprintf(fp, "Not Falcon - no Videl!\n");

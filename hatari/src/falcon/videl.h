@@ -19,6 +19,9 @@ extern void VIDEL_UpdateColors(void);
 extern void VIDEL_RestartVideoCounter(void);
 extern void VIDEL_VideoRasterHBL(void);
 
+extern int VIDEL_Get_VFreq(void);
+extern bool VIDEL_Use_STShifter(void);
+
 /* Called from ioMemTabFalcon.c */
 extern void VIDEL_Monitor_WriteByte(void);
 extern void VIDEL_SyncMode_WriteByte(void);
@@ -77,6 +80,6 @@ extern void VIDEL_InterruptHandler_HalfLine(void);
 /* Called from memorySnapShot.c */
 extern void VIDEL_MemorySnapShot_Capture(bool bSave);
 
-extern void Videl_Info(FILE *fp, Uint32 dummy);
+extern void Videl_Info(FILE *fp, uint32_t dummy);
 
 #endif /* _VIDEL_H */

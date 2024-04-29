@@ -1,6 +1,5 @@
 
-# hatariB - disable hmsa tool build
-#add_subdirectory(hmsa)
+add_subdirectory(hmsa)
 
 include(FindPythonInterp)
 if(PYTHONINTERP_FOUND)

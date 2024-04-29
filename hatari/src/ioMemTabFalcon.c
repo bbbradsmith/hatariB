@@ -23,7 +23,6 @@ const char IoMemTabFalc_fileid[] = "Hatari ioMemTabFalcon.c";
 #include "rs232.h"
 #include "rtc.h"
 #include "scc.h"
-#include "screen.h"
 #include "blitter.h"
 #include "crossbar.h"
 #include "falcon/videl.h"
@@ -121,7 +120,7 @@ void IoMemTabFalcon_DSPemulation(void (**readtab)(void), void (**writetab)(void)
 */
 static void IoMemTabFalcon_BusCtrl_WriteByte(void)
 {
-	Uint8 busCtrl = IoMem_ReadByte(0xff8007);
+	uint8_t busCtrl = IoMem_ReadByte(0xff8007);
 
 	/* Set Falcon bus or STE compatible bus emulation */
 	if ((busCtrl & 0x20) == 0)
@@ -148,7 +147,7 @@ static void IoMemTabFalcon_BusCtrl_WriteByte(void)
 
 static void IoMemTabFalcon_BusCtrl_ReadByte(void)
 {
-	Uint8 nBusCtrl = IoMem_ReadByte(0xff8007);
+	uint8_t nBusCtrl = IoMem_ReadByte(0xff8007);
 
 	/* Set the bit manually to get it right after cold boot */
 	if (IoMem_IsFalconBusMode())
@@ -178,7 +177,7 @@ static void IoMemTabFalcon_BusCtrl_ReadByte(void)
  * Logic is inverted, i.e. connected means the corresponding bit is 0.
  * Switch 8 is represented by the highest bit in the register.
  */
-Uint8 IoMemTabFalcon_DIPSwitches_Read(void)
+uint8_t IoMemTabFalcon_DIPSwitches_Read(void)
 {
 	return 0xbf;
 }
@@ -396,20 +395,20 @@ const INTERCEPT_ACCESS_FUNC IoMemTable_Falcon[] =
 
 	{ 0xff8c80, 8, SCC_IoMem_ReadByte, SCC_IoMem_WriteByte },                         /* SCC */
 
-	{ 0xff9200, SIZE_WORD, Joy_StePadButtons_DIPSwitches_ReadWord, Joy_StePadButtons_DIPSwitches_WriteWord },    /* Joypad fire buttons + Falcon DIP Switches */
-	{ 0xff9202, SIZE_WORD, Joy_StePadMulti_ReadWord, Joy_StePadMulti_WriteWord },     /* Joypad directions/buttons/selection */
-	{ 0xff9210, SIZE_BYTE, IoMem_VoidRead, IoMem_VoidWrite },                         /* No bus error here */
-	{ 0xff9211, SIZE_BYTE, IoMem_VoidRead, IoMem_WriteWithoutInterception },          /* Joypad 0 X position (?) */
-	{ 0xff9212, SIZE_BYTE, IoMem_VoidRead, IoMem_VoidWrite },                         /* No bus error here */
-	{ 0xff9213, SIZE_BYTE, IoMem_VoidRead, IoMem_WriteWithoutInterception },          /* Joypad 0 Y position (?) */
-	{ 0xff9214, SIZE_BYTE, IoMem_VoidRead, IoMem_VoidWrite },                         /* No bus error here */
-	{ 0xff9215, SIZE_BYTE, IoMem_VoidRead, IoMem_WriteWithoutInterception },          /* Joypad 1 X position (?) */
-	{ 0xff9216, SIZE_BYTE, IoMem_VoidRead, IoMem_VoidWrite },                         /* No bus error here */
-	{ 0xff9217, SIZE_BYTE, IoMem_VoidRead, IoMem_WriteWithoutInterception },          /* Joypad 1 Y position (?) */
-	{ 0xff9220, SIZE_WORD, IoMem_VoidRead, IoMem_WriteWithoutInterception },          /* Lightpen X position */
-	{ 0xff9222, SIZE_WORD, IoMem_VoidRead, IoMem_WriteWithoutInterception },          /* Lightpen Y position */
+	{ 0xff9200, SIZE_WORD, Joy_StePadButtons_DIPSwitches_ReadWord, Joy_StePadButtons_DIPSwitches_WriteWord }, /* Joypad fire buttons + Falcon DIP Switches */
+	{ 0xff9202, SIZE_WORD, Joy_StePadMulti_ReadWord, Joy_StePadMulti_WriteWord },         /* Joypad directions/buttons/selection */
+	{ 0xff9210, SIZE_BYTE, IoMem_VoidRead, IoMem_VoidWrite },                             /* No bus error here */
+	{ 0xff9211, SIZE_BYTE, Joy_StePadAnalog0X_ReadByte, IoMem_WriteWithoutInterception }, /* Joypad 0 Analog/Paddle X position */
+	{ 0xff9212, SIZE_BYTE, IoMem_VoidRead, IoMem_VoidWrite },                             /* No bus error here */
+	{ 0xff9213, SIZE_BYTE, Joy_StePadAnalog0Y_ReadByte, IoMem_WriteWithoutInterception }, /* Joypad 0 Analog/Paddle Y position */
+	{ 0xff9214, SIZE_BYTE, IoMem_VoidRead, IoMem_VoidWrite },                             /* No bus error here */
+	{ 0xff9215, SIZE_BYTE, Joy_StePadAnalog1X_ReadByte, IoMem_WriteWithoutInterception }, /* Joypad 1 Analog/Paddle X position */
+	{ 0xff9216, SIZE_BYTE, IoMem_VoidRead, IoMem_VoidWrite },                             /* No bus error here */
+	{ 0xff9217, SIZE_BYTE, Joy_StePadAnalog1Y_ReadByte, IoMem_WriteWithoutInterception }, /* Joypad 1 Analog/Paddle Y position */
+	{ 0xff9220, SIZE_WORD, IoMem_VoidRead, IoMem_WriteWithoutInterception },              /* Lightpen X position */
+	{ 0xff9222, SIZE_WORD, IoMem_VoidRead, IoMem_WriteWithoutInterception },              /* Lightpen Y position */
 
-	{ 0xff9800, 0x400, IoMem_ReadWithoutInterception, VIDEL_FalconColorRegsWrite },   /* Falcon Videl palette */
+	{ 0xff9800, 0x400, IoMem_ReadWithoutInterception, VIDEL_FalconColorRegsWrite },       /* Falcon Videl palette */
 
 	{ 0xffc020, SIZE_BYTE, IoMemTabFalc_Compatible_ReadByte, IoMemTabFalc_Compatible_WriteByte },
 	{ 0xffc021, SIZE_BYTE, IoMemTabFalc_Compatible_ReadByte, IoMemTabFalc_Compatible_WriteByte },

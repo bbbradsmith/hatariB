@@ -70,22 +70,14 @@ bool Microphone_Start(int sampleRate)
 	req.callback = Microphone_Callback;
 	req.userdata = NULL;
 
-#ifndef __LIBRETRO__
 	nMicDevId = SDL_OpenAudioDevice(NULL, true, &req, &obt, 0);
-#else
-	nMicDevId = 0;
-	(void)req;
-	(void)obt;
-#endif
 	if (!nMicDevId)
 	{
 		Log_Printf(LOG_ERROR, "Microphone: SDL_OpenAudioDevice failed.\n");
 		return false;
 	}
 
-#ifndef __LIBRETRO__
 	SDL_PauseAudioDevice(nMicDevId, 0);
-#endif
 
 	Log_Printf(LOG_DEBUG, "Microphone_Start: freq = %i\n", obt.freq);
 
@@ -98,8 +90,6 @@ bool Microphone_Start(int sampleRate)
 void Microphone_Stop(void)
 {
 	/* Close Microphone stream */
-#ifndef __LIBRETRO__
 	SDL_CloseAudioDevice(nMicDevId);
-#endif
 	nMicDevId = 0;
 }

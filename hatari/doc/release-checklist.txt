@@ -1,5 +1,13 @@
 Things for Hatari dev team to check before new release...
 
+Contents:
+* When first thinking about new release
+* One or two weeks before release
+* Release candidate
+* Final release
+* After release
+
+
 When first thinking about new release
 -------------------------------------
 
@@ -43,6 +51,9 @@ everything that should work, does still work:
   - Check that everything built fine on Travis and Cirrus-CI:
       https://travis-ci.com/github/hatari/hatari
       https://cirrus-ci.com/github/hatari/hatari
+
+* Check that manual pages do not have errors:
+    troff -man -w w $(git ls-files '*.1')  > /dev/null
 
 * Check that all programs/demos listed in compatibility.html as fixed
   during early development still work, and make sure they're listed
@@ -108,3 +119,10 @@ If no release-critical issues were reported, do actual release:
 * Announce new release "everywhere"
 
 * Party!
+
+
+After release
+-------------
+
+* Switch back to devel, and increase devel version number in
+  "src/includes/version.h" header

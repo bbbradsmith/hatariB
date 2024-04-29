@@ -32,6 +32,7 @@ enum
 #define SG_EXIT        2   /* Exit when mouse button has been pressed (and released) */
 #define SG_DEFAULT     4   /* Marks a default button, selectable with Enter & Return keys */
 #define SG_CANCEL      8   /* Marks a cancel button, selectable with ESC key */
+#define SG_REPEAT     16   /* (Scrollbar) buttons which repeat regardless of mouse position */
 
 /* Object states: */
 #define SG_SELECTED    1
@@ -80,10 +81,12 @@ extern int SDLGui_SetScreen(SDL_Surface *pScrn);
 extern void SDLGui_GetFontSize(int *width, int *height);
 extern void SDLGui_Text(int x, int y, const char *txt);
 extern void SDLGui_DrawDialog(const SGOBJ *dlg);
+extern void SDLGui_ScaleMouseStateCoordinates(int *x, int *y);
 extern int SDLGui_DoDialogExt(SGOBJ *dlg, bool (*isEventOut)(SDL_EventType), SDL_Event *pEventOut, int current_object);
 extern int SDLGui_DoDialog(SGOBJ *dlg);
 extern void SDLGui_CenterDlg(SGOBJ *dlg);
 extern char* SDLGui_FileSelect(const char *title, const char *path_and_name, char **zip_path, bool bAllowNew);
 extern bool SDLGui_FileConfSelect(const char *title, char *dlgname, char *confname, int maxlen, bool bAllowNew);
+extern bool SDLGui_DirConfSelect(const char *title, char *dlgname, char *confname, int maxlen);
 
 #endif

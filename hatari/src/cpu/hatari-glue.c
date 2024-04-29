@@ -23,7 +23,6 @@ const char HatariGlue_fileid[] = "Hatari hatari-glue.c";
 #include "vdi.h"
 #include "stMemory.h"
 #include "ikbd.h"
-#include "screen.h"
 #include "video.h"
 #include "psg.h"
 #include "mfp.h"
@@ -73,7 +72,7 @@ void customreset(void)
 
 
 /**
- * Return interrupt number (1 - 7), -1 means no interrupt.
+ * Return highest interrupt number (1 - 7), 0 means no interrupt.
  * Note that the interrupt stays pending if it can't be executed yet
  * due to the interrupt level field in the SR.
  */
@@ -81,12 +80,14 @@ int intlev(void)
 {
 	if ( pendingInterrupts & (1 << 6) )		/* MFP/DSP interrupt ? */
 		return 6;
+	else if ( pendingInterrupts & (1 << 5) )	/* SCC interrupt ? */
+		return 5;
 	else if ( pendingInterrupts & (1 << 4) )	/* VBL interrupt ? */
 		return 4;
 	else if ( pendingInterrupts & (1 << 2) )	/* HBL interrupt ? */
 		return 2;
 
-	return -1;
+	return 0;
 }
 
 
@@ -153,72 +154,6 @@ bool savestate_restore_finish (void)
 }
 
 
-#ifdef __LIBRETRO__
-extern int core_save_state(void);
-extern int core_restore_state(void);
-extern void core_flush_audio(void);
-extern int Reset_Cold(void);
-extern void Sound_Update( Uint64 CPU_Clock);
-extern bool bCaptureError;
-void core_flush_audio(void)
-{
-	// flush audio up until now
-	Sound_Update ( CyclesGlobalClockCounter );
-}
-int core_save_state(void)
-{
-	// when m68k_go_frame exits we are at approximately the same place save_state would be called normally
-	// calling save_state directly instead of using MemorySnapshot_Capture
-	return save_state(NULL, NULL);
-}
-int core_restore_state(void)
-{
-	int result = 0;
-	// set a flag to restore at the next loop and quit the loop
-	MemorySnapShot_Restore("[libretro]",false);
-	// sets:
-	//   quit_program = UAE_RESET
-	//   savestate_state = STATE_RESTORE
-	//   SPCFLAG_MODE_CHANGE
-	// restart the m68k loop
-	m68k_go_frame();
-	// runs:
-	//   restore_state
-	//     MemorySnapShot_Restore_Do
-	//        ResetCold
-	//        bCaptureError = 1 if error
-	//   savestate_restore_finish
-	//     restore_finish
-	//       savestate_state = 0
-	//       quit_program = 0
-	//       SPCFLAG_STOP
-	//     restored = 1
-	//   restored = 0
-	//   savestate_restore_final
-	//     (does nothing)
-	//   exits
-	m68k_go_quit(); // quit the loop
-	// in_m68k_go--
-	if (bCaptureError) // error: do a hard reset
-	{
-		result = 1;
-		Reset_Cold();
-		UAE_Set_Quit_Reset(true);
-	}
-	core_runflags &= ~CORE_RUNFLAG_RESET;
-	m68k_go(true); // restart the loop
-	// in_m68k_go++
-	// hardboot = 1
-	// startup = 1
-	core_init_return = true;
-	m68k_go_frame();
-	core_init_return = false;
-	core_flush_audio();
-	return result;
-}
-#endif
-
-
 /**
  * Initialize 680x0 emulation
  */
@@ -251,7 +186,10 @@ void Exit680x0(void)
  */
 static void	CpuDoNOP ( void )
 {
-	(*cpufunctbl[0X4E71])(0x4E71);
+	if ( !CpuRunFuncNoret )
+		(*cpufunctbl[0X4E71])(0x4E71);
+	else
+		(*cpufunctbl_noret[0X4E71])(0x4E71);
 }
 
 
@@ -262,7 +200,7 @@ static void	CpuDoNOP ( void )
  */
 static bool is_cart_pc(void)
 {
-	Uint32 pc = M68000_GetPC();
+	uint32_t pc = M68000_GetPC();
 
 	if (ConfigureParams.System.bAddressSpace24 || (pc >> 24) == 0xff)
 	{
@@ -315,6 +253,11 @@ uae_u32 REGPARAM3 OpCode_SysInit(uae_u32 opcode)
 	return 4 * CYCLE_UNIT / 2;
 }
 
+void REGPARAM3 OpCode_SysInit_noret(uae_u32 opcode)
+{
+	OpCode_SysInit(opcode);
+}
+
 
 /**
  * Handle illegal opcode #8 (GEMDOS_OPCODE).
@@ -339,6 +282,12 @@ uae_u32 REGPARAM3 OpCode_GemDos(uae_u32 opcode)
 	return 4 * CYCLE_UNIT / 2;
 }
 
+void REGPARAM3 OpCode_GemDos_noret(uae_u32 opcode)
+{
+	OpCode_GemDos(opcode);
+}
+
+
 /**
  * Handle illegal opcode #9 (PEXEC_OPCODE).
  * When GEMDOS HD emulation is enabled, we use it to intercept the end of
@@ -360,6 +309,11 @@ uae_u32 REGPARAM3 OpCode_Pexec(uae_u32 opcode)
 	}
 
 	return 4 * CYCLE_UNIT / 2;
+}
+
+void REGPARAM3 OpCode_Pexec_noret(uae_u32 opcode)
+{
+	OpCode_Pexec(opcode);
 }
 
 
@@ -388,13 +342,18 @@ uae_u32 REGPARAM3 OpCode_VDI(uae_u32 opcode)
 	return 4 * CYCLE_UNIT / 2;
 }
 
+void REGPARAM3 OpCode_VDI_noret(uae_u32 opcode)
+{
+	OpCode_VDI(opcode);
+}
+
 
 /**
  * Emulator Native Features ID opcode interception.
  */
 uae_u32 REGPARAM3 OpCode_NatFeat_ID(uae_u32 opcode)
 {
-	Uint32 stack = Regs[REG_A7] + SIZE_LONG;	/* skip return address */
+	uint32_t stack = Regs[REG_A7] + SIZE_LONG;	/* skip return address */
 
 	if (NatFeat_ID(stack, &(Regs[REG_D0])))
 	{
@@ -403,13 +362,19 @@ uae_u32 REGPARAM3 OpCode_NatFeat_ID(uae_u32 opcode)
 	return 4 * CYCLE_UNIT / 2;
 }
 
+void REGPARAM3 OpCode_NatFeat_ID_noret(uae_u32 opcode)
+{
+	OpCode_NatFeat_ID(opcode);
+}
+
+
 /**
  * Emulator Native Features call opcode interception.
  */
 uae_u32 REGPARAM3 OpCode_NatFeat_Call(uae_u32 opcode)
 {
-	Uint32 stack = Regs[REG_A7] + SIZE_LONG;	/* skip return address */
-	Uint16 SR = M68000_GetSR();
+	uint32_t stack = Regs[REG_A7] + SIZE_LONG;	/* skip return address */
+	uint16_t SR = M68000_GetSR();
 	bool super;
 
 	super = ((SR & SR_SUPERMODE) == SR_SUPERMODE);
@@ -418,6 +383,11 @@ uae_u32 REGPARAM3 OpCode_NatFeat_Call(uae_u32 opcode)
 		CpuDoNOP ();
 	}
 	return 4 * CYCLE_UNIT / 2;
+}
+
+void REGPARAM3 OpCode_NatFeat_Call_noret(uae_u32 opcode)
+{
+	OpCode_NatFeat_Call(opcode);
 }
 
 

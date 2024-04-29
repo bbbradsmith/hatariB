@@ -26,6 +26,13 @@ Emulation improvements
 - Finish real HD 6301 (keyboard processor of the ST) emulation.
   (Current special casing is enough for all known demos using 6301)
 
+- Allow time to be set on machines with RTC (= using host time).
+  This requires calculating offset to host time on write, and
+  using that offset on further reads.
+
+- Support RTC timer interrupts needed by ASV (Atari System-V Unix):
+  https://www.atari-forum.com/viewtopic.php?p=425726#p425726
+
 - Get the games/demos working that are marked as non-working in the manual.
 
 - Emulate different memory access timings on different memory areas.
@@ -36,8 +43,9 @@ Emulation improvements
 - Improve STE / Crossbar DMA data handling.  Mask addresses similarly to
   HW (instead of modulo ST-RAM size), and generate errors when needed
 
-- Improve TT and/or Falcon emulation, especially VIDEL, e.g:
+- Improve TT and/or Falcon emulation, especially VIDEL:
   - Palette switching during screen drawing
+  - Long writes to (word sized) color registers, see bugs.txt
   - Real Videl render offset and vertical frequency counters emulation
     (currently they're incremented so that programs checking them
     don't get stuck, but values aren't quite correct yet)

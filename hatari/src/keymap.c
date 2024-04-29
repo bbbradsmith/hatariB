@@ -19,7 +19,6 @@ const char Keymap_fileid[] = "Hatari keymap.c";
 #include "joy.h"
 #include "shortcut.h"
 #include "str.h"
-#include "screen.h"
 #include "debugui.h"
 #include "log.h"
 
@@ -78,11 +77,7 @@ static uint8_t Keymap_SymbolicToStScanCode(const SDL_Keysym* pKeySym)
 	 case SDLK_ASTERISK: code = 0x66; break;
 	 case SDLK_PLUS: code = 0x1B; break;
 	 case SDLK_COMMA: code = 0x33; break;
-#ifndef __LIBRETRO__
 	 case SDLK_MINUS: code = 0x35; break;
-#else
-	 case SDLK_MINUS: code = 0x0C; break; // hatari has this wrong?
-#endif
 	 case SDLK_PERIOD: code = 0x34; break;
 	 case SDLK_SLASH: code = 0x35; break;
 	 case SDLK_0: code = 0x0B; break;
@@ -102,24 +97,12 @@ static uint8_t Keymap_SymbolicToStScanCode(const SDL_Keysym* pKeySym)
 	 case SDLK_GREATER : code = 0x34; break;
 	 case SDLK_QUESTION: code = 0x35; break;
 	 case SDLK_AT: code = 0x28; break;
-#ifndef __LIBRETRO__	 
-	 case SDLK_LEFTBRACKET: code = 0x63; break;
-#else
-	 case SDLK_LEFTBRACKET: code = 0x1A; break; // hatari has this wrong?
-#endif
+	 case SDLK_LEFTBRACKET: code = 0x1A; break;
 	 case SDLK_BACKSLASH: code = 0x2B; break;     /* Might be 0x60 for UK keyboards */
-#ifndef __LIBRETRO__	 
-	 case SDLK_RIGHTBRACKET: code = 0x64; break;
-#else
-	 case SDLK_RIGHTBRACKET: code = 0x1B; break; // hatari has this wrong?
-#endif
+	 case SDLK_RIGHTBRACKET: code = 0x1B; break;
 	 case SDLK_CARET: code = 0x2B; break;
 	 case SDLK_UNDERSCORE: code = 0x0C; break;
-#ifndef __LIBRETRO__
-	 case SDLK_BACKQUOTE: code = 0x52; break;
-#else
 	 case SDLK_BACKQUOTE: code = 0x29; break;
-#endif
 	 case SDLK_a: code = 0x1E; break;
 	 case SDLK_b: code = 0x30; break;
 	 case SDLK_c: code = 0x2E; break;
@@ -165,6 +148,8 @@ static uint8_t Keymap_SymbolicToStScanCode(const SDL_Keysym* pKeySym)
 	 case SDLK_KP_8: code = 0x68; break;
 	 case SDLK_KP_9: code = 0x69; break;
 	 case SDLK_KP_PERIOD: code = 0x71; break;
+	 case SDLK_KP_LEFTPAREN: code = 0x63; break;
+	 case SDLK_KP_RIGHTPAREN: code = 0x64; break;
 	 case SDLK_KP_DIVIDE: code = 0x65; break;
 	 case SDLK_KP_MULTIPLY: code = 0x66; break;
 	 case SDLK_KP_MINUS: code = 0x4A; break;
@@ -366,12 +351,7 @@ static uint8_t Keymap_PcToStScanCode(const SDL_Keysym* pKeySym)
  */
 static uint8_t Keymap_GetKeyPadScanCode(const SDL_Keysym* pKeySym)
 {
-#ifndef __LIBRETRO__
 	if (SDL_GetModState() & KMOD_NUM)
-#else
-	// Atari ST has no num-lock concept
-	//if (core_input_mod_state() & KMOD_NUM)
-#endif
 	{
 		switch (pKeySym->sym)
 		{
@@ -387,7 +367,6 @@ static uint8_t Keymap_GetKeyPadScanCode(const SDL_Keysym* pKeySym)
 		 default:  break;
 		}
 	}
-#ifndef __LIBRETRO__
 	else
 	{
 		switch (pKeySym->sym)
@@ -404,7 +383,6 @@ static uint8_t Keymap_GetKeyPadScanCode(const SDL_Keysym* pKeySym)
 		 default:  break;
 		}
 	}
-#endif
 	return ST_NO_SCANCODE;
 }
 
@@ -613,9 +591,6 @@ static bool IsKeyTranslatable(SDL_Keycode symkey)
 	case SDLK_RGUI:
 	case SDLK_MODE:
 	case SDLK_NUMLOCKCLEAR:
-#ifdef __LIBRETRO__
-	case SDLK_SCROLLLOCK:
-#endif
 		return false;
 	}
 	return true;
@@ -635,7 +610,6 @@ void Keymap_KeyDown(const SDL_Keysym *sdlkey)
 	LOG_TRACE(TRACE_KEYMAP, "key down: sym=%i scan=%i mod=0x%x name='%s'\n",
 	          symkey, sdlkey->scancode, modkey, Keymap_GetKeyName(symkey));
 
-#ifndef __LIBRETRO__
 	if (ShortCut_CheckKeys(modkey, symkey, true))
 		return;
 
@@ -643,9 +617,6 @@ void Keymap_KeyDown(const SDL_Keysym *sdlkey)
 	 * Some games use keyboard as pause! */
 	if (Joy_KeyDown(symkey, modkey))
 		return;
-#else
-	(void)modkey;
-#endif
 
 	/* Ignore modifier keys that are not passed to the ST */
 	if (!IsKeyTranslatable(symkey))
@@ -678,7 +649,6 @@ void Keymap_KeyUp(const SDL_Keysym *sdlkey)
 	LOG_TRACE(TRACE_KEYMAP, "key up: sym=%i scan=%i mod=0x%x name='%s'\n",
 	          symkey, sdlkey->scancode, modkey, Keymap_GetKeyName(symkey));
 
-#ifndef __LIBRETRO__
 	/* Ignore short-cut keys here */
 	if (ShortCut_CheckKeys(modkey, symkey, false))
 		return;
@@ -687,9 +657,6 @@ void Keymap_KeyUp(const SDL_Keysym *sdlkey)
 	 * Some games use keyboard as pause! */
 	if (Joy_KeyUp(symkey, modkey))
 		return;
-#else
-	(void)modkey;
-#endif
 
 	/* Ignore modifier keys that are not passed to the ST */
 	if (!IsKeyTranslatable(symkey))
@@ -749,21 +716,13 @@ void Keymap_SimulateCharacter(char asckey, bool press)
 
 int Keymap_GetKeyFromName(const char *name)
 {
-#ifndef __LIBRETRO__
 	return SDL_GetKeyFromName(name);
-#else
-	return 0;
-#endif
 }
 
 const char *Keymap_GetKeyName(int keycode)
 {
-#ifndef __LIBRETRO__
 	if (!keycode)
 		return "";
 
 	return SDL_GetKeyName(keycode);
-#else
-	return "";
-#endif
 }

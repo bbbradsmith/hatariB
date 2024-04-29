@@ -18,7 +18,6 @@
 */
 const char MemorySnapShot_fileid[] = "Hatari memorySnapShot.c";
 
-#include <SDL_types.h>
 #include <errno.h>
 
 #include "main.h"
@@ -59,14 +58,11 @@ const char MemorySnapShot_fileid[] = "Hatari memorySnapShot.c";
 #include "hatari-glue.h"
 
 
-#define VERSION_STRING      "2.4.0"   /* Version number of compatible memory snapshots - Always 6 bytes (inc' NULL) */
+#define VERSION_STRING      "2.5.0"   /* Version number of compatible memory snapshots - Always 6 bytes (inc' NULL) */
 #define SNAPSHOT_MAGIC      0xDeadBeef
 
-#ifndef __LIBRETRO__
-// Libretro savestates must be a fixed size
 #if HAVE_LIBZ
 #define COMPRESS_MEMORYSNAPSHOT       /* Compress snapshots to reduce disk space used */
-#endif
 #endif
 
 #ifdef COMPRESS_MEMORYSNAPSHOT
@@ -76,9 +72,6 @@ const char MemorySnapShot_fileid[] = "Hatari memorySnapShot.c";
 #include <zlib.h>
 typedef gzFile MSS_File;
 
-#elif defined(__LIBRETRO__)
-typedef corefile* MSS_File;
-
 #else
 
 typedef FILE* MSS_File;
@@ -87,12 +80,7 @@ typedef FILE* MSS_File;
 
 
 static MSS_File CaptureFile;
-#ifndef __LIBRETRO__
 static bool bCaptureSave, bCaptureError;
-#else
-bool bCaptureSave; // external access for inline use
-bool bCaptureError; // external access to check for error
-#endif
 
 
 static char Temp_FileName[FILENAME_MAX];
@@ -107,11 +95,6 @@ static MSS_File MemorySnapShot_fopen(const char *pszFileName, const char *pszMod
 {
 #ifdef COMPRESS_MEMORYSNAPSHOT
 	return gzopen(pszFileName, pszMode);
-#elif defined(__LIBRETRO__)
-	core_snapshot_open();
-	(void)pszFileName;
-	(void)pszMode;
-	return (void*)-1;
 #else
 	return fopen(pszFileName, pszMode);
 #endif
@@ -126,9 +109,6 @@ static void MemorySnapShot_fclose(MSS_File fhndl)
 {
 #ifdef COMPRESS_MEMORYSNAPSHOT
 	gzclose(fhndl);
-#elif defined(__LIBRETRO__)
-	core_snapshot_close();
-	(void)fhndl;
 #else
 	fclose(fhndl);
 #endif
@@ -139,40 +119,28 @@ static void MemorySnapShot_fclose(MSS_File fhndl)
 /**
  * Read from file.
  */
-#ifndef __LIBRETRO__
 static int MemorySnapShot_fread(MSS_File fhndl, char *buf, int len)
 {
 #ifdef COMPRESS_MEMORYSNAPSHOT
 	return gzread(fhndl, buf, len);
-#elif defined(__LIBRETRO__)
-	core_snapshot_read(buf, len);
-	(void)fhndl;
-	return len;
 #else
 	return fread(buf, 1, len, fhndl);
 #endif
 }
-#endif
 
 
 /*-----------------------------------------------------------------------*/
 /**
  * Write data to file.
  */
-#ifndef __LIBRETRO__
 static int MemorySnapShot_fwrite(MSS_File fhndl, const char *buf, int len)
 {
 #ifdef COMPRESS_MEMORYSNAPSHOT
 	return gzwrite(fhndl, buf, len);
-#elif defined(__LIBRETRO__)
-	core_snapshot_write(buf, len);
-	(void)fhndl;
-	return len;
 #else
 	return fwrite(buf, 1, len, fhndl);
 #endif
 }
-#endif
 
 
 /*-----------------------------------------------------------------------*/
@@ -183,10 +151,6 @@ static int MemorySnapShot_fseek(MSS_File fhndl, int pos)
 {
 #ifdef COMPRESS_MEMORYSNAPSHOT
 	return (int)gzseek(fhndl, pos, SEEK_CUR);	/* return -1 if error, new position >=0 if OK */
-#elif defined(__LIBRETRO__)
-	core_snapshot_seek(pos);
-	(void)fhndl;
-	return 0;
 #else
 	return fseek(fhndl, pos, SEEK_CUR);		/* return -1 if error, 0 if OK */
 #endif
@@ -203,14 +167,10 @@ static bool MemorySnapShot_OpenFile(const char *pszFileName, bool bSave, bool bC
 	char VersionString[] = VERSION_STRING;
 
 #define CORE_VERSION 1
-	Uint8 CpuCore;
+	uint8_t CpuCore;
 
 	/* Set error */
 	bCaptureError = false;
-
-#ifdef __LIBRETRO__
-	bConfirm = false;
-#endif
 
 	/* after opening file, set bCaptureSave to indicate whether
 	 * 'MemorySnapShot_Store' should load from or save to a file
@@ -314,7 +274,6 @@ void MemorySnapShot_Skip(int Nb)
 /**
  * Save/Restore data to/from file.
  */
-#ifndef __LIBRETRO__
 void MemorySnapShot_Store(void *pData, int Size)
 {
 	long nBytes;
@@ -333,9 +292,6 @@ void MemorySnapShot_Store(void *pData, int Size)
 			bCaptureError = true;
 	}
 }
-#else
-// replaced by inline version in memorySnapShot.h
-#endif
 
 
 /*-----------------------------------------------------------------------*/
@@ -346,7 +302,7 @@ void MemorySnapShot_Capture(const char *pszFileName, bool bConfirm)
 {
 //fprintf ( stderr , "MemorySnapShot_Capture in\n" );
 	/* Make a temporary copy of the parameters for MemorySnapShot_Capture_Do() */
-	strlcpy ( Temp_FileName , pszFileName , FILENAME_MAX );
+	Str_Copy(Temp_FileName, pszFileName, FILENAME_MAX);
 	Temp_Confirm = bConfirm;
 
 	/* With WinUAE cpu core, capture is done from m68k_run_xxx() after the end of the current instruction */
@@ -363,7 +319,7 @@ void MemorySnapShot_Capture(const char *pszFileName, bool bConfirm)
 void MemorySnapShot_Capture_Immediate(const char *pszFileName, bool bConfirm)
 {
 	/* Make a temporary copy of the parameters for MemorySnapShot_Capture_Do() */
-	strlcpy ( Temp_FileName , pszFileName , FILENAME_MAX );
+	Str_Copy(Temp_FileName, pszFileName, FILENAME_MAX);
 	Temp_Confirm = bConfirm;
 
 	MemorySnapShot_Capture_Do ();
@@ -374,74 +330,42 @@ void MemorySnapShot_Capture_Immediate(const char *pszFileName, bool bConfirm)
 /*
  * Do the real saving (called from newcpu.c / m68k_go()
  */
-// use to figure out the structure of a snapshot (logs the start of each block in the savestate)
-//#define LIBRETRO_DEBUG_SNAPSHOT(x) core_debug_snapshot(x)
-#define LIBRETRO_DEBUG_SNAPSHOT(x) {}
 void MemorySnapShot_Capture_Do(void)
 {
-	Uint32 magic = SNAPSHOT_MAGIC;
+	uint32_t magic = SNAPSHOT_MAGIC;
 
 	/* Set to 'saving' */
 	if (MemorySnapShot_OpenFile(Temp_FileName, true, Temp_Confirm))
 	{
 		/* Capture each files details */
-	LIBRETRO_DEBUG_SNAPSHOT("Configuration");
 		Configuration_MemorySnapShot_Capture(true);
-	LIBRETRO_DEBUG_SNAPSHOT("TOS");
 		TOS_MemorySnapShot_Capture(true);
-	LIBRETRO_DEBUG_SNAPSHOT("STMemory");
 		STMemory_MemorySnapShot_Capture(true);
-	LIBRETRO_DEBUG_SNAPSHOT("Cycles");
 		Cycles_MemorySnapShot_Capture(true);			/* Before fdc (for CyclesGlobalClockCounter) */
-	LIBRETRO_DEBUG_SNAPSHOT("FDC");
 		FDC_MemorySnapShot_Capture(true);
-	LIBRETRO_DEBUG_SNAPSHOT("Floppy");
 		Floppy_MemorySnapShot_Capture(true);
-	LIBRETRO_DEBUG_SNAPSHOT("IPF");
 		IPF_MemorySnapShot_Capture(true);			/* After fdc/floppy are saved */
-	LIBRETRO_DEBUG_SNAPSHOT("STX");
 		STX_MemorySnapShot_Capture(true);			/* After fdc/floppy are saved */
-	LIBRETRO_DEBUG_SNAPSHOT("GemDOS");
 		GemDOS_MemorySnapShot_Capture(true);
-	LIBRETRO_DEBUG_SNAPSHOT("ACIA");
 		ACIA_MemorySnapShot_Capture(true);
-	LIBRETRO_DEBUG_SNAPSHOT("IKBD");
 		IKBD_MemorySnapShot_Capture(true);
-	LIBRETRO_DEBUG_SNAPSHOT("MIDI");
 		MIDI_MemorySnapShot_Capture(true);
-	LIBRETRO_DEBUG_SNAPSHOT("CycInt");
 		CycInt_MemorySnapShot_Capture(true);
-	LIBRETRO_DEBUG_SNAPSHOT("M68000");
 		M68000_MemorySnapShot_Capture(true);
-	LIBRETRO_DEBUG_SNAPSHOT("MFP");
 		MFP_MemorySnapShot_Capture(true);
-	LIBRETRO_DEBUG_SNAPSHOT("PSG");
 		PSG_MemorySnapShot_Capture(true);
-	LIBRETRO_DEBUG_SNAPSHOT("Sound");
 		Sound_MemorySnapShot_Capture(true);
-	LIBRETRO_DEBUG_SNAPSHOT("Video");
 		Video_MemorySnapShot_Capture(true);
-	LIBRETRO_DEBUG_SNAPSHOT("Blitter");
 		Blitter_MemorySnapShot_Capture(true);
-	LIBRETRO_DEBUG_SNAPSHOT("DmaSnd");
 		DmaSnd_MemorySnapShot_Capture(true);
-	LIBRETRO_DEBUG_SNAPSHOT("Crossbar");
 		Crossbar_MemorySnapShot_Capture(true);
-	LIBRETRO_DEBUG_SNAPSHOT("VIDEL");
 		VIDEL_MemorySnapShot_Capture(true);
-	LIBRETRO_DEBUG_SNAPSHOT("DSP");
 		DSP_MemorySnapShot_Capture(true);
-#ifndef __LIBRETRO__
 		DebugUI_MemorySnapShot_Capture(Temp_FileName, true);
-#endif
-	LIBRETRO_DEBUG_SNAPSHOT("IoMem");
 		IoMem_MemorySnapShot_Capture(true);
-	LIBRETRO_DEBUG_SNAPSHOT("ScreenConv");
 		ScreenConv_MemorySnapShot_Capture(true);
-	LIBRETRO_DEBUG_SNAPSHOT("SCC");
 		SCC_MemorySnapShot_Capture(true);
 
-	LIBRETRO_DEBUG_SNAPSHOT("End Marker");
 		/* end marker */
 		MemorySnapShot_Store(&magic, sizeof(magic));
 		/* And close */
@@ -470,7 +394,7 @@ void MemorySnapShot_Restore(const char *pszFileName, bool bConfirm)
 {
 //fprintf ( stderr , "MemorySnapShot_Restore in\n" );
 	/* Make a temporary copy of the parameters for MemorySnapShot_Restore_Do() */
-	strlcpy ( Temp_FileName , pszFileName , FILENAME_MAX );
+	Str_Copy(Temp_FileName, pszFileName, FILENAME_MAX);
 	Temp_Confirm = bConfirm;
 
 	/* With WinUAE cpu core, restore is done from m68k_go() after the end of the current instruction */
@@ -487,15 +411,13 @@ void MemorySnapShot_Restore(const char *pszFileName, bool bConfirm)
  */
 void MemorySnapShot_Restore_Do(void)
 {
-	Uint32 magic;
+	uint32_t magic;
 
 //fprintf ( stderr , "MemorySnapShot_Restore_Do in\n" );
 	/* Set to 'restore' */
 	if (MemorySnapShot_OpenFile(Temp_FileName, false, Temp_Confirm))
 	{
-	LIBRETRO_DEBUG_SNAPSHOT("Configuration");
 		Configuration_MemorySnapShot_Capture(false);
-	LIBRETRO_DEBUG_SNAPSHOT("TOS");
 		TOS_MemorySnapShot_Capture(false);
 
 		/* FIXME [NP] : Reset_Cold calls TOS_InitImage which calls */
@@ -511,73 +433,39 @@ void MemorySnapShot_Restore_Do(void)
 		Reset_Cold();
 
 		/* Capture each files details */
-	LIBRETRO_DEBUG_SNAPSHOT("STMemory");
 		STMemory_MemorySnapShot_Capture(false);
-	LIBRETRO_DEBUG_SNAPSHOT("Cycles");
 		Cycles_MemorySnapShot_Capture(false);			/* Before fdc (for CyclesGlobalClockCounter) */
-	LIBRETRO_DEBUG_SNAPSHOT("FDC");
 		FDC_MemorySnapShot_Capture(false);
-	LIBRETRO_DEBUG_SNAPSHOT("Floppy");
 		Floppy_MemorySnapShot_Capture(false);
-	LIBRETRO_DEBUG_SNAPSHOT("IPF");
 		IPF_MemorySnapShot_Capture(false);			/* After fdc/floppy are restored, as IPF depends on them */
-	LIBRETRO_DEBUG_SNAPSHOT("STX");
 		STX_MemorySnapShot_Capture(false);			/* After fdc/floppy are restored, as STX depends on them */
-	LIBRETRO_DEBUG_SNAPSHOT("GemDOS");
 		GemDOS_MemorySnapShot_Capture(false);
-	LIBRETRO_DEBUG_SNAPSHOT("ACIA");
 		ACIA_MemorySnapShot_Capture(false);
-	LIBRETRO_DEBUG_SNAPSHOT("IKBD");
 		IKBD_MemorySnapShot_Capture(false);			/* After ACIA */
-	LIBRETRO_DEBUG_SNAPSHOT("MIDI");
 		MIDI_MemorySnapShot_Capture(false);
-	LIBRETRO_DEBUG_SNAPSHOT("CycInt");
 		CycInt_MemorySnapShot_Capture(false);
-	LIBRETRO_DEBUG_SNAPSHOT("M68000");
 		M68000_MemorySnapShot_Capture(false);
-	LIBRETRO_DEBUG_SNAPSHOT("MFP");
 		MFP_MemorySnapShot_Capture(false);
-	LIBRETRO_DEBUG_SNAPSHOT("PSG");
 		PSG_MemorySnapShot_Capture(false);
-	LIBRETRO_DEBUG_SNAPSHOT("Sound");
 		Sound_MemorySnapShot_Capture(false);
-	LIBRETRO_DEBUG_SNAPSHOT("Video");
 		Video_MemorySnapShot_Capture(false);
-	LIBRETRO_DEBUG_SNAPSHOT("Blitter");
 		Blitter_MemorySnapShot_Capture(false);
-	LIBRETRO_DEBUG_SNAPSHOT("DmaSnd");
 		DmaSnd_MemorySnapShot_Capture(false);
-	LIBRETRO_DEBUG_SNAPSHOT("Crossbar");
 		Crossbar_MemorySnapShot_Capture(false);
-	LIBRETRO_DEBUG_SNAPSHOT("VIDEL");
 		VIDEL_MemorySnapShot_Capture(false);
-	LIBRETRO_DEBUG_SNAPSHOT("DSP");
 		DSP_MemorySnapShot_Capture(false);
-#ifndef __LIBRETRO__
 		DebugUI_MemorySnapShot_Capture(Temp_FileName, false);
-#endif
-	LIBRETRO_DEBUG_SNAPSHOT("IoMem");
 		IoMem_MemorySnapShot_Capture(false);
-	LIBRETRO_DEBUG_SNAPSHOT("ScreenConv");
 		ScreenConv_MemorySnapShot_Capture(false);
-	LIBRETRO_DEBUG_SNAPSHOT("SCC");
 		SCC_MemorySnapShot_Capture(false);
 
 		/* version string check catches release-to-release
 		 * state changes, bCaptureError catches too short
 		 * state file, this check a too long state file.
 		 */
-	LIBRETRO_DEBUG_SNAPSHOT("End Marker");
 		MemorySnapShot_Store(&magic, sizeof(magic));
 		if (!bCaptureError && magic != SNAPSHOT_MAGIC)
-#ifndef __LIBRETRO__
 			bCaptureError = true;
-#else
-		{
-			core_error_msg("Savestate check failed.");
-			bCaptureError = true;
-		}
-#endif
 
 		/* And close */
 		MemorySnapShot_CloseFile();
@@ -585,18 +473,15 @@ void MemorySnapShot_Restore_Do(void)
 		/* changes may affect also info shown in statusbar */
 		Statusbar_UpdateInfo();
 
-#ifndef __LIBRETRO__
 		if (bCaptureError)
 		{
 			Log_AlertDlg(LOG_ERROR, "Full memory state restore failed!\nPlease reboot emulation.");
 			return;
 		}
-#endif
 	}
 
 //fprintf ( stderr , "MemorySnapShot_Restore_Do out\n" );
 
-#ifndef __LIBRETRO__
 	/* Did error? */
 	if (bCaptureError)
 		Log_AlertDlg(LOG_ERROR, "Unable to restore memory state from file: %s", Temp_FileName);
@@ -604,7 +489,6 @@ void MemorySnapShot_Restore_Do(void)
 		Log_AlertDlg(LOG_INFO, "Memory state file restored: %s", Temp_FileName);
 	else
 		Log_Printf(LOG_INFO, "Memory state file restored: %s", Temp_FileName);
-#endif
 }
 
 

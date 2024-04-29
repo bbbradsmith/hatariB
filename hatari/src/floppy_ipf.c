@@ -21,14 +21,12 @@ const char floppy_ipf_fileid[] = "Hatari floppy_ipf.c";
 #include "fdc.h"
 #include "log.h"
 #include "memorySnapShot.h"
-#include "screen.h"
 #include "video.h"
 #include "m68000.h"
 #include "cycles.h"
 
 #include <string.h>
 
-#ifndef __LIBRETRO__
 #ifdef HAVE_CAPSIMAGE
 #ifndef __cdecl
 #define __cdecl  /* CAPS headers need this, but do not define it on their own */
@@ -39,297 +37,7 @@ const char floppy_ipf_fileid[] = "Hatari floppy_ipf.c";
 /* Macro to check release and revision */
 #define	CAPS_LIB_REL_REV	( CAPS_LIB_RELEASE * 100 + CAPS_LIB_REVISION )
 #endif
-#else
 
-// dynamically link with CAPSIMAGE library at runtime instead of implicitly linking it into the build
-#define HAVE_CAPSIMAGE
-
-#ifdef WIN32
-#include <windows.h>
-#define SO_HANDLE HANDLE
-#else
-#define __cdecl
-#ifdef HAVE_DLOPEN
-#include <dlfcn.h>
-#define SO_HANDLE void*
-#endif
-#endif
-
-#ifndef __cdecl
-#define __cdecl
-#endif
-
-typedef uint8_t UBYTE;
-typedef uint32_t UDWORD;
-typedef int32_t SDWORD;
-typedef void *PVOID;
-typedef char *PCHAR;
-typedef UBYTE *PUBYTE;
-typedef UDWORD *PUDWORD;
-
-typedef SDWORD CapsLong;
-typedef UDWORD CapsULong;
-
-typedef struct CapsImageInfo *PCAPSIMAGEINFO;
-typedef struct CapsDrive *PCAPSDRIVE;
-typedef struct CapsFdc *PCAPSFDC;
-typedef void (__cdecl *CAPSFDCHOOK)(PCAPSFDC pfdc, UDWORD state);
-
-#define CAPS_MAXPLATFORM 4
-
-#define CAPSDRIVE_35DD_RPM 300
-#define CAPSDRIVE_35DD_HST 83
-#define CAPSDRIVE_DA_IN (1UL<<0)
-#define CAPSDRIVE_DA_WP (1UL<<1)
-#define CAPSDRIVE_DA_MO (1UL<<2)
-#define CAPSDRIVE_DA_SS (1UL<<3)
-#define CAPSFDC_LO_DIRC (1UL<<4)
-#define DI_LOCK_INDEX    (1UL<<0)
-#define DI_LOCK_ALIGN    (1UL<<1)
-#define DI_LOCK_DENVAR   (1UL<<2)
-#define DI_LOCK_DENAUTO  (1UL<<3)
-#define DI_LOCK_DENNOISE (1UL<<4)
-#define DI_LOCK_NOISE    (1UL<<5)
-#define DI_LOCK_NOISEREV (1UL<<6)
-#define DI_LOCK_MEMREF   (1UL<<7)
-#define DI_LOCK_UPDATEFD (1UL<<8)
-#define DI_LOCK_TYPE     (1UL<<9)
-#define DI_LOCK_DENALT   (1UL<<10)
-#define DI_LOCK_OVLBIT   (1UL<<11)
-#define DI_LOCK_TRKBIT   (1UL<<12)
-#define DI_LOCK_NOUPDATE (1UL<<13)
-#define DI_LOCK_SETWSEED (1UL<<14)
-
-enum {
-	citError=0,
-	citUnknown,
-	citIPF,
-	citCTRaw,
-	citKFStream,
-	citKFStreamCue,
-	citDraft
-};
-
-enum {
-	ciipNA=0
-};
-
-enum {
-	imgeOk=0
-};
-
-enum {
-	cfdcmNA=0,
-	cfdcmWD1772
-};
-
-
-#pragma pack(push,1)
-
-struct CapsVersionInfo {
-	UDWORD type;
-	UDWORD release;
-	UDWORD revision;
-	UDWORD flag;
-};
-
-struct CapsDrive {
-	UDWORD type;
-	UDWORD rpm;
-	SDWORD maxtrack;
-	SDWORD track;
-	SDWORD buftrack;
-	SDWORD side;
-	SDWORD bufside;
-	SDWORD newside;
-	UDWORD diskattr;
-	UDWORD idistance;
-	UDWORD clockrev;
-	SDWORD clockip;
-	SDWORD ipcnt;
-	UDWORD ttype;
-	PUBYTE trackbuf;
-	PUDWORD timebuf;
-	UDWORD tracklen;
-	SDWORD overlap;
-	SDWORD trackbits;
-	SDWORD ovlmin;
-	SDWORD ovlmax;
-	SDWORD ovlcnt;
-	SDWORD ovlact;
-	SDWORD nact;
-	UDWORD nseed;
-	PVOID userptr;
-	UDWORD userdata;
-};
-
-struct CapsFdc {
-	UDWORD type;
-	UDWORD model;
-	UDWORD endrequest;
-	UDWORD clockact;
-	UDWORD clockreq;
-	UDWORD clockfrq;
-	UDWORD addressmask;
-	UDWORD dataline;
-	UDWORD datamask;
-	UDWORD lineout;
-	UDWORD runmode;
-	UDWORD runstate;
-	UDWORD r_st0;
-	UDWORD r_st1;
-	UDWORD r_stm;
-	UDWORD r_command;
-	UDWORD r_track;
-	UDWORD r_sector;
-	UDWORD r_data;
-	UDWORD seclenmask;
-	UDWORD seclen;
-	UDWORD crc;
-	UDWORD crccnt;
-	UDWORD amdecode;
-	UDWORD aminfo;
-	UDWORD amisigmask;
-	SDWORD amdatadelay;
-	SDWORD amdataskip;
-	SDWORD ammarkdist;
-	SDWORD ammarktype;
-	UDWORD dsr;
-	SDWORD dsrcnt;
-	SDWORD datalock;
-	UDWORD datamode;
-	UDWORD datacycle;
-	UDWORD dataphase;
-	UDWORD datapcnt;
-	SDWORD indexcount;
-	SDWORD indexlimit;
-	SDWORD readlimit;
-	SDWORD verifylimit;
-	SDWORD spinupcnt;
-	SDWORD spinuplimit;
-	SDWORD idlecnt;
-	SDWORD idlelimit;
-	UDWORD clockcnt;
-	UDWORD steptime[4];
-	UDWORD clockstep[4];
-	UDWORD hstime;
-	UDWORD clockhs;
-	UDWORD iptime;
-	UDWORD updatetime;
-	UDWORD clockupdate;
-	SDWORD drivecnt;
-	SDWORD drivemax;
-	SDWORD drivenew;
-	SDWORD drivesel;
-	SDWORD driveact;
-	PCAPSDRIVE driveprc;
-	PCAPSDRIVE drive;
-	CAPSFDCHOOK cbirq;
-	CAPSFDCHOOK cbdrq;
-	CAPSFDCHOOK cbtrk;
-	PVOID userptr;
-	UDWORD userdata;
-};
-
-struct CapsDateTimeExt {
-	UDWORD year;
-	UDWORD month;
-	UDWORD day;
-	UDWORD hour;
-	UDWORD min;
-	UDWORD sec;
-	UDWORD tick;
-};
-
-struct CapsImageInfo {
-	UDWORD type;
-	UDWORD release;
-	UDWORD revision;
-	UDWORD mincylinder;
-	UDWORD maxcylinder;
-	UDWORD minhead;
-	UDWORD maxhead;
-	struct CapsDateTimeExt crdt;
-	UDWORD platform[CAPS_MAXPLATFORM];
-};
-
-struct CapsTrackInfoT1 {
-	UDWORD type;
-	UDWORD cylinder;
-	UDWORD head;
-	UDWORD sectorcnt;
-	UDWORD sectorsize;
-	PUBYTE trackbuf;
-	UDWORD tracklen;
-	UDWORD timelen;
-	PUDWORD timebuf;
-	SDWORD overlap;
-};
-
-#pragma pack(pop)
-
-SDWORD (__cdecl *CAPSInit)(void);
-SDWORD (__cdecl *CAPSExit)(void);
-SDWORD (__cdecl *CAPSAddImage)(void);
-SDWORD (__cdecl *CAPSRemImage)(SDWORD id);
-SDWORD (__cdecl *CAPSLockImageMemory)(SDWORD id, PUBYTE buffer, UDWORD length, UDWORD flag);
-SDWORD (__cdecl *CAPSUnlockImage)(SDWORD id);
-SDWORD (__cdecl *CAPSLoadImage)(SDWORD id, UDWORD flag);
-SDWORD (__cdecl *CAPSGetImageInfo)(PCAPSIMAGEINFO pi, SDWORD id);
-SDWORD (__cdecl *CAPSLockTrack)(PVOID ptrackinfo, SDWORD id, UDWORD cylinder, UDWORD head, UDWORD flag);
-PCHAR  (__cdecl *CAPSGetPlatformName)(UDWORD pid);
-SDWORD (__cdecl *CAPSGetVersionInfo)(PVOID pversioninfo, UDWORD flag);
-SDWORD (__cdecl *CAPSFdcInit)(PCAPSFDC pc);
-void   (__cdecl *CAPSFdcReset)(PCAPSFDC pc);
-void   (__cdecl *CAPSFdcEmulate)(PCAPSFDC pc, UDWORD cyclecnt);
-UDWORD (__cdecl *CAPSFdcRead)(PCAPSFDC pc, UDWORD address);
-void   (__cdecl *CAPSFdcWrite)(PCAPSFDC pc, UDWORD address, UDWORD data);
-SDWORD (__cdecl *CAPSFdcInvalidateTrack)(PCAPSFDC pc, SDWORD drive);
-SDWORD (__cdecl *CAPSSetRevolution)(SDWORD id, UDWORD value);
-SDWORD (__cdecl *CAPSGetImageTypeMemory)(PUBYTE buffer, UDWORD length);
-
-struct SoImport {
-	void** funcptr;
-	const char* funcname;
-};
-
-#define CAPSIMPORT_COUNT 19
-const struct SoImport CAPSIMPORT[CAPSIMPORT_COUNT] = {
-	{ (void*)&CAPSInit, "CAPSInit" },
-	{ (void*)&CAPSExit, "CAPSExit" },
-	{ (void*)&CAPSAddImage, "CAPSAddImage" },
-	{ (void*)&CAPSRemImage, "CAPSRemImage" },
-	{ (void*)&CAPSLockImageMemory, "CAPSLockImageMemory" },
-	{ (void*)&CAPSUnlockImage, "CAPSUnlockImage" },
-	{ (void*)&CAPSLoadImage, "CAPSLoadImage" },
-	{ (void*)&CAPSGetImageInfo, "CAPSGetImageInfo" },
-	{ (void*)&CAPSLockTrack, "CAPSLockTrack" },
-	{ (void*)&CAPSGetPlatformName, "CAPSGetPlatformName" },
-	{ (void*)&CAPSGetVersionInfo, "CAPSGetVersionInfo" },
-	{ (void*)&CAPSFdcInit, "CAPSFdcInit" },
-	{ (void*)&CAPSFdcReset, "CAPSFdcReset" },
-	{ (void*)&CAPSFdcEmulate, "CAPSFdcEmulate" },
-	{ (void*)&CAPSFdcRead, "CAPSFdcRead" },
-	{ (void*)&CAPSFdcWrite, "CAPSFdcWrite" },
-	{ (void*)&CAPSFdcInvalidateTrack, "CAPSFdcInvalidateTrack" },
-	{ (void*)&CAPSSetRevolution, "CAPSSetRevolution" },
-	{ (void*)&CAPSGetImageTypeMemory, "CAPSGetImageTypeMemory" },
-};
-
-static SO_HANDLE capsHandle = NULL;
-static bool capsValid = false; // whether capsHandle has all needed imports
-static bool capsInitialized = false; // whether capsimg has completed IPF_Init
-
-static bool core_ipf_load(void);
-static bool core_ipf_ready(void);
-
-#ifdef WIN32
-#define CAPS_SONAME "capsimg.dll"
-#else
-#define CAPS_SONAME "capsimg.so"
-#endif
-
-#endif
 
 /* To handle RAW stream images with one file per track/side */
 #define	IPF_MAX_TRACK_RAW_STREAM_IMAGE	84				/* track number can be 0 .. 83 */
@@ -338,7 +46,7 @@ static bool core_ipf_ready(void);
 struct
 {
 	int		TrackSize;
-	Uint8		*TrackData;
+	uint8_t		*TrackData;
 } IPF_RawStreamImage[ MAX_FLOPPYDRIVES ][ IPF_MAX_TRACK_RAW_STREAM_IMAGE ][ IPF_MAX_SIDE_RAW_STREAM_IMAGE ];
 
 
@@ -346,8 +54,8 @@ struct
 typedef struct
 {
 #ifdef HAVE_CAPSIMAGE
-	Uint32			CapsLibRelease;
-	Uint32			CapsLibRevision;
+	uint32_t			CapsLibRelease;
+	uint32_t			CapsLibRevision;
 
 	struct CapsFdc		Fdc;				/* Fdc state */
 	struct CapsDrive 	Drive[ MAX_FLOPPYDRIVES ];	/* Physical drives */
@@ -361,7 +69,7 @@ typedef struct
 	bool			DoubleSided[ MAX_FLOPPYDRIVES ];/* Is drive double sided or not */
 #endif
 
-	Sint64			FdcClock;			/* Current value of CyclesGlobalClockCounter */
+	int64_t			FdcClock;			/* Current value of CyclesGlobalClockCounter */
 } IPF_STRUCT;
 
 
@@ -377,7 +85,7 @@ static void	IPF_CallBack_Trk ( struct CapsFdc *pc , CapsULong State );
 static void	IPF_CallBack_Irq ( struct CapsFdc *pc , CapsULong State );
 static void	IPF_CallBack_Drq ( struct CapsFdc *pc , CapsULong State );
 static void	IPF_Drive_Update_Enable_Side ( void );
-static void	IPF_FDC_LogCommand ( Uint8 Command );
+static void	IPF_FDC_LogCommand ( uint8_t Command );
 #endif
 
 
@@ -395,35 +103,8 @@ void IPF_MemorySnapShot_Capture(bool bSave)
 	int	Drive;
 	int	Track , Side;
 	int	TrackSize;
-	Uint8	*p;
+	uint8_t	*p;
 
-#ifdef __LIBRETRO__
-	if ( bSave )
-	{
-		MemorySnapShot_Store(&capsInitialized, sizeof(capsInitialized));
-		if (!capsInitialized) return; // don't store anything more
-	}
-	else
-	{
-		bool hadCaps = false;
-		MemorySnapShot_Store(&hadCaps, sizeof(hadCaps));
-		if (!hadCaps && capsInitialized)
-		{
-			IPF_Exit();
-		}
-		else if (hadCaps && !capsInitialized)
-		{
-			if (!core_ipf_ready())
-			{
-				core_error_msg("Savestate used IPF which is unavailable here.");
-				MemorySnapShot_Store(&StructSize, sizeof(StructSize));
-				MemorySnapShot_Skip( StructSize );
-				return;
-			}
-		}
-		if (!hadCaps) return; // no further IPF data
-	}
-#endif
 
 	if ( bSave )					/* Saving snapshot */
 	{
@@ -431,26 +112,7 @@ void IPF_MemorySnapShot_Capture(bool bSave)
 		MemorySnapShot_Store(&StructSize, sizeof(StructSize));
 		if ( StructSize > 0 )
 		{
-#ifdef __LIBRETRO__
-			// temporarily remove pointers to prevent savestate divergence
-			IPF_STRUCT temp_ipf;
-			memcpy(&temp_ipf,&IPF_State,sizeof(IPF_State));
-			temp_ipf.Fdc.driveprc = IPF_State.Fdc.driveprc ? (PCAPSDRIVE)-1 : 0; // store -1 or NULL so that it will be restored
-			temp_ipf.Fdc.drive = 0;
-			temp_ipf.Fdc.cbirq = 0;
-			temp_ipf.Fdc.cbdrq = 0;
-			temp_ipf.Fdc.cbtrk = 0;
-			temp_ipf.Fdc.userptr = 0;
-			for (int i=0; i < MAX_FLOPPYDRIVES; ++i)
-			{
-				temp_ipf.Drive[i].trackbuf = 0;
-				temp_ipf.Drive[i].timebuf = 0;
-				temp_ipf.Drive[i].userptr = 0;
-			}
-			MemorySnapShot_Store(&temp_ipf, sizeof(IPF_State));
-#else
 			MemorySnapShot_Store(&IPF_State, sizeof(IPF_State));
-#endif
 
 			/* Save the content of IPF_RawStreamImage[] */
 			for ( Drive=0 ; Drive < MAX_FLOPPYDRIVES ; Drive++ )
@@ -611,30 +273,19 @@ static char *IPF_FilenameFindTrackSide (char *FileName)
  * Load .IPF file into memory, set number of bytes loaded and return a pointer
  * to the buffer.
  */
-Uint8 *IPF_ReadDisk(int Drive, const char *pszFileName, long *pImageSize, int *pImageType)
+uint8_t *IPF_ReadDisk(int Drive, const char *pszFileName, long *pImageSize, int *pImageType)
 {
-#ifdef __LIBRETRO__
-	if (!core_ipf_ready())
-	{
-		core_signal_alert("Could not load the capsimg 5.1 DLL/SO library. IPF disk format is unavailable.");
-		return NULL;
-	}
-#endif
 #ifndef HAVE_CAPSIMAGE
 	Log_AlertDlg(LOG_ERROR, "Hatari built without IPF support -> can't handle floppy image");
 	return NULL;
 
 #else
-	Uint8 *pIPFFile;
+	uint8_t *pIPFFile;
 
 	*pImageSize = 0;
 
 	/* Just load directly a buffer, and set ImageSize accordingly */
-#ifndef __LIBRETRO__
 	pIPFFile = File_Read(pszFileName, pImageSize, NULL);
-#else
-	pIPFFile = core_floppy_file_read(pszFileName, pImageSize, false);
-#endif
 	if (!pIPFFile)
 	{
 		*pImageSize = 0;
@@ -651,81 +302,13 @@ Uint8 *IPF_ReadDisk(int Drive, const char *pszFileName, long *pImageSize, int *p
 /**
  * Save .IPF file from memory buffer. Returns true is all OK.
  */
-bool IPF_WriteDisk(int Drive, const char *pszFileName, Uint8 *pBuffer, int ImageSize)
+bool IPF_WriteDisk(int Drive, const char *pszFileName, uint8_t *pBuffer, int ImageSize)
 {
 	/* saving is not supported for IPF files */
 	return false;
 }
 
 
-
-#ifdef __LIBRETRO__
-
-// core_ipf_load loads the capsimg.dll if available, or just returns quickly if already loaded
-//   capsHandle -> not NULL if capsimage has been loaded
-//   capsValid -> true if capsimage is loaded, and all functions found
-//   capsInitialized -> false after first time load (IPF_Init must now be called to initialize)
-static bool core_ipf_load(void)
-{
-	// load CAPSIMG on demand, if available
-	if (capsHandle) // already loaded
-	{
-		return capsValid; // already valid
-	}
-	capsValid = false;
-	capsInitialized = false;
-#ifdef WIN32
-	capsHandle = LoadLibrary(CAPS_SONAME);
-#else
-#ifdef HAVE_DLOPEN
-	capsHandle = dlopen(CAPS_SONAME, RTLD_NOW);
-	if (!capsHandle) core_error_msg(dlerror());
-#else
-	core_error_msg("dlopen unavailable");
-#endif
-#endif
-	if (capsHandle == NULL)
-	{
-		core_error_msg(CAPS_SONAME " could not be loaded.");
-		return false;
-	}
-	core_info_msg(CAPS_SONAME " loaded.");
-	for (int i=0; i<CAPSIMPORT_COUNT; ++i)
-	{
-		*CAPSIMPORT[i].funcptr = 
-#ifdef WIN32
-			GetProcAddress(capsHandle, CAPSIMPORT[i].funcname);
-#else
-#ifdef HAVE_DLOPEN
-			dlsym(capsHandle, CAPSIMPORT[i].funcname);
-#else
-			NULL;
-#endif
-#endif
-		if (*CAPSIMPORT[i].funcptr == NULL)
-		{
-			core_error_msg(CAPSIMPORT[i].funcname);
-			core_error_msg(CAPS_SONAME " missing function.");
-			return false;
-		}
-		core_debug_msg(CAPSIMPORT[i].funcname);
-	}
-
-	// DLL and needed functions are now loaded
-	capsValid = true;
-	return capsValid;
-}
-
-// deferred check for capsimg, tries loading it if needed, and initializes it if needed
-static bool core_ipf_ready(void)
-{
-	if (!capsHandle) core_ipf_load();
-	if (!capsHandle || !capsValid) return false;
-	if (!capsInitialized) IPF_Init();
-	return capsInitialized;
-}
-
-#endif
 
 
 /*
@@ -740,24 +323,19 @@ bool	IPF_Init ( void )
 	int	i;
 	struct CapsVersionInfo	caps_vi;
 
-#ifdef __LIBRETRO__
-	// make sure capsimg is loaded
-	if (!core_ipf_load()) return false;
-#endif
-
 	Log_Printf ( LOG_DEBUG , "IPF : IPF_Init\n" );
 
 	if ( CAPSInit() != imgeOk )
-        {
+	{
 		Log_Printf ( LOG_ERROR , "IPF : Could not initialize the capsimage library\n" );
 		return false;
-        }
+	}
 
 	if ( CAPSGetVersionInfo ( &caps_vi , 0 ) != imgeOk )
-        {
+	{
 		Log_Printf ( LOG_ERROR , "IPF : CAPSVersionInfo failed\n" );
 		return false;
-        }
+	}
 	Log_Printf ( LOG_INFO , "IPF : capsimage library version release=%d revision=%d\n" , (int)caps_vi.release , (int)caps_vi.revision );
 	IPF_State.CapsLibRelease = caps_vi.release;
 	IPF_State.CapsLibRevision = caps_vi.revision;
@@ -807,22 +385,10 @@ bool	IPF_Init ( void )
 
 	CAPSFdcReset ( &IPF_State.Fdc );
 
-#ifdef __LIBRETRO__
-	// CAPSIMAGE is ready
-	capsInitialized = true;
-
-	// hatariB defers loading capslib until an IPF is first inserted,
-	// but Hatari normally calls these functions during setup
-	IPF_Drive_Set_Enable ( 0 , ConfigureParams.DiskImage.EnableDriveA );
-	IPF_Drive_Set_Enable ( 1 , ConfigureParams.DiskImage.EnableDriveB );
-	IPF_Drive_Set_DoubleSided ( 0 , ConfigureParams.DiskImage.DriveA_NumberOfHeads==2 ? true : false );
-	IPF_Drive_Set_DoubleSided ( 1 , ConfigureParams.DiskImage.DriveB_NumberOfHeads==2 ? true : false );
-	IPF_Reset();
-#endif
-
 	return true;
 #endif
 }
+
 
 
 
@@ -831,27 +397,9 @@ bool	IPF_Init ( void )
  */
 void	IPF_Exit ( void )
 {
-#ifdef __LIBRETRO__
-	// unload CAPSIMAGE
-	if (capsHandle)
-	{
-		CAPSExit();
-		#ifdef WIN32
-			FreeLibrary(capsHandle);
-		#else
-		#ifdef HAVE_DLOPEN
-			dlclose(capsHandle);
-		#endif
-		#endif
-		capsHandle = NULL;
-	}
-	capsValid = false;
-	capsInitialized = false;
-#else
 #ifndef HAVE_CAPSIMAGE
 #else
 	CAPSExit();
-#endif
 #endif
 }
 
@@ -861,7 +409,7 @@ void	IPF_Exit ( void )
 /*
  * Init the resources to handle the IPF image inserted into a drive (0=A: 1=B:)
  */
-bool	IPF_Insert ( int Drive , Uint8 *pImageBuffer , long ImageSize )
+bool	IPF_Insert ( int Drive , uint8_t *pImageBuffer , long ImageSize )
 {
 #ifndef HAVE_CAPSIMAGE
 	return false;
@@ -948,9 +496,9 @@ bool	IPF_Insert ( int Drive , Uint8 *pImageBuffer , long ImageSize )
 
 			/* Some IPF disks are not correctly supported yet : display a warning */
 			if ( (int)cii.release == 3222 ) 				/* Sundog */
-                		Log_AlertDlg ( LOG_INFO , "'Sundog' is not correctly supported yet, it requires write access." );
+				Log_AlertDlg ( LOG_INFO , "'Sundog' is not correctly supported yet, it requires write access." );
 			else if ( (int)cii.release == 3058 ) 				/* Lethal Xcess */
-                		Log_AlertDlg ( LOG_INFO , "'Lethal Xcess' is not correctly supported yet, protection will fail" );
+				Log_AlertDlg ( LOG_INFO , "'Lethal Xcess' is not correctly supported yet, protection will fail" );
 		}
 	}
 	else
@@ -997,7 +545,7 @@ static bool	IPF_Insert_RawStreamImage ( int Drive )
 	char	TrackSide_buf[ 4 + 1 ];			/* "tt.s" + \0 */
 	int	TrackCount;
 	int	TrackCount_0 , TrackCount_1;
-	Uint8	*p;
+	uint8_t	*p;
 	long	Size;
 
 
@@ -1139,14 +687,28 @@ return true;						/* This function is not used for now, always return true */
 
 /*
  * Reset FDC state when a reset signal was received
+ *  - On cold reset, TR and DR should be reset
+ *  - On warm reset, TR and DR value should be kept
+ * Keeping TR and DR content is not supported in Caps library (bug), we handle it ourselves
  */
-void IPF_Reset ( void )
+void IPF_Reset ( bool bCold )
 {
 #ifdef HAVE_CAPSIMAGE
-#ifdef __LIBRETRO__
-	if (!capsInitialized) return;
-#endif
-	CAPSFdcReset ( &IPF_State.Fdc );
+	CapsULong	TR , DR;
+
+	if ( !bCold )					/* Save TR and DR if warm reset */
+	{
+		TR = IPF_State.Fdc.r_track;
+		DR = IPF_State.Fdc.r_data;
+	}
+
+	CAPSFdcReset ( &IPF_State.Fdc );		/* This always clear TR and DR, which is wrong */
+
+	if ( !bCold )					/* Restore TR and DR if warm reset */
+	{
+		IPF_State.Fdc.r_track = TR;
+		IPF_State.Fdc.r_data = DR;
+	}
 
 	IPF_State.FdcClock = CyclesGlobalClockCounter;
 #endif
@@ -1210,7 +772,7 @@ static void	IPF_CallBack_Irq ( struct CapsFdc *pc , CapsULong State )
 #ifdef HAVE_CAPSIMAGE
 static void	IPF_CallBack_Drq ( struct CapsFdc *pc , CapsULong State )
 {
-	Uint8	Byte;
+	uint8_t	Byte;
 
 	if ( State == 0 )
 		return;					/* DRQ bit was reset, do nothing */
@@ -1248,9 +810,6 @@ void	IPF_Drive_Set_Enable ( int Drive , bool value )
 	return;
 
 #else
-#ifdef __LIBRETRO__
-	if (!capsInitialized) return;
-#endif
 	IPF_State.DriveEnabled[ Drive ] = value;			/* Store the new state */
 
 	IPF_Drive_Update_Enable_Side ();				/* Update IPF's internal state */
@@ -1268,9 +827,6 @@ void	IPF_Drive_Set_DoubleSided ( int Drive , bool value )
 	return;
 
 #else
-#ifdef __LIBRETRO__
-	if (!capsInitialized) return;
-#endif
 	IPF_State.DoubleSided[ Drive ] = value;				/* Store the new state */
 
 	IPF_Drive_Update_Enable_Side ();				/* Update IPF's internal state */
@@ -1309,15 +865,12 @@ static void	IPF_Drive_Update_Enable_Side ( void )
  * to take into account.
  * We report a side change only when a drive is selected.
  */
-void	IPF_SetDriveSide ( Uint8 io_porta_old , Uint8 io_porta_new )
+void	IPF_SetDriveSide ( uint8_t io_porta_old , uint8_t io_porta_new )
 {
 #ifndef HAVE_CAPSIMAGE
 	return;
 
 #else
-#ifdef __LIBRETRO__
-	if (!capsInitialized) return;
-#endif
 	int	Side;
 
 	LOG_TRACE(TRACE_FDC, "fdc ipf change drive/side io_porta_old=0x%x io_porta_new=0x%x VBL=%d HBL=%d\n" , io_porta_old , io_porta_new , nVBLs , nHBL );
@@ -1351,15 +904,12 @@ void	IPF_SetDriveSide ( Uint8 io_porta_old , Uint8 io_porta_new )
  * Write a byte into one of the FDC registers
  * 0=command   1=track   2=sector   3=data
  */
-void	IPF_FDC_WriteReg ( Uint8 Reg , Uint8 Byte )
+void	IPF_FDC_WriteReg ( uint8_t Reg , uint8_t Byte )
 {
 #ifndef HAVE_CAPSIMAGE
 	return;						/* This should not be reached (an IPF image can't be inserted without capsimage) */
 
 #else
-#ifdef __LIBRETRO__
-	if (!capsInitialized) return;
-#endif
 	if ( Reg == 0 )					/* more detailed logs for command register */
 		IPF_FDC_LogCommand ( Byte );
 	else
@@ -1399,15 +949,12 @@ void	IPF_FDC_WriteReg ( Uint8 Reg , Uint8 Byte )
  * Read the content of one of the FDC registers
  * 0=status   1=track   2=sector   3=data
  */
-Uint8	IPF_FDC_ReadReg ( Uint8 Reg )
+uint8_t	IPF_FDC_ReadReg ( uint8_t Reg )
 {
 #ifndef HAVE_CAPSIMAGE
 	return 0;					/* This should not be reached (an IPF image can't be inserted without capsimage) */
 #else
-#ifdef __LIBRETRO__
-	if (!capsInitialized) return 0;
-#endif
-	Uint8	Byte;
+	uint8_t	Byte;
 
 	IPF_Emulate();					/* Update emulation's state up to this point */
 
@@ -1425,14 +972,11 @@ Uint8	IPF_FDC_ReadReg ( Uint8 Reg )
  * Return the content of some registers to display them in the statusbar
  * We should not call IPF_Emulate() or similar, reading should not change emulation's state
  */
-void	IPF_FDC_StatusBar ( Uint8 *pCommand , Uint8 *pHead , Uint8 *pTrack , Uint8 *pSector , Uint8 *pSide )
+void	IPF_FDC_StatusBar ( uint8_t *pCommand , uint8_t *pHead , uint8_t *pTrack , uint8_t *pSector , uint8_t *pSide )
 {
 #ifndef HAVE_CAPSIMAGE
-	return;						/* This should not be reached (an IPF image can't be inserted without capsimage) */
+	abort();					/* This should not be reached (an IPF image can't be inserted without capsimage) */
 #else
-#ifdef __LIBRETRO__
-	if (!capsInitialized) return;
-#endif
 	int	Drive;
 
 	Drive = IPF_State.Fdc.driveact;
@@ -1451,9 +995,9 @@ void	IPF_FDC_StatusBar ( Uint8 *pCommand , Uint8 *pHead , Uint8 *pTrack , Uint8 
 
 
 #ifdef HAVE_CAPSIMAGE
-static void	IPF_FDC_LogCommand ( Uint8 Command )
+static void	IPF_FDC_LogCommand ( uint8_t Command )
 {
-	Uint8	Head , Track , Sector , Side , DataReg;
+	uint8_t	Head , Track , Sector , Side , DataReg;
 	int	Drive;
 	int	FrameCycles, HblCounterVideo, LineCycles;
 	char	buf[ 200 ];
@@ -1558,9 +1102,6 @@ void	IPF_Emulate ( void )
 	return;
 
 #else
-#ifdef __LIBRETRO__
-	if (!capsInitialized) return;
-#endif
 	int	NbCycles;
 	int	Drive;
 

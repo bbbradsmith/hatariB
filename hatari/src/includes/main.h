@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <SDL_types.h>
+#include <stdint.h>
 #include <stdbool.h>
 #include <math.h>
 
@@ -61,15 +61,11 @@ extern bool Main_PauseEmulation(bool visualize);
 extern bool Main_UnPauseEmulation(void);
 extern void Main_RequestQuit(int exitval);
 extern void Main_SetQuitValue(int exitval);
-extern Uint32 Main_SetRunVBLs(Uint32 vbls);
+extern uint32_t Main_SetRunVBLs(uint32_t vbls);
 extern const char* Main_SetVBLSlowdown(int factor);
 extern void Main_WaitOnVbl(void);
 extern void Main_WarpMouse(int x, int y, bool restore);
 extern void Main_EventHandler(void);
 extern void Main_SetTitle(const char *title);
-
-#ifdef __LIBRETRO__
-#include "../../core/core.h"
-#endif
 
 #endif /* ifndef HATARI_MAIN_H */

@@ -36,7 +36,6 @@ int alphasort(const struct dirent **d1, const struct dirent **d2)
 #endif
 
 
-#ifndef __LIBRETRO__
 #if !HAVE_SCANDIR
 
 #undef DIRSIZ
@@ -147,7 +146,6 @@ error_out:
 	return -1;
 }
 #endif	/* !HAVE_SCANDIR */
-#endif // ifndef __LIBRETRO__
 
 
 #endif /* !WIN32 */
@@ -170,8 +168,6 @@ int alphasort(const struct dirent **d1, const struct dirent **d2)
 	return stricmp((*d1)->d_name, (*d2)->d_name);
 }
 
-
-#ifndef __LIBRETRO__
 /*-----------------------------------------------------------------------*/
 /**
  * Scan a directory for all its entries
@@ -287,5 +283,4 @@ int scandir(const char *dirname, struct dirent ***namelist,
 	return nDir;
 }
 
-#endif // ifndef __LIBRETRO__
 #endif /* WIN32 */

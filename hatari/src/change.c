@@ -44,9 +44,6 @@ const char Change_fileid[] = "Hatari change.c";
 #if ENABLE_DSP_EMU
 # include "falcon/dsp.h"
 #endif
-#ifdef __LIBRETRO__
-#include "falcon/nvram.h"
-#endif
 
 #define DEBUG 0
 #if DEBUG
@@ -85,14 +82,6 @@ bool Change_DoNeedReset(CNF_PARAMS *current, CNF_PARAMS *changed)
 	/* Did change TOS ROM image? */
 	if (strcmp(changed->Rom.szTosImageFileName, current->Rom.szTosImageFileName))
 		return true;
-
-#ifdef __LIBRETRO__
-	// Did change other TOS configurations
-	if (current->Rom.nBuiltinTos != changed->Rom.nBuiltinTos
-	    || current->Rom.nEmuTosRegion != changed->Rom.nEmuTosRegion
-	    || current->Rom.nEmuTosFramerate != changed->Rom.nEmuTosFramerate)
-		return true;
-#endif
 
 	/* Did change ACSI hard disk image? */
 	for (i = 0; i < MAX_ACSI_DEVS; i++)
@@ -213,8 +202,7 @@ void Change_CopyChangedParamsToConfiguration(CNF_PARAMS *current, CNF_PARAMS *ch
 	 * (if switch between Colour/Mono cause reset later) or toggle statusbar
 	 */
 	if (!NeedReset &&
-	    (changed->Screen.nForceBpp != current->Screen.nForceBpp
-	     || changed->Screen.bAspectCorrect != current->Screen.bAspectCorrect
+	    (changed->Screen.bAspectCorrect != current->Screen.bAspectCorrect
 	     || changed->Screen.nMaxWidth != current->Screen.nMaxWidth
 	     || changed->Screen.nMaxHeight != current->Screen.nMaxHeight
 	     || changed->Screen.bAllowOverscan != current->Screen.bAllowOverscan
@@ -222,11 +210,6 @@ void Change_CopyChangedParamsToConfiguration(CNF_PARAMS *current, CNF_PARAMS *ch
 	     || changed->Screen.bUseSdlRenderer != current->Screen.bUseSdlRenderer
 	     || changed->Screen.bResizable != current->Screen.bResizable
 	     || changed->Screen.bUseVsync != current->Screen.bUseVsync
-#ifdef __LIBRETRO__
-	     || changed->Screen.bLowResolutionDouble != current->Screen.bLowResolutionDouble
-	     || changed->Screen.bMedResolutionDouble != current->Screen.bMedResolutionDouble
-	     || changed->Screen.nCropOverscan != current->Screen.nCropOverscan
-#endif
 	    ))
 	{
 		Dprintf("- screenmode>\n");
@@ -252,9 +235,15 @@ void Change_CopyChangedParamsToConfiguration(CNF_PARAMS *current, CNF_PARAMS *ch
 	}
 
 	/* Did set new SCC parameters? */
-	if (changed->RS232.bEnableSccB != current->RS232.bEnableSccB
-	    || strcmp(changed->RS232.sSccBInFileName, current->RS232.sSccBInFileName)
-	    || strcmp(changed->RS232.sSccBOutFileName, current->RS232.sSccBOutFileName)
+	if (changed->RS232.EnableScc[CNF_SCC_CHANNELS_A_SERIAL] != current->RS232.EnableScc[CNF_SCC_CHANNELS_A_SERIAL]
+	    || strcmp(changed->RS232.SccInFileName[CNF_SCC_CHANNELS_A_SERIAL], current->RS232.SccInFileName[CNF_SCC_CHANNELS_A_SERIAL])
+	    || strcmp(changed->RS232.SccOutFileName[CNF_SCC_CHANNELS_A_SERIAL], current->RS232.SccOutFileName[CNF_SCC_CHANNELS_A_SERIAL])
+	    || changed->RS232.EnableScc[CNF_SCC_CHANNELS_A_LAN] != current->RS232.EnableScc[CNF_SCC_CHANNELS_A_LAN]
+	    || strcmp(changed->RS232.SccInFileName[CNF_SCC_CHANNELS_A_LAN], current->RS232.SccInFileName[CNF_SCC_CHANNELS_A_LAN])
+	    || strcmp(changed->RS232.SccOutFileName[CNF_SCC_CHANNELS_A_LAN], current->RS232.SccOutFileName[CNF_SCC_CHANNELS_A_LAN])
+	    || changed->RS232.EnableScc[CNF_SCC_CHANNELS_B] != current->RS232.EnableScc[CNF_SCC_CHANNELS_B]
+	    || strcmp(changed->RS232.SccInFileName[CNF_SCC_CHANNELS_B], current->RS232.SccInFileName[CNF_SCC_CHANNELS_B])
+	    || strcmp(changed->RS232.SccOutFileName[CNF_SCC_CHANNELS_B], current->RS232.SccOutFileName[CNF_SCC_CHANNELS_B])
 	    || (SCC_IsAvailable(current) && !SCC_IsAvailable(changed)))
 	{
 		Dprintf("- SCC>\n");
@@ -397,12 +386,6 @@ void Change_CopyChangedParamsToConfiguration(CNF_PARAMS *current, CNF_PARAMS *ch
 		bReInitMidi = true;
 	}
 
-#ifdef __LIBRETRO__
-	// a machine change should save/reload NVRam if relevant
-	// (NvRam was altered to only save or load when using the relevant machines)
-	if (NeedReset) NvRam_UnInit();
-#endif
-
 	/* Copy details to configuration,
 	 * so it can be saved out or set on reset
 	 */
@@ -410,10 +393,6 @@ void Change_CopyChangedParamsToConfiguration(CNF_PARAMS *current, CNF_PARAMS *ch
 	{
 		ConfigureParams = *changed;
 	}
-
-#ifdef __LIBRETRO__
-	if (NeedReset) NvRam_Init();
-#endif
 
 	/* Copy details to global, if we reset copy them all */
 	Configuration_Apply(NeedReset);
@@ -485,7 +464,7 @@ void Change_CopyChangedParamsToConfiguration(CNF_PARAMS *current, CNF_PARAMS *ch
 	}
 
 	/* Re-initialize the SCC emulation: */
-	if (ConfigureParams.RS232.bEnableSccB)
+	if ( ConfigureParams.RS232.EnableScc[CNF_SCC_CHANNELS_A_SERIAL] || ConfigureParams.RS232.EnableScc[CNF_SCC_CHANNELS_A_LAN] || ConfigureParams.RS232.EnableScc[CNF_SCC_CHANNELS_B] )
 	{
 		Dprintf("- SCC<\n");
 		SCC_Init();
@@ -560,7 +539,6 @@ static bool Change_Options(int argc, const char *argv[])
 	ConfigureParams.Screen.bFullScreen = bInFullScreen;
 	bOK = Opt_ParseParameters(argc, argv);
 
-#ifndef __LIBRETRO__
 	/* Check if reset is required and ask user if he really wants to continue */
 	if (bOK && Change_DoNeedReset(&current, &ConfigureParams)
 	    && current.Log.nAlertDlgLogLevel > LOG_FATAL) {
@@ -569,7 +547,6 @@ static bool Change_Options(int argc, const char *argv[])
 				     "Apply changes now and reset "
 				     "the emulator?");
 	}
-#endif
 	/* Copy details to configuration */
 	if (bOK) {
 		Change_CopyChangedParamsToConfiguration(&current, &ConfigureParams, false);

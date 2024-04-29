@@ -6,7 +6,6 @@
 */
 const char DlgKeyboard_fileid[] = "Hatari dlgKeyboard.c";
 
-#ifndef __LIBRETRO__
 #include <unistd.h>
 
 #include "main.h"
@@ -14,7 +13,6 @@ const char DlgKeyboard_fileid[] = "Hatari dlgKeyboard.c";
 #include "dialog.h"
 #include "sdlgui.h"
 #include "file.h"
-#include "screen.h"
 #include "str.h"
 #include "keymap.h"
 
@@ -190,9 +188,9 @@ static void DlgKbd_DefineShortcutKey(int sc, bool withMod)
 static void DlgKbd_SetName(char *str, size_t maxlen, int keysym)
 {
 	if (keysym)
-		strlcpy(str, Keymap_GetKeyName(keysym), maxlen);
+		Str_Copy(str, Keymap_GetKeyName(keysym), maxlen);
 	else
-		strlcpy(str, "<not set>", maxlen);
+		Str_Copy(str, "<not set>", maxlen);
 }
 
 
@@ -292,4 +290,3 @@ void Dialog_KeyboardDlg(void)
 
 	ConfigureParams.Keyboard.bDisableKeyRepeat = (keyboarddlg[DLGKEY_DISREPEAT].state & SG_SELECTED);
 }
-#endif

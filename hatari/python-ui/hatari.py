@@ -2,7 +2,7 @@
 # Classes for Hatari emulator instance and mapping its congfiguration
 # variables with its command line option.
 #
-# Copyright (C) 2008-2022 by Eero Tamminen
+# Copyright (C) 2008-2024 by Eero Tamminen
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -52,31 +52,25 @@ class Hatari:
 
     def is_compatible(self):
         "check Hatari compatibility and return error string if it's not"
-        error = "Hatari not found or it doesn't support the required --control-socket option!"
+        lines = control = mmu = False
         pipe = os.popen(self.hataribin + " -h")
         for line in pipe.readlines():
             if line.find("--control-socket") >= 0:
-                error = None
-                break
+                control = True
+            elif line.find("--mmu") >= 0:
+                mmu = True
+            lines = True
         try:
             pipe.close()
         except IOError:
             pass
-        return error
-
-    def is_winuae(self):
-        "check whether Hatari has WinUAE CPU core (=more features) or oldUAE one"
-        result = False
-        pipe = os.popen(self.hataribin + " -h")
-        for line in pipe.readlines():
-            if line.find("--mmu") >= 0:
-                result = True
-                break
-        try:
-            pipe.close()
-        except IOError:
-            pass
-        return result
+        if not lines:
+            return "'%s' not found!" % self.hataribin
+        if not control:
+            return "Hatari missing required --control-socket option!"
+        if not mmu:
+            return "Hatari is not the expected (WinUAE CPU core) version!"
+        return None
 
     def save_config(self):
         "ask Hatari to save config.  Return None on success, otherwise Hatari return code"
@@ -274,19 +268,23 @@ class Hatari:
 # it needs actual method for (each) setting.
 class HatariConfigMapping(ConfigStore):
     _paths = {
-        "memauto": ("[Memory]", "szAutoSaveFileName", "Automatic memory snapshot"),
-        "memsave": ("[Memory]", "szMemoryCaptureFileName", "Manual memory snapshot"),
-        "midiin":  ("[Midi]", "sMidiInFileName", "Midi input"),
-        "midiout": ("[Midi]", "sMidiOutFileName", "Midi output"),
-        "rs232in": ("[RS232]", "szInFileName", "RS232 (MFP) I/O input"),
-        "rs232out":("[RS232]", "szOutFileName", "RS232 (MFP) I/O output"),
-#        "sccbin":  ("[RS232]", "sSccBInFileName", "RS232 (SCC-B) I/O input"),
-        "sccbout": ("[RS232]", "sSccBOutFileName", "RS232 (SCC-B) I/O output"),
-        "printout":("[Printer]", "szPrintToFileName", "Printer output"),
-        "soundout":("[Sound]", "szYMCaptureFileName", "Sound output")
+        "memauto":    ("[Memory]", "szAutoSaveFileName", "Memory snapshot, automatic"),
+        "memsave":    ("[Memory]", "szMemoryCaptureFileName", "Memory snapshot, manual"),
+        "midiin":     ("[Midi]", "sMidiInFileName", "Midi input"),
+        "midiout":    ("[Midi]", "sMidiOutFileName", "Midi output"),
+        "rs232in":    ("[RS232]", "szInFileName", "RS232: MFP IO input"),
+        "rs232out":   ("[RS232]", "szOutFileName", "RS232: MFP IO output"),
+        "sccain":     ("[RS232]", "SccAInFileName", "RS232: SCC-A IO input"),
+        "sccaout":    ("[RS232]", "SccAOutFileName", "RS232: SCC-A IO output"),
+        "sccalanin":  ("[RS232]", "SccAInFileName", "RS232: SCC-A Lan IO input"),
+        "sccalanout": ("[RS232]", "SccAOutFileName", "RS232: SCC-A Lan IO output"),
+        "sccbin":     ("[RS232]", "SccBInFileName", "RS232: SCC-B IO input"),
+        "sccbout":    ("[RS232]", "SccBOutFileName", "RS232: SCC-B IO output"),
+        "printout":   ("[Printer]", "szPrintToFileName", "Printer output"),
+        "soundout":   ("[Sound]", "szYMCaptureFileName", "Sound output")
     }
-    has_hd_sections = True # from v2.2 onwards separate ACSI/SCSI/IDE sections
-    has_modeltype = True   # from v2.0 onwards
+    # enable Hatari v2.5+ options
+    has_opts_2_5 = True
 
     "access methods to Hatari configuration file variables and command line options"
     def __init__(self, hatari):
@@ -305,14 +303,23 @@ class HatariConfigMapping(ConfigStore):
         self._desktop_w = 0
         self._desktop_h = 0
         self._options = []
-        self._winuae = hatari.is_winuae()
 
     def init_compat(self):
         "do config mapping initializations needing config loading to have succeeded"
-        # initialize has_* attribs for things that may not be anymore
-        # valid on Hatari config file and/or command line
-        self.get_machine()
-        self.get_acsi_image()
+        # initialize has_opts_<version> attribs for things that may not
+        # be anymore valid on Hatari config file and/or command line
+        try:
+            # added for Hatari v2.5
+            self.get("[RS232]", "EnableSccA")
+            return
+        except KeyError:
+            pass
+        self.has_opts_2_5 = False
+        # drop v2.5 keys and use v2.4 option names
+        print("Hatari v2.5 option(s) missing, reverting to v2.4 ones")
+        for key in ("sccain","sccaout","sccalanin","sccalanout","sccbin"):
+            del(self._paths[key])
+        self._paths["sccbout"] = ("[RS232]", "sSccBOutFileName", "RS232: SCC-B IO output")
 
     def validate(self):
         "exception is thrown if the loaded configuration isn't compatible"
@@ -396,53 +403,63 @@ class HatariConfigMapping(ConfigStore):
         self.set("[RS232]", "bEnableRS232", value)
         self._hatari.set_device("rs232", value)
 
+    def get_scca(self):
+        if not self.has_opts_2_5:
+            return False
+        return self.get("[RS232]", "EnableSccA")
+
+    def set_scca(self, value):
+        if not self.has_opts_2_5:
+            return
+        self.set("[RS232]", "EnableSccA", value)
+        self._hatari.set_device("scca", value)
+
+    def get_scca_lan(self):
+        if not self.has_opts_2_5:
+            return False
+        return self.get("[RS232]", "EnableSccALan")
+
+    def set_scca_lan(self, value):
+        if not self.has_opts_2_5:
+            return
+        self.set("[RS232]", "EnableSccALan", value)
+        self._hatari.set_device("sccalan", value)
+
     def get_sccb(self):
-        return self.get("[RS232]", "bEnableSccB")
+        if not self.has_opts_2_5:
+            return self.get("[RS232]", "bEnableSccB")
+        return self.get("[RS232]", "EnableSccB")
 
     def set_sccb(self, value):
-        self.set("[RS232]", "bEnableSccB", value)
+        if not self.has_opts_2_5:
+            self.set("[RS232]", "bEnableSccB", value)
+        else:
+            self.set("[RS232]", "EnableSccB", value)
         self._hatari.set_device("sccb", value)
 
     # ------------ machine ---------------
     def get_machine_types(self):
-        if self.has_modeltype:
-            return ("ST", "MegaST", "STE", "MegaSTE", "TT", "Falcon")
-        else:
-            return ("ST", "STE", "TT", "Falcon")
+        return ("ST", "MegaST", "STE", "MegaSTE", "TT", "Falcon")
 
     def get_machine(self):
-        try:
-            return self.get("[System]", "nModelType")
-        except KeyError:
-            self.has_modeltype = False
-            return self.get("[System]", "nMachineType")
+        return self.get("[System]", "nModelType")
 
     def has_accurate_winsize(self):
-        if self.has_modeltype:
-            return (self.get_machine() < 4)
-        else:
-            return (self.get_machine() < 2)
+        return (self.get_machine() < 4)
 
     def set_machine(self, value):
-        if self.has_modeltype:
-            self.set("[System]", "nModelType", value)
-            self._change_option("--machine %s" % ("st", "megast", "ste", "megaste", "tt", "falcon")[value])
-        else:
-            self.set("[System]", "nMachineType", value)
-            self._change_option("--machine %s" % ("st", "ste", "tt", "falcon")[value])
+        self.set("[System]", "nModelType", value)
+        self._change_option("--machine %s" % ("st", "megast", "ste", "megaste", "tt", "falcon")[value])
 
     # ------------ CPU level ---------------
     def get_cpulevel_types(self):
-        if self._winuae:
-            return ("68000", "68010", "68020", "68E030", "68040", "68060")
-        else:
-            return ("68000", "68010", "68020", "68EC030+FPU", "68040")
+        return ("68000", "68010", "68020", "68030", "68040", "68060")
 
     def get_cpulevel(self):
         return self.get("[System]", "nCpuLevel")
 
     def set_cpulevel(self, value):
-        if value == 5: # WinUAE 060
+        if value == 5: # 060
             value = 6
         self.set("[System]", "nCpuLevel", value)
         self._change_option("--cpulevel %d" % value)
@@ -461,8 +478,7 @@ class HatariConfigMapping(ConfigStore):
 
     def set_cycle_exact(self, value):
         self.set("[System]", "bCycleExactCpu", value)
-        if self._winuae:
-            self._change_option("--cpu-exact %s" % value)
+        self._change_option("--cpu-exact %s" % value)
 
     # ------------ MMU ---------------
     def get_mmu(self):
@@ -470,8 +486,7 @@ class HatariConfigMapping(ConfigStore):
 
     def set_mmu(self, value):
         self.set("[System]", "bMMU", value)
-        if self._winuae:
-            self._change_option("--mmu %s" % value)
+        self._change_option("--mmu %s" % value)
 
     # ------------ CPU clock ---------------
     def get_cpuclock_types(self):
@@ -500,8 +515,7 @@ class HatariConfigMapping(ConfigStore):
 
     def set_fpu_type(self, value):
         self.set("[System]", "n_FPUType", value)
-        if self._winuae:
-            self._change_option("--fpu %s" % self.get_fpu_types()[value])
+        self._change_option("--fpu %s" % self.get_fpu_types()[value])
 
     # ------------ SW FPU --------------
     def get_fpu_soft(self):
@@ -509,8 +523,7 @@ class HatariConfigMapping(ConfigStore):
 
     def set_fpu_soft(self, value):
         self.set("[System]", "bSoftFloatFPU", value)
-        if self._winuae:
-            self._change_option("--fpu-softfloat %s" % value)
+        self._change_option("--fpu-softfloat %s" % value)
 
     # ------------ ST blitter --------------
     def get_blitter(self):
@@ -736,62 +749,33 @@ class HatariConfigMapping(ConfigStore):
 
     # ------------ ACSI HD (file) ---------------
     def get_acsi_image(self):
-        # v2.2 of config file or older?
-        try:
-            self.get("[ACSI]", "bUseDevice0")
-        except KeyError:
-            self.get("[HardDisk]", "bUseHardDiskImage")
-            self.has_hd_sections = False
-        if self.has_hd_sections:
-            return self.get("[ACSI]", "sDeviceFile0")
-        else:
-            return self.get("[HardDisk]", "szHardDiskImage")
+        self.get("[ACSI]", "bUseDevice0")
+        return self.get("[ACSI]", "sDeviceFile0")
 
     def set_acsi_image(self, filename):
-        if self.has_hd_sections:
-            if filename and os.path.isfile(filename):
-                self.set("[ACSI]", "bUseDevice0", True)
-            self.set("[ACSI]", "sDeviceFile0", filename)
-        else:
-            if filename and os.path.isfile(filename):
-                self.set("[HardDisk]", "bUseHardDiskImage", True)
-            self.set("[HardDisk]", "szHardDiskImage", filename)
+        if filename and os.path.isfile(filename):
+            self.set("[ACSI]", "bUseDevice0", True)
+        self.set("[ACSI]", "sDeviceFile0", filename)
         self._change_option("--acsi", filename)
 
     # ------------ IDE master (file) ---------------
     def get_idemaster_image(self):
-        if self.has_hd_sections:
-            return self.get("[IDE]", "sDeviceFile0")
-        else:
-            return self.get("[HardDisk]", "szIdeMasterHardDiskImage")
+        return self.get("[IDE]", "sDeviceFile0")
 
     def set_idemaster_image(self, filename):
-        if self.has_hd_sections:
-            if filename and os.path.isfile(filename):
-                self.set("[IDE]", "bUseDevice0", True)
-            self.set("[IDE]", "sDeviceFile0", filename)
-        else:
-            if filename and os.path.isfile(filename):
-                self.set("[HardDisk]", "bUseIdeMasterHardDiskImage", True)
-            self.set("[HardDisk]", "szIdeMasterHardDiskImage", filename)
+        if filename and os.path.isfile(filename):
+            self.set("[IDE]", "bUseDevice0", True)
+        self.set("[IDE]", "sDeviceFile0", filename)
         self._change_option("--ide-master", filename)
 
     # ------------ IDE slave (file) ---------------
     def get_ideslave_image(self):
-        if self.has_hd_sections:
-            return self.get("[IDE]", "sDeviceFile1")
-        else:
-            return self.get("[HardDisk]", "szIdeSlaveHardDiskImage")
+        return self.get("[IDE]", "sDeviceFile1")
 
     def set_ideslave_image(self, filename):
-        if self.has_hd_sections:
-            if filename and os.path.isfile(filename):
-                self.set("[IDE]", "bUseDevice1", True)
-            self.set("[IDE]", "sDeviceFile1", filename)
-        else:
-            if filename and os.path.isfile(filename):
-                self.set("[HardDisk]", "bUseIdeSlaveHardDiskImage", True)
-            self.set("[HardDisk]", "szIdeSlaveHardDiskImage", filename)
+        if filename and os.path.isfile(filename):
+            self.set("[IDE]", "bUseDevice1", True)
+        self.set("[IDE]", "sDeviceFile1", filename)
         self._change_option("--ide-slave", filename)
 
     # ------------ TOS ROM ---------------
@@ -836,14 +820,12 @@ class HatariConfigMapping(ConfigStore):
     def get_ttram(self):
         return self.get("[Memory]", "nTTRamSize")
 
-    def set_ttram(self, memsize):
+    def set_ttram(self, memsize, machine):
         # enforce 4MB granularity used also by Hatari
         memsize = (int(memsize)+3) & ~3
         self.set("[Memory]", "nTTRamSize", memsize)
         self._change_option("--ttram %d" % memsize)
-        # TODO: addressing change should check also eventual
-        # CPU level like Hatari does, but this code doesn't know it
-        if memsize:
+        if memsize and machine in ("TT", "Falcon"):
             # TT-RAM need 32-bit addressing (i.e. disable 24-bit)
             self.set("[System]", "bAddressSpace24", False)
             self._change_option("--addr24 off")

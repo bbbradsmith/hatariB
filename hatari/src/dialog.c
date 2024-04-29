@@ -30,7 +30,6 @@ const char Dialog_fileid[] = "Hatari dialog.c";
  */
 bool Dialog_DoProperty(void)
 {
-#ifndef __LIBRETRO__
 	bool bOKDialog;  /* Did user 'OK' dialog? */
 	bool bForceReset;
 	bool bLoadedSnapshot;
@@ -79,7 +78,4 @@ bool Dialog_DoProperty(void)
 		Main_RequestQuit(0);
 
 	return bOKDialog;
-#else
-	return true;
-#endif
 }

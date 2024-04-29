@@ -38,6 +38,7 @@ const char Configuration_fileid[] = "Hatari configuration.c";
 #include "falcon/crossbar.h"
 #include "stMemory.h"
 #include "tos.h"
+#include "screenSnapShot.h"
 
 
 CNF_PARAMS ConfigureParams;                 /* List of configuration for the emulator */
@@ -83,7 +84,6 @@ static const struct Config_Tag configs_Screen[] =
 	{ "bResizable", Bool_Tag, &ConfigureParams.Screen.bResizable },
 	{ "bAllowOverscan", Bool_Tag, &ConfigureParams.Screen.bAllowOverscan },
 	{ "nSpec512Threshold", Int_Tag, &ConfigureParams.Screen.nSpec512Threshold },
-	{ "nForceBpp", Int_Tag, &ConfigureParams.Screen.nForceBpp },
 	{ "bAspectCorrect", Bool_Tag, &ConfigureParams.Screen.bAspectCorrect },
 	{ "bUseExtVdiResolutions", Bool_Tag, &ConfigureParams.Screen.bUseExtVdiResolutions },
 	{ "nVdiWidth", Int_Tag, &ConfigureParams.Screen.nVdiWidth },
@@ -98,6 +98,7 @@ static const struct Config_Tag configs_Screen[] =
 	{ "nMaxHeight", Int_Tag, &ConfigureParams.Screen.nMaxHeight },
 	{ "nZoomFactor", Float_Tag, &ConfigureParams.Screen.nZoomFactor },
 	{ "bUseSdlRenderer", Bool_Tag, &ConfigureParams.Screen.bUseSdlRenderer },
+	{ "ScreenShotFormat", Int_Tag, &ConfigureParams.Screen.ScreenShotFormat },
 	{ "bUseVsync", Bool_Tag, &ConfigureParams.Screen.bUseVsync },
 	{ NULL , Error_Tag, NULL }
 };
@@ -109,6 +110,9 @@ static const struct Config_Tag configs_Joystick0[] =
 	{ "bEnableAutoFire", Bool_Tag, &ConfigureParams.Joysticks.Joy[0].bEnableAutoFire },
 	{ "bEnableJumpOnFire2", Bool_Tag, &ConfigureParams.Joysticks.Joy[0].bEnableJumpOnFire2 },
 	{ "nJoyId", Int_Tag, &ConfigureParams.Joysticks.Joy[0].nJoyId },
+	{ "nJoyBut1Index", Int_Tag, &ConfigureParams.Joysticks.Joy[0].nJoyButMap[0] },
+	{ "nJoyBut2Index", Int_Tag, &ConfigureParams.Joysticks.Joy[0].nJoyButMap[1] },
+	{ "nJoyBut3Index", Int_Tag, &ConfigureParams.Joysticks.Joy[0].nJoyButMap[2] },
 	{ "kUp", Key_Tag, &ConfigureParams.Joysticks.Joy[0].nKeyCodeUp },
 	{ "kDown", Key_Tag, &ConfigureParams.Joysticks.Joy[0].nKeyCodeDown },
 	{ "kLeft", Key_Tag, &ConfigureParams.Joysticks.Joy[0].nKeyCodeLeft },
@@ -124,6 +128,9 @@ static const struct Config_Tag configs_Joystick1[] =
 	{ "bEnableAutoFire", Bool_Tag, &ConfigureParams.Joysticks.Joy[1].bEnableAutoFire },
 	{ "bEnableJumpOnFire2", Bool_Tag, &ConfigureParams.Joysticks.Joy[1].bEnableJumpOnFire2 },
 	{ "nJoyId", Int_Tag, &ConfigureParams.Joysticks.Joy[1].nJoyId },
+	{ "nJoyBut1Index", Int_Tag, &ConfigureParams.Joysticks.Joy[1].nJoyButMap[0] },
+	{ "nJoyBut2Index", Int_Tag, &ConfigureParams.Joysticks.Joy[1].nJoyButMap[1] },
+	{ "nJoyBut3Index", Int_Tag, &ConfigureParams.Joysticks.Joy[1].nJoyButMap[2] },
 	{ "kUp", Key_Tag, &ConfigureParams.Joysticks.Joy[1].nKeyCodeUp },
 	{ "kDown", Key_Tag, &ConfigureParams.Joysticks.Joy[1].nKeyCodeDown },
 	{ "kLeft", Key_Tag, &ConfigureParams.Joysticks.Joy[1].nKeyCodeLeft },
@@ -132,33 +139,71 @@ static const struct Config_Tag configs_Joystick1[] =
 	{ NULL , Error_Tag, NULL }
 };
 
-/* Used to load/save joystick 2 options */
+/* Used to load/save joystick 2 options (joypad A) */
 static const struct Config_Tag configs_Joystick2[] =
 {
 	{ "nJoystickMode", Int_Tag, &ConfigureParams.Joysticks.Joy[2].nJoystickMode },
 	{ "bEnableAutoFire", Bool_Tag, &ConfigureParams.Joysticks.Joy[2].bEnableAutoFire },
 	{ "bEnableJumpOnFire2", Bool_Tag, &ConfigureParams.Joysticks.Joy[2].bEnableJumpOnFire2 },
 	{ "nJoyId", Int_Tag, &ConfigureParams.Joysticks.Joy[2].nJoyId },
+	{ "nJoyBut1Index", Int_Tag, &ConfigureParams.Joysticks.Joy[2].nJoyButMap[0] },
+	{ "nJoyBut2Index", Int_Tag, &ConfigureParams.Joysticks.Joy[2].nJoyButMap[1] },
+	{ "nJoyBut3Index", Int_Tag, &ConfigureParams.Joysticks.Joy[2].nJoyButMap[2] },
 	{ "kUp", Key_Tag, &ConfigureParams.Joysticks.Joy[2].nKeyCodeUp },
 	{ "kDown", Key_Tag, &ConfigureParams.Joysticks.Joy[2].nKeyCodeDown },
 	{ "kLeft", Key_Tag, &ConfigureParams.Joysticks.Joy[2].nKeyCodeLeft },
 	{ "kRight", Key_Tag, &ConfigureParams.Joysticks.Joy[2].nKeyCodeRight },
 	{ "kFire", Key_Tag, &ConfigureParams.Joysticks.Joy[2].nKeyCodeFire },
+	{ "kButtonB", Key_Tag, &ConfigureParams.Joysticks.Joy[2].nKeyCodeB },
+	{ "kButtonC", Key_Tag, &ConfigureParams.Joysticks.Joy[2].nKeyCodeC },
+	{ "kButtonOption", Key_Tag, &ConfigureParams.Joysticks.Joy[2].nKeyCodeOption },
+	{ "kButtonPause", Key_Tag, &ConfigureParams.Joysticks.Joy[2].nKeyCodePause },
+	{ "kButtonStar", Key_Tag, &ConfigureParams.Joysticks.Joy[2].nKeyCodeStar },
+	{ "kButtonHash", Key_Tag, &ConfigureParams.Joysticks.Joy[2].nKeyCodeHash },
+	{ "kButton0", Key_Tag, &ConfigureParams.Joysticks.Joy[2].nKeyCodeNum[0] },
+	{ "kButton1", Key_Tag, &ConfigureParams.Joysticks.Joy[2].nKeyCodeNum[1] },
+	{ "kButton2", Key_Tag, &ConfigureParams.Joysticks.Joy[2].nKeyCodeNum[2] },
+	{ "kButton3", Key_Tag, &ConfigureParams.Joysticks.Joy[2].nKeyCodeNum[3] },
+	{ "kButton4", Key_Tag, &ConfigureParams.Joysticks.Joy[2].nKeyCodeNum[4] },
+	{ "kButton5", Key_Tag, &ConfigureParams.Joysticks.Joy[2].nKeyCodeNum[5] },
+	{ "kButton6", Key_Tag, &ConfigureParams.Joysticks.Joy[2].nKeyCodeNum[6] },
+	{ "kButton7", Key_Tag, &ConfigureParams.Joysticks.Joy[2].nKeyCodeNum[7] },
+	{ "kButton8", Key_Tag, &ConfigureParams.Joysticks.Joy[2].nKeyCodeNum[8] },
+	{ "kButton9", Key_Tag, &ConfigureParams.Joysticks.Joy[2].nKeyCodeNum[9] },
 	{ NULL , Error_Tag, NULL }
 };
 
-/* Used to load/save joystick 3 options */
+/* Used to load/save joystick 3 options (joypad B) */
 static const struct Config_Tag configs_Joystick3[] =
 {
 	{ "nJoystickMode", Int_Tag, &ConfigureParams.Joysticks.Joy[3].nJoystickMode },
 	{ "bEnableAutoFire", Bool_Tag, &ConfigureParams.Joysticks.Joy[3].bEnableAutoFire },
 	{ "bEnableJumpOnFire2", Bool_Tag, &ConfigureParams.Joysticks.Joy[3].bEnableJumpOnFire2 },
 	{ "nJoyId", Int_Tag, &ConfigureParams.Joysticks.Joy[3].nJoyId },
+	{ "nJoyBut1Index", Int_Tag, &ConfigureParams.Joysticks.Joy[3].nJoyButMap[0] },
+	{ "nJoyBut2Index", Int_Tag, &ConfigureParams.Joysticks.Joy[3].nJoyButMap[1] },
+	{ "nJoyBut3Index", Int_Tag, &ConfigureParams.Joysticks.Joy[3].nJoyButMap[2] },
 	{ "kUp", Key_Tag, &ConfigureParams.Joysticks.Joy[3].nKeyCodeUp },
 	{ "kDown", Key_Tag, &ConfigureParams.Joysticks.Joy[3].nKeyCodeDown },
 	{ "kLeft", Key_Tag, &ConfigureParams.Joysticks.Joy[3].nKeyCodeLeft },
 	{ "kRight", Key_Tag, &ConfigureParams.Joysticks.Joy[3].nKeyCodeRight },
 	{ "kFire", Key_Tag, &ConfigureParams.Joysticks.Joy[3].nKeyCodeFire },
+	{ "kButtonB", Key_Tag, &ConfigureParams.Joysticks.Joy[3].nKeyCodeB },
+	{ "kButtonC", Key_Tag, &ConfigureParams.Joysticks.Joy[3].nKeyCodeC },
+	{ "kButtonOption", Key_Tag, &ConfigureParams.Joysticks.Joy[3].nKeyCodeOption },
+	{ "kButtonPause", Key_Tag, &ConfigureParams.Joysticks.Joy[3].nKeyCodePause },
+	{ "kButtonStar", Key_Tag, &ConfigureParams.Joysticks.Joy[3].nKeyCodeStar },
+	{ "kButtonHash", Key_Tag, &ConfigureParams.Joysticks.Joy[3].nKeyCodeHash },
+	{ "kButton0", Key_Tag, &ConfigureParams.Joysticks.Joy[3].nKeyCodeNum[0] },
+	{ "kButton1", Key_Tag, &ConfigureParams.Joysticks.Joy[3].nKeyCodeNum[1] },
+	{ "kButton2", Key_Tag, &ConfigureParams.Joysticks.Joy[3].nKeyCodeNum[2] },
+	{ "kButton3", Key_Tag, &ConfigureParams.Joysticks.Joy[3].nKeyCodeNum[3] },
+	{ "kButton4", Key_Tag, &ConfigureParams.Joysticks.Joy[3].nKeyCodeNum[4] },
+	{ "kButton5", Key_Tag, &ConfigureParams.Joysticks.Joy[3].nKeyCodeNum[5] },
+	{ "kButton6", Key_Tag, &ConfigureParams.Joysticks.Joy[3].nKeyCodeNum[6] },
+	{ "kButton7", Key_Tag, &ConfigureParams.Joysticks.Joy[3].nKeyCodeNum[7] },
+	{ "kButton8", Key_Tag, &ConfigureParams.Joysticks.Joy[3].nKeyCodeNum[8] },
+	{ "kButton9", Key_Tag, &ConfigureParams.Joysticks.Joy[3].nKeyCodeNum[9] },
 	{ NULL , Error_Tag, NULL }
 };
 
@@ -169,6 +214,9 @@ static const struct Config_Tag configs_Joystick4[] =
 	{ "bEnableAutoFire", Bool_Tag, &ConfigureParams.Joysticks.Joy[4].bEnableAutoFire },
 	{ "bEnableJumpOnFire2", Bool_Tag, &ConfigureParams.Joysticks.Joy[4].bEnableJumpOnFire2 },
 	{ "nJoyId", Int_Tag, &ConfigureParams.Joysticks.Joy[4].nJoyId },
+	{ "nJoyBut1Index", Int_Tag, &ConfigureParams.Joysticks.Joy[4].nJoyButMap[0] },
+	{ "nJoyBut2Index", Int_Tag, &ConfigureParams.Joysticks.Joy[4].nJoyButMap[1] },
+	{ "nJoyBut3Index", Int_Tag, &ConfigureParams.Joysticks.Joy[4].nJoyButMap[2] },
 	{ "kUp", Key_Tag, &ConfigureParams.Joysticks.Joy[4].nKeyCodeUp },
 	{ "kDown", Key_Tag, &ConfigureParams.Joysticks.Joy[4].nKeyCodeDown },
 	{ "kLeft", Key_Tag, &ConfigureParams.Joysticks.Joy[4].nKeyCodeLeft },
@@ -184,6 +232,9 @@ static const struct Config_Tag configs_Joystick5[] =
 	{ "bEnableAutoFire", Bool_Tag, &ConfigureParams.Joysticks.Joy[5].bEnableAutoFire },
 	{ "bEnableJumpOnFire2", Bool_Tag, &ConfigureParams.Joysticks.Joy[5].bEnableJumpOnFire2 },
 	{ "nJoyId", Int_Tag, &ConfigureParams.Joysticks.Joy[5].nJoyId },
+	{ "nJoyBut1Index", Int_Tag, &ConfigureParams.Joysticks.Joy[5].nJoyButMap[0] },
+	{ "nJoyBut2Index", Int_Tag, &ConfigureParams.Joysticks.Joy[5].nJoyButMap[1] },
+	{ "nJoyBut3Index", Int_Tag, &ConfigureParams.Joysticks.Joy[5].nJoyButMap[2] },
 	{ "kUp", Key_Tag, &ConfigureParams.Joysticks.Joy[5].nKeyCodeUp },
 	{ "kDown", Key_Tag, &ConfigureParams.Joysticks.Joy[5].nKeyCodeDown },
 	{ "kLeft", Key_Tag, &ConfigureParams.Joysticks.Joy[5].nKeyCodeLeft },
@@ -273,10 +324,6 @@ static const struct Config_Tag configs_Sound[] =
 	{ "nSdlAudioBufferSize", Int_Tag, &ConfigureParams.Sound.SdlAudioBufferSize },
 	{ "szYMCaptureFileName", String_Tag, ConfigureParams.Sound.szYMCaptureFileName },
 	{ "YmVolumeMixing", Int_Tag, &ConfigureParams.Sound.YmVolumeMixing },
-#ifdef __LIBRETRO__
-	{ "YmLpf", Int_Tag, &ConfigureParams.Sound.YmLpf },
-	{ "YmHpf", Int_Tag, &ConfigureParams.Sound.YmHpf },
-#endif
 	{ NULL , Error_Tag, NULL }
 };
 
@@ -439,9 +486,15 @@ static const struct Config_Tag configs_Rs232[] =
 	{ "bEnableRS232", Bool_Tag, &ConfigureParams.RS232.bEnableRS232 },
 	{ "szOutFileName", String_Tag, ConfigureParams.RS232.szOutFileName },
 	{ "szInFileName", String_Tag, ConfigureParams.RS232.szInFileName },
-	{ "bEnableSccB", Bool_Tag, &ConfigureParams.RS232.bEnableSccB },
-	{ "sSccBOutFileName", String_Tag, ConfigureParams.RS232.sSccBOutFileName },
-//	{ "sSccBInFileName", String_Tag, ConfigureParams.RS232.sSccBInFileName },
+	{ "EnableSccA", Bool_Tag, &ConfigureParams.RS232.EnableScc[CNF_SCC_CHANNELS_A_SERIAL] },
+	{ "SccAOutFileName", String_Tag, ConfigureParams.RS232.SccOutFileName[CNF_SCC_CHANNELS_A_SERIAL] },
+	{ "SccAInFileName", String_Tag, ConfigureParams.RS232.SccInFileName[CNF_SCC_CHANNELS_A_SERIAL] },
+	{ "EnableSccALan", Bool_Tag, &ConfigureParams.RS232.EnableScc[CNF_SCC_CHANNELS_A_LAN] },
+	{ "SccALanOutFileName", String_Tag, ConfigureParams.RS232.SccOutFileName[CNF_SCC_CHANNELS_A_LAN] },
+	{ "SccALanInFileName", String_Tag, ConfigureParams.RS232.SccInFileName[CNF_SCC_CHANNELS_A_LAN] },
+	{ "EnableSccB", Bool_Tag, &ConfigureParams.RS232.EnableScc[CNF_SCC_CHANNELS_B] },
+	{ "SccBOutFileName", String_Tag, ConfigureParams.RS232.SccOutFileName[CNF_SCC_CHANNELS_B] },
+	{ "SccBInFileName", String_Tag, ConfigureParams.RS232.SccInFileName[CNF_SCC_CHANNELS_B] },
 	{ NULL , Error_Tag, NULL }
 };
 
@@ -483,6 +536,7 @@ static const struct Config_Tag configs_System[] =
 	{ "bBlitter", Bool_Tag, &ConfigureParams.System.bBlitter },
 	{ "nDSPType", Int_Tag, &ConfigureParams.System.nDSPType },
 	{ "nVMEType", Int_Tag, &ConfigureParams.System.nVMEType },
+	{ "nRtcYear", Int_Tag, &ConfigureParams.System.nRtcYear },
 	{ "bPatchTimerD", Bool_Tag, &ConfigureParams.System.bPatchTimerD },
 	{ "bFastBoot", Bool_Tag, &ConfigureParams.System.bFastBoot },
 	{ "bFastForward", Bool_Tag, &ConfigureParams.System.bFastForward },
@@ -543,8 +597,7 @@ void Configuration_SetDefault(void)
 	ConfigureParams.Debugger.bSymbolsAutoLoad = true;
 	ConfigureParams.Debugger.bMatchAllSymbols = false;
 	ConfigureParams.Debugger.nDisasmOptions = Disasm_GetOptions();
-	if ( ConfigureParams.Debugger.bDisasmUAE )
-		disasm_init();
+	Disasm_Init();
 
 	/* Set defaults for floppy disk images */
 	ConfigureParams.DiskImage.bAutoInsertDiskB = true;
@@ -612,23 +665,34 @@ void Configuration_SetDefault(void)
 	{
 		ConfigureParams.Joysticks.Joy[i].nJoystickMode = JOYSTICK_DISABLED;
 		ConfigureParams.Joysticks.Joy[i].bEnableAutoFire = false;
-		ConfigureParams.Joysticks.Joy[i].bEnableJumpOnFire2 = false;
+		ConfigureParams.Joysticks.Joy[i].bEnableJumpOnFire2 = true;
 		ConfigureParams.Joysticks.Joy[i].nJoyId = (i > maxjoy ? maxjoy : i);
+		for (int j = 0; j < JOYSTICK_BUTTONS; j++)
+			ConfigureParams.Joysticks.Joy[i].nJoyButMap[j] = j;
 		ConfigureParams.Joysticks.Joy[i].nKeyCodeUp = SDLK_UP;
 		ConfigureParams.Joysticks.Joy[i].nKeyCodeDown = SDLK_DOWN;
 		ConfigureParams.Joysticks.Joy[i].nKeyCodeLeft = SDLK_LEFT;
 		ConfigureParams.Joysticks.Joy[i].nKeyCodeRight = SDLK_RIGHT;
 		ConfigureParams.Joysticks.Joy[i].nKeyCodeFire = SDLK_RCTRL;
 	}
-#ifndef __LIBRETRO__
+
+	for (i = 0; i <= 9; i++)
+		ConfigureParams.Joysticks.Joy[JOYID_JOYPADA].nKeyCodeNum[i] = SDLK_0 + i;
+	ConfigureParams.Joysticks.Joy[JOYID_JOYPADA].nKeyCodeB = SDLK_b;
+	ConfigureParams.Joysticks.Joy[JOYID_JOYPADA].nKeyCodeC = SDLK_c;
+	ConfigureParams.Joysticks.Joy[JOYID_JOYPADA].nKeyCodeOption = SDLK_o;
+	ConfigureParams.Joysticks.Joy[JOYID_JOYPADA].nKeyCodePause = SDLK_p;
+	ConfigureParams.Joysticks.Joy[JOYID_JOYPADA].nKeyCodeHash = SDLK_HASH;
+	ConfigureParams.Joysticks.Joy[JOYID_JOYPADA].nKeyCodeStar = SDLK_PLUS;
+
 	if (SDL_NumJoysticks() > 0)
 	{
 		/* ST Joystick #1 is default joystick */
 		ConfigureParams.Joysticks.Joy[1].nJoyId = 0;
 		ConfigureParams.Joysticks.Joy[0].nJoyId = (maxjoy ? 1 : 0);
 		ConfigureParams.Joysticks.Joy[1].nJoystickMode = JOYSTICK_REALSTICK;
+		ConfigureParams.Joysticks.Joy[1].bEnableJumpOnFire2 = false;
 	}
-#endif
 
 	/* Set defaults for Keyboard */
 	ConfigureParams.Keyboard.bDisableKeyRepeat = false;
@@ -637,12 +701,12 @@ void Configuration_SetDefault(void)
 	ConfigureParams.Keyboard.nKbdLayout = TOS_LANG_UNKNOWN;
 	ConfigureParams.Keyboard.nLanguage = TOS_LANG_UNKNOWN;
 	strcpy(ConfigureParams.Keyboard.szMappingFileName, "");
-  
+
 	/* Set defaults for Shortcuts */
 	ConfigureParams.Shortcut.withoutModifier[SHORTCUT_OPTIONS] = SDLK_F12;
 	ConfigureParams.Shortcut.withoutModifier[SHORTCUT_FULLSCREEN] = SDLK_F11;
 	ConfigureParams.Shortcut.withoutModifier[SHORTCUT_PAUSE] = SDLK_PAUSE;
-  
+
 	ConfigureParams.Shortcut.withModifier[SHORTCUT_DEBUG] = SDLK_PAUSE;
 	ConfigureParams.Shortcut.withModifier[SHORTCUT_OPTIONS] = SDLK_o;
 	ConfigureParams.Shortcut.withModifier[SHORTCUT_FULLSCREEN] = SDLK_f;
@@ -688,9 +752,15 @@ void Configuration_SetDefault(void)
 	strcpy(ConfigureParams.RS232.szOutFileName, "/dev/modem");
 	strcpy(ConfigureParams.RS232.szInFileName, "/dev/modem");
 	/* Set defaults for SCC RS232 ( MegaSTE/TT/Falcon) */
-	ConfigureParams.RS232.bEnableSccB = false;
-	strcpy(ConfigureParams.RS232.sSccBOutFileName, "/dev/modem");
-//	strcpy(ConfigureParams.RS232.sSccBInFileName, "/dev/modem");
+	ConfigureParams.RS232.EnableScc[CNF_SCC_CHANNELS_A_SERIAL] = false;
+	strcpy(ConfigureParams.RS232.SccOutFileName[CNF_SCC_CHANNELS_A_SERIAL], "/dev/modem");
+	strcpy(ConfigureParams.RS232.SccInFileName[CNF_SCC_CHANNELS_A_SERIAL], "/dev/modem");
+	ConfigureParams.RS232.EnableScc[CNF_SCC_CHANNELS_A_LAN] = false;
+	strcpy(ConfigureParams.RS232.SccOutFileName[CNF_SCC_CHANNELS_A_LAN], "/dev/modem");
+	strcpy(ConfigureParams.RS232.SccInFileName[CNF_SCC_CHANNELS_A_LAN], "/dev/modem");
+	ConfigureParams.RS232.EnableScc[CNF_SCC_CHANNELS_B] = false;
+	strcpy(ConfigureParams.RS232.SccOutFileName[CNF_SCC_CHANNELS_B], "/dev/modem");
+	strcpy(ConfigureParams.RS232.SccInFileName[CNF_SCC_CHANNELS_B], "/dev/modem");
 
 	/* Set defaults for MIDI */
 	ConfigureParams.Midi.bEnableMidi = false;
@@ -706,7 +776,6 @@ void Configuration_SetDefault(void)
 	ConfigureParams.Screen.nFrameSkips = AUTO_FRAMESKIP_LIMIT;
 	ConfigureParams.Screen.bAllowOverscan = true;
 	ConfigureParams.Screen.nSpec512Threshold = 1;
-	ConfigureParams.Screen.nForceBpp = 0;
 	ConfigureParams.Screen.bAspectCorrect = true;
 	ConfigureParams.Screen.nMonitorType = MONITOR_TYPE_RGB;
 	ConfigureParams.Screen.bUseExtVdiResolutions = false;
@@ -728,6 +797,11 @@ void Configuration_SetDefault(void)
 	ConfigureParams.Screen.nZoomFactor = 1.0;
 	ConfigureParams.Screen.bUseSdlRenderer = true;
 	ConfigureParams.Screen.bUseVsync = false;
+#if HAVE_LIBPNG
+	ConfigureParams.Screen.ScreenShotFormat = SCREEN_SNAPSHOT_PNG;
+#else
+	ConfigureParams.Screen.ScreenShotFormat = SCREEN_SNAPSHOT_BMP;
+#endif
 
 	/* Set defaults for Sound */
 	ConfigureParams.Sound.bEnableMicrophone = true;
@@ -767,6 +841,7 @@ void Configuration_SetDefault(void)
 	ConfigureParams.System.nCpuFreq = 8;	nCpuFreqShift = 0;
 	ConfigureParams.System.nDSPType = DSP_TYPE_NONE;
 	ConfigureParams.System.nVMEType = VME_TYPE_DUMMY; /* for TOS MegaSTE detection */
+	ConfigureParams.System.nRtcYear = 0;
 	ConfigureParams.System.bAddressSpace24 = true;
 	ConfigureParams.System.n_FPUType = FPU_NONE;
 	ConfigureParams.System.bCompatibleFPU = true; /* JIT */
@@ -797,26 +872,6 @@ void Configuration_SetDefault(void)
 	{
 		strcpy(sConfigFileName, "hatari.cfg");
 	}
-
-#ifdef __LIBRETRO__
-	// added parameters
-	ConfigureParams.Rom.nBuiltinTos = 1;
-	ConfigureParams.Rom.nEmuTosRegion = -1;
-	ConfigureParams.Rom.nEmuTosFramerate = -1;
-	ConfigureParams.Screen.bLowResolutionDouble = 0;
-	ConfigureParams.Screen.bMedResolutionDouble = 1;
-	ConfigureParams.Screen.nCropOverscan = 2;
-	ConfigureParams.Sound.YmLpf = YM2149_LPF_FILTER_IIR;
-	ConfigureParams.Sound.YmHpf = YM2149_HPF_FILTER_IIR;
-	ConfigureParams.System.nBootCpuFreq = 8;
-	// override some of the defaults
-	ConfigureParams.Screen.nFrameSkips = 0;
-	ConfigureParams.Sound.nPlaybackFreq = 48000;
-	ConfigureParams.DiskImage.FastFloppy = true;
-	ConfigureParams.System.bFastBoot = true;
-	ConfigureParams.HardDisk.nWriteProtection = WRITEPROT_ON;
-	ConfigureParams.Midi.bEnableMidi = true;
-#endif
 }
 
 
@@ -849,10 +904,6 @@ void Configuration_Apply(bool bReset)
 	if (ConfigureParams.Screen.nFrameSkips < AUTO_FRAMESKIP_LIMIT)
 	{
 		nFrameSkips = ConfigureParams.Screen.nFrameSkips;
-	}
-	if (ConfigureParams.Screen.nForceBpp < 15)	/* Avoid 8-bit depth */
-	{
-		ConfigureParams.Screen.nForceBpp = 0;
 	}
 
 	/* Check/convert ST RAM size in KB */
@@ -893,10 +944,6 @@ void Configuration_Apply(bool bReset)
 		ConfigureParams.Sound.YmVolumeMixing = YM_TABLE_MIXING;
 
 	YmVolumeMixing = ConfigureParams.Sound.YmVolumeMixing;
-#ifdef __LIBRETRO__
-	YM2149_LPF_Filter = ConfigureParams.Sound.YmLpf;
-	YM2149_HPF_Filter = ConfigureParams.Sound.YmHpf;
-#endif
 	Sound_SetYmVolumeMixing();
 
 	/* Falcon : update clocks values if sound freq changed  */
@@ -911,7 +958,6 @@ void Configuration_Apply(bool bReset)
 //fprintf (stderr,"M68000_CheckCpuSettings conf 2\n" );
 
 	/* Clean file and directory names */
-#ifndef __LIBRETRO__
 	File_MakeAbsoluteName(ConfigureParams.Rom.szTosImageFileName);
 	if (strlen(ConfigureParams.Rom.szCartridgeImageFileName) > 0)
 		File_MakeAbsoluteName(ConfigureParams.Rom.szCartridgeImageFileName);
@@ -946,20 +992,15 @@ void Configuration_Apply(bool bReset)
 	File_MakeAbsoluteSpecialName(ConfigureParams.Log.sTraceFileName);
 	File_MakeAbsoluteSpecialName(ConfigureParams.RS232.szInFileName);
 	File_MakeAbsoluteSpecialName(ConfigureParams.RS232.szOutFileName);
-//	File_MakeAbsoluteSpecialName(ConfigureParams.RS232.sSccBInFileName);
-	File_MakeAbsoluteSpecialName(ConfigureParams.RS232.sSccBOutFileName);
+	File_MakeAbsoluteSpecialName(ConfigureParams.RS232.SccInFileName[CNF_SCC_CHANNELS_A_SERIAL]);
+	File_MakeAbsoluteSpecialName(ConfigureParams.RS232.SccOutFileName[CNF_SCC_CHANNELS_A_SERIAL]);
+	File_MakeAbsoluteSpecialName(ConfigureParams.RS232.SccInFileName[CNF_SCC_CHANNELS_A_LAN]);
+	File_MakeAbsoluteSpecialName(ConfigureParams.RS232.SccOutFileName[CNF_SCC_CHANNELS_A_LAN]);
+	File_MakeAbsoluteSpecialName(ConfigureParams.RS232.SccInFileName[CNF_SCC_CHANNELS_B]);
+	File_MakeAbsoluteSpecialName(ConfigureParams.RS232.SccOutFileName[CNF_SCC_CHANNELS_B]);
 	File_MakeAbsoluteSpecialName(ConfigureParams.Midi.sMidiInFileName);
 	File_MakeAbsoluteSpecialName(ConfigureParams.Midi.sMidiOutFileName);
 	File_MakeAbsoluteSpecialName(ConfigureParams.Printer.szPrintToFileName);
-#else
-	// Don't do any absolute path conversions.
-	// Also because this writes back to ConfigureParams,
-	// these end up being detected as a change every time core config changes,
-	// which will cause needless resets.
-	// In the longer run we probably don't want to allow access to most
-	// of these filenames anyway.
-	(void)i;
-#endif
 
 	/* Enable/disable floppy drives */
 	FDC_Drive_Set_Enable ( 0 , ConfigureParams.DiskImage.EnableDriveA );
@@ -968,8 +1009,7 @@ void Configuration_Apply(bool bReset)
 	FDC_Drive_Set_NumberOfHeads ( 1 , ConfigureParams.DiskImage.DriveB_NumberOfHeads );
 
 	/* Update disassembler */
-	Disasm_SetCPUType(ConfigureParams.System.nCpuLevel, ConfigureParams.System.n_FPUType,
-	                  ConfigureParams.System.bMMU);
+	Disasm_Init();
 
 #if ENABLE_DSP_EMU
 	/* Enable DSP ? */
@@ -1137,73 +1177,41 @@ void Configuration_MemorySnapShot_Capture(bool bSave)
 {
 	int i;
 
-#ifndef __LIBRETRO__
 	MemorySnapShot_Store(ConfigureParams.Rom.szTosImageFileName, sizeof(ConfigureParams.Rom.szTosImageFileName));
 	MemorySnapShot_Store(ConfigureParams.Rom.szCartridgeImageFileName, sizeof(ConfigureParams.Rom.szCartridgeImageFileName));
 
 	MemorySnapShot_Store(ConfigureParams.Lilo.szKernelFileName, sizeof(ConfigureParams.Lilo.szKernelFileName));
 	MemorySnapShot_Store(ConfigureParams.Lilo.szRamdiskFileName, sizeof(ConfigureParams.Lilo.szRamdiskFileName));
-#else
-	MemorySnapShot_StoreFilename(ConfigureParams.Rom.szTosImageFileName, sizeof(ConfigureParams.Rom.szTosImageFileName));
-	MemorySnapShot_StoreFilename(ConfigureParams.Rom.szCartridgeImageFileName, sizeof(ConfigureParams.Rom.szCartridgeImageFileName));
-	// Lilo not supported
-#endif
 
 	MemorySnapShot_Store(&ConfigureParams.Memory.STRamSize_KB, sizeof(ConfigureParams.Memory.STRamSize_KB));
 	MemorySnapShot_Store(&ConfigureParams.Memory.TTRamSize_KB, sizeof(ConfigureParams.Memory.TTRamSize_KB));
 
-#ifndef __LIBRETRO__
 	MemorySnapShot_Store(&ConfigureParams.DiskImage.szDiskFileName[0], sizeof(ConfigureParams.DiskImage.szDiskFileName[0]));
 	MemorySnapShot_Store(&ConfigureParams.DiskImage.szDiskZipPath[0], sizeof(ConfigureParams.DiskImage.szDiskZipPath[0]));
-#else
-	MemorySnapShot_StoreFilename(ConfigureParams.DiskImage.szDiskFileName[0], sizeof(ConfigureParams.DiskImage.szDiskFileName[0]));
-	// DiskZip not used
-#endif
 	MemorySnapShot_Store(&ConfigureParams.DiskImage.EnableDriveA, sizeof(ConfigureParams.DiskImage.EnableDriveA));
 	MemorySnapShot_Store(&ConfigureParams.DiskImage.DriveA_NumberOfHeads, sizeof(ConfigureParams.DiskImage.DriveA_NumberOfHeads));
-#ifndef __LIBRETRO__
 	MemorySnapShot_Store(&ConfigureParams.DiskImage.szDiskFileName[1], sizeof(ConfigureParams.DiskImage.szDiskFileName[1]));
 	MemorySnapShot_Store(&ConfigureParams.DiskImage.szDiskZipPath[1], sizeof(ConfigureParams.DiskImage.szDiskZipPath[1]));
-#else
-	MemorySnapShot_StoreFilename(ConfigureParams.DiskImage.szDiskFileName[1], sizeof(ConfigureParams.DiskImage.szDiskFileName[1]));
-	// DiskZip not used
-#endif
 	MemorySnapShot_Store(&ConfigureParams.DiskImage.EnableDriveB, sizeof(ConfigureParams.DiskImage.EnableDriveB));
 	MemorySnapShot_Store(&ConfigureParams.DiskImage.DriveB_NumberOfHeads, sizeof(ConfigureParams.DiskImage.DriveB_NumberOfHeads));
 
 	MemorySnapShot_Store(&ConfigureParams.HardDisk.bUseHardDiskDirectories, sizeof(ConfigureParams.HardDisk.bUseHardDiskDirectories));
-#ifndef __LIBRETRO__
 	MemorySnapShot_Store(ConfigureParams.HardDisk.szHardDiskDirectories[DRIVE_C], sizeof(ConfigureParams.HardDisk.szHardDiskDirectories[DRIVE_C]));
-#else
-	MemorySnapShot_StoreFilename(ConfigureParams.HardDisk.szHardDiskDirectories[DRIVE_C], sizeof(ConfigureParams.HardDisk.szHardDiskDirectories[DRIVE_C]));
-#endif
 	for (i = 0; i < MAX_ACSI_DEVS; i++)
 	{
 		MemorySnapShot_Store(&ConfigureParams.Acsi[i].bUseDevice, sizeof(ConfigureParams.Acsi[i].bUseDevice));
-#ifndef __LIBRETRO__
 		MemorySnapShot_Store(ConfigureParams.Acsi[i].sDeviceFile, sizeof(ConfigureParams.Acsi[i].sDeviceFile));
-#else
-		MemorySnapShot_StoreFilename(ConfigureParams.Acsi[i].sDeviceFile, sizeof(ConfigureParams.Acsi[i].sDeviceFile));
-#endif
 	}
 	for (i = 0; i < MAX_SCSI_DEVS; i++)
 	{
 		MemorySnapShot_Store(&ConfigureParams.Scsi[i].bUseDevice, sizeof(ConfigureParams.Scsi[i].bUseDevice));
-#ifndef __LIBRETRO__
 		MemorySnapShot_Store(ConfigureParams.Scsi[i].sDeviceFile, sizeof(ConfigureParams.Scsi[i].sDeviceFile));
-#else
-		MemorySnapShot_StoreFilename(ConfigureParams.Scsi[i].sDeviceFile, sizeof(ConfigureParams.Scsi[i].sDeviceFile));
-#endif
 	}
 	for (i = 0; i < MAX_IDE_DEVS; i++)
 	{
 		MemorySnapShot_Store(&ConfigureParams.Ide[i].bUseDevice, sizeof(ConfigureParams.Ide[i].bUseDevice));
 		MemorySnapShot_Store(&ConfigureParams.Ide[i].nByteSwap, sizeof(ConfigureParams.Ide[i].nByteSwap));
-#ifndef __LIBRETRO__
 		MemorySnapShot_Store(ConfigureParams.Ide[i].sDeviceFile, sizeof(ConfigureParams.Ide[i].sDeviceFile));
-#else
-		MemorySnapShot_StoreFilename(ConfigureParams.Ide[i].sDeviceFile, sizeof(ConfigureParams.Ide[i].sDeviceFile));
-#endif
 	}
 
 	MemorySnapShot_Store(&ConfigureParams.Screen.nMonitorType, sizeof(ConfigureParams.Screen.nMonitorType));
@@ -1221,7 +1229,6 @@ void Configuration_MemorySnapShot_Capture(bool bSave)
 	/* TODO: enable after VME/SCU interrupt emulation is implemented
 	MemorySnapShot_Store(&ConfigureParams.System.nVMEType, sizeof(ConfigureParams.System.nVMEType));
 	 */
-	MemorySnapShot_Store(&bOldRealTimeClock, sizeof(bOldRealTimeClock));	/* TODO: Can be removed later */
 	MemorySnapShot_Store(&ConfigureParams.System.bPatchTimerD, sizeof(ConfigureParams.System.bPatchTimerD));
 	MemorySnapShot_Store(&ConfigureParams.System.bAddressSpace24, sizeof(ConfigureParams.System.bAddressSpace24));
 
@@ -1230,12 +1237,9 @@ void Configuration_MemorySnapShot_Capture(bool bSave)
 	MemorySnapShot_Store(&ConfigureParams.System.bCompatibleFPU, sizeof(ConfigureParams.System.bCompatibleFPU));
 	MemorySnapShot_Store(&ConfigureParams.System.bMMU, sizeof(ConfigureParams.System.bMMU));
 
-	MemorySnapShot_Store(&ConfigureParams.DiskImage.FastFloppy, sizeof(ConfigureParams.DiskImage.FastFloppy));
-
-#ifdef __LIBRETRO__
-	// saved to prevent divergence (from clocks_timings.c)
 	MemorySnapShot_Store(&MachineClocks,sizeof(MachineClocks));
-#endif
+
+	MemorySnapShot_Store(&ConfigureParams.DiskImage.FastFloppy, sizeof(ConfigureParams.DiskImage.FastFloppy));
 
 	if (!bSave)
 		Configuration_Apply(true);
@@ -1283,3 +1287,59 @@ void Configuration_ChangeCpuFreq ( int CpuFreq_new )
 		M68000_ChangeCpuFreq();
 	}
 }
+
+#ifdef EMSCRIPTEN
+void Configuration_ChangeMemory ( int RamSizeKb )
+{
+	ConfigureParams.Memory.STRamSize_KB = RamSizeKb;
+	int size = STMemory_RAM_Validate_Size_KB ( ConfigureParams.Memory.STRamSize_KB );
+	if ( size < 0 )
+	{
+		size = 1024;
+		Log_Printf(LOG_WARN, "Unsupported %d KB ST-RAM amount, defaulting to %d KB\n",
+			   ConfigureParams.Memory.STRamSize_KB, size);
+	}
+	ConfigureParams.Memory.STRamSize_KB = size;
+	STMemory_Init ( ConfigureParams.Memory.STRamSize_KB * 1024 );
+}
+
+void Configuration_ChangeTos ( const char* szTosImageFileName )
+{
+		if(strlen(szTosImageFileName)<4096){
+			strcpy(ConfigureParams.Rom.szTosImageFileName,szTosImageFileName);
+		}
+}
+
+void Configuration_ChangeSystem ( int nMachineType )
+{
+	switch (nMachineType)
+	{
+	 case 0:
+		if (!bOldRealTimeClock)
+			ConfigureParams.System.nMachineType = MACHINE_ST;
+		else
+			ConfigureParams.System.nMachineType = MACHINE_MEGA_ST;
+		break;
+	 case 1:
+		ConfigureParams.System.nMachineType = MACHINE_STE;
+		break;
+	 case 2:
+		ConfigureParams.System.nMachineType = MACHINE_TT;
+		break;
+	 case 3:
+		ConfigureParams.System.nMachineType = MACHINE_FALCON;
+		break;
+	}
+}
+
+void Configuration_ChangeUseHardDiskDirectories ( bool bUseHardDiskDirectories )
+{
+	ConfigureParams.HardDisk.bUseHardDiskDirectories=bUseHardDiskDirectories;
+}
+
+void Configuration_ChangeFastForward ( bool bFastForwardActive )
+{
+	ConfigureParams.System.bFastForward=bFastForwardActive;
+}
+
+#endif

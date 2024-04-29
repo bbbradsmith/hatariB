@@ -12,6 +12,7 @@ enum
 {
 	JOYSTICK_SPACE_NULL,          /* Not up/down */
 	JOYSTICK_SPACE_DOWN,
+	JOYSTICK_SPACE_DOWNED,
 	JOYSTICK_SPACE_UP
 };
 
@@ -33,7 +34,7 @@ extern void Joy_UnInit(void);
 extern const char *Joy_GetName(int id);
 extern int Joy_GetMaxId(void);
 extern bool Joy_ValidateJoyId(int i);
-extern Uint8 Joy_GetStickData(int nStJoyId);
+extern uint8_t Joy_GetStickData(int nStJoyId);
 extern bool Joy_SetCursorEmulation(int port);
 extern void Joy_ToggleCursorEmulation(void);
 extern bool Joy_SwitchMode(int port);
@@ -45,5 +46,9 @@ extern void Joy_StePadMulti_ReadWord(void);
 extern void Joy_StePadMulti_WriteWord(void);
 void Joy_SteLightpenX_ReadWord(void);
 void Joy_SteLightpenY_ReadWord(void);
+void Joy_StePadAnalog0X_ReadByte(void);
+void Joy_StePadAnalog0Y_ReadByte(void);
+void Joy_StePadAnalog1X_ReadByte(void);
+void Joy_StePadAnalog1Y_ReadByte(void);
 
 #endif /* ifndef HATARI_JOY_H */

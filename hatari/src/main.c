@@ -44,6 +44,7 @@ const char Main_fileid[] = "Hatari main.c";
 #include "reset.h"
 #include "resolution.h"
 #include "rs232.h"
+#include "rtc.h"
 #include "scc.h"
 #include "screen.h"
 #include "sdlgui.h"
@@ -58,6 +59,7 @@ const char Main_fileid[] = "Hatari main.c";
 #include "avi_record.h"
 #include "debugui.h"
 #include "clocks_timings.h"
+#include "utils.h"
 
 #include "hatari-glue.h"
 
@@ -72,13 +74,17 @@ const char Main_fileid[] = "Hatari main.c";
 #include "gui-win/opencon.h"
 #endif
 
+#ifdef EMSCRIPTEN
+#include "emscripten.h"
+#endif
+
 bool bQuitProgram = false;                /* Flag to quit program cleanly */
 static int nQuitValue;                    /* exit value */
 
-static Uint32 nRunVBLs;                   /* Whether and how many VBLS to run before exit */
-static Uint32 nFirstMilliTick;            /* Ticks when VBL counting started */
-static Uint32 nVBLCount;                  /* Frame count */
-static int nVBLSlowdown = 1;		  /* host VBL wait multiplier */
+static uint32_t nRunVBLs;                 /* Whether and how many VBLS to run before exit */
+static uint32_t nFirstMilliTick;          /* Ticks when VBL counting started */
+static uint32_t nVBLCount;                /* Frame count */
+static int nVBLSlowdown = 1;              /* host VBL wait multiplier */
 
 static bool bEmulationActive = true;      /* Run emulation when started */
 static bool bAccurateDelays;              /* Host system has an accurate SDL_Delay()? */
@@ -97,7 +103,7 @@ static bool bAllowMouseWarp = true;       /* disabled when Hatari window loses m
 #if HAVE_SYS_TIMES_H
 #include <unistd.h>
 #include <sys/times.h>
-static Uint32 Main_GetTicks(void)
+static uint32_t Main_GetTicks(void)
 {
 	static unsigned int ticks_to_msec = 0;
 	struct tms fields;
@@ -128,23 +134,19 @@ static Uint32 Main_GetTicks(void)
  * return of SDL_GetTicks in micro sec.
  */
 
-static Sint64	Time_GetTicks ( void )
+static int64_t Time_GetTicks(void)
 {
-#ifndef __LIBRETRO__
-	Sint64	ticks_micro;
+	int64_t ticks_micro;
 
 #if HAVE_GETTIMEOFDAY
 	struct timeval	now;
 	gettimeofday ( &now , NULL );
-	ticks_micro = (Sint64)now.tv_sec * 1000000 + now.tv_usec;
+	ticks_micro = (int64_t)now.tv_sec * 1000000 + now.tv_usec;
 #else
-	ticks_micro = (Sint64)SDL_GetTicks() * 1000;		/* milli sec -> micro sec */
+	ticks_micro = (int64_t)SDL_GetTicks() * 1000;		/* milli sec -> micro sec */
 #endif
 
 	return ticks_micro;
-#else
-	return 0;
-#endif
 }
 
 
@@ -155,8 +157,11 @@ static Sint64	Time_GetTicks ( void )
  * (which is portable, but less accurate as is uses milli-seconds)
  */
 
-static void	Time_Delay ( Sint64 ticks_micro )
+static void Time_Delay(int64_t ticks_micro)
 {
+#ifdef EMSCRIPTEN
+	emscripten_sleep((uint32_t)(ticks_micro / 1000));	/* micro sec -> milli sec */
+#else
 #if HAVE_NANOSLEEP
 	struct timespec	ts;
 	int		ret;
@@ -169,7 +174,8 @@ static void	Time_Delay ( Sint64 ticks_micro )
                 ret = nanosleep(&ts, &ts);
 	} while ( ret && ( errno == EINTR ) );		/* keep on sleeping if we were interrupted */
 #else
-	SDL_Delay ( (Uint32)(ticks_micro / 1000) ) ;	/* micro sec -> milli sec */
+	SDL_Delay((uint32_t)(ticks_micro / 1000)) ;	/* micro sec -> milli sec */
+#endif
 #endif
 }
 
@@ -192,12 +198,7 @@ bool Main_PauseEmulation(bool visualize)
 	{
 		if (nFirstMilliTick)
 		{
-#ifndef __LIBRETRO__
 			int interval = Main_GetTicks() - nFirstMilliTick;
-#else
-			(void)Main_GetTicks;
-			int interval = 0;
-#endif
 			static float previous;
 			float current;
 
@@ -213,11 +214,9 @@ bool Main_PauseEmulation(bool visualize)
 		/* make sure msg gets shown */
 		Statusbar_Update(sdlscrn, true);
 
-#ifndef __LIBRETRO__
 		if (bGrabMouse && !bInFullScreen)
 			/* Un-grab mouse pointer in windowed mode */
 			SDL_SetRelativeMouseMode(false);
-#endif
 	}
 	return true;
 }
@@ -240,11 +239,9 @@ bool Main_UnPauseEmulation(void)
 	/* Cause full screen update (to clear all) */
 	Screen_SetFullUpdate();
 
-#ifndef __LIBRETRO__
 	if (bGrabMouse)
 		/* Grab mouse pointer again */
 		SDL_SetRelativeMouseMode(true);
-#endif
 	return true;
 }
 
@@ -259,13 +256,11 @@ void Main_RequestQuit(int exitval)
 		bQuitProgram = true;
 		MemorySnapShot_Capture(ConfigureParams.Memory.szAutoSaveFileName, false);
 	}
-#ifndef __LIBRETRO__
 	else if (ConfigureParams.Log.bConfirmQuit)
 	{
 		bQuitProgram = false;	/* if set true, dialog exits */
 		bQuitProgram = DlgAlert_Query("All unsaved data will be lost.\nDo you really want to quit?");
 	}
-#endif
 	else
 	{
 		bQuitProgram = true;
@@ -296,7 +291,7 @@ void Main_SetQuitValue(int exitval)
  *
  * If zero value given instead, returns earlier set VBL count.
  */
-Uint32 Main_SetRunVBLs(Uint32 vbls)
+uint32_t Main_SetRunVBLs(uint32_t vbls)
 {
 	if (!vbls)
 		return nRunVBLs;
@@ -333,10 +328,10 @@ const char* Main_SetVBLSlowdown(int factor)
  */
 void Main_WaitOnVbl(void)
 {
-	Sint64 CurrentTicks;
-	static Sint64 DestTicks = 0;
-	Sint64 FrameDuration_micro;
-	Sint64 nDelay;
+	int64_t CurrentTicks;
+	static int64_t DestTicks = 0;
+	int64_t FrameDuration_micro;
+	int64_t nDelay;
 
 	nVBLCount++;
 	if (nRunVBLs &&	nVBLCount >= nRunVBLs)
@@ -346,14 +341,10 @@ void Main_WaitOnVbl(void)
 		exit(0);
 	}
 
-//	FrameDuration_micro = (Sint64) ( 1000000.0 / nScreenRefreshRate + 0.5 );	/* round to closest integer */
+//	FrameDuration_micro = (int64_t) ( 1000000.0 / nScreenRefreshRate + 0.5 );	/* round to closest integer */
 	FrameDuration_micro = ClocksTimings_GetVBLDuration_micro ( ConfigureParams.System.nMachineType , nScreenRefreshRate );
 	FrameDuration_micro *= nVBLSlowdown;
-#ifndef __LIBRETRO__
 	CurrentTicks = Time_GetTicks();
-#else
-	CurrentTicks = DestTicks;
-#endif
 
 	if (DestTicks == 0)			/* on first call, init DestTicks */
 	{
@@ -364,12 +355,6 @@ void Main_WaitOnVbl(void)
 
 	nDelay = DestTicks - CurrentTicks;
 
-#ifdef __LIBRETRO__
-	// Don't measure time, always assume Libretro has provided an exact frame delay.
-	CurrentTicks = DestTicks = FrameDuration_micro;
-	nDelay = 0;
-#endif
-
 	/* Do not wait if we are in fast forward mode or if we are totally out of sync */
 	/* or if we are in benchmark mode */
 	if (ConfigureParams.System.bFastForward == true
@@ -377,14 +362,12 @@ void Main_WaitOnVbl(void)
 	    || BenchmarkMode )
 
 	{
-#ifndef __LIBRETRO__
 		if ( ( ConfigureParams.System.bFastForward == true )
 		  || ( BenchmarkMode == true ) )
 		{
 			if (!nFirstMilliTick)
 				nFirstMilliTick = Main_GetTicks();
 		}
-#endif
 		if (nFrameSkips < ConfigureParams.Screen.nFrameSkips)
 		{
 			nFrameSkips += 1;
@@ -392,6 +375,9 @@ void Main_WaitOnVbl(void)
 		}
 		/* Only update DestTicks for next VBL */
 		DestTicks = CurrentTicks + FrameDuration_micro;
+		#ifdef EMSCRIPTEN
+		emscripten_sleep(0);
+		#endif
 		return;
 	}
 
@@ -433,11 +419,6 @@ void Main_WaitOnVbl(void)
 //printf ( "tick %lld\n" , CurrentTicks );
 	/* Update DestTicks for next VBL */
 	DestTicks += FrameDuration_micro;
-
-#if __LIBRETRO__
-	// Use special break flag to exit the CPU run loop
-	M68000_SetSpecial(SPCFLAG_BRK);
-#endif
 }
 
 
@@ -448,7 +429,6 @@ void Main_WaitOnVbl(void)
  */
 static void Main_CheckForAccurateDelays(void)
 {
-#ifndef __LIBRETRO__
 	int nStartTicks, nEndTicks;
 
 	/* Force a task switch now, so we have a longer timeslice afterwards */
@@ -465,9 +445,6 @@ static void Main_CheckForAccurateDelays(void)
 		Log_Printf(LOG_DEBUG, "Host system has accurate delays. (%d)\n", nEndTicks - nStartTicks);
 	else
 		Log_Printf(LOG_WARN, "Host system does not have accurate delays. (%d)\n", nEndTicks - nStartTicks);
-#else
-	bAccurateDelays = 0;
-#endif
 }
 
 
@@ -483,21 +460,13 @@ static void Main_CheckForAccurateDelays(void)
  */
 void Main_WarpMouse(int x, int y, bool restore)
 {
-#ifndef __LIBRETRO__
 	if (!(restore || ConfigureParams.Screen.bMouseWarp))
 		return;
-
 	if (!bAllowMouseWarp)
 		return;
 
 	SDL_WarpMouseInWindow(sdlWindow, x, y);
 	bIgnoreNextMouseMotion = true;
-#else
-	(void)x;
-	(void)y;
-	(void)restore;
-	(void)bAllowMouseWarp;
-#endif
 }
 
 
@@ -561,10 +530,6 @@ void Main_EventHandler(void)
 	{
 		bContinueProcessing = false;
 
-	#ifdef __LIBRETRO__
-		events = core_poll_event(&event);
-		(void)remotepause;
-	#else
 		/* check remote process control */
 		remotepause = Control_CheckUpdates();
 
@@ -580,7 +545,6 @@ void Main_EventHandler(void)
 				break;
 			events = SDL_WaitEvent(&event);
 		}
-	#endif
 		if (!events)
 		{
 			/* no events -> if emulation is active or
@@ -590,11 +554,9 @@ void Main_EventHandler(void)
 		}
 		switch (event.type)
 		{
-	#ifndef __LIBRETRO__
 		 case SDL_QUIT:
 			Main_RequestQuit(0);
 			break;
-	#endif
 
 		 case SDL_KEYDOWN:
 			if (event.key.repeat) {
@@ -641,7 +603,6 @@ void Main_EventHandler(void)
 			}
 			break;
 
-	#ifndef __LIBRETRO__
 		 case SDL_MOUSEWHEEL:
 			/* Simulate cursor keys on mouse wheel events */
 			if (event.wheel.x > 0)
@@ -683,14 +644,14 @@ void Main_EventHandler(void)
 				/* Note: any changes here should most likely
 				 * be done also in sdlgui.c::SDLGui_DoDialog()
 				 */
-				SDL_UpdateRect(sdlscrn, 0, 0, 0, 0);
+				Screen_UpdateRect(sdlscrn, 0, 0, 0, 0);
 				break;
 			case SDL_WINDOWEVENT_SIZE_CHANGED:
 				/* internal & external window size changes */
 				Screen_SetTextureScale(sdlscrn->w, sdlscrn->h,
 						       event.window.data1,
 						       event.window.data2, false);
-				SDL_UpdateRect(sdlscrn, 0, 0, 0, 0);
+				Screen_UpdateRect(sdlscrn, 0, 0, 0, 0);
 				break;
 				/* mouse & keyboard focus */
 			case SDL_WINDOWEVENT_ENTER:
@@ -704,7 +665,6 @@ void Main_EventHandler(void)
 			}
 			bContinueProcessing = true;
 			break;
-	#endif
 
 		 default:
 			/* don't let unknown events delay event processing */
@@ -721,14 +681,10 @@ void Main_EventHandler(void)
  */
 void Main_SetTitle(const char *title)
 {
-#ifndef __LIBRETRO__
 	if (title)
 		SDL_SetWindowTitle(sdlWindow, title);
 	else
 		SDL_SetWindowTitle(sdlWindow, PROG_NAME);
-#else
-	(void)title;
-#endif
 }
 
 /*-----------------------------------------------------------------------*/
@@ -755,14 +711,11 @@ static void Main_Init(void)
 	/* Open debug log file */
 	if (!Log_Init())
 	{
-#ifndef __LIBRETRO__
 		fprintf(stderr, "ERROR: logging/tracing initialization failed\n");
 		exit(-1);
-#endif
 	}
 	Log_Printf(LOG_INFO, PROG_NAME ", compiled on:  " __DATE__ ", " __TIME__ "\n");
 
-#ifndef __LIBRETRO__
 	/* Init SDL's video subsystem. Note: Audio subsystem
 	   will be initialized later (failure not fatal). */
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
@@ -776,10 +729,6 @@ static void Main_Init(void)
 		fprintf(stderr, "ERROR: could not initialize the IPF support\n" );
 		exit(-1);
 	}
-#else
-	// core will instead call IPF_Init on first read of an IPF disk,
-	// loading the DLL/SO at that time if it's available
-#endif
 
 	ClocksTimings_InitMachine ( ConfigureParams.System.nMachineType );
 	Video_SetTimings ( ConfigureParams.System.nMachineType , ConfigureParams.System.VideoTimingMode );
@@ -820,9 +769,6 @@ static void Main_Init(void)
 
 	if (Reset_Cold())             /* Reset all systems, load TOS image */
 	{
-#ifndef __LIBRETRO__
-	// Libretro should just continue with setup and halt the CPU to report the error.
-	// Dialog_DoProperty is blocking, we can't use that.
 		/* If loading of the TOS failed, we bring up the GUI to let the
 		 * user choose another TOS ROM file. */
 		Dialog_DoProperty();
@@ -833,13 +779,13 @@ static void Main_Init(void)
 			fprintf(stderr, "ERROR: failed to load TOS image!\n");
 		SDL_Quit();
 		exit(-2);
-#endif
 	}
 
 	IoMem_Init();
 	NvRam_Init();
 	Sound_Init();
-	
+	Rtc_Init();
+
 	/* done as last, needs CPU & DSP running... */
 	DebugUI_Init();
 }
@@ -875,11 +821,10 @@ static void Main_UnInit(void)
 	IPF_Exit();
 
 	/* SDL uninit: */
-#ifndef __LIBRETRO__
 	SDL_Quit();
-#endif
 
 	/* Close debug log file */
+	DebugUI_UnInit();
 	Log_UnInit();
 
 	Paths_UnInit();
@@ -892,12 +837,8 @@ static void Main_UnInit(void)
  * test mode (i.e. if the HATARI_TEST environment variable has been set),
  * so that the test has always full control over the configuration settings.
  */
-#ifdef __LIBRETRO__
-void core_config_init(void);
-#endif
 static void Main_LoadInitialConfig(void)
 {
-#ifndef __LIBRETRO__
 	char *psGlobalConfig;
 
 	if (getenv("HATARI_TEST"))
@@ -918,23 +859,14 @@ static void Main_LoadInitialConfig(void)
 	Configuration_Load(NULL);
 	if (ConfigureParams.Keyboard.nLanguage == TOS_LANG_UNKNOWN)
 		ConfigureParams.Keyboard.nLanguage = TOS_DefaultLanguage();
-#else
-	// core will save the default configuration for reference,
-	// then set up the initial configuration values here
-	core_config_init();
-#endif
 }
 
-#ifdef __LIBRETRO__
-extern bool core_show_welcome;
-#endif
 /*-----------------------------------------------------------------------*/
 /**
  * Set TOS etc information and initial help message
  */
 static void Main_StatusbarSetup(void)
 {
-#ifndef __LIBRETRO__
 	struct {
 		const int id;
 		bool mod;
@@ -976,12 +908,6 @@ static void Main_StatusbarSetup(void)
 			if (keys[i].name)
 				free(keys[i].name);
 		}
-#else
-	if (core_show_welcome)
-	{
-		char message[60];
-		snprintf(message, sizeof(message), "Welcome to hatariB! Press START for help.");
-#endif
 		Statusbar_AddMessage(message, 5000);
 	}
 	/* update information loaded by Main_Init() */
@@ -994,14 +920,10 @@ static void Main_StatusbarSetup(void)
  * 
  * Note: 'argv' cannot be declared const, MinGW would then fail to link.
  */
- #ifndef __LIBRETRO__
 int main(int argc, char *argv[])
-#else
-int main_init(int argc, char *argv[])
-#endif
 {
 	/* Generate random seed */
-	srand(time(NULL));
+	Hatari_srand(time(NULL));
 
 	/* Logs default to stderr at start */
 	Log_Default();
@@ -1027,7 +949,6 @@ int main_init(int argc, char *argv[])
 	/* monitor type option might require "reset" -> true */
 	Configuration_Apply(true);
 
-#ifndef __LIBRETRO__
 #ifdef WIN32
 	Win_OpenCon();
 #endif
@@ -1040,7 +961,6 @@ int main_init(int argc, char *argv[])
 	/* Needed for proper behavior of Caps Lock on some systems */
 	setenv("SDL_DISABLE_LOCK_KEYS", "1", 1);
 #endif
-#endif // __LIBRETRO__
 
 	/* Init emulator system */
 	Main_Init();
@@ -1062,12 +982,6 @@ int main_init(int argc, char *argv[])
 	/* Run emulation */
 	Main_UnPauseEmulation();
 	M68000_Start();                 /* Start emulation */
-#ifdef __LIBRETRO__
-	return 0;
-}
-int main_deinit(void)
-{
-#endif
 
 	Control_RemoveFifo();
 	if (bRecordingAvi)
