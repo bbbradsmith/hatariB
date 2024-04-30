@@ -42,6 +42,8 @@ By default `-Wall -Werror` is used, but if spurious warnings are blocking compli
 
 The windows build can be debugged with Visual Studio. Set `DEBUG=1` for the make and run [cv2pdb](https://github.com/rainers/cv2pdb) on the DLL to generate PDB debug symbols that VS can use. You can open the hatariB source folder in Visual Studio (`start devenv /Edit C:\path\to\hatariB`), start RetroArch, then `Debug > Attach to Process` and look for RetroArch (or just `Reattach to Process` for subsequent runs).
 
+Opening the folder with Visual Studio will unfortunately make changes to the zlib folder. (Not important, but irritating when preparing commits.) Not sure if there's a way to prevent this. Can I add a [CMakeSettings.json](https://learn.microsoft.com/en-us/cpp/build/cmakesettings-reference?view=msvc-170) in the hatariB root that can prevent recursing into zlib? I couldn't figure out a solution that doesn't involve making changes inside the zlib folder.
+
 ## Changes to Hatari
 
 Changes to the C source code are all contained in `__LIBRETRO__` defines. This is important for merging future versions, because we always be able to see what code was replaced. None of the original code has been modified or deleted, only _disabled_ within `#ifdef` blocks.
