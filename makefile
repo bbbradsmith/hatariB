@@ -99,7 +99,7 @@ HATARILIBS = \
 	$(ZLIB_LINK) $(SDL2_LINK)
 # note: libcore is linked twice to allow other hatari internal libraries to resolve references within it.
 
-.PHONY: default core
+.PHONY: default core full sdl zlib sdlreconfig directories hatarilib clean
 
 default: core
 
