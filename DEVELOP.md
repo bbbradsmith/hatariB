@@ -213,6 +213,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
 * **hatari/src/scandir.c**
   * Remove unused scandir implementations enabled by !HAVE_SCANDIR.
 * **hatari/src/scc.c**
+  * Fix uninitialized `ReadHandle_Lan`, `WriteHandle_Lan` crash bug.
   * `ClockName` unread variable warning.
 * **hatari/src/screen.c**
   * Disable SDL rendering, reduce use of SDL to merely creating a software render SDL_Surface which can be used by the gui-sdl system to render the status bar and onscreen keyboard.

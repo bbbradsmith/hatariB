@@ -506,6 +506,11 @@ void SCC_Init ( void )
 	SCC.Chn[1].ReadHandle = SCC.Chn[1].ReadHandle_Serial;
 	SCC.Chn[1].WriteHandle = SCC.Chn[1].WriteHandle_Serial;
 	SCC.Chn[1].FileHandle_IsATTY = SCC.Chn[1].FileHandle_Serial_IsATTY;
+#ifdef __LIBRETRO__
+	// this was 0, causing a crash when you close the second game and SCC_UnInit does close(0)
+	// for the second time (but the first time is also a problem, just not a crash)
+	SCC.Chn[1].ReadHandle_Lan = SCC.Chn[1].WriteHandle_Lan = -1;
+#endif
 }
 
 
