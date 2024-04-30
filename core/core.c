@@ -1051,10 +1051,12 @@ RETRO_API void retro_init(void)
 		if      (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, (void*)&RPF_XRGB8888)) core_pixel_format = 1;
 		//else if (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, (void*)&RPF_RGB565  )) core_pixel_format = 2;
 		//else if (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, (void*)&RPF_0RGB1555)) core_pixel_format = 0;
+		(void)RPF_RGB565;
+		(void)RPF_0RGB1555;
 		if (core_pixel_format < 0)
 		{
 			core_pixel_format = 1;
-			retro_log(RETRO_LOG_ERROR,"Unsupport pixel format: %s\n",PIXEL_FORMAT_NAMES[core_pixel_format]);
+			retro_log(RETRO_LOG_ERROR,"Unsupported pixel format: %s\n",PIXEL_FORMAT_NAMES[core_pixel_format]);
 		}
 		else
 			retro_log(RETRO_LOG_INFO,"Pixel format: %s\n",PIXEL_FORMAT_NAMES[core_pixel_format]);
