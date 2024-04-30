@@ -15,7 +15,6 @@ const char DlgDevice_fileid[] = "Hatari dlgDevice.c";
 #include "sdlgui.h"
 #include "file.h"
 #include "midi.h"  /* needed only with PortMidi */
-#include "screen.h"
 #include "str.h"
 
 
@@ -135,10 +134,10 @@ void Dialog_DeviceDlg(void)
 	File_ShrinkName(dlgMidiInName, ConfigureParams.Midi.sMidiInFileName, devicedlg[DEVDLG_MIDIINNAME].w);
 	File_ShrinkName(dlgMidiOutName, ConfigureParams.Midi.sMidiOutFileName, devicedlg[DEVDLG_MIDIOUTNAME].w);
 #else
-	midiInName = Midi_Host_GetPortName(ConfigureParams.Midi.sMidiInPortName, 0, true);
+	midiInName = Midi_Host_GetPortName(ConfigureParams.Midi.sMidiInPortName, MIDI_NAME_FIND, MIDI_FOR_INPUT);
 	File_ShrinkName(dlgMidiInName, midiInName ? midiInName : "Off", devicedlg[DEVDLG_MIDIINNAME].w);
 
-	midiOutName = Midi_Host_GetPortName(ConfigureParams.Midi.sMidiOutPortName, 0, false);
+	midiOutName = Midi_Host_GetPortName(ConfigureParams.Midi.sMidiOutPortName, MIDI_NAME_FIND, MIDI_FOR_OUTPUT);
 	File_ShrinkName(dlgMidiOutName,  midiOutName ? midiOutName : "Off", devicedlg[DEVDLG_MIDIOUTNAME].w);
 #endif
 
@@ -182,12 +181,12 @@ void Dialog_DeviceDlg(void)
 			break;
 #else
 		case DEVDLG_PREVIN:
-			midiInName = Midi_Host_GetPortName(midiInName, -1, true);
+			midiInName = Midi_Host_GetPortName(midiInName, MIDI_NAME_PREV, MIDI_FOR_INPUT);
 			File_ShrinkName(dlgMidiInName, midiInName ? midiInName : "Off",
 					devicedlg[DEVDLG_MIDIINNAME].w);
 			break;
 		case DEVDLG_NEXTIN:
-			name = Midi_Host_GetPortName(midiInName, +1, true);
+			name = Midi_Host_GetPortName(midiInName, MIDI_NAME_NEXT, MIDI_FOR_INPUT);
 			if (name)
 			{
 				midiInName = name;
@@ -196,12 +195,12 @@ void Dialog_DeviceDlg(void)
 			}
 			break;
 		case DEVDLG_PREVOUT:
-			midiOutName = Midi_Host_GetPortName(midiOutName, -1, false);
+			midiOutName = Midi_Host_GetPortName(midiOutName, MIDI_NAME_PREV, MIDI_FOR_OUTPUT);
 			File_ShrinkName(dlgMidiOutName, midiOutName ? midiOutName : "Off",
 					devicedlg[DEVDLG_MIDIOUTNAME].w);
 			break;
 		case DEVDLG_NEXTOUT:
-			name = Midi_Host_GetPortName(midiOutName, +1, false);
+			name = Midi_Host_GetPortName(midiOutName, MIDI_NAME_NEXT, MIDI_FOR_OUTPUT);
 			if (name)
 			{
 				midiOutName = name;
@@ -220,9 +219,9 @@ void Dialog_DeviceDlg(void)
 	ConfigureParams.RS232.bEnableRS232 = (devicedlg[DEVDLG_RS232ENABLE].state & SG_SELECTED);
 	ConfigureParams.Midi.bEnableMidi = (devicedlg[DEVDLG_MIDIENABLE].state & SG_SELECTED);
 #ifdef HAVE_PORTMIDI
-	strlcpy(ConfigureParams.Midi.sMidiInPortName, midiInName ? midiInName : "Off",
-	       sizeof(ConfigureParams.Midi.sMidiInPortName));
-	strlcpy(ConfigureParams.Midi.sMidiOutPortName, midiOutName ? midiOutName : "Off",
-	       sizeof(ConfigureParams.Midi.sMidiOutPortName));
+	Str_Copy(ConfigureParams.Midi.sMidiInPortName, midiInName ? midiInName : "Off",
+	         sizeof(ConfigureParams.Midi.sMidiInPortName));
+	Str_Copy(ConfigureParams.Midi.sMidiOutPortName, midiOutName ? midiOutName : "Off",
+	         sizeof(ConfigureParams.Midi.sMidiOutPortName));
 #endif
 }

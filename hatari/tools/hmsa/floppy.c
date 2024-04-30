@@ -8,7 +8,6 @@
 */
 
 #include <stdio.h>
-#include <SDL_endian.h>
 
 #include "hmsa.h"
 #include "floppy.h"
@@ -21,7 +20,7 @@
  * NOTE - Pass information from boot-sector to this function (if we can't
  * decide we leave it alone).
  */
-static void Floppy_DoubleCheckFormat(long nDiskSize, Uint16 *pnSides, Uint16 *pnSectorsPerTrack)
+static void Floppy_DoubleCheckFormat(long nDiskSize, uint16_t *pnSides, uint16_t *pnSectorsPerTrack)
 {
 	int nSectorsPerTrack;
 	long TotalSectors;
@@ -59,15 +58,15 @@ static void Floppy_DoubleCheckFormat(long nDiskSize, Uint16 *pnSides, Uint16 *pn
  * is not actually correct with the image - some demos/game disks have incorrect bytes in the
  * boot sector and this attempts to find the correct values.
  */
-void Floppy_FindDiskDetails(const Uint8 *pBuffer, int nImageBytes,
+void Floppy_FindDiskDetails(const uint8_t *pBuffer, int nImageBytes,
                             unsigned short *pnSectorsPerTrack, unsigned short *pnSides)
 {
-	Uint16 nSectorsPerTrack, nSides, nSectors;
+	uint16_t nSectorsPerTrack, nSides, nSectors;
 
 	/* First do check to find number of sectors and bytes per sector */
-	nSectorsPerTrack = SDL_SwapLE16(*(const Uint16 *)(pBuffer+24));   /* SPT */
-	nSides = SDL_SwapLE16(*(const Uint16 *)(pBuffer+26));             /* SIDE */
-	nSectors = pBuffer[19] | (pBuffer[20] << 8);                      /* total sectors */
+	nSectorsPerTrack = pBuffer[24] | (pBuffer[25] << 8);  /* SPT */
+	nSides = pBuffer[26] | (pBuffer[27] << 8);            /* SIDE */
+	nSectors = pBuffer[19] | (pBuffer[20] << 8);          /* total sectors */
 
 	/* If the number of sectors announced is incorrect, the boot-sector may
 	 * contain incorrect information, eg the 'Eat.st' demo, or wrongly imaged

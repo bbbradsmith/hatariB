@@ -95,7 +95,7 @@ const char NvRam_fileid[] = "Hatari nvram.c";
 #define NVRAM_START  14
 #define NVRAM_LEN    50
 
-static Uint8 nvram[64] = {
+static uint8_t nvram[64] = {
 	48, 255, 21, 255, 23, 255, 1, 25, 3, 33, /* clock/alarm registers */
 	42, REG_BIT_DM|REG_BIT_24H, 0, REG_BIT_VRM, /* regs A-D */
 	0,0,0,0,0,0,0,0,17,46,32,1,255,0,1,10,135,0,0,0,0,0,0,0,
@@ -103,7 +103,7 @@ static Uint8 nvram[64] = {
 };
 
 
-static Uint8 nvram_index;
+static uint8_t nvram_index;
 #ifndef __LIBRETRO__
 static char nvram_filename[FILENAME_MAX];
 #else
@@ -116,6 +116,8 @@ extern void core_file_close(corefile* file);
 extern bool core_write_file_system(const char* filename, unsigned int size, const uint8_t* data);
 #endif
 
+static int year_offset;
+
 
 /*-----------------------------------------------------------------------*/
 /**
@@ -124,12 +126,11 @@ extern bool core_write_file_system(const char* filename, unsigned int size, cons
 static bool NvRam_Load(void)
 {
 	bool ret = false;
-	
 #ifndef __LIBRETRO__
 	FILE *f = fopen(nvram_filename, "rb");
 	if (f != NULL)
 	{
-		Uint8 fnvram[NVRAM_LEN];
+		uint8_t fnvram[NVRAM_LEN];
 		if (fread(fnvram, 1, NVRAM_LEN, f) == NVRAM_LEN)
 		{
 			memcpy(nvram+NVRAM_START, fnvram, NVRAM_LEN);
@@ -152,7 +153,7 @@ static bool NvRam_Load(void)
 	corefile* f = core_file_open_system(nvram_filename,CORE_FILE_READ); // has to go in system/ because it is loaded before retro_game_load()
 	if (f != NULL)
 	{
-		Uint8 fnvram[NVRAM_LEN];
+		uint8_t fnvram[NVRAM_LEN];
 		if (core_file_read(fnvram, 1, NVRAM_LEN, f) == NVRAM_LEN)
 		{
 			memcpy(nvram+NVRAM_START, fnvram, NVRAM_LEN);
@@ -348,6 +349,17 @@ void NvRam_Init(void)
 
 	NvRam_SetChecksum();
 	NvRam_Reset();
+
+	/* Set suitable tm->tm_year offset
+	 * (tm->tm_year starts from 1900, NVRAM year from 1968)
+	 */
+	year_offset = 68;
+	if (!ConfigureParams.System.nRtcYear)
+		return;
+
+	time_t ticks = time(NULL);
+	int year = 1900 + localtime(&ticks)->tm_year;
+	year_offset += year - ConfigureParams.System.nRtcYear;
 }
 
 
@@ -377,7 +389,7 @@ void NvRam_Select_ReadByte(void)
  */
 void NvRam_Select_WriteByte(void)
 {
-	Uint8 value = IoMem_ReadByte(0xff8961);
+	uint8_t value = IoMem_ReadByte(0xff8961);
 
 	if (value < sizeof(nvram))
 	{
@@ -423,7 +435,7 @@ static struct tm* getFrozenTime(void)
  * If NVRAM data mode bit is set, returns given value,
  * otherwise returns it as BCD.
  */
-static Uint8 bin2BCD(Uint8 value)
+static uint8_t bin2BCD(uint8_t value)
 {
 	if ((nvram[11] & REG_BIT_DM))
 		return value;
@@ -437,7 +449,7 @@ static Uint8 bin2BCD(Uint8 value)
  */
 void NvRam_Data_ReadByte(void)
 {
-	Uint8 value = 0;
+	uint8_t value = 0;
 
 	switch(nvram_index)
 	{
@@ -456,7 +468,7 @@ void NvRam_Data_ReadByte(void)
 		value = getFrozenTime()->tm_hour;
 		if (!(nvram[11] & REG_BIT_24H))
 		{
-			Uint8 pmflag = (value == 0 || value >= 13) ? 0x80 : 0;
+			uint8_t pmflag = (value == 0 || value >= 13) ? 0x80 : 0;
 			value = value % 12;
 			if (value == 0)
 				value = 12;
@@ -475,7 +487,7 @@ void NvRam_Data_ReadByte(void)
 		value = bin2BCD(getFrozenTime()->tm_mon + 1);
 		break;
 	case 9:
-		value = bin2BCD(getFrozenTime()->tm_year - 68);
+		value = bin2BCD(getFrozenTime()->tm_year - year_offset);
 		break;
 	case 10:
 		/* control reg A
@@ -527,9 +539,9 @@ void NvRam_Data_ReadByte(void)
 void NvRam_Data_WriteByte(void)
 {
 	/* enable & flag bits in B & C regs match each other -> use same mask for both */
-	const Uint8 int_mask = REG_BIT_UF|REG_BIT_AF|REG_BIT_PF;
+	const uint8_t int_mask = REG_BIT_UF|REG_BIT_AF|REG_BIT_PF;
 
-	Uint8 value = IoMem_ReadByte(0xff8963);
+	uint8_t value = IoMem_ReadByte(0xff8963);
 	switch (nvram_index)
 	{
 	case 0:
@@ -569,7 +581,7 @@ void NvRam_Data_WriteByte(void)
 }
 
 
-void NvRam_Info(FILE *fp, Uint32 dummy)
+void NvRam_Info(FILE *fp, uint32_t dummy)
 {
 	fprintf(fp, "- File: '%s'\n", nvram_filename);
 	fprintf(fp, "- Time: from host (regs: 0, 2, 4, 6-9)\n");

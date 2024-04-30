@@ -19,7 +19,6 @@ const char Keymap_fileid[] = "Hatari keymap.c";
 #include "joy.h"
 #include "shortcut.h"
 #include "str.h"
-#include "screen.h"
 #include "debugui.h"
 #include "log.h"
 
@@ -102,24 +101,12 @@ static uint8_t Keymap_SymbolicToStScanCode(const SDL_Keysym* pKeySym)
 	 case SDLK_GREATER : code = 0x34; break;
 	 case SDLK_QUESTION: code = 0x35; break;
 	 case SDLK_AT: code = 0x28; break;
-#ifndef __LIBRETRO__	 
-	 case SDLK_LEFTBRACKET: code = 0x63; break;
-#else
-	 case SDLK_LEFTBRACKET: code = 0x1A; break; // hatari has this wrong?
-#endif
+	 case SDLK_LEFTBRACKET: code = 0x1A; break;
 	 case SDLK_BACKSLASH: code = 0x2B; break;     /* Might be 0x60 for UK keyboards */
-#ifndef __LIBRETRO__	 
-	 case SDLK_RIGHTBRACKET: code = 0x64; break;
-#else
-	 case SDLK_RIGHTBRACKET: code = 0x1B; break; // hatari has this wrong?
-#endif
+	 case SDLK_RIGHTBRACKET: code = 0x1B; break;
 	 case SDLK_CARET: code = 0x2B; break;
 	 case SDLK_UNDERSCORE: code = 0x0C; break;
-#ifndef __LIBRETRO__
-	 case SDLK_BACKQUOTE: code = 0x52; break;
-#else
 	 case SDLK_BACKQUOTE: code = 0x29; break;
-#endif
 	 case SDLK_a: code = 0x1E; break;
 	 case SDLK_b: code = 0x30; break;
 	 case SDLK_c: code = 0x2E; break;
@@ -165,6 +152,8 @@ static uint8_t Keymap_SymbolicToStScanCode(const SDL_Keysym* pKeySym)
 	 case SDLK_KP_8: code = 0x68; break;
 	 case SDLK_KP_9: code = 0x69; break;
 	 case SDLK_KP_PERIOD: code = 0x71; break;
+	 case SDLK_KP_LEFTPAREN: code = 0x63; break;
+	 case SDLK_KP_RIGHTPAREN: code = 0x64; break;
 	 case SDLK_KP_DIVIDE: code = 0x65; break;
 	 case SDLK_KP_MULTIPLY: code = 0x66; break;
 	 case SDLK_KP_MINUS: code = 0x4A; break;

@@ -1,6 +1,8 @@
-secrets/
-zlib_build/
 build/
+hatari/build/
+zlib_build/
+SDL/build/
+secrets/
 cv2pdb/
 vscode/test_*.bat
 *.lnk

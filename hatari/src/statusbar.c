@@ -284,17 +284,10 @@ static void Statusbar_OverlayInit(const SDL_Surface *surf)
 #endif
 	OverlayLedRect.y = h/2;
 	/* free previous restore surface if it's incompatible */
-	if (OverlayUnderside &&
-#ifndef __LIBRETRO__
-	    OverlayUnderside->w == OverlayLedRect.w &&
-	    OverlayUnderside->h == OverlayLedRect.h &&
-	    OverlayUnderside->format->BitsPerPixel == surf->format->BitsPerPixel)
-#else
-	// logic was backwards
-	    (OverlayUnderside->w != OverlayLedRect.w ||
+	if (OverlayUnderside && (
+	    OverlayUnderside->w != OverlayLedRect.w ||
 	    OverlayUnderside->h != OverlayLedRect.h ||
 	    OverlayUnderside->format->BitsPerPixel != surf->format->BitsPerPixel))
-#endif
 	{
 		SDL_FreeSurface(OverlayUnderside);
 		OverlayUnderside = NULL;
@@ -474,7 +467,7 @@ void Statusbar_Init(SDL_Surface *surf)
 	bOldRecording = false;
 
 	/* and blit statusbar on screen */
-	SDL_UpdateRects(surf, 1, &FullRect);
+	Screen_UpdateRects(surf, 1, &FullRect);
 	DEBUGPRINT(("Drawn <- Statusbar_Init()\n"));
 }
 
@@ -498,8 +491,7 @@ void Statusbar_AddMessage(const char *msg, Uint32 msecs)
 	item->next = MessageList;
 	MessageList = item;
 
-	strncpy(item->msg, msg, MAX_MESSAGE_LEN);
-	item->msg[MAX_MESSAGE_LEN] = '\0';
+	Str_Copy(item->msg, msg, sizeof(item->msg));
 	DEBUGPRINT(("Add message: '%s'\n", item->msg));
 
 	if (msecs)
@@ -706,7 +698,7 @@ void Statusbar_UpdateInfo(void)
 
 	*end = '\0';
 
-	strlcpy(DefaultMessage.msg, buffer, MAX_MESSAGE_LEN);
+	Str_Copy(DefaultMessage.msg, buffer, MAX_MESSAGE_LEN);
 	DEBUGPRINT(("Set default message: '%s'\n", DefaultMessage.msg));
 	/* make sure default message gets (re-)drawn when next checked */
 	DefaultMessage.shown = false;
@@ -717,7 +709,7 @@ void Statusbar_UpdateInfo(void)
 extern void Statusbar_SetMessage(const char* msg);
 void Statusbar_SetMessage(const char* msg)
 {
-	strlcpy(DefaultMessage.msg, msg, MAX_MESSAGE_LEN);
+	Str_Copy(DefaultMessage.msg, msg, MAX_MESSAGE_LEN);
 	DefaultMessage.shown = false;
 }
 #endif
@@ -959,7 +951,7 @@ SDL_Rect* Statusbar_Update(SDL_Surface *surf, bool do_update)
 			last_rect = Statusbar_OverlayDraw(surf);
 			if (do_update && last_rect)
 			{
-				SDL_UpdateRects(surf, 1, last_rect);
+				Screen_UpdateRects(surf, 1, last_rect);
 				last_rect = NULL;
 			}
 		}
@@ -1113,7 +1105,7 @@ SDL_Rect* Statusbar_Update(SDL_Surface *surf, bool do_update)
 	}
 	if (do_update && last_rect)
 	{
-		SDL_UpdateRects(surf, 1, last_rect);
+		Screen_UpdateRects(surf, 1, last_rect);
 		last_rect = NULL;
 	}
 	return last_rect;

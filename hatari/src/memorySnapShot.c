@@ -18,7 +18,6 @@
 */
 const char MemorySnapShot_fileid[] = "Hatari memorySnapShot.c";
 
-#include <SDL_types.h>
 #include <errno.h>
 
 #include "main.h"
@@ -59,7 +58,7 @@ const char MemorySnapShot_fileid[] = "Hatari memorySnapShot.c";
 #include "hatari-glue.h"
 
 
-#define VERSION_STRING      "2.4.0"   /* Version number of compatible memory snapshots - Always 6 bytes (inc' NULL) */
+#define VERSION_STRING      "2.5.0"   /* Version number of compatible memory snapshots - Always 6 bytes (inc' NULL) */
 #define SNAPSHOT_MAGIC      0xDeadBeef
 
 #ifndef __LIBRETRO__
@@ -203,7 +202,7 @@ static bool MemorySnapShot_OpenFile(const char *pszFileName, bool bSave, bool bC
 	char VersionString[] = VERSION_STRING;
 
 #define CORE_VERSION 1
-	Uint8 CpuCore;
+	uint8_t CpuCore;
 
 	/* Set error */
 	bCaptureError = false;
@@ -346,7 +345,7 @@ void MemorySnapShot_Capture(const char *pszFileName, bool bConfirm)
 {
 //fprintf ( stderr , "MemorySnapShot_Capture in\n" );
 	/* Make a temporary copy of the parameters for MemorySnapShot_Capture_Do() */
-	strlcpy ( Temp_FileName , pszFileName , FILENAME_MAX );
+	Str_Copy(Temp_FileName, pszFileName, FILENAME_MAX);
 	Temp_Confirm = bConfirm;
 
 	/* With WinUAE cpu core, capture is done from m68k_run_xxx() after the end of the current instruction */
@@ -363,7 +362,7 @@ void MemorySnapShot_Capture(const char *pszFileName, bool bConfirm)
 void MemorySnapShot_Capture_Immediate(const char *pszFileName, bool bConfirm)
 {
 	/* Make a temporary copy of the parameters for MemorySnapShot_Capture_Do() */
-	strlcpy ( Temp_FileName , pszFileName , FILENAME_MAX );
+	Str_Copy(Temp_FileName, pszFileName, FILENAME_MAX);
 	Temp_Confirm = bConfirm;
 
 	MemorySnapShot_Capture_Do ();
@@ -379,7 +378,7 @@ void MemorySnapShot_Capture_Immediate(const char *pszFileName, bool bConfirm)
 #define LIBRETRO_DEBUG_SNAPSHOT(x) {}
 void MemorySnapShot_Capture_Do(void)
 {
-	Uint32 magic = SNAPSHOT_MAGIC;
+	uint32_t magic = SNAPSHOT_MAGIC;
 
 	/* Set to 'saving' */
 	if (MemorySnapShot_OpenFile(Temp_FileName, true, Temp_Confirm))
@@ -470,7 +469,7 @@ void MemorySnapShot_Restore(const char *pszFileName, bool bConfirm)
 {
 //fprintf ( stderr , "MemorySnapShot_Restore in\n" );
 	/* Make a temporary copy of the parameters for MemorySnapShot_Restore_Do() */
-	strlcpy ( Temp_FileName , pszFileName , FILENAME_MAX );
+	Str_Copy(Temp_FileName, pszFileName, FILENAME_MAX);
 	Temp_Confirm = bConfirm;
 
 	/* With WinUAE cpu core, restore is done from m68k_go() after the end of the current instruction */
@@ -487,7 +486,7 @@ void MemorySnapShot_Restore(const char *pszFileName, bool bConfirm)
  */
 void MemorySnapShot_Restore_Do(void)
 {
-	Uint32 magic;
+	uint32_t magic;
 
 //fprintf ( stderr , "MemorySnapShot_Restore_Do in\n" );
 	/* Set to 'restore' */

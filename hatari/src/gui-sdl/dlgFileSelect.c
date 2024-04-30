@@ -105,9 +105,9 @@ static SGOBJ fsdlg[] =
 	{ SGTEXT, SG_EXIT, 0, 2,19, DLGFILENAMES_SIZE,1, dlgfilenames[13] },
 	{ SGTEXT, SG_EXIT, 0, 2,20, DLGFILENAMES_SIZE,1, dlgfilenames[14] },
 	{ SGTEXT, SG_EXIT, 0, 2,21, DLGFILENAMES_SIZE,1, dlgfilenames[15] },
-	{ SGSCROLLBAR, SG_TOUCHEXIT, 0, 62, 7, 0, 0, NULL },       /* Scrollbar */
-	{ SGBUTTON,   SG_TOUCHEXIT, 0, 62, 6,1,1, "\x01", SG_SHORTCUT_UP },
-	{ SGBUTTON,   SG_TOUCHEXIT, 0, 62,21,1,1, "\x02", SG_SHORTCUT_DOWN },
+	{ SGSCROLLBAR, SG_TOUCHEXIT|SG_REPEAT, 0, 62, 7, 0, 0, NULL },
+	{ SGBUTTON, SG_TOUCHEXIT|SG_REPEAT, 0, 62, 6,1,1, "\x01", SG_SHORTCUT_UP },
+	{ SGBUTTON, SG_TOUCHEXIT|SG_REPEAT, 0, 62,21,1,1, "\x02", SG_SHORTCUT_DOWN },
 	{ SGCHECKBOX, SG_EXIT, 0, 2,23, 19,1, "_Show hidden files" },
 	{ SGBUTTON, SG_DEFAULT, 0, 32,23, 8,1, "OK" },
 	{ SGBUTTON, SG_CANCEL, 0, 50,23, 8,1, "Cancel" },
@@ -304,6 +304,7 @@ static void DlgFileSelect_ManageScrollbar(void)
 	float scrollMove;
 
 	SDL_GetMouseState(&x, &y);
+	SDLGui_ScaleMouseStateCoordinates(&x, &y);
 
 	/* If mouse is down on the scrollbar for the first time */
 	if (fsdlg[SGFSDLG_SCROLLBAR].state & SG_MOUSEDOWN) {
@@ -312,9 +313,8 @@ static void DlgFileSelect_ManageScrollbar(void)
 			mouseIsOut = 0;
 			oldMouseY = y;
 		}
-	}
-	/* Mouse button is up on the scrollbar */
-	else {
+	} else {
+		/* Mouse button is up on the scrollbar */
 		mouseClicked = 0;
 		oldMouseY = y;
 		mouseIsOut = 0;
@@ -415,13 +415,13 @@ static void DlgFileSelect_HandleSdlEvents(SDL_Event *pEvent)
 			DlgFileSelect_Convert_ypos_to_scrollbar_Ypos();
 			break;
 		 case SDLK_END:
-		    ypos = entries-SGFS_NUMENTRIES;
+			ypos = entries-SGFS_NUMENTRIES;
 			DlgFileSelect_Convert_ypos_to_scrollbar_Ypos();
-		    break;
+			break;
 		 case SDLK_PAGEUP:
-		    ypos -= SGFS_NUMENTRIES;
+			ypos -= SGFS_NUMENTRIES;
 			DlgFileSelect_Convert_ypos_to_scrollbar_Ypos();
-		    break;
+			break;
 		 case SDLK_PAGEDOWN:
 			if (ypos+2*SGFS_NUMENTRIES < entries)
 				ypos += SGFS_NUMENTRIES;
@@ -723,8 +723,7 @@ char* SDLGui_FileSelect(const char *title, const char *path_and_name, char **zip
 	/* Prepare the path and filename variables */
 	if (path_and_name && path_and_name[0])
 	{
-		strncpy(path, path_and_name, FILENAME_MAX);
-		path[FILENAME_MAX-1] = '\0';
+		Str_Copy(path, path_and_name, FILENAME_MAX);
 	}
 	if (!File_DirExists(path))
 	{
@@ -1118,14 +1117,36 @@ bool SDLGui_FileConfSelect(const char *title, char *dlgname, char *confname, int
 		if (!File_DoesFileNameEndWithSlash(selname) &&
 		    (bAllowNew || File_Exists(selname)))
 		{
-			strncpy(confname, selname, FILENAME_MAX);
-			confname[FILENAME_MAX-1] = '\0';
+			Str_Copy(confname, selname, FILENAME_MAX);
 			File_ShrinkName(dlgname, selname, maxlen);
+			free(selname);
+			return true;
 		}
-		else
-		{
-			dlgname[0] = confname[0] = 0;
-		}
+		dlgname[0] = confname[0] = 0;
+		free(selname);
+	}
+	return false;
+}
+
+
+/*-----------------------------------------------------------------------*/
+/**
+ * Let user browse given directory.  If one is selected, set directory
+ * to confname & short name to dlgname, and return true, else false.
+ *
+ * (dlgname is limited to maxlen and confname is assumed to be
+ * Hatari config field with FILENAME_MAX amount of space)
+ */
+bool SDLGui_DirConfSelect(const char *title, char *dlgname, char *confname, int maxlen)
+{
+	char *selname;
+
+	selname = SDLGui_FileSelect(title, confname, NULL, false);
+	if (selname)
+	{
+		File_MakeValidPathName(selname);
+		Str_Copy(confname, selname, FILENAME_MAX);
+		File_ShrinkName(dlgname, selname, maxlen);
 		free(selname);
 		return true;
 	}

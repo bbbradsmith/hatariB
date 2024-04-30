@@ -206,11 +206,11 @@ void Spec512_StoreCyclePalette(Uint16 col, Uint32 addr)
 
 	if ( 1 && LOG_TRACE_LEVEL(TRACE_VIDEO_COLOR))
 	{
-		int FrameCycles, HblCounterVideo, LineCycles;
+		int nFrameCycles, HblCounterVideo, LineCycles;
 
-		Video_GetPosition ( &FrameCycles , &HblCounterVideo , &LineCycles );
+		Video_GetPosition ( &nFrameCycles , &HblCounterVideo , &LineCycles );
 		LOG_TRACE_PRINT("spec store col line %d cyc=%d col=%03x idx=%d video_cyc=%d %d@%d pc=%x instr_cyc=%d\n",
-				ScanLine, nHorPos, CycleColour, CycleColourIndex, FrameCycles,
+				ScanLine, nHorPos, CycleColour, CycleColourIndex, nFrameCycles,
 				LineCycles, HblCounterVideo, M68000_GetPC(), CurrentInstrCycles);
 	}
 
@@ -245,15 +245,15 @@ void Spec512_StartFrame(void)
 		pCyclePalette->LineCycles = -1;          /* Term */
 	}
 
-       /* Copy first line palette, kept in 'HBLPalettes' and store to 'STRGBPalette' */
-       for (i = 0; i < 16; i++)
-       {
+	/* Copy first line palette, kept in 'HBLPalettes' and store to 'STRGBPalette' */
+	for (i = 0; i < 16; i++)
+	{
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
-               STRGBPalette[STRGBPalEndianTable[i]] = ST2RGB[pHBLPalettes[i]];
+		STRGBPalette[STRGBPalEndianTable[i]] = ST2RGB[pHBLPalettes[i]];
 #else
-               STRGBPalette[i] = ST2RGB[pHBLPalettes[i]];
+		STRGBPalette[i] = ST2RGB[pHBLPalettes[i]];
 #endif
-       }
+	}
 
 	/* Ready for first call to 'Spec512_ScanLine' */
 	nScanLine = 0;

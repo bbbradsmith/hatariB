@@ -16,7 +16,7 @@
 <h1 class="pageheader">Hatari Debugger User's Manual</h1>
 
 <p class="pageheader">
-Version 2.4.1, August 2022
+Version 2.5.0, April 2024
 </p>
 <p class="pageheader">
 Debugger manual written by: <strong>Eero Tamminen</strong>
@@ -140,7 +140,7 @@ bMatchAllSymbols = FALSE
 <dd>Mask of exceptions which invoke debugger when exceptions catching
     is enabled (-D).  Set with the "--debug-except" option</dd>
 <dt>nDisasmOptions</dt>
-<dd>External disassembler output options, set with the "--disasm" option</dd>
+<dd>Disassembler output options, set with the "--disasm" option</dd>
 <dt>bDisasmUAE</dt>
 <dd>Whether disassembly uses CPU core internal disassembler ("uae"),
     or the external disassembler ("ext" one with output options).
@@ -157,9 +157,9 @@ bMatchAllSymbols = FALSE
 </dl>
 
 <p>Settings on how many lines are shown can be changed only from the
-configuration file. You should need to change/set them only if you've
-built debugger without readline support, as it can't then determine
-terminal size ("-1" = use terminal height).</p>
+configuration file. You should need to change/set them only if you
+have built debugger without readline support, as it is then unable
+to determine terminal size ("-1" = use terminal height).</p>
 
 <p>Note that "--debug-except" and "--disasm" options can be given either
 on Hatari command line or, like all other Hatari command line options,
@@ -175,9 +175,10 @@ the available commands and their shortcuts:
 <pre>
 Generic commands:
            cd (  ) : change directory
+         echo (  ) : output given string(s)
      evaluate ( e) : evaluate an expression
          help ( h) : print help
-      history (hi) : show last CPU/DSP PC values &amp; executed instructions
+      history (hi) : show last CPU and/or DSP PC values + instructions
          info ( i) : show machine/OS information
          lock (  ) : specify information to show on entering the debugger
       logfile ( f) : open or close log file
@@ -269,8 +270,8 @@ get a long value pointed by stack pointer + 2, use "(a7+2)".
 Values of arithmetic expressions are always evaluated before being
 given to a command.  Except for "evaluate" and "address" commands,
 they always need to be marked with quotes (""). Besides arithmetic,
-this can be used also to give symbol/register/variable values to
-commands that don't otherwise interpret them.  If command complains
+this can be used also to give symbol/address/register/variable values
+to commands that don't otherwise interpret them.  If command complains
 that it didn't recognize e.g. a register name, just put it to quotes
 and it will be "evaluated" before being given to the command.
 </p>
@@ -364,6 +365,7 @@ Usage:  d [start address-[end address]]
 </pre>
 <pre>
 &gt; disasm pc
+(PC)
 $00aa6e : 2f08                                 move.l    a0,-(sp)
 $00aa70 : 0241 0fff                            andi.w    #$fff,d1
 $00aa74 : 207c 00fe 78c0                       movea.l   #$fe78c0,a0
@@ -375,8 +377,14 @@ $00aa7e : 4ed0                                 jmp       (a0)
 Both commands accept in addition to numeric addresses also register
 and symbol names, like in above example.  If you don't specify an
 address, the commands continue showing from an address that comes
-after the previously shown data.  "disasm" command default address
-will be reset to PC address every time you re-enter the debugger.
+after the previously shown data.
+</p>
+
+<p>
+"disasm" command default address will be reset to program counter (PC)
+address every time you re-enter the debugger.  If history is enabled
+and it includes addresses just before PC, disassembly will instead
+start from a slightly earlier address to give more context.
 </p>
 
 <p>
@@ -434,13 +442,37 @@ dsp_symbols").
 </p>
 
 
-<h4>For a program under GEMDOS HD emulation</h4>
+<h4>Demangling (C++) symbols</h4>
+
+<p>C++ (and other similar languages) store symbols in binaries
+in a "mangled" format used by tools like linkers, and symbol names
+need to be "demangled" (expanded) to a more readable / user-friendly
+format.  This can be done using a tool coming with the C++ compiler
+(in "binutils-m68k-atari-mint" package).  ScummVM example:</p>
+<pre>
+$ gst2ascii scummvm.ttp | m68k-atari-mint-c++filt &gt; scummvm.sym
+</pre>
+<p>(When symbols are in a file named as "&lt;prgname&gt;.sym", Hatari
+debugger will load symbols from it, not from the program file.)
+
+<p>Note: many demangled C++ symbols contain special characters
+which prevent them from being given as arguments to breakpoints and
+other debugger commands.  One should use (resolved) symbol address
+instead for those commands.</p>
+<p>Addresses for symbols that match user specified substring,
+can be listed like this:</p>
+<pre>
+symbols name XMLParser::parse
+</pre>
+
+
+<h4>Symbols for a program under GEMDOS HD emulation</h4>
 
 <p>
 If currently running program contains debug symbol table,
 and it is started from GEMDOS HD emulated drive, its symbol names /
-addresses are automatically loaded when debugger is entered, and
-removed when program terminates.</p>
+addresses are automatically loaded when debugger is invoked, and
+removed when that program terminates.</p>
 
 <p>
 Above happens only if there are no symbols loaded when the program
@@ -464,7 +496,7 @@ depend on which toolchain you use to build it:
 <dd>"-g" and "-l" options for linking</dd>
 <dt><em>GCC</em>:</dt>
 <dd>"-g" for compilation, and no strip option for linking
-(with older Hatari versions that didn't support a.out format,
+(with older Hatari versions that did not support "a.out" format,
 also "-Wl,--traditional-format" option was needed for linking)</dd>
 <dt><em>VBCC</em>:</dt>
 <dd>"-g" (can only be used at linking phase), <em>when VBCC
@@ -475,9 +507,30 @@ also "-Wl,--traditional-format" option was needed for linking)</dd>
 <p>You can view the generated symbols (and convert them to debugger
 ASCII format) with tool installed with Hatari:</p>
 <pre>
-$ gst2ascii -l -o program.tos &gt; program.sym
+$ gst2ascii program.tos &gt; program.sym
 </pre>
-(Options -l and -o are used to exclude useless symbols from the output.)
+<p>(By default "gst2ascii" filters out same symbols as Hatari debugger does.)</p>
+
+<p>For C++ programs, pipe the that output through
+<em>m68k-atari-mint-c++filt</em> demangler (see above)
+before directing it to a file.</p>
+
+
+<h5>Overriding program symbols</h5>
+
+<p>Symbols in a program can be overridden by providing similarly
+named ".sym" file in the same directory.  If for example there is
+a file called "program.sym", debugger will try to load that instead
+of "program.prg" (when debugger is first invoked after that program
+started).</p>
+
+<p>There are few reasons why one might want to do that:</p><ul>
+<li>Provide debugger demangled versions of the C++ program symbols</li>
+<li>Stripped binary + ".sym" file take less space than providing
+    also a non-stripped binary</li>
+<li>Add (function) or remove (loop) symbols to improve profiling
+    results</li>
+</ul>
 
 
 <h4>For a program on a (disk) image</h4>
@@ -497,14 +550,13 @@ symbols /path/to/the/program.tos
 
 <p>
 If Hatari complains that your program doesn't have debug symbol table,
-or its symbols are in some unsupported format, and you cannot re-compile
-it to include a.out or GST/DRI symbols, you have two options:
+or its symbols are in some unsupported format, you have two options:
 </p>
 <ul>
 <li>Convert the symbols to ASCII format understood by the Hatari debugger.
     Writing converters for other ASCII formats is easy, and Hatari already
     contains converters for DSP LOD files, <span class="commandline">nm</span>
-    output for MiNT/a.out binaries and AHCC map files.</li>
+    output, and a few other formats.</li>
 <li>Create the ASCII symbols file by hand while you're debugging a program.</li>
 </ul>
 
@@ -625,7 +677,7 @@ conditions need to be true for a breakpoint to trigger.
 Normally when a breakpoint is triggered, emulation is stopped and you
 get to the debugger. Breakpoint options can be used to affect what
 happens when a breakpoint is triggered.  These options are given after
-the conditions and are prefixed with ':'.
+the conditions, and are prefixed with a (space and) ':' character.
 </p>
 
 <dl>
@@ -700,8 +752,8 @@ command during <a href="#Profiling">profiling</a>.  See
 
 <dt><em>quiet</em></dt>
 <dd>
-Inhibit showing of general breakpoint hit information i.e. show only
-the additional information that breakpoint outputs.
+Inhibit showing of extra information when breakpoint is either set or
+hit i.e. show only the information that breakpoint itself outputs.
 </dd>
 </dl>
 
@@ -1470,8 +1522,10 @@ $ hatari_profile.py <b>-r</b> program.sym program-profile.txt
 extracted to <a href="#Debug_symbols">the ASCII format</a>
 understood by the post-processor:</p>
 <pre>
-$ gst2ascii -a -l -o program.prg &gt; program.sym
+$ gst2ascii -b -a -d program.prg &gt; program.sym
 </pre>
+<p>(Options given to "gst2ascii" filter out symbols for other
+things than what are in the program code section.)
 
 <p>If there are some extra symbols that you don't want to see
 separately in profiles, because they aren't real functions,
@@ -1479,8 +1533,11 @@ but e.g. loop labels, you can either remove them manually
 from the ASCII *.sym file, or filter them out with grep:
 </p>
 <pre>
-$ gst2ascii -a -l -o program.prg | grep -v -e useless1 -e useless2 &gt; program.sym
+$ gst2ascii -b -a -d program.prg | grep -v -e useless1 -e useless2 &gt; program.sym
 </pre>
+
+<p>For C++ programs, see earlier section(s) on how to best
+provide symbols for them.</p>
 
 
 <h4>Post-processor provided statistics</h4>
@@ -1628,63 +1685,68 @@ generation, discussed below).</p>
 <p>In addition to accuracy issues mentioned in previous Profiling
 sections, function/symbol level costs have gotchas of their own.</p>
 
-<p>The first cost percentage and count columns are <em>sums for all
-the instructions</em> that were in profile data file <em>between
-the indicated symbol's address and the address of the next symbol</em>
-(= "between-symbols" cost).</p>
+<p>The first cost percentage and count column are sums for costs
+accounted for all the <em>adresses</em> that were in profile data file
+<em>between the indicated symbol's address and the address of the next
+symbol</em> (= "between-symbols" cost).</p>
 
-<p><strong>NOTE:</strong> If your symbol file doesn't contain addresses
-for all the relevant symbols, results from this can be misleading because
-instructions costs get assigned to <em>whatever</em> symbol's address
-happened to precede those instructions.  And you don't see which
-caller is causing it from caller info or callgraph either, as entry
-point for that time sink lacking a symbol means profiler hadn't
-tracked calls to it...</p>
+<p><strong>NOTE:</strong> If your symbols file does not contain addresses
+for all the relevant symbols, results from this can be misleading;
+instruction costs get assigned to <em>whatever</em> symbol's address
+happened to precede those instructions.  And you do not see which
+caller is causing it from caller info or callgraphs either, as entry
+point for that time sink missing a symbol means calls to it had not
+been tracked by profiler...</p>
 
-<p>The next two cost percentage and count columns are for <em>subroutine
-calls costs</em>, first one for exclusive and latter for inclusive cost
-i.e. including costs for further subroutine calls.  Values are based on
-caller information documented above.</p>
+<p>The next two percentages (and cost counts) are total cost of calls
+to given subroutine, based on profiler runtime branch tracking (see
+caller information documented above). First value is ("exclusive")
+cost for just that subroutine (from its entry, until execution returns
+to where it was called from), <em>without</em> costs for branches to
+further subroutines.  Latter value is ("inclusive") cost covering also
+costs for all the subroutines it calls.</p>
 
-<p>Reasons why between-symbol costs, and subroutine call costs can
-differ, are following:</p>
+<p>Reasons why "between-symbols" costs, and subroutine call costs
+can differ, are following:</p>
 <ul>
-<li>Subroutine terminates before next symbol address: exclusive
-    cost is smaller than in-between cost <em>because of missing
+<li>Subroutine terminates before next symbol address: "exclusive" cost
+    is smaller than "between-symbols" cost <em>because of missing
     symbol information</em>
     (these are indicated with '*' in statistics).</li>
 <li>Subroutine is called more through jumps/branches than through
-    subroutine calls: inclusive call count may be smaller than
-    in-between call count which includes branches/jumps.</li>
+    subroutine calls (JSR/BSR): "inclusive" call count may be smaller
+    than "between-symbols" call count which includes costs also for
+    function entries through branches/jumps.</li>
 <li>Subroutine jumps/branches to another function instead of
     using subroutine call, or function contains additional
-    (non-function) labels: exclusive cost is larger than
-    in-between cost.</li>
-<li>Exception happening during subroutine call: exclusive cost is
-    (slightly) larger than in-between cost.</li>
+    (non-function) labels: "exclusive" cost is larger than
+    "between-symbols" cost.</li>
+<li>Exception happening during subroutine call: "exclusive" cost
+    is (slightly) larger than "between-symbols" cost.</li>
 </ul>
 
-<p>In the first case, you should check the profile data to find out
-whether there are missing symbols for executed function entry points.
-You can notice function entry points as address gap and/or code
-retrieving arguments from stack. Exit points can be seen from RTS
-instructions.</p>
+<p>In the first case, you should check saved profile disassembly to
+find out whether there are missing symbols for executed function entry
+points. You can notice function entry points as address gaps and/or
+instructions retrieving arguments from stack. Exit points can be seen
+from RTS instructions.</p>
 
-<p>Second case can also be seen from the profile data.  Call count
-is same as count for how many times first instruction is executed
+<p>Second case can also be seen from the profile disassembly. Call
+count is same as count for how many times first instruction is executed
 (worst case: large loop on subroutine's first instruction).</p>
 
 <p>While subroutine costs should be more accurate and relevant, due to
-code optimizations many of the functions are not called as subroutines
+code optimizations, many of the functions are not called as subroutines
 (on m68k, using JSR/BSR), but just jumped or branched to.  Because of
-this, it is useful to compare both subroutine and between-symbols
+this, it is useful to compare both subroutine and "between-symbols"
 costs.  One should be able to see from the profile disassembly which
 of the above cases is cause for the discrepancy in the values.</p>
 
-<p><strong>NOTE:</strong> Before starting to do any serious source
-level optimizations, you should <em>always</em> verify from profile
-data (disassembly) where exactly the costs are in a function, to make
-sure your optimization efforts can actually help the performance.</p>
+<p><strong>NOTE:</strong> Before starting to do any serious
+optimizations based on profile information, you should <em>always</em>
+verify from profile disassembly where exactly the costs are in a
+function, to make sure your optimization efforts can actually have
+an impact on performance.</p>
 
 
 <h4>Generating and viewing callgraphs</h4>
@@ -1940,6 +2002,16 @@ b  ($ff820a).b &amp; 2 ! ($ff820a).b &amp; 2  :trace
 </pre>
 </dd>
 
+<dt><em>Values in different number base</em></dt>
+<dd>To see values in different number bases, use "evaluate"
+command.  It can be used also with more complex expressions:
+<pre>
+&gt; e ($ff8802).b & 0x7
+  value at ($ff8802).b = $27
+= %111 (bin), #7 (dec), $7 (hex)
+</pre>
+</dd>
+
 <dt><em>Viewing OS structure and IO register values</em></dt>
 <dd>To see e.g. basepage for currently running program:
 <pre>
@@ -1996,7 +2068,7 @@ GEMDOS 0x3D Fopen("TEST.TXT", read-only)
 <dd>To see CPU instructions executed before debugger was entered,
 you need to enable history tracking <em>before</em> it. Whenever
 debugger is entered, you can then request given number (here 16) of
-past instructions to be shown:
+past PC addresses and their (current) instructions to be shown:
 <pre>
 history  cpu
 c

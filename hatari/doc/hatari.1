@@ -35,7 +35,7 @@ be emulated as a virtual GEMDOS hard disk, a floppy disk image or an
 Atari program that should be autostarted.  In the last case the
 program's directory will be used as the C: drive from where this
 program will be started.  These shortcuts correspond to "-d <dir>",
-"--disk-a <floppy image>" and "-d <dir> --auto C:\<program>"
+"--disk-a <floppy image>" and "-d <dir> --auto C:\\<program>"
 options.
 .PP
 Booting will be done from the disk image or directory that's given
@@ -259,7 +259,7 @@ and height to multiple of 8 pixels (smaller system font height). That
 translates to following maximum standard resolutions for the VDI mode:
 .TP
 .B monochrome
-FullHD (1920×1080), WUXGA (1920x1200) and QWXGA (2048x1152)
+FullHD (1920x1080), WUXGA (1920x1200) and QWXGA (2048x1152)
 .TP
 .B 2 plane mode (4 colors)
 HD (1280x720), WXGA (1280x768) and XGA+ (1152x864)
@@ -325,6 +325,26 @@ Enable MFP serial port support and use <file> as the input device
 .TP
 .B \-\-rs232\-out <filename>
 Enable MFP serial port support and use <file> as the output device
+.TP
+.B \-\-scc\-a\-in <filename>
+Enable SCC channel A serial port support and use <file> for the input
+(only for Mega-STE, TT and Falcon)
+.TP
+.B \-\-scc\-a\-out <filename>
+Enable SCC channel A serial port support and use <file> for the output
+(only for Mega-STE, TT and Falcon)
+.TP
+.B \-\-scc\-a\-lan\-in <filename>
+Enable SCC channel A LAN port support and use <file> for the input
+(only for Mega-STE and TT)
+.TP
+.B \-\-scc\-a\-lan\-out <filename>
+Enable SCC channel A LAN port support and use <file> for the output
+(only for Mega-STE and TT)
+.TP
+.B \-\-scc\-b\-in <filename>
+Enable SCC channel B serial port support and use <file> for the input
+(only for Mega-STE, TT and Falcon)
 .TP
 .B \-\-scc\-b\-out <filename>
 Enable SCC channel B serial port support and use <file> for the output
@@ -497,6 +517,12 @@ With "none", register access causes errors (=no VME HW), which is
 needed for Linux to boot with TT emulation until there's full SCU
 interrupt support.  No VME tracing support.
 .TP
+.B \-\-rtc\-year <x>
+With the default value 0, RTC date and time are taken from the host.
+If application does not handle current dates, this can be used to
+change RTC year to a more compatible one.  See also "--gemdos-time"
+option.
+.TP
 .B \-\-timer\-d <bool>
 Patch redundantly high Timer-D frequency set by TOS.  This can
 increase Hatari speed significantly (especially for ST/e emulation) as
@@ -523,7 +549,7 @@ supports.
 .B \-\-sound\-buffer\-size <x>
 SDL's sound buffer size: 10-100, or 0 to use default buffer size.
 By default Hatari uses an SDL buffer size of 1024 samples, which
-gives approximatively 20-30 ms of sound depending on the chosen sound
+gives approximately 20-30 ms of sound depending on the chosen sound
 frequency. Under some OS or with not fully supported sound card, this
 default setting can cause a bigger delay at lower frequency (nearly 0.5 sec).
 In that case, you can use this option to force the size of the sound
@@ -588,8 +614,7 @@ console output, not just normal BIOS console output.
 .TP
 .B \-\-disasm <x>
 Set disassembly options.  'uae' and 'ext' select the disassembly engine
-to use, bitmask sets output options for the external disassembly engine
-and 'help' lists them.
+to use, bitmask sets disassembly output options and 'help' lists them.
 .TP
 .B \-\-natfeats <bool>
 Enable/disable (basic) Native Features support. EmuTOS uses it
@@ -604,6 +629,11 @@ for available (comma separated) tracing flags
 .TP
 .B \-\-trace\-file <file>
 Save trace output to <file> (default=stderr)
+.TP
+.B \-\-msg\-repeat
+Toggle whether successive repeats of identical log or trace messages
+will be suppressed, so that only their count is shown (default=suppress).
+Disassembly, register and (multi-line) AES traces bypass this feature
 .TP
 .B \-\-parse <file>
 Parse/execute debugger commands from <file>

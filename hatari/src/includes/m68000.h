@@ -22,6 +22,7 @@
 #include "cycles.h"     /* for nCyclesMainCounter */
 #include "sysdeps.h"
 #include "memory.h"
+#define	HATARI_NO_ENUM_BITVALS	/* Don't define 'bitvals' and 'bits' in newcpu.h / readcpu.h */
 #include "newcpu.h"     /* for regs */
 #include "cycInt.h"
 #include "log.h"
@@ -208,13 +209,14 @@ typedef struct {
 
 extern cpu_instruction_t CpuInstruction;
 
-extern Uint32 BusErrorAddress;
+extern uint32_t BusErrorAddress;
 extern bool bBusErrorReadWrite;
 extern int nCpuFreqShift;
 extern int WaitStateCycles;
 extern int BusMode;
 extern bool	CPU_IACK;
 extern bool	CpuRunCycleExact;
+extern bool	CpuRunFuncNoret;
 
 extern int	LastOpcodeFamily;
 extern int	LastInstrCycles;
@@ -231,9 +233,6 @@ extern const char *OpcodeName[];
 static inline void M68000_AddCycles(int cycles)
 {
 	cycles = (cycles + 3) & ~3;
-#ifndef CYCINT_NEW
-	PendingInterruptCount -= INT_CONVERT_TO_INTERNAL ( cycles , INT_CPU_CYCLE );
-#endif
 	nCyclesMainCounter += cycles;
 	CyclesGlobalClockCounter += cycles;
 }
@@ -324,9 +323,6 @@ static inline void M68000_AddCyclesWithPairing(int cycles)
 		cycles = (cycles + 3) & ~3;		/* no pairing, round current instr to 4 cycles */
 	}
 
-#ifndef CYCINT_NEW
-	PendingInterruptCount -= INT_CONVERT_TO_INTERNAL ( cycles , INT_CPU_CYCLE );
-#endif
 	nCyclesMainCounter += cycles;
 	CyclesGlobalClockCounter += cycles;
 	BusCyclePenalty = 0;
@@ -345,9 +341,6 @@ static inline void M68000_AddCyclesWithPairing(int cycles)
  */
 static inline void M68000_AddCycles_CE(int cycles)
 {
-#ifndef CYCINT_NEW
-	PendingInterruptCount -= INT_CONVERT_TO_INTERNAL ( cycles , INT_CPU_CYCLE );
-#endif
 	nCyclesMainCounter += cycles;
 	CyclesGlobalClockCounter += cycles;
 }
@@ -363,8 +356,8 @@ extern void M68000_CheckCpuSettings(void);
 extern void M68000_PatchCpuTables(void);
 extern void M68000_MemorySnapShot_Capture(bool bSave);
 extern bool M68000_IsVerboseBusError(uint32_t pc, uint32_t addr);
-extern void M68000_BusError ( Uint32 addr , int ReadWrite , int Size , int AccessType , uae_u32 val );
-extern void M68000_Exception(Uint32 ExceptionNr , int ExceptionSource);
+extern void M68000_BusError ( uint32_t addr , int ReadWrite , int Size , int AccessType , uae_u32 val );
+extern void M68000_Exception(uint32_t ExceptionNr , int ExceptionSource);
 extern void M68000_Update_intlev ( void );
 extern void M68000_WaitState(int WaitCycles);
 extern int M68000_WaitEClock ( void );
@@ -376,9 +369,9 @@ extern void M68000_Flush_All_Caches ( uaecptr addr , int size );
 extern void M68000_SetBlitter_CE ( bool ce_mode );
 extern int DMA_MaskAddressHigh ( void );
 extern void M68000_ChangeCpuFreq ( void );
-extern Uint16 M68000_GetSR ( void );
-extern void M68000_SetSR ( Uint16 v );
+extern uint16_t M68000_GetSR ( void );
+extern void M68000_SetSR ( uint16_t v );
 extern void M68000_SetPC ( uaecptr v );
-extern void M68000_MMU_Info(FILE *fp, Uint32 flags);
+extern void M68000_MMU_Info(FILE *fp, uint32_t flags);
 
 #endif

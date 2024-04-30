@@ -44,7 +44,7 @@ int	nCyclesMainCounter;			/* Main cycles counter since previous Cycles_UpdateCou
 
 static int nCyclesCounter[CYCLES_COUNTER_MAX];	/* Array with all counters */
 
-Uint64	CyclesGlobalClockCounter = 0;		/* Global clock counter since starting Hatari (it's never reset afterwards) */
+uint64_t CyclesGlobalClockCounter = 0;		/* Global clock counter since starting Hatari (it's never reset afterwards) */
 
 int	CurrentInstrCycles;
 
@@ -282,7 +282,7 @@ int Cycles_GetCounterOnWriteAccess(int nId)
  * Read the main clock counter on CPU memory read access by taking care of the instruction
  * type (add the needed amount of additional cycles).
  */
-Uint64 Cycles_GetClockCounterOnReadAccess(void)
+uint64_t Cycles_GetClockCounterOnReadAccess(void)
 {
 	int AddCycles;
 
@@ -297,7 +297,7 @@ Uint64 Cycles_GetClockCounterOnReadAccess(void)
  * Read the main clock counter on CPU memory write access by taking care of the instruction
  * type (add the needed amount of additional cycles).
  */
-Uint64 Cycles_GetClockCounterOnWriteAccess(void)
+uint64_t Cycles_GetClockCounterOnWriteAccess(void)
 {
 	int AddCycles;
 
@@ -315,13 +315,10 @@ Uint64 Cycles_GetClockCounterOnWriteAccess(void)
  * the current instruction (then currcycle=0) or during the processing of the current
  * instruction.
  */
-Uint64 Cycles_GetClockCounterImmediate(void)
+uint64_t Cycles_GetClockCounterImmediate(void)
 {
 	if ( CpuRunCycleExact )
 		return CyclesGlobalClockCounter + currcycle*2/CYCLE_UNIT;
 	else
 		return CyclesGlobalClockCounter;
 }
-
-
-

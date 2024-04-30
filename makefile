@@ -26,6 +26,7 @@ ZLIB_LIB ?= $(PWD)/$(ZLIB_BUILD)/lib/libz.a
 SDL2_LIB ?= $(PWD)/SDL/build/lib/libSDL2.a
 SDL2_LINK ?= $(shell $(PWD)/SDL/build/bin/sdl2-config --static-libs)
 ZLIB_LINK ?= $(ZLIB_LIB)
+SDL2_DIR ?= $(PWD)/SDL/build
 # sdl2-config is less than ideal, designed for EXE rather than DLL,
 # it adds -lSDLmain etc. but it seems the best way to get the mac dependencies right
 
@@ -41,8 +42,7 @@ CMAKE ?= cmake
 CMAKEFLAGS += \
 	-DZLIB_INCLUDE_DIR=$(ZLIB_INCLUDE) \
 	-DZLIB_LIBRARY=$(ZLIB_LIB) \
-	-DSDL2_INCLUDE_DIR=$(SDL2_INCLUDE) \
-	-DSDL2_LIBRARY=$(SDL2_LIB) \
+	-DSDL2_DIR=$(SDL2_DIR)/lib/cmake/SDL2 \
 	-DCMAKE_DISABLE_FIND_PACKAGE_Readline=1 \
 	-DCMAKE_DISABLE_FIND_PACKAGE_X11=1 \
 	-DCMAKE_DISABLE_FIND_PACKAGE_PNG=1 \

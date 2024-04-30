@@ -1075,6 +1075,8 @@ RETRO_API void retro_init(void)
 	core_audio_hold_remain = 0;
 	core_audio_last[0] = 0;
 	core_audio_last[1] = 0;
+
+	core_rand_seed = 1;
 }
 
 RETRO_API void retro_deinit(void)

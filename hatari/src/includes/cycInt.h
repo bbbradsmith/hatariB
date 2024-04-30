@@ -8,7 +8,6 @@
 #ifndef HATARI_CYCINT_H
 #define HATARI_CYCINT_H
 
-#define CYCINT_NEW
 
 /* Interrupt handlers in system */
 typedef enum
@@ -34,6 +33,12 @@ typedef enum
   INTERRUPT_FDC,
   INTERRUPT_BLITTER,
   INTERRUPT_MIDI,
+  INTERRUPT_SCC_BRG_A,
+  INTERRUPT_SCC_TX_RX_A,
+  INTERRUPT_SCC_RX_A,
+  INTERRUPT_SCC_BRG_B,
+  INTERRUPT_SCC_TX_RX_B,
+  INTERRUPT_SCC_RX_B,
 
   MAX_INTERRUPTS
 } interrupt_id;
@@ -43,51 +48,23 @@ typedef enum
 #define	INT_MFP_CYCLE		2
 #define	INT_CPU8_CYCLE		3
 
-#ifndef CYCINT_NEW
-
-#define	INT_CPU_TO_INTERNAL	9600
-#define	INT_MFP_TO_INTERNAL	31333
-
-/* Convert cpu or mfp cycles to internal cycles */
-#define INT_CONVERT_TO_INTERNAL( cyc , type )	( type == INT_CPU_CYCLE ? (cyc)*INT_CPU_TO_INTERNAL : \
-	       					  type == INT_MFP_CYCLE ? ( (cyc)*INT_MFP_TO_INTERNAL ) << nCpuFreqShift : \
-						  ( (cyc)*INT_CPU_TO_INTERNAL ) << nCpuFreqShift )
-
-//#define INT_CONVERT_TO_INTERNAL( cyc , type )	( ( type == INT_CPU_CYCLE ? (cyc)*INT_CPU_TO_INTERNAL : (cyc)*INT_MFP_TO_INTERNAL ) << nCpuFreqShift )
-//#define INT_CONVERT_TO_INTERNAL_NO_FREQSHIFT( cyc , type )	( type == INT_CPU_CYCLE ? (cyc)*INT_CPU_TO_INTERNAL : (cyc)*INT_MFP_TO_INTERNAL )
-
-/* Convert internal cycles to real mfp or cpu cycles */
-/* Rounding is important : for example 9500 internal is 0.98 cpu and should give 1 cpu cycle, not 0 */
-/* so we do (9500+9600-1)/9600 to get the closest higher integer */
-//#define INT_CONVERT_FROM_INTERNAL( cyc , type )	( type == INT_CPU_CYCLE ? (cyc+INT_CPU_TO_INTERNAL-1)/INT_CPU_TO_INTERNAL : (cyc+INT_MFP_TO_INTERNAL-1)/INT_MFP_TO_INTERNAL )
-//#define INT_CONVERT_FROM_INTERNAL( cyc , type )	( ( type == INT_CPU_CYCLE ? (cyc)/INT_CPU_TO_INTERNAL : ((cyc)+INT_MFP_TO_INTERNAL-1)/INT_MFP_TO_INTERNAL ) >> nCpuFreqShift )
-
-#define INT_CONVERT_FROM_INTERNAL( cyc , type )	( type == INT_CPU_CYCLE ? (cyc)/INT_CPU_TO_INTERNAL : \
-	       					  type == INT_MFP_CYCLE ? ( ((cyc)+INT_MFP_TO_INTERNAL-1)/INT_MFP_TO_INTERNAL ) >> nCpuFreqShift : \
-						  ( (cyc)/INT_CPU_TO_INTERNAL ) >> nCpuFreqShift )
-
-#else
-
 /* Simulate extra bits of internal decimal precision, as MFP cycles don't convert to an integer number of CPU cycles */
 #define	CYCINT_SHIFT		8
 
 /* Convert CPU or MFP cycles to internal cycles */
 #define INT_CONVERT_TO_INTERNAL( cyc , type )	( type == INT_CPU_CYCLE ? (cyc) << CYCINT_SHIFT : \
-						type == INT_MFP_CYCLE ? (int)( ( (Uint64)( (cyc) << CYCINT_SHIFT ) * MachineClocks.CPU_Freq_Emul ) / MachineClocks.MFP_Timer_Freq ) : \
+						type == INT_MFP_CYCLE ? (int)( ( (uint64_t)( (cyc) << CYCINT_SHIFT ) * MachineClocks.CPU_Freq_Emul ) / MachineClocks.MFP_Timer_Freq ) : \
 						(cyc) << ( nCpuFreqShift + CYCINT_SHIFT ) )
 
 /* Convert internal cycles to real CPU or MFP cycles */
 #define INT_CONVERT_FROM_INTERNAL( cyc , type )	( type == INT_CPU_CYCLE ? (cyc) >> CYCINT_SHIFT : \
-						type == INT_MFP_CYCLE ? (int)( ( (Uint64)(cyc) * MachineClocks.MFP_Timer_Freq ) / MachineClocks.CPU_Freq_Emul ) >> CYCINT_SHIFT : \
+						type == INT_MFP_CYCLE ? (int)( ( (uint64_t)(cyc) * MachineClocks.MFP_Timer_Freq ) / MachineClocks.CPU_Freq_Emul ) >> CYCINT_SHIFT : \
 						(cyc) >> ( nCpuFreqShift + CYCINT_SHIFT ) )
-
-
-#endif
 
 
 extern void (*PendingInterruptFunction)(void);
 extern int PendingInterruptCount;
-extern Uint64	CycInt_ActiveInt_Cycles;
+extern uint64_t	CycInt_ActiveInt_Cycles;
 
 extern void	CycInt_Reset(void);
 extern void	CycInt_MemorySnapShot_Capture(bool bSave);
@@ -102,27 +79,7 @@ extern int	CycInt_FindCyclesRemaining(interrupt_id Handler, int CycleType);
 
 extern bool	CycInt_InterruptActive(interrupt_id Handler);
 extern int	CycInt_GetActiveInt(void);
-extern void	CycInt_CallActiveHandler(Uint64 Clock);
-
-#ifndef CYCINT_NEW
-
-static inline void CycInt_Process(void)
-{
-	while ( ( PendingInterruptCount <= 0 ) && ( PendingInterruptFunction ) )
-		CALL_VAR(PendingInterruptFunction);
-}
-static inline void CycInt_Process_stop(int stop_cond)
-{
-	while ( ( PendingInterruptCount <= 0 ) && ( PendingInterruptFunction ) && ( stop_cond == 0 ) )
-		CALL_VAR(PendingInterruptFunction);
-}
-static inline void CycInt_Process_Clock(Uint64 Clock)
-{
-	while ( ( PendingInterruptCount <= 0 ) && ( PendingInterruptFunction ) )
-		CALL_VAR(PendingInterruptFunction);
-}
-
-#else
+extern void	CycInt_CallActiveHandler(uint64_t Clock);
 
 static inline void CycInt_Process(void)
 {
@@ -135,13 +92,11 @@ static inline void CycInt_Process_stop(int stop_cond)
 		CycInt_CallActiveHandler( CyclesGlobalClockCounter );
 }
 /* Same as CycInt_Process but use a specific cycles clock value */
-static inline void CycInt_Process_Clock(Uint64 Clock)
+static inline void CycInt_Process_Clock(uint64_t Clock)
 {
 	while ( CycInt_ActiveInt_Cycles <= ( Clock << CYCINT_SHIFT ) )
 		CycInt_CallActiveHandler( Clock );
 }
-
-#endif
 
 
 /* TEMP : to update CYCLES_COUNTER_VIDEO during an opcode */

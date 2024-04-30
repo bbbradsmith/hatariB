@@ -192,7 +192,7 @@ char szPath[FILENAME_MAX] ;											// for general use
 {
 	NSString	*aDisk ;
 
-	aDisk = [NSApp hopenfile:NO defoDir:nil defoFile:@"" types:@[allF]] ;
+	aDisk = [NSApp hopenfile:NO defoDir:nil defoFile:@""] ;
 	if (aDisk.length == 0) return ;                 		// user canceled
 
 	[aDisk getCString:szPath maxLength:FILENAME_MAX-1 encoding:NSASCIIStringEncoding] ;
@@ -355,7 +355,7 @@ char szPath[FILENAME_MAX] ;											// for general use
 	 {	directoryToOpen = @"~".stringByExpandingTildeInPath ;			// Currently no path: we use user's directory
 		fileToPreselect = nil; } ;
 
-	newPath = [NSApp hopenfile:NO defoDir:directoryToOpen defoFile:fileToPreselect types:@[@"sav"] ] ;
+	newPath = [NSApp hopenfile:NO defoDir:directoryToOpen defoFile:fileToPreselect] ;
 	if (newPath.length != 0)											// Perform the memory snapshot load
 		MemorySnapShot_Restore([newPath cStringUsingEncoding:NSASCIIStringEncoding], TRUE);
 
@@ -426,9 +426,9 @@ char szPath[FILENAME_MAX] ;											// for general use
 	// commit back to the configuration settings if choosing user confirm)
 	CurrentParams = ConfigureParams;
 
-	GuiOsx_Pause(true);
+	bool bWasRunning = GuiOsx_Pause(true);
 
-	newCfg = [NSApp hopenfile:NO defoDir:nil defoFile:ConfigFile types:@[@"cfg"] ] ;
+	newCfg = [NSApp hopenfile:NO defoDir:nil defoFile:ConfigFile] ;
 
 	if (newCfg.length != 0)
 	{
@@ -446,7 +446,9 @@ char szPath[FILENAME_MAX] ;											// for general use
 			ConfigureParams = CurrentParams;   //Restore previous Params.
 	} ;
 
-	GuiOsx_Resume();
+	if (bWasRunning) {
+		GuiOsx_Resume();
+	}
 }
 
 /*----------------------------------------------------------------------*/
@@ -455,20 +457,19 @@ char szPath[FILENAME_MAX] ;											// for general use
 
 @end
 /*----------------------------------------------------------------------*/
-static int IsRootCwd()
+static int IsRootCwd(void)
 {
 	char buf[MAXPATHLEN];
 	char *cwd = getcwd(buf, sizeof (buf));
 	return (cwd && (strcmp(cwd, "/") == 0));
 }
 /*----------------------------------------------------------------------*/
-static int IsTenPointNineOrLater()
+static int IsTenPointNineOrLater(void)
 {
 	// OK for 10.9, but before ??
-	NSOperatingSystemVersion systemVersion = [[NSProcessInfo processInfo] operatingSystemVersion];	
-	int r=(systemVersion.majorVersion==10) && (systemVersion.minorVersion>=9);
-
-	return r;
+	NSOperatingSystemVersion systemVersion = [[NSProcessInfo processInfo] operatingSystemVersion];
+	return (systemVersion.majorVersion == 10 && systemVersion.minorVersion >= 9)
+			|| systemVersion.majorVersion > 10;
 }
 /*----------------------------------------------------------------------*/
 static int IsFinderLaunch(const int argc, char **argv)

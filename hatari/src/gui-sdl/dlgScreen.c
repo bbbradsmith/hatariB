@@ -100,13 +100,17 @@ static SGOBJ monitordlg[] =
 #define DLGSCRN_MAX_HLESS   23
 #define DLGSCRN_MAX_HTEXT   24
 #define DLGSCRN_MAX_HMORE   25
-#define DLGSCRN_CROP        28
-#define DLGSCRN_CAPTURE     29
-#define DLGSCRN_RECANIM     30
-#define DLGSCRN_GPUSCALE    33
-#define DLGSCRN_RESIZABLE   34
-#define DLGSCRN_VSYNC       35
-#define DLGSCRN_EXIT_WINDOW 36
+#define DLGSCRN_FORMAT_PNG  27
+#define DLGSCRN_FORMAT_BMP  28
+#define DLGSCRN_FORMAT_NEO  29
+#define DLGSCRN_FORMAT_XIMG 30
+#define DLGSCRN_CROP        31
+#define DLGSCRN_CAPTURE     32
+#define DLGSCRN_RECANIM     33
+#define DLGSCRN_GPUSCALE    36
+#define DLGSCRN_RESIZABLE   37
+#define DLGSCRN_VSYNC       38
+#define DLGSCRN_EXIT_WINDOW 39
 
 /* needs to match Frame skip values in windowdlg[]! */
 static const int skip_frames[] = { 0, 1, 2, 4, AUTO_FRAMESKIP_LIMIT };
@@ -148,10 +152,13 @@ static SGOBJ windowdlg[] =
 	{ SGBUTTON,   0, 0, 43,9,  1,1, "\x03", SG_SHORTCUT_DOWN },
 
 	{ SGBOX,      0, 0,  1,12, 50,5, NULL },
-	{ SGTEXT,     0, 0,  7,13, 16,1, "Screen capture" },
-	{ SGCHECKBOX, 0, 0,  8,15, 16,1, "_Crop statusbar" },
-	{ SGBUTTON,   0, 0, 29,13, 14,1, " _Screenshot " },
-	{ SGBUTTON,   0, 0, 29,15, 14,1, NULL },      /* Record text set later */
+	{ SGRADIOBUT, 0, 0,  5,13, 5,1, "PNG" },
+	{ SGRADIOBUT, 0, 0, 11,13, 5,1, "BMP" },
+	{ SGRADIOBUT, 0, 0, 17,13, 5,1, "NEO" },
+	{ SGRADIOBUT, 0, 0, 23,13, 5,1, "XIMG" },
+	{ SGCHECKBOX, 0, 0,  5,15, 16,1, "_Crop statusbar" },
+	{ SGBUTTON,   0, 0, 32,13, 14,1, " _Screenshot " },
+	{ SGBUTTON,   0, 0, 32,15, 14,1, NULL },      /* Record text set later */
 
 	{ SGBOX,      0, 0,  1,18, 50,4, NULL },
 	{ SGTEXT,     0, 0, 20,18, 12,1, "SDL2 options" },
@@ -295,6 +302,26 @@ void Dialog_MonitorDlg(void)
 }
 
 
+
+/*-----------------------------------------------------------------------*/
+/**
+ * Set ScreenShotFormat depending on which button is selected
+ */
+static void	DlgScreen_SetScreenShot_Format ( void )
+{
+	if ( windowdlg[DLGSCRN_FORMAT_NEO].state & SG_SELECTED )
+		ConfigureParams.Screen.ScreenShotFormat = SCREEN_SNAPSHOT_NEO;
+	else if ( windowdlg[DLGSCRN_FORMAT_XIMG].state & SG_SELECTED )
+		ConfigureParams.Screen.ScreenShotFormat = SCREEN_SNAPSHOT_XIMG;
+#if HAVE_LIBPNG
+	else if ( windowdlg[DLGSCRN_FORMAT_PNG].state & SG_SELECTED )
+		ConfigureParams.Screen.ScreenShotFormat = SCREEN_SNAPSHOT_PNG;
+#endif
+	else
+		ConfigureParams.Screen.ScreenShotFormat = SCREEN_SNAPSHOT_BMP;
+}
+
+
 /*-----------------------------------------------------------------------*/
 /**
  * Show and process the window dialog.
@@ -343,6 +370,21 @@ void Dialog_WindowDlg(void)
 	sprintf(sMaxHeight, "%4i", maxh);
 
 	/* Initialize window capture options: */
+
+	windowdlg[DLGSCRN_FORMAT_PNG].state &= ~SG_SELECTED;
+	windowdlg[DLGSCRN_FORMAT_BMP].state &= ~SG_SELECTED;
+	windowdlg[DLGSCRN_FORMAT_NEO].state &= ~SG_SELECTED;
+	windowdlg[DLGSCRN_FORMAT_XIMG].state &= ~SG_SELECTED;
+	if (ConfigureParams.Screen.ScreenShotFormat == SCREEN_SNAPSHOT_NEO )
+		windowdlg[DLGSCRN_FORMAT_NEO].state |= SG_SELECTED;
+	else if (ConfigureParams.Screen.ScreenShotFormat == SCREEN_SNAPSHOT_XIMG )
+		windowdlg[DLGSCRN_FORMAT_XIMG].state |= SG_SELECTED;
+#if HAVE_LIBPNG
+	else if (ConfigureParams.Screen.ScreenShotFormat == SCREEN_SNAPSHOT_PNG)
+		windowdlg[DLGSCRN_FORMAT_PNG].state |= SG_SELECTED;
+#endif
+	else
+		windowdlg[DLGSCRN_FORMAT_BMP].state |= SG_SELECTED;
 
 	if (ConfigureParams.Screen.bCrop)
 		windowdlg[DLGSCRN_CROP].state |= SG_SELECTED;
@@ -394,12 +436,13 @@ void Dialog_WindowDlg(void)
 			break;
 
 		 case DLGSCRN_CAPTURE:
-			SDL_UpdateRect(sdlscrn, 0,0,0,0);
+			DlgScreen_SetScreenShot_Format();		/* Take latest choice into account */
+			Screen_UpdateRect(sdlscrn, 0,0,0,0);
 			ConfigureParams.Screen.bCrop = (windowdlg[DLGSCRN_CROP].state & SG_SELECTED);
 			ScreenSnapShot_SaveScreen();
 			break;
 
-		case DLGSCRN_RECANIM:
+		 case DLGSCRN_RECANIM:
 			if (Avi_AreWeRecording())
 			{
 				/* AVI indexing can take a while for larger files */
@@ -450,6 +493,8 @@ void Dialog_WindowDlg(void)
 			break;
 		}
 	}
+
+	DlgScreen_SetScreenShot_Format();
 
 	ConfigureParams.Screen.bCrop = (windowdlg[DLGSCRN_CROP].state & SG_SELECTED);
 

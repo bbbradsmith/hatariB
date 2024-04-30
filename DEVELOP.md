@@ -6,7 +6,7 @@ This is intended as reference documentation for future maintenance of this proje
 
 Incorporated sources:
 
-* [Hatari/](https://git.tuxfamily.org/hatari/hatari.git/tag/?id=v2.4.1) 2.4.1 2022-08-03
+* [Hatari/](https://git.tuxfamily.org/hatari/hatari.git/tag/?id=v2.5.0) 2.5.0 2024-04-18
 * [EmuTOS/](https://emutos.sourceforge.io/) 1.3 2024-03-17
 * [libretro/libretro.h](https://github.com/libretro/libretro-common/blob/7edbfaf17baffa1b8a00231762aa7ead809711b5/include/libretro.h) 24a9210 2023-07-16
 * [libretro/libretro_sdl_keymap.h](https://github.com/libretro/RetroArch/blob/b4143882245edd737c7e7c522b25e32f8d1f64ad/input/input_keymaps.c#L607) 9ca5c5e 2023-07-08
@@ -56,6 +56,8 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Disabled `tests` subdirectory, because we do not build the executable needed for these tests.
   * Disabled `FindPythonInterp`, because we don't need the python interpreter or GTK, which are used for Hatari's debugger.
   * Add `HAVE_DLOPEN` to use for dynamic loading of CAPSIMAGE library for IPF support.
+* **hatari/cmake/config-cmake.h**
+  * Add `HAVE_DLOPEN` definition for dynamic loading of CAPSIMAGE.
 * **hatari/src/CMakeLists.txt**
   * Removed platform-specific GUI dependencies.
   * Removed stand-alone executable build.
@@ -80,8 +82,6 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Disable all use of SDL audio system.
   * `Audio_SetOutputAudioFreq` calls `core_set_samplerate` to notify the core of the current samplerate.
   * Disable automatic lowpass-filter selection (see: sound.c).
-* **hatari/src/blitter.c**
-  * Save additional state to prevent divergence.
 * **hatari/src/cart.c**
   * Use core's file system to load cartridge ROM.
 * **hatari/src/change.c**
@@ -105,15 +105,8 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
       * `HardDisk.nWriteProtection = WRITEPROT_ON` - Hard Disk should be write protected by default. The user's file system should not be modifiable unless deliberately requested.
       * `Midi.bEnableMidi = true` - Allows MIDI signals to be sent through Libretro's MIDI interface.
     * Remove `File_MakeAbsoluteSpecialName` path conversions, which modify the paths we provide directly. Since all file access is through our core's file system, absolute paths are inappropriate. This also prevents Hatari from making modifications to the paths which might have caused a reset check, disk re-insertion, etc. on options change.
-  * Saved `MachineClocks` (from clocks_timings.c) to prevent state divergence.
   * Use standardized path length for snapshot of filenames.
   * Remove unsupported Lilo and DiskZip paths.
-* **hatari/src/cfgopts.c**
-  * Suppress unused variable warning.
-* **hatari/src/crossbar.c**
-  * Removed `Crossbar_Recalculate_Clocks_Cycles()` from savestate restore because it seemed to be unnecessary and caused state divergence.
-* **hatari/src/cycInt.c**
-  * Save `CycInt_From_Opcode` to prevent state divergence.
 * **hatari/src/cycles.c**
   * Update counters before save or restore of state to prevent divergence.
 * **hatari/src/dialog.c**
@@ -122,15 +115,14 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Use core's file system to load floppy image.
   * Error notification for attempting to save DIM image (unsupported).
 * **hatari/src/fdc.c**
-  **hatari/src/include/fdc.h**
+* **hatari/src/include/fdc.h**
   * Add `FDC_FloppyInsertRestore` to re-apply pulse index timing and disk change signal after savestate.
-  * Replace use of `rand()` with deterministic `core_rand()`.
 * **hatari/src/file.c**
-  **hatari/src/include/file.h**
+* **hatari/src/include/file.h**
   * `File_QueryOverwrite` always returns true instead of checking a file. In all instances where this is used (savestates, floppy saves) we are using the core's file system and don't need to ensure this (usually writing to memory instead of a file when this is checked).
   * Provide extern access to core file system in header.
 * **hatari/src/floppy.c**
-  **hatari/src/include/floppy.h**
+* **hatari/src/include/floppy.h**
   * `Floppy_IsWriteProtected` formerly checked the file on disk's write-protect state. This is not available from the Libretro virtual filesystem, so we cannot use this information. Assuming all disks are not write protected. Can use core options to write protect the drives manually, but we lack a per-disk-image setting. However, since we do not save back to the original floppy file, there is less of a need for this.
   * Provide extern access to core file system in header.
   * Use added `FDC_FloppyInsertRestore` to restore some FDC state after savestate restore re-insertion.
@@ -145,7 +137,6 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Use core's file system to save floppy overlay image.
   * Suppress Hatari's warning that STX saves to an overlay instead of the image file, since we never save back to the original floppy image files.
   * Suppress savestate pointer data to prevent divergence.
-  * Replace use of `rand()` with deterministic `core_rand()`.
 * **hatari/src/gemdos.c**
   * Use core's file system to provide folder hard disk support.
   * Provide `core_scandir_system` as a simplified replacement for `scandir` using what is available through the virtual file system.
@@ -155,14 +146,10 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
 * **hatari/src/includes/hdc.h**
   * Use core's file system to provide ACSI/SCSI image hard disk support.
   * Replace `FILE` with `corefile`.
-  * Unused variable/function warning suppression for `ENABLE_TRACING`.
+  * `HDC_CmdInfoStr` unused function warning.
 * **hatari/src/ide.c**
   * Use core's file system to provide IDE image hard disk support.
   * File locking is not directly provided by the virtual file system (though the host OS might do it automatically).
-* **hatari/src/ikbd.c**
-  * Replace use of `rand()` with deterministic `core_rand()`.
-* **hatari/src/ioMem.c**
-  * Saved `IoAccessInstrPrevClock` and `IoAccessInstrCount` to prevent state divergence.
 * **hatari/src/infile.c**
 * **hatari/src/includes/infile.c**
   * Use core's file system to provide INF-file support for GEMDOS hard drives.
@@ -175,11 +162,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Disable dispatch of keypresses to `ShortCut` system (Hatari's own GUI hotkeys).
   * Disable using Num Lock to remap Numpad. (ST has no Num Lock. Numpad is Numpad.)
   * Disable use of `SDL_GetKeyFromName`/`SDL_GetKeyName`, only needed by configuration GUI.
-  * Fix broken mappings for minus (`- _`), bracket (`[ { ] }`), and backquote/tilde (~) keys. Also [submitted to Hatari](https://github.com/hatari/hatari/pull/26).
-* **hatari/src/m68000.c**
-  * Saved `WaitStateCycles`,`BusMode`,`CPU_IACK`,`LastInstrCycles`,`Pairing` to prevent state divergence.
-  * Saved `currcycle` and `extra_cycle` from cpu/custom.c to prevent state divergence.
-  * Saved `BusCyclePenalty` from cpu/newcpu.c to prevent state divergence.
+  * Fix broken mapping for minus (`- _`).
 * **hatari/src/main.c**
 * **hatari/src/includes/main.h**
   * Disable `SDL_GetTicks` timer.
@@ -201,6 +184,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Defer `IPF_Init` until first use, allowing it to be dynamically loaded only if needed and available.
   * Include `core.h` in main header to provide global extern access to some core functions.
   * Disable log output requirement.
+  * Use srand of 1 instead of taking current time.
 * **hatari/src/memorySnapShot.c**
 * **hatari/src/includes/memorySnapShot.h**
   * Disable compression of savestate data, Libretro does its own compression for save to disk, but also needs an uncompressed form for run-ahead or netplay to work.
@@ -211,9 +195,6 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Create inline MemorySnapShot_Store to accelerate savestate load and save.
   * Create inline MemorySnapShot_StoreFilename to store filenames of a standardized length.
   * Add error log for SNAPSHOT_MAGIC failure.
-* **hatari/src/mfp.c**
-  * Save `PendingCyclesOver` to prevent state divergence.
-  * Replace use of `rand()` with deterministic `core_rand()`.
 * **hatari/src/midi.c**
   * Connect MIDI read and write to the core's MIDI interface, assume the host device is always open/available from Hatari's perspective.
 * **hatari/src/msa.c**
@@ -229,7 +210,9 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
 * **hatari/src/resolution.c**
   * Disable `SDL_GetDesktopDisplayMode` and assume the desktop is the size we need.
 * **hatari/src/scandir.c**
-  * Remove scandir implementations enabled by !HAVE_SCANDIR, because they are unused, but also to suppress a warning-as-error on size_t vs. int mismatch.
+  * Remove unused scandir implementations enabled by !HAVE_SCANDIR.
+* **hatari/src/scc.c**
+  * `ClockName` unread variable warning.
 * **hatari/src/screen.c**
   * Disable SDL rendering, reduce use of SDL to merely creating a software render SDL_Surface which can be used by the gui-sdl system to render the status bar and onscreen keyboard.
   * Replace `SDL_RenderPresent` with `core_video_update` to deliver the new frame buffer.
@@ -243,17 +226,15 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Disable SDL uses.
   * Disable `ShortCut_InsertDisk` file dialog.
 * **hatari/src/sound.c**
-* **hatari/src/includes/sound.c**
+* **hatari/src/includes/sound.h**
   * Fix incorrect lowpass filter frequency, and provide cleaner lowpass filter implementation to replace the existing compromised ones. Also [submitted to Hatari](https://github.com/hatari/hatari/pull/25).
   * Deliver generated audio to core with `core_audio_update`.
-  * Store `YM_Buffer_250`, `pos_fract`, `Freq_div_2`, in savestates, needed for seamless audio after restore and to prevent state divergence.
   * Clear `YM2149_ConvertCycles_250.Cycles` after they're consumed to prevent state divergence during pause.
 * **hatari/src/st.c**
   * Use core's file system to load and save floppy image.
 * **hatari/src/statusbar.c**
   * LED and message timers changed to count frames instead of using `SDL_GetTicks`.
   * Make floppy LED in top right slightly larger.
-  * Fix LED logic that caused its apperance to corrupt on resolution changes. Also [submitted to Hatari](https://github.com/hatari/hatari/pull/27).
   * Added `core_statusbar_refresh` for manual refresh after savestate restore when needed.
 * **hatari/src/tos.c**
   * Add EmuTOS built-in ROMs.
@@ -265,18 +246,15 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
 * **hatari/src/unzip.c**
 * **hatari/src/includes/unzip.h**
   * Replace direct file access to unzip from a memory buffer instead.
+* **hatari/src/util.c**
+  * Replace `rand()` with `core_rand()`.
 * **hatari/src/video.c**
   * `Video_ResetShifterTimings` relays current framerate to `core_set_fps`.
-  * Unused variable warning suppression for `ENABLE_TRACING`.
-  * Save `VBL_ClockCounter` to prevent state divergence.
-  * Replace use of `rand()` with deterministic `core_rand()`.
+  * `Delayed` unread variable warning.
+  * `PendingCyclesOver` unread variable warning.
 * **hatari/src/zip.c**
   * Disable use of `unzOpen` which was modified (see: unzip.c) and not needed by this core.
-* **hatari/src/cpu/custom.c**
-  * Make `extra_cycle` externally accessible for savestate.
-* **hatari/src/cpu/gencpu.c**
-  * Suppress unused variable warning.
-* **hatari/cpu/hatari-glue.c**
+* **hatari/src/cpu/hatari-glue.c**
   * Added `core_save_state`, `core_restore_state` and `core_flush_audio` to facilitate seamless savestates.
 * **hatari/src/cpu/memory.c**
   * Disable `SDL_Quit`.
@@ -292,18 +270,19 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
 * **hatari/src/debug/debugui.c**
   * Disable `SDL_SetRelativeMouseMode`
 * **hatari/src/debug/log.c**
-* **hatari/src/debug/log.h**
   * Send log message to the Libretro log.
   * Disable log to stderr.
   * Redirect alert dialogs instead to a Libretro onscreen notification.
   * Send trace logs to Libretro log.
-* **hatari/src/falcon.videl.c**
-  * Add border cropping adjustment settings.
+* **hatari/src/falcon/crossbar.c**
+  * Removed `Crossbar_Recalculate_Clocks_Cycles()` from savestate restore because it seemed to be unnecessary and caused state divergence.
 * **hatari/src/falcon/microphone.c**
   * Disable SDL audio device usage. (No microphone support at this time.)
 * **hatari/src/falcon/nvram.c**
   * Use core's file system to load and save NVRAM.
   * Only save/load NVRAM if using TT or Falcon system which had it.
+* **hatari/src/falcon.videl.c**
+  * Add border cropping adjustment settings.
 * **hatari/src/gui-sdl/dlgAlert.c**
   * Disable dialog to remove SDL use.
 * **hatari/src/gui-sdl/dlgFileSelect.c**
@@ -311,9 +290,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
 * **hatari/src/gui-sdl/dlgHalt.c**
   * Disable dialog to remove SDL use.
   * Send halt notification to core for onscreen message, and use `M68000_SetSpecial(SPCFLAG_BRK)` to allow the emulation loop to return to Libretro.
-* **hatari/src/gui-sdl/dlgJoy.c**
-  * Disable dialog to remove SDL use.
-* **hatari/src/gui-sdl/dlgJoy.c**
+* **hatari/src/gui-sdl/dlgJoystick.c**
   * Disable dialog to remove SDL use.
 * **hatari/src/gui-sdl/dlgKeyboard.c**
   * Disable dialog to remove SDL use.
@@ -323,7 +300,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Make `pSdlGuiScrn` public, so that `core_osk.c` can use it to render the on-screen keyboard.
   * Tweak colours of buttons for use by on-screen keyboard.
   * Modify `SDLGui_DrawBox` to provide `SDLGui_DirectBox` for use by on-screen keyboard.
-  * Disable `SDLGui_EditField`, `SDLGui_ScaleMouseButtonCoordinates`, `SDLGui_DoDialogExt` to remove SDL use.
+  * Disable `SDLGui_EditField`, `SDLGui_ScaleMouseStateCoordinates`, `SDLGui_ScaleMouseButtonCoordinates`, `SDLGui_DoDialogExt` to remove SDL use.
 
 ## SDL2 Usage
 
