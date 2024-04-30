@@ -274,8 +274,10 @@ jobs:
       - name: Build hatariB
         run: |
           export CC=aarch64-linux-gnu-gcc
-          export CMAKEFLAGS="-DCMAKE_SYSTEM_NAME=aarch64-linux-gnu"
+          export CMAKEFLAGS="-DCMAKE_SYSTEM_NAME=aarch64-linux-gnu -DHAVE_DLOPEN=1"
           make
+        # CMAKE_SYSTEM_NAME informs cmake that we are cross-compiling, so that it knows to build and run cpugen natively.
+        # HAVE_DLOPEN=1 is forced because cmake fails to find it for RPi, yet it seems perfectly available.
       - name: Prepare Artifact
         run: |
           mkdir artifact
@@ -327,9 +329,8 @@ jobs:
       - name: Build hatariB
         run: |
           export CC=arm-linux-gnueabihf-gcc
-          export CMAKEFLAGS="-DCMAKE_SYSTEM_NAME=arm-linux-gnueabihf"
+          export CMAKEFLAGS="-DCMAKE_SYSTEM_NAME=arm-linux-gnueabihf -DHAVE_DLOPEN=1"
           make
-        # CMAKE_SYSTEM_NAME informs cmake that we are cross-compiling, so that it knows to build and run cpugen natively.
       - name: Prepare Artifact
         run: |
           mkdir artifact
