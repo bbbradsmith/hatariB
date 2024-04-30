@@ -5,5 +5,6 @@ SDL/build/
 secrets/
 cv2pdb/
 .vs/
+zlib/out/
 vscode/test_*.bat
 *.lnk
