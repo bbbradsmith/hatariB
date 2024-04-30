@@ -281,20 +281,20 @@ static void corelog_prefix_va(LOGTYPE t, const char* fmt, va_list args)
 	vsnprintf(corelog+o,sizeof(corelog)-o,fmt,args);
 	core_debug_hatari(t <= LOG_ERROR,corelog);
 }
+#if CORE_DEBUG
 static void corelog_trace_va(const char* fmt, va_list args)
 {
 	vsnprintf(corelog,sizeof(corelog),fmt,args);
 	core_debug_hatari(false,corelog);
-	#if CORE_DEBUG
-		// if countdown active, disables trace when it counts to 0
-		if (core_trace_countdown > 0)
-		{
-			--core_trace_countdown;
-			if (core_trace_countdown == 0)
-				LogTraceFlags = TRACE_NONE;
-		}
-	#endif
+	// if countdown active, disables trace when it counts to 0
+	if (core_trace_countdown > 0)
+	{
+		--core_trace_countdown;
+		if (core_trace_countdown == 0)
+			LogTraceFlags = TRACE_NONE;
+	}
 }
+#endif
 #endif
 
 /*-----------------------------------------------------------------------
@@ -733,10 +733,14 @@ char *Log_MatchTrace(const char *text, int state)
 void Log_Trace(const char *format, ...)
 {
 #ifdef __LIBRETRO__
+#if CORE_DEBUG
 	va_list argptr;
 	va_start(argptr, format);
 	corelog_trace_va(format,argptr);
 	va_end(argptr);
+#else
+	(void)format;
+#endif
 #else
 	va_list argptr;
 	char line[sizeof(MsgState.prev)];
