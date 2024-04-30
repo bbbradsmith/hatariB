@@ -2,7 +2,7 @@
 
                                     Hatari
 
-                             Version 2.4.1, August 2022
+                             Version 2.5.0, April 2024
 
                             http://hatari.tuxfamily.org/
 
@@ -77,7 +77,7 @@ To build and use Hatari, you first need to install its dependent libraries.
  3.1) Installing Hatari dependencies
 
 Required:
-- The SDL library v2.0 (http://www.libsdl.org)
+- The SDL library v2.0.6 or newer (http://www.libsdl.org)
 
 Optional:
 - The zlib compression library (https://zlib.net/)
@@ -90,6 +90,8 @@ Optional:
   (http://portmedia.sourceforge.net/)
 - The udev library for NatFeats SCSI driver media change detection
 - The IPF support library (http://www.softpres.org/download)
+- The Capstone library (version >= 4.0) for traditional disassembly output
+  in the debugger (https://www.capstone-engine.org/)
 
 Don't forget to also install the header files of these libraries for compiling
 Hatari (some Linux distributions use separate development packages for these
@@ -131,7 +133,7 @@ options of this script.
 Once you have successfully configured the build settings, you can compile
 Hatari with:
 
-	cmake --build . -j $(getconf _NPROCESSORS_ONLN)
+	cmake --build . -j$(getconf _NPROCESSORS_ONLN)
 
 If all works fine, you should get the executable "hatari" in the src/ sub-
 directory of the build tree. You can then either run the executable from
@@ -142,6 +144,19 @@ there, or install the emulator system-wide by typing:
 Note: This only works with CMake version 3.15 and later. On earlier versions,
 you have to use the install command of the generator program instead, e.g.
 "make install" if you are using the classical "make" for building Hatari.
+
+ 3.2.1) Configuring and compiling with emscripten
+
+	mkdir -p build/files
+	# Copy your tos.img to build/files/
+	cd build
+	emcmake cmake ..
+	cmake --build . -j$(getconf _NPROCESSORS_ONLN) hatari
+
+The resulting hatari.html can't be used directly, you must provide it via
+a webserver to your browser (use Chromium, it currently works better than
+Firefox). A simple way is to use "python3 -m http.server" as a minimalist
+webserver for testing it locally.
 
 
  3.3) IPF support using capsimage library
@@ -262,7 +277,6 @@ Their main run-time dependencies are:
 
 * cmake/ -- extra CMake files for configuring Hatari to build environment
 * doc/ -- Hatari documentation
-* etc/ -- old Hatari versions config files for obsolete HW
 * python-ui/ -- external Python / Gtk UI for Hatari
 * share/ -- Hatari desktop integration; icons, mimetypes
 * src/ -- C-sources for Hatari emulator program
@@ -275,13 +289,26 @@ Their main run-time dependencies are:
   - gui-sdl/ -- builtin SDL GUI for Hatari
   - gui-win/ -- MS Windows console code + icon
 * tests/ -- shell/python scripts & programs for testing emulator functionality
+  - autostart/ -- tests for TOS issues with too fast Hatari startup
+  - blitter/ -- blitter emulation tests
+  - buserror/ -- IO memory range bus error tests
+  - cpu/ -- few CPU instruction emulation tests
+  - cycles/ -- few CPU cycles emulation tests
+  - debugger/ -- Hatari debugger functionality tests
+  - gemdos/ -- GEMDOS HD emulation tests
+  - mem_end/ -- emulation tests for screen at end of RAM
   - keymap/ -- programs showing keycodes to use in Hatari keymap files
-  - natfeats/ -- test and example Atari code for using Hatari features
-  - etc.
+  - natfeats/ -- tests + example Atari code for emulation Native Features
+  - screen/ -- overscan emulation tests
+  - serial/ -- serial output emulation tests
+  - tosboot/ -- TOS bootup + basic GEMDOS operation tests
+  - unit/ -- few unit tests for Hatari helper functions
+  - xbios/ -- tests for BIOS intercept features
 * tools/ -- shell/python scripts & programs useful with Hatari
   - debugger/ -- debug symbol conversion scripts & profile data tools
   - hconsole/ -- out-of-process Hatari control / automation tool
   - hmsa/ -- floppy image format conversion tool
+  - linux/ -- m68k Linux support files for running it under Hatari
 
 
  7) Contact

@@ -8,31 +8,31 @@
 #define HATARI_LOG_H
 
 #include <stdbool.h>
-#include <SDL_types.h>
-
+#include <stdint.h>
 
 /* Exception debugging
  * -------------------
  */
 
 /* CPU exception flags
- * is catching needed also for: traps 0, 3-12, 15? (MonST catches them)
  */
-#define	EXCEPT_BUS	 (1<<0)
-#define	EXCEPT_ADDRESS 	 (1<<1)
-#define	EXCEPT_ILLEGAL	 (1<<2)
-#define	EXCEPT_ZERODIV	 (1<<3)
-#define	EXCEPT_CHK	 (1<<4)
-#define	EXCEPT_TRAPV	 (1<<5)
-#define	EXCEPT_PRIVILEGE (1<<6)
-#define	EXCEPT_TRACE     (1<<7)
-#define	EXCEPT_NOHANDLER (1<<8)
+#define	EXCEPT_NOHANDLER (1<<0)
+#define	EXCEPT_BUS	 (1<<1)
+#define	EXCEPT_ADDRESS 	 (1<<2)
+#define	EXCEPT_ILLEGAL	 (1<<3)
+#define	EXCEPT_ZERODIV	 (1<<4)
+#define	EXCEPT_CHK	 (1<<5)
+#define	EXCEPT_TRAPV	 (1<<6)
+#define	EXCEPT_PRIVILEGE (1<<7)
+#define	EXCEPT_TRACE     (1<<8)
+#define	EXCEPT_LINEA     (1<<9)
+#define	EXCEPT_LINEF     (1<<10)
 
 /* DSP exception flags */
-#define EXCEPT_DSP	 (1<<9)
+#define EXCEPT_DSP	 (1<<30)
 
 /* whether to enable exception debugging on autostart */
-#define EXCEPT_AUTOSTART (1<<10)
+#define EXCEPT_AUTOSTART (1<<31)
 
 /* general flags */
 #define	EXCEPT_NONE	 (0)
@@ -83,10 +83,10 @@ extern void Log_AlertDlg(LOGTYPE nType, const char *psFormat, ...)
 extern LOGTYPE Log_ParseOptions(const char *OptionStr);
 extern const char* Log_SetTraceOptions(const char *OptionsStr);
 extern char *Log_MatchTrace(const char *text, int state);
-#ifdef __LIBRETRO__
-extern void corelog_printf(const char* fmt, ...);
-extern void corelog_trace_printf(const char* fmt, ...);
-#endif
+extern void Log_ToggleMsgRepeat(void);
+extern void Log_ResetMsgRepeat(void);
+extern void Log_Trace(const char *format, ...)
+	__attribute__ ((format (printf, 1, 2)));
 
 #ifndef __GNUC__
 #undef __attribute__
@@ -106,7 +106,7 @@ extern void corelog_trace_printf(const char* fmt, ...);
  */
 #include "config.h"
 
-/* Up to 64 levels when using Uint64 for HatariTraceFlags */
+/* Up to 64 levels when using uint64_t for HatariTraceFlags */
 enum {
 	TRACE_BIT_ACIA,
 
@@ -117,6 +117,7 @@ enum {
 	TRACE_BIT_CPU_PAIRING,
 	TRACE_BIT_CPU_REGS,
 	TRACE_BIT_CPU_SYMBOLS,
+	TRACE_BIT_CPU_VIDEO_CYCLES,
 
 	TRACE_BIT_CROSSBAR,
 
@@ -201,6 +202,7 @@ enum {
 #define TRACE_CPU_PAIRING        (1ll<<TRACE_BIT_CPU_PAIRING)
 #define TRACE_CPU_REGS           (1ll<<TRACE_BIT_CPU_REGS)
 #define TRACE_CPU_SYMBOLS        (1ll<<TRACE_BIT_CPU_SYMBOLS)
+#define TRACE_CPU_VIDEO_CYCLES   (1ll<<TRACE_BIT_CPU_VIDEO_CYCLES)
 
 #define TRACE_CROSSBAR           (1ll<<TRACE_BIT_CROSSBAR)
 
@@ -287,7 +289,7 @@ enum {
 
 #define	TRACE_PSG_ALL		( TRACE_PSG_READ | TRACE_PSG_WRITE )
 
-#define	TRACE_CPU_ALL		( TRACE_CPU_PAIRING | TRACE_CPU_DISASM | TRACE_CPU_EXCEPTION )
+#define	TRACE_CPU_ALL		( TRACE_CPU_PAIRING | TRACE_CPU_DISASM | TRACE_CPU_EXCEPTION | TRACE_CPU_VIDEO_CYCLES )
 
 #define	TRACE_IKBD_ALL		( TRACE_IKBD_CMDS | TRACE_IKBD_ACIA | TRACE_IKBD_EXEC )
 
@@ -299,19 +301,14 @@ enum {
 		| TRACE_DSP_DISASM_REG | TRACE_DSP_DISASM_MEM | TRACE_DSP_STATE | TRACE_DSP_INTERRUPT )
 
 extern FILE *TraceFile;
-extern Uint64 LogTraceFlags;
+extern uint64_t LogTraceFlags;
 
 #if ENABLE_TRACING
 
-#ifndef __LIBRETRO__
-#define	LOG_TRACE(level, ...) \
-	if (unlikely(LogTraceFlags & (level))) { fprintf(TraceFile, __VA_ARGS__); fflush(TraceFile); }
-#else
-#define	LOG_TRACE(level, ...) \
-	if (unlikely(LogTraceFlags & (level))) { corelog_trace_printf(__VA_ARGS__); }
-#endif
-
 #define LOG_TRACE_LEVEL( level )	(unlikely(LogTraceFlags & (level)))
+
+#define	LOG_TRACE(level, ...) \
+	if (LOG_TRACE_LEVEL(level))	{ Log_Trace(__VA_ARGS__); }
 
 #else		/* ENABLE_TRACING */
 
@@ -325,10 +322,16 @@ extern Uint64 LogTraceFlags;
  * In code it's used in such a way that it will be optimized away when tracing
  * is disabled.
  */
-#ifndef __LIBRETRO__
-#define LOG_TRACE_PRINT(...)	fprintf(TraceFile , __VA_ARGS__)
-#else
-#define LOG_TRACE_PRINT(...)	corelog_trace_printf(__VA_ARGS__)
-#endif
+#define LOG_TRACE_PRINT(...)	Log_Trace(__VA_ARGS__)
+
+/* Skip message repeat suppression on multi-line output.
+ * LOG_TRACE_DIRECT_INIT() should called before doing them and
+ * LOG_TRACE_DIRECT_FLUSH() can be called after them
+ */
+#define LOG_TRACE_DIRECT(...)	    fprintf(TraceFile, __VA_ARGS__)
+#define	LOG_TRACE_DIRECT_LEVEL(level, ...) \
+	if (LOG_TRACE_LEVEL(level)) { fprintf(TraceFile, __VA_ARGS__); }
+#define LOG_TRACE_DIRECT_INIT()	    Log_ResetMsgRepeat()
+#define LOG_TRACE_DIRECT_FLUSH()    fflush(TraceFile)
 
 #endif		/* HATARI_LOG_H */

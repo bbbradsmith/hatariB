@@ -18,7 +18,6 @@ const char Options_fileid[] = "Hatari options.c";
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <SDL.h>
 
 #include "main.h"
 #include "version.h"
@@ -46,6 +45,7 @@ const char Options_fileid[] = "Hatari options.c";
 #include "stMemory.h"
 #include "tos.h"
 #include "lilo.h"
+#include "screenSnapShot.h"
 
 
 bool bLoadAutoSave;        /* Load autosave memory snapshot at startup */
@@ -86,7 +86,6 @@ enum {
 	OPT_MAXWIDTH,
 	OPT_MAXHEIGHT,
 	OPT_ZOOM,
-	OPT_FORCEBPP,
 	OPT_DISABLE_VIDEO,
 
 	OPT_BORDERS,		/* ST/STE display options */
@@ -109,6 +108,7 @@ enum {
 	OPT_AVIRECORD_FPS,
 	OPT_AVIRECORD_FILE,
 	OPT_SCRSHOT_DIR,
+	OPT_SCRSHOT_FORMAT,
 
 	OPT_JOYSTICK,		/* device options */
 	OPT_JOYSTICK0,
@@ -126,9 +126,12 @@ enum {
 #endif
 	OPT_RS232_IN,
 	OPT_RS232_OUT,
-	// OPT_SCCB,
-	// OPT_SCCBIN,
-	OPT_SCCBOUT,
+	OPT_SCCA_IN,
+	OPT_SCCA_OUT,
+	OPT_SCCA_LAN_IN,
+	OPT_SCCA_LAN_OUT,
+	OPT_SCCB_IN,
+	OPT_SCCB_OUT,
 
 	OPT_DRIVEA,		/* floppy options */
 	OPT_DRIVEB,
@@ -171,8 +174,9 @@ enum {
 
 	OPT_MACHINE,		/* system options */
 	OPT_BLITTER,
-	OPT_VME,
 	OPT_DSP,
+	OPT_VME,
+	OPT_RTC_YEAR,
 	OPT_TIMERD,
 	OPT_FASTBOOT,
 
@@ -194,6 +198,7 @@ enum {
 	OPT_NATFEATS,
 	OPT_TRACE,
 	OPT_TRACEFILE,
+	OPT_MSG_REPEAT,
 	OPT_PARSE,
 	OPT_SAVECONFIG,
 	OPT_CONTROLSOCKET,
@@ -271,8 +276,6 @@ static const opt_t HatariOptions[] = {
 	  "<x>", "Maximum Hatari screen height before scaling" },
 	{ OPT_ZOOM, "-z", "--zoom",
 	  "<x>", "Hatari screen/window scaling factor (1.0 - 8.0)" },
-	{ OPT_FORCEBPP, NULL, "--bpp",
-	  "<x>", "Force internal bitdepth (x = 15/16/32, 0=disable)" },
 	{ OPT_DISABLE_VIDEO,   NULL, "--disable-video",
 	  "<bool>", "Run emulation without displaying video (audio only)" },
 
@@ -317,6 +320,8 @@ static const opt_t HatariOptions[] = {
 	  "<file>", "Use <file> to record AVI" },
 	{ OPT_SCRSHOT_DIR, NULL, "--screenshot-dir",
 	  "<dir>", "Save screenshots in the directory <dir>" },
+	{ OPT_SCRSHOT_FORMAT, NULL, "--screenshot-format",
+	  "<x>", "Select file format (x = bmp/png/neo/ximg)" },
 
 	{ OPT_HEADER, NULL, NULL, NULL, "Devices" },
 	{ OPT_JOYSTICK,  "-j", "--joystick",
@@ -353,11 +358,17 @@ static const opt_t HatariOptions[] = {
 	  "<file>", "Enable serial port and use <file> as the input device" },
 	{ OPT_RS232_OUT, NULL, "--rs232-out",
 	  "<file>", "Enable serial port and use <file> as the output device" },
-	//{ OPT_SCCB, NULL, "--scc-b",
-	//  "<file>", "Enable SCC channel B and use <file> as the device" },
-	//{ OPT_SCCBIN, NULL, "--scc-b-in",
-	//  "<file>", "Enable SCC channel B and use <file> as the input" },
-	{ OPT_SCCBOUT, NULL, "--scc-b-out",
+	{ OPT_SCCA_IN, NULL, "--scc-a-in",
+	  "<file>", "Enable SCC channel A and use <file> as the input" },
+	{ OPT_SCCA_OUT, NULL, "--scc-a-out",
+	  "<file>", "Enable SCC channel A and use <file> as the output" },
+	{ OPT_SCCA_LAN_IN, NULL, "--scc-a-lan-in",
+	  "<file>", "Enable LAN on SCC channel A and use <file> as the input" },
+	{ OPT_SCCA_LAN_OUT, NULL, "--scc-a-lan-out",
+	  "<file>", "Enable LAN on SCC channel A and use <file> as the output" },
+	{ OPT_SCCB_IN, NULL, "--scc-b-in",
+	  "<file>", "Enable SCC channel B and use <file> as the input" },
+	{ OPT_SCCB_OUT, NULL, "--scc-b-out",
 	  "<file>", "Enable SCC channel B and use <file> as the output" },
 
 	{ OPT_HEADER, NULL, NULL, NULL, "Floppy drive" },
@@ -447,6 +458,8 @@ static const opt_t HatariOptions[] = {
 	  "<x>", "DSP emulation (x = none/dummy/emu, Falcon only)" },
 	{ OPT_VME,	NULL, "--vme",
 	  "<x>", "VME mode (x = none/dummy, MegaSTE/TT only)" },
+	{ OPT_RTC_YEAR,   NULL, "--rtc-year",
+	  "<x>", "Set initial year for RTC (0, 1980 <= x < 2080)" },
 	{ OPT_TIMERD,    NULL, "--timer-d",
 	  "<bool>", "Patch Timer-D (about doubles ST emulation speed)" },
 	{ OPT_FASTBOOT, NULL, "--fast-boot",
@@ -486,6 +499,8 @@ static const opt_t HatariOptions[] = {
 	  "<flags>", "Activate emulation tracing, see '--trace help'" },
 	{ OPT_TRACEFILE, NULL, "--trace-file",
 	  "<file>", "Save trace output to <file> (default=stderr)" },
+	{ OPT_MSG_REPEAT, NULL, "--msg-repeat",
+	  NULL, "Toggle log/trace message repeats (default=suppress)" },
 	{ OPT_PARSE, NULL, "--parse",
 	  "<file>", "Parse/execute debugger commands from <file>" },
 	{ OPT_SAVECONFIG, NULL, "--saveconfig",
@@ -942,7 +957,7 @@ static bool Opt_ValidateOptions(void)
 bool Opt_IsAtariProgram(const char *path)
 {
 	bool ret = false;
-	Uint8 test[2];
+	uint8_t test[2];
 	FILE *fp;
 
 	if (File_Exists(path) && (fp = fopen(path, "rb")))
@@ -1062,7 +1077,7 @@ static bool Opt_HandleArgument(const char *path)
 bool Opt_ParseParameters(int argc, const char * const argv[])
 {
 	int ncpu, skips, planes, cpuclock, threshold, memsize;
-	int dev, port, freq, temp, drive;
+	int dev, port, freq, temp, drive, year;
 	const char *errstr, *str;
 	int i, ok = true;
 	float zoom;
@@ -1211,24 +1226,6 @@ bool Opt_ParseParameters(int argc, const char * const argv[])
 			ok = Opt_Bool(argv[++i], OPT_DRIVE_LED, &ConfigureParams.Screen.bShowDriveLed);
 			break;
 
-		case OPT_FORCEBPP:
-			planes = atoi(argv[++i]);
-			switch(planes)
-			{
-			case 32:
-			case 16:
-			case 15:
-				break;       /* supported */
-			case 24:
-				planes = 32; /* We do not support 24 bpp (yet) */
-				break;
-			default:
-				return Opt_ShowError(OPT_FORCEBPP, argv[i], "Invalid bit depth");
-			}
-			Log_Printf(LOG_DEBUG, "Hatari window BPP = %d.\n", planes);
-			ConfigureParams.Screen.nForceBpp = planes;
-			break;
-
 		case OPT_DISABLE_VIDEO:
 			ok = Opt_Bool(argv[++i], OPT_DISABLE_VIDEO, &ConfigureParams.Screen.DisableVideo);
 			break;
@@ -1358,6 +1355,30 @@ bool Opt_ParseParameters(int argc, const char * const argv[])
 			Paths_SetScreenShotDir(argv[i]);
 			break;
 
+		case OPT_SCRSHOT_FORMAT:
+			i += 1;
+			if (strcasecmp(argv[i], "bmp") == 0)
+			{
+				ConfigureParams.Screen.ScreenShotFormat = SCREEN_SNAPSHOT_BMP;
+			}
+			else if (strcasecmp(argv[i], "png") == 0)
+			{
+				ConfigureParams.Screen.ScreenShotFormat = SCREEN_SNAPSHOT_PNG;
+			}
+			else if (strcasecmp(argv[i], "neo") == 0)
+			{
+				ConfigureParams.Screen.ScreenShotFormat = SCREEN_SNAPSHOT_NEO;
+			}
+			else if (strcasecmp(argv[i], "ximg") == 0)
+			{
+				ConfigureParams.Screen.ScreenShotFormat = SCREEN_SNAPSHOT_XIMG;
+			}
+			else
+			{
+				return Opt_ShowError(OPT_SCRSHOT_FORMAT, argv[i], "Unknown screenshot format");
+			}
+			break;
+
 			/* VDI options */
 		case OPT_VDI:
 			ok = Opt_Bool(argv[++i], OPT_VDI, &ConfigureParams.Screen.bUseExtVdiResolutions);
@@ -1481,26 +1502,41 @@ bool Opt_ParseParameters(int argc, const char * const argv[])
 					&ConfigureParams.RS232.bEnableRS232);
 			break;
 
-		/*
-		case OPT_SCCB:
+		case OPT_SCCA_IN:
 			i += 1;
-			ok = Opt_StrCpy(OPT_SCCB, true, ConfigureParams.RS232.sSccBInFileName,
-					argv[i], sizeof(ConfigureParams.RS232.sSccBInFileName),
-					&ConfigureParams.RS232.bEnableSccB);
-			strcpy(ConfigureParams.RS232.sSccBOutFileName, ConfigureParams.RS232.sSccBInFileName);
+			ok = Opt_StrCpy(OPT_SCCA_IN, true, ConfigureParams.RS232.SccInFileName[CNF_SCC_CHANNELS_A_SERIAL],
+					argv[i], sizeof(ConfigureParams.RS232.SccInFileName[CNF_SCC_CHANNELS_A_SERIAL]),
+					&ConfigureParams.RS232.EnableScc[CNF_SCC_CHANNELS_A_SERIAL]);
 			break;
-		case OPT_SCCBIN:
+		case OPT_SCCA_OUT:
 			i += 1;
-			ok = Opt_StrCpy(OPT_SCCBIN, true, ConfigureParams.RS232.sSccBInFileName,
-					argv[i], sizeof(ConfigureParams.RS232.sSccBInFileName),
-					&ConfigureParams.RS232.bEnableSccB);
+			ok = Opt_StrCpy(OPT_SCCA_OUT, false, ConfigureParams.RS232.SccOutFileName[CNF_SCC_CHANNELS_A_SERIAL],
+					argv[i], sizeof(ConfigureParams.RS232.SccOutFileName[CNF_SCC_CHANNELS_A_SERIAL]),
+					&ConfigureParams.RS232.EnableScc[CNF_SCC_CHANNELS_A_SERIAL]);
 			break;
-		*/
-		case OPT_SCCBOUT:
+		case OPT_SCCA_LAN_IN:
 			i += 1;
-			ok = Opt_StrCpy(OPT_SCCBOUT, false, ConfigureParams.RS232.sSccBOutFileName,
-					argv[i], sizeof(ConfigureParams.RS232.sSccBOutFileName),
-					&ConfigureParams.RS232.bEnableSccB);
+			ok = Opt_StrCpy(OPT_SCCA_LAN_IN, true, ConfigureParams.RS232.SccInFileName[CNF_SCC_CHANNELS_A_LAN],
+					argv[i], sizeof(ConfigureParams.RS232.SccInFileName[CNF_SCC_CHANNELS_A_LAN]),
+					&ConfigureParams.RS232.EnableScc[CNF_SCC_CHANNELS_A_LAN]);
+			break;
+		case OPT_SCCA_LAN_OUT:
+			i += 1;
+			ok = Opt_StrCpy(OPT_SCCA_LAN_OUT, false, ConfigureParams.RS232.SccOutFileName[CNF_SCC_CHANNELS_A_LAN],
+					argv[i], sizeof(ConfigureParams.RS232.SccOutFileName[CNF_SCC_CHANNELS_A_LAN]),
+					&ConfigureParams.RS232.EnableScc[CNF_SCC_CHANNELS_A_LAN]);
+			break;
+		case OPT_SCCB_IN:
+			i += 1;
+			ok = Opt_StrCpy(OPT_SCCB_IN, true, ConfigureParams.RS232.SccInFileName[CNF_SCC_CHANNELS_B],
+					argv[i], sizeof(ConfigureParams.RS232.SccInFileName[CNF_SCC_CHANNELS_B]),
+					&ConfigureParams.RS232.EnableScc[CNF_SCC_CHANNELS_B]);
+			break;
+		case OPT_SCCB_OUT:
+			i += 1;
+			ok = Opt_StrCpy(OPT_SCCB_OUT, false, ConfigureParams.RS232.SccOutFileName[CNF_SCC_CHANNELS_B],
+					argv[i], sizeof(ConfigureParams.RS232.SccOutFileName[CNF_SCC_CHANNELS_B]),
+					&ConfigureParams.RS232.EnableScc[CNF_SCC_CHANNELS_B]);
 			break;
 
 			/* disk options */
@@ -1941,6 +1977,7 @@ bool Opt_ParseParameters(int argc, const char * const argv[])
 		case OPT_TIMERD:
 			ok = Opt_Bool(argv[++i], OPT_TIMERD, &ConfigureParams.System.bPatchTimerD);
 			break;
+
 		case OPT_FASTBOOT:
 			ok = Opt_Bool(argv[++i], OPT_FASTBOOT, &ConfigureParams.System.bFastBoot);
 			break;
@@ -1985,6 +2022,15 @@ bool Opt_ParseParameters(int argc, const char * const argv[])
 				return Opt_ShowError(OPT_VME, argv[i], "Unknown VME type");
 			}
 			bLoadAutoSave = false; /* TODO: needed? */
+			break;
+
+		case OPT_RTC_YEAR:
+			year = atoi(argv[++i]);
+			if(year && (year < 1980 || year >= 2080))
+			{
+				return Opt_ShowError(OPT_RTC_YEAR, argv[i], "Invalid RTC year");
+			}
+			ConfigureParams.System.nRtcYear = year;
 			break;
 
 			/* sound options */
@@ -2190,6 +2236,10 @@ bool Opt_ParseParameters(int argc, const char * const argv[])
 			ok = Opt_StrCpy(OPT_TRACEFILE, false, ConfigureParams.Log.sTraceFileName,
 					argv[i], sizeof(ConfigureParams.Log.sTraceFileName),
 					NULL);
+			break;
+
+		case OPT_MSG_REPEAT:
+			Log_ToggleMsgRepeat();
 			break;
 
 		case OPT_CONTROLSOCKET:

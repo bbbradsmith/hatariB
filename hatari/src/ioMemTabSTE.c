@@ -22,7 +22,6 @@ const char IoMemTabSTE_fileid[] = "Hatari ioMemTabSTE.c";
 #include "psg.h"
 #include "rs232.h"
 #include "rtc.h"
-#include "screen.h"
 #include "video.h"
 #include "blitter.h"
 #include "statusbar.h"
@@ -32,20 +31,20 @@ const char IoMemTabSTE_fileid[] = "Hatari ioMemTabSTE.c";
 /**
  * Take into account Mega STe Cache/Processor Control register $ff8e21.b
 	$FFFF8E21 Mega STe Cache/Processor Control
-		BIT 1 : Cache (0 - disabled, 1 - enabled)
-		BIT 0 : CPU Speed (0 - 8mhz, 1 - 16mhz)
+		BIT 0 : Cache (0 - disabled, 1 - enabled)
+		BIT 1 : CPU Speed (0 - 8mhz, 1 - 16mhz)
 
-   We handle only bit 0, bit 1 is ignored (cache is not emulated)
+   We handle only bit 1, bit 0 is ignored (cache is not emulated)
 */
 void IoMemTabMegaSTE_CacheCpuCtrl_WriteByte(void)
 {
-	Uint8 busCtrl = IoMem_ReadByte(0xff8e21);
+	uint8_t busCtrl = IoMem_ReadByte(0xff8e21);
 
 	/* 68000 Frequency changed ? We change freq only in 68000 mode for a
 	 * normal MegaSTE, if the user did not request a faster one manually */
 	if (ConfigureParams.System.nCpuLevel == 0 && ConfigureParams.System.nCpuFreq <= 16)
 	{
-		if ((busCtrl & 0x1) == 1) {
+		if ((busCtrl & 0x2) != 0) {
 			/* 16 Mhz bus for 68000 */
 			Configuration_ChangeCpuFreq ( 16 );
 		}
@@ -74,7 +73,7 @@ void IoMemTabMegaSTE_CacheCpuCtrl_WriteByte(void)
  * (earliest MegaSTE produced had a DD floppy drive, but later
  * it was replaced by an HD drive)
  */
-Uint8 IoMemTabMegaSTE_DIPSwitches_Read(void)
+uint8_t IoMemTabMegaSTE_DIPSwitches_Read(void)
 {
 	return 0xbf;
 }
@@ -206,10 +205,10 @@ const INTERCEPT_ACCESS_FUNC IoMemTable_STE[] =
 	{ 0xff9000, SIZE_WORD, IoMem_VoidRead, IoMem_VoidWrite },                               /* No bus error here */
 	{ 0xff9200, SIZE_WORD, Joy_StePadButtons_DIPSwitches_ReadWord, Joy_StePadButtons_DIPSwitches_WriteWord },    /* Joypad fire buttons + MegaSTE DIP Switches */
 	{ 0xff9202, SIZE_WORD, Joy_StePadMulti_ReadWord, Joy_StePadMulti_WriteWord },           /* Joypad directions/buttons/selection */
-	{ 0xff9211, SIZE_BYTE, IoMem_VoidRead, IoMem_WriteWithoutInterception }, /* Joypad 0 X position (?) */
-	{ 0xff9213, SIZE_BYTE, IoMem_VoidRead, IoMem_WriteWithoutInterception }, /* Joypad 0 Y position (?) */
-	{ 0xff9215, SIZE_BYTE, IoMem_VoidRead, IoMem_WriteWithoutInterception }, /* Joypad 1 X position (?) */
-	{ 0xff9217, SIZE_BYTE, IoMem_VoidRead, IoMem_WriteWithoutInterception }, /* Joypad 1 Y position (?) */
+	{ 0xff9211, SIZE_BYTE, Joy_StePadAnalog0X_ReadByte, IoMem_WriteWithoutInterception }, /* Joypad 0 Analog/Paddle X position */
+	{ 0xff9213, SIZE_BYTE, Joy_StePadAnalog0Y_ReadByte, IoMem_WriteWithoutInterception }, /* Joypad 0 Analog/Paddle Y position */
+	{ 0xff9215, SIZE_BYTE, Joy_StePadAnalog1X_ReadByte, IoMem_WriteWithoutInterception }, /* Joypad 1 Analog/Paddle X position */
+	{ 0xff9217, SIZE_BYTE, Joy_StePadAnalog1Y_ReadByte, IoMem_WriteWithoutInterception }, /* Joypad 1 Analog/Paddle Y position */
 	{ 0xff9220, SIZE_WORD, Joy_SteLightpenX_ReadWord, IoMem_WriteWithoutInterception },     /* Lightpen X position */
 	{ 0xff9222, SIZE_WORD, Joy_SteLightpenY_ReadWord, IoMem_WriteWithoutInterception },     /* Lightpen Y position */
 

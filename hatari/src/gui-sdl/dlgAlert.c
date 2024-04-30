@@ -33,9 +33,9 @@ const char DlgAlert_fileid[] = "Hatari dlgAlert.c";
 static char dlglines[MAX_LINES][50+1];
 
 #ifdef ALERT_HOOKS 
-	// The alert hook functions
-	extern int HookedAlertNotice(const char* szMessage);	// Must return true if OK clicked, false otherwise
-	extern int HookedAlertQuery(const char* szMessage);		// Must return true if OK clicked, false otherwise
+// The alert hook functions
+extern bool HookedAlertNotice(const char* szMessage);	// Must return true if OK clicked, false otherwise
+extern bool HookedAlertQuery(const char* szMessage);	// Must return true if OK clicked, false otherwise
 #endif
 
 #define DLGALERT_OK       5
@@ -124,7 +124,7 @@ static int DlgAlert_FormatTextToBox(char *text, int max_width, int *text_width)
 /**
  * Show the "alert" dialog. Return true if user pressed "OK".
  */
-static int DlgAlert_ShowDlg(const char *text)
+static bool DlgAlert_ShowDlg(const char *text)
 {
 	static int maxlen = sizeof(dlglines[0])-1;
 	char *t = Str_Alloc(strlen(text));
@@ -170,7 +170,7 @@ static int DlgAlert_ShowDlg(const char *text)
 
 	i = SDLGui_DoDialog(alertdlg);
 
-	SDL_UpdateRect(sdlscrn, 0,0, 0,0);
+	Screen_UpdateRect(sdlscrn, 0,0, 0,0);
 	SDL_ShowCursor(bOldMouseVisibility);
 	Main_WarpMouse(nOldMouseX, nOldMouseY, true);
 
@@ -187,7 +187,7 @@ static int DlgAlert_ShowDlg(const char *text)
 /**
  * Show a "notice" dialog: (only one button)
  */
-int DlgAlert_Notice(const char *text)
+bool DlgAlert_Notice(const char *text)
 {
 #ifdef ALERT_HOOKS
 	if (!Main_UnPauseEmulation())
@@ -213,7 +213,7 @@ int DlgAlert_Notice(const char *text)
 /**
  * Show a "query" dialog: (two buttons), return true for OK
  */
-int DlgAlert_Query(const char *text)
+bool DlgAlert_Query(const char *text)
 {
 #ifdef ALERT_HOOKS
 	if(!bInFullScreen)

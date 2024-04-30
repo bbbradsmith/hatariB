@@ -8,7 +8,6 @@
 */
 const char INFFILE_fileid[] = "Hatari inffile.c";
 
-#include <SDL_endian.h>
 #include <assert.h>
 #include <errno.h>
 #include <ctype.h>
@@ -600,7 +599,7 @@ static char *get_inf_file(const char **set_infname, int *set_size, int *res_col)
 {
 	char *hostname;
 	const char *contents, *infname;
-	Uint8 *host_content;
+	uint8_t *host_content;
 	long host_size;
 	int size;
 
@@ -748,27 +747,20 @@ static corefile* write_inf_file(const char *contents, int size, int res, int res
 #endif
 
 #ifndef __LIBRETRO__
-#if defined(WIN32)	/* unfortunately tmpfile() needs administrative privileges on windows, so this needs special care */
-	char *ptr = WinTmpFile();
-	if (ptr != NULL)
-		fp = fopen(ptr,"w+b");
-	else
-		fp = NULL;
-#else
-# if INF_DEBUG
+#if INF_DEBUG
 	{
 		/* insecure file path + leaving it behind for debugging */
 		const char *debugfile = "/tmp/hatari-desktop-inf.txt";
 		fprintf(stderr, "Virtual INF file: '%s'\n", debugfile);
 		fp = fopen(debugfile, "w+b");
 	}
-# else
-	fp = tmpfile();
-# endif
+#else
+	fp = File_OpenTempFile(NULL);
 #endif
 #else
 	fp = core_file_open_system("hatarib.tmp",CORE_FILE_TRUNCATE);
 #endif
+
 	prgname = TosOverride.prgname;
 	infname = TosOverride.infname;
 

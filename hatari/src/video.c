@@ -197,7 +197,7 @@
 /* 2008/11/29	[NP]	Increment jitter's index for HBL and VBL each time a possible interrupt	*/
 /*			occurs. Each interrupt can have a jitter between 0, 4 and 8 cycles ; the*/
 /*			jitter follows a predefined pattern of 5 values. The HBL and the VBL	*/
-/*			have their own pattern. See InterruptAddJitter() in uae-cpu/newcpu.c	*/
+/*			have their own pattern. See InterruptAddJitter() in cpu/newcpu.c	*/
 /*			(fix Fullscreen tunnel in Suretrip 49% by Checkpoint and digi sound in	*/
 /*			Swedish New Year's TCB screen).						*/
 /* 2008/12/10	[NP]	Enhance support for 0 byte line. The 60/50 Hz switch can happen at	*/
@@ -457,6 +457,7 @@ const char Video_fileid[] = "Hatari video.c";
 #include "floppy_ipf.h"
 #include "statusbar.h"
 #include "clocks_timings.h"
+#include "utils.h"
 
 
 /* The border's mask allows to keep track of all the border tricks		*/
@@ -495,12 +496,8 @@ int nFrameSkips;                                /* speed up by skipping video fr
 
 bool bUseHighRes;                               /* Use hi-res (ie Mono monitor) */
 int VerticalOverscan;				/* V_OVERSCAN_xxxx for current display frame */
-Uint16 HBLPalettes[HBL_PALETTE_LINES];          /* 1x16 colour palette per screen line, +1 line just in case write after line 200 */
-Uint16 *pHBLPalettes;                           /* Pointer to current palette lists, one per HBL */
-Uint32 HBLPaletteMasks[HBL_PALETTE_MASKS];      /* Bit mask of palette colours changes, top bit set is resolution change */
-Uint32 *pHBLPaletteMasks;
 int nScreenRefreshRate = VIDEO_50HZ;		/* 50 or 60 Hz in color, 71 Hz in mono */
-Uint32 VideoBase;                               /* Base address in ST Ram for screen (read on each VBL) */
+uint32_t VideoBase;                               /* Base address in ST Ram for screen (read on each VBL) */
 
 int nVBLs;                                      /* VBL Counter */
 int nHBL;                                       /* HBL line */
@@ -512,15 +509,15 @@ static int nFirstVisibleHbl = FIRST_VISIBLE_HBL_50HZ;			/* The first line of the
 static int nLastVisibleHbl = FIRST_VISIBLE_HBL_50HZ+NUM_VISIBLE_LINES;	/* The last line of the ST screen that is copied to the PC screen buffer */
 static int CyclesPerVBL = 313*512;		/* Number of cycles per VBL */
 
-static Uint8 HWScrollCount;			/* HW scroll pixel offset, STE only (0...15) */
+static uint8_t HWScrollCount;			/* HW scroll pixel offset, STE only (0...15) */
 static int NewHWScrollCount = -1;		/* Used in STE mode when writing to the scrolling registers $ff8264/65 */
-static Uint8 HWScrollPrefetch;			/* 0 when scrolling with $ff8264, 1 when scrolling with $ff8265 */
+static uint8_t HWScrollPrefetch;			/* 0 when scrolling with $ff8264, 1 when scrolling with $ff8265 */
 static int NewHWScrollPrefetch = -1;		/* Used in STE mode when writing to the scrolling registers $ff8264/65 */
-static Uint8 LineWidth;				/* Scan line width add, STe only (words, minus 1) */
+static uint8_t LineWidth;				/* Scan line width add, STe only (words, minus 1) */
 static int NewLineWidth = -1;			/* Used in STE mode when writing to the line width register $ff820f */
 static int VideoCounterDelayedOffset = 0;	/* Used in STE mode when changing video counter while display is on */
-static Uint8 *pVideoRasterDelayed = NULL;	/* Used in STE mode when changing video counter while display is off in the right border */
-static Uint8 *pVideoRaster;			/* Pointer to Video raster, after VideoBase in PC address space. Use to copy data on HBL */
+static uint8_t *pVideoRasterDelayed = NULL;	/* Used in STE mode when changing video counter while display is off in the right border */
+static uint8_t *pVideoRaster;			/* Pointer to Video raster, after VideoBase in PC address space. Use to copy data on HBL */
 static bool bSteBorderFlag;			/* true when screen width has been switched to 336 (e.g. in Obsession) */
 static int NewSteBorderFlag = -1;		/* New value for next line */
 static bool bTTColorsSync;			/* whether TT colors need conversion to SDL */
@@ -535,21 +532,6 @@ static bool RestartVideoCounter = false;	/* true when reaching the HBL to restar
 
 int	LineTimerBPos = LINE_END_CYCLE_50 + TIMERB_VIDEO_CYCLE_OFFSET;	/* position of the Timer B interrupt on active lines */
 int	TimerBEventCountCycleStart = -1;	/* value of Cycles_GetCounterOnWriteAccess last time timer B was started for the current VBL */
-
-int HblJitterIndex = 0;
-const int HblJitterArray[] = {
-	8,4,4,0,0 /* measured on STF */
-};
-const int HblJitterArrayPending[] = {
-	4,4,4,4,4 // { 8,8,12,8,12 }; /* measured on STF, not always accurate */
-};
-int VblJitterIndex = 0;
-const int VblJitterArray[] = {
-	8,0,4,0,4 /* measured on STF */
-};
-const int VblJitterArrayPending[] = {
-	8,8,12,8,12 /* not verified on STF, use the same as HBL */
-};
 
 static int	BlankLines = 0;			/* Number of empty line with no signal (by switching hi/lo near cycles 500) */
 
@@ -567,7 +549,7 @@ typedef struct
 {
 	int	StartCycle;			/* first cycle of this line, as returned by Cycles_GetCounter */
 
-	Uint32	BorderMask;			/* borders' states for this line */
+	uint32_t	BorderMask;			/* borders' states for this line */
 	int	DisplayPixelShift;		/* number of pixels to shift the whole line (<0 shift to the left, >0 shift to the right) */
 						/* On STF, this is obtained when switching hi/med for a variable number of cycles, */
 						/* but just removing left border will shift the line too. */
@@ -595,7 +577,7 @@ typedef struct
 	SHIFTER_POS	Scroll8264Pos;		/* position of latest write to $ff8264 */
 	SHIFTER_POS	Scroll8265Pos;		/* position of latest write to $ff8265 */
 
-	Uint8		VBlank_signal;		/* 0=vblank off  1=vblank on */
+	uint8_t		VBlank_signal;		/* 0=vblank off  1=vblank on */
 	int		VBlank_Off_Line;	/* First line number where VBlank_signal is OFF (next line after checking freq) */
 	int		VBlank_On_Line;		/* First line number where VBlank_signal is ON (next line after checking freq) */
 	int		VBLank_Off_60_CheckFreq;/* Value of FreqHz at VBlank_CheckPos on line VBlank_Off_60_CheckLine */
@@ -603,7 +585,7 @@ typedef struct
 	int		VBLank_On_60_CheckFreq;	/* Value of FreqHz at VBlank_CheckPos on line VBlank_On_60_CheckLine */
 	int		VBLank_On_50_CheckFreq;	/* Value of FreqHz at VBlank_CheckPos on line VBlank_On_50_CheckLine */
 
-	Uint8		VSync_signal;		/* 0=vsync off   1=vsync on */
+	uint8_t		VSync_signal;		/* 0=vsync off   1=vsync on */
 
 	SHIFTER_LINE	ShifterLines[ MAX_SCANLINES_PER_FRAME+1 ];
 } SHIFTER_FRAME;
@@ -684,6 +666,8 @@ static VIDEO_TIMING	VideoTimings[ VIDEO_TIMING_MAX_NB ];
 static VIDEO_TIMING	*pVideoTiming;
 static int		VideoTiming;
 
+static uint64_t		VBL_ClockCounter;
+
 
 /* Convert a horizontal video position measured at 8 MHz on STF/STE */
 /* to the equivalent number of cycles when CPU runs at 8/16/32 MHz */
@@ -695,10 +679,6 @@ static int		VideoTiming;
 int	Video_GetPosition_ForceInc = 0;
 /* TEMP : to update CYCLES_COUNTER_VIDEO during an opcode */
 
-#ifdef __LIBRETRO__
-// this needs to be part of the savestate to prevent divergence
-static Uint64 VBL_ClockCounter = 0;
-#endif
 
 /*--------------------------------------------------------------*/
 /* Local functions prototypes                                   */
@@ -706,9 +686,9 @@ static Uint64 VBL_ClockCounter = 0;
 
 static void	Video_InitTimings_Copy ( VIDEO_TIMING *pSrc , VIDEO_TIMING *pDest , int inc );
 
-static Uint32	Video_CalculateAddress ( void );
+static uint32_t	Video_CalculateAddress ( void );
 static int	Video_GetMMUStartCycle ( int DisplayStartCycle );
-static void	Video_WriteToGlueShifterRes ( Uint8 Res );
+static void	Video_WriteToGlueShifterRes ( uint8_t Res );
 static void	Video_Update_Glue_State ( int FrameCycles , int HblCounterVideo , int LineCycles , bool WriteToRes );
 
 static int	Video_HBL_GetDefaultPos ( void );
@@ -740,13 +720,20 @@ static void	Video_ColorReg_ReadWord(void);
 static void	Video_TT_RasterHBL(void);
 
 
-/*-----------------------------------------------------------------------*/
+/**
+ * Calculate the mask for the video address
+ */
+static uint32_t Video_GetAddrMask(void)
+{
+	return (DMA_MaskAddressHigh() << 16) | 0xffff;
+}
+
 /**
  * Save/Restore snapshot of local variables('MemorySnapShot_Store' handles type)
  */
 void Video_MemorySnapShot_Capture(bool bSave)
 {
-	Uint32	addr;
+	uint32_t	addr;
 
 	/* Save/Restore details */
 	MemorySnapShot_Store(&TTRes, sizeof(TTRes));
@@ -768,7 +755,7 @@ void Video_MemorySnapShot_Capture(bool bSave)
 	else
 	{
 		MemorySnapShot_Store(&addr, sizeof(addr));
-		pVideoRaster = &STRam[VideoBase];
+		pVideoRaster = &STRam[VideoBase & Video_GetAddrMask()];
 	}
 	MemorySnapShot_Store(&LineWidth, sizeof(LineWidth));
 	MemorySnapShot_Store(&HWScrollCount, sizeof(HWScrollCount));
@@ -777,13 +764,9 @@ void Video_MemorySnapShot_Capture(bool bSave)
 	MemorySnapShot_Store(&nFirstVisibleHbl, sizeof(nFirstVisibleHbl));
 	MemorySnapShot_Store(&nLastVisibleHbl, sizeof(nLastVisibleHbl));
 	MemorySnapShot_Store(&bSteBorderFlag, sizeof(bSteBorderFlag));
-	MemorySnapShot_Store(&HblJitterIndex, sizeof(HblJitterIndex));
-	MemorySnapShot_Store(&VblJitterIndex, sizeof(VblJitterIndex));
 	MemorySnapShot_Store(&ShifterFrame, sizeof(ShifterFrame));
 	MemorySnapShot_Store(&TTSpecialVideoMode, sizeof(TTSpecialVideoMode));
-#ifdef __LIBRETRO__
-	MemorySnapShot_Store(&VBL_ClockCounter,sizeof(VBL_ClockCounter));
-#endif
+	MemorySnapShot_Store(&VBL_ClockCounter, sizeof(VBL_ClockCounter));
 }
 
 
@@ -830,10 +813,6 @@ void Video_Reset(void)
 	VideoCounterDelayedOffset = 0;
 	pVideoRasterDelayed = NULL;
 
-	/* Reset jitter indexes */
-	HblJitterIndex = 0;
-	VblJitterIndex = 0;
-
 	TTSpecialVideoMode = nPrevTTSpecialVideoMode = 0;
 
 	/* Clear framecycles counter at the time of the reset */
@@ -861,7 +840,7 @@ void Video_Reset(void)
  */
 void Video_Reset_Glue(void)
 {
-	Uint8 VideoShifterByte;
+	uint8_t VideoShifterByte;
 
 	IoMem_WriteByte(0xff820a,0);			/* Video frequency */
 
@@ -1108,11 +1087,7 @@ void	Video_SetTimings( MACHINETYPE MachineType , VIDEOTIMINGMODE Mode )
 	else if ( ( MachineType == MACHINE_ST ) || ( MachineType == MACHINE_MEGA_ST ) )	/* 4 wakeup states are possible for STF */
 	{
 		if ( Mode == VIDEO_TIMING_MODE_RANDOM )
-#ifndef __LIBRETRO__
-			Mode = VIDEO_TIMING_MODE_WS1 + rand() % 4;	/* random between the 4 modes WS1, WS2, WS3, WS4 */
-#else
-			Mode = VIDEO_TIMING_MODE_WS1 + core_rand() % 4;	/* random between the 4 modes WS1, WS2, WS3, WS4 */
-#endif
+			Mode = VIDEO_TIMING_MODE_WS1 + Hatari_rand() % 4;	/* random between the 4 modes WS1, WS2, WS3, WS4 */
 
 		if ( Mode == VIDEO_TIMING_MODE_WS1 )		VideoTiming = VIDEO_TIMING_STF_WS1;
 		else if ( Mode == VIDEO_TIMING_MODE_WS2 )	VideoTiming = VIDEO_TIMING_STF_WS2;
@@ -1139,7 +1114,7 @@ const char	*Video_GetTimings_Name ( void )
  * Return the value of the MONO output signal depending on the monitor :
  *	1=monochrome monitor	0=color monitor
  */
-Uint8	Video_Get_MONO_Line ( void )
+uint8_t	Video_Get_MONO_Line ( void )
 {
 	if ( bUseHighRes )
 		return 1;
@@ -1247,11 +1222,11 @@ void	Video_GetPosition_OnReadAccess ( int *pFrameCycles , int *pHBL , int *pLine
 /**
  * Calculate and return video address pointer.
  */
-static Uint32 Video_CalculateAddress ( void )
+static uint32_t Video_CalculateAddress ( void )
 {
 	int FrameCycles, HblCounterVideo, LineCycles;
 	int X, NbBytes;
-	Uint32 VideoAddress;      /* Address of video display in ST screen space */
+	uint32_t VideoAddress;      /* Address of video display in ST screen space */
 	int nSyncByte;
 	int Res;
 	int LineBorderMask;
@@ -1469,8 +1444,10 @@ static int Video_GetMMUStartCycle ( int DisplayStartCycle )
 /*-----------------------------------------------------------------------*/
 /**
  * Write to VideoShifter (0xff8260), resolution bits
+ * Special case : when writing 3 to the shifter's res, the shifter will stop processing incoming words sent by the MMU,
+ * on the GLUE side this will be seen as hi res being selected
  */
-static void Video_WriteToGlueShifterRes ( Uint8 Res )
+static void Video_WriteToGlueShifterRes ( uint8_t Res )
 {
 	int FrameCycles, HblCounterVideo, LineCycles;
 
@@ -1479,6 +1456,10 @@ static void Video_WriteToGlueShifterRes ( Uint8 Res )
 
 	LOG_TRACE(TRACE_VIDEO_RES ,"shifter=0x%2.2X video_cyc_w=%d line_cyc_w=%d @ nHBL=%d/video_hbl_w=%d pc=%x instr_cyc=%d\n",
 	               Res, FrameCycles, LineCycles, nHBL, HblCounterVideo, M68000_GetPC(), CurrentInstrCycles );
+
+	if ( Res == 3 )
+		LOG_TRACE(TRACE_VIDEO_RES ,"shifter=0x%2.2X, shifter stopped video_cyc_w=%d line_cyc_w=%d @ nHBL=%d/video_hbl_w=%d pc=%x instr_cyc=%d\n",
+			Res, FrameCycles, LineCycles, nHBL, HblCounterVideo, M68000_GetPC(), CurrentInstrCycles );
 
 
 	/* Ignore consecutive writes of the same value */
@@ -1630,6 +1611,49 @@ static void Video_WriteToGlueShifterRes ( Uint8 Res )
 			ShifterFrame.ShifterLines[ i ].DisplayPixelShift = ShifterFrame.ShifterLines[ HblCounterVideo ].DisplayPixelShift;
 	}
 
+	/* Troed/Sync 4 pixel hardscroll on the whole screen, without removing border */
+	/* Switch to res=3 to stop the shifter, then switch back to low/med res */
+	/* All following lines will be shifted too, not just the one where the switch to res=3 is done */
+	/* The switch is supposed to last less than 20 cycles to get all 4 positions. If the switch last more */
+	/* then for every 16*n cycles we must compensante for 4*n MMU words that were not processed */
+	if ( ( ShifterFrame.Res == 0x03 ) && ( ShifterFrame.ResPosHi.LineCycles == 68 )		/* switched from stopped state at cycle 68 */
+		&& ( LineCycles >= 76 ) )				/* switch to res=3 during at least 8 cycles */
+	{
+		int	add_bytes;
+
+		add_bytes = ( ( LineCycles - 76 ) / 16 ) * 8;
+
+		if ( ( LineCycles - ShifterFrame.ResPosHi.LineCycles ) % 16 == 4 )		// 88 + 16n
+		{
+			LOG_TRACE(TRACE_VIDEO_BORDER_H , "detect 12 pixels right scroll with stopped shifter\n" );
+			ShifterFrame.ShifterLines[ HblCounterVideo ].DisplayPixelShift = 12;
+			pVideoRaster += 2 + add_bytes;
+		}
+		else if ( ( LineCycles - ShifterFrame.ResPosHi.LineCycles ) % 16 == 0 )		// 84 + 16n
+		{
+			LOG_TRACE(TRACE_VIDEO_BORDER_H , "detect 8 pixels right scroll with stopped shifter\n" );
+			ShifterFrame.ShifterLines[ HblCounterVideo ].DisplayPixelShift = 8;
+			pVideoRaster += 0 + add_bytes;
+		}
+		else if ( ( LineCycles - ShifterFrame.ResPosHi.LineCycles ) % 16 == 12 )	// 80 + 16n
+		{
+			LOG_TRACE(TRACE_VIDEO_BORDER_H , "detect 4 pixels right scroll with stopped shifter\n" );
+			ShifterFrame.ShifterLines[ HblCounterVideo ].DisplayPixelShift = 4;
+			pVideoRaster += -2 + add_bytes;
+		}
+		else if ( ( LineCycles - ShifterFrame.ResPosHi.LineCycles ) % 16 == 8 )		// 76 + 16n
+		{
+			LOG_TRACE(TRACE_VIDEO_BORDER_H , "detect 0 pixel right scroll with stopped shifter\n" );
+			ShifterFrame.ShifterLines[ HblCounterVideo ].DisplayPixelShift = 0;
+			pVideoRaster += -4 + add_bytes;
+		}
+
+		/* Mark all the following lines as shifted too */
+		int i;
+		for ( i=HblCounterVideo+1 ; i<MAX_SCANLINES_PER_FRAME ; i++ )
+			ShifterFrame.ShifterLines[ i ].DisplayPixelShift = ShifterFrame.ShifterLines[ HblCounterVideo ].DisplayPixelShift;
+	}
+
 	/* TEMP for 'closure' in WS2 */
 	/* -> stay in hi res for 16 cycles to do the stab (hi/50/lo at 4/12/20) */
 	if ( ( ShifterFrame.ShifterLines[ HblCounterVideo ].BorderMask & BORDERMASK_LEFT_OFF )
@@ -1678,7 +1702,7 @@ static void Video_WriteToGlueShifterRes ( Uint8 Res )
 
 	/* Store cycle position of this change of resolution */
 	ShifterFrame.Res = Res;
-	if ( Res == 0x02 )						/* high res */
+	if ( Res & 0x02 )						/* high res */
 	{
 		ShifterFrame.ResPosHi.VBL = nVBLs;
 		ShifterFrame.ResPosHi.FrameCycles = FrameCycles;
@@ -1916,7 +1940,7 @@ static void Video_Update_Glue_State ( int FrameCycles , int HblCounterVideo , in
 	int HBL_Pos;
 	int nCyclesPerLine_new;
 	int Freq_match_found;
-	Uint32	BorderMask;
+	uint32_t	BorderMask;
 	int Top_Pos;
 	int Bottom_Pos;
 
@@ -2751,7 +2775,7 @@ Freq_Test_Done:
 void Video_Sync_WriteByte ( void )
 {
 	int FrameCycles, HblCounterVideo, LineCycles;
-	Uint8 Freq;
+	uint8_t Freq;
 
 
 	if ( bUseVDIRes )
@@ -2954,9 +2978,6 @@ void Video_InterruptHandler_HBL ( void )
 	int FrameCycles , HblCounterVideo , LineCycles;
 	int PendingCyclesOver;
 	int NewHBLPos;
-#ifdef __LIBRETRO__
-	(void)PendingCyclesOver;
-#endif
 
 
 if ( CycInt_From_Opcode )		/* TEMP : to update CYCLES_COUNTER_VIDEO during an opcode */
@@ -3000,25 +3021,21 @@ if ( CycInt_From_Opcode )		/* TEMP : to update CYCLES_COUNTER_VIDEO during an op
 		return;
 	}
 
-	/* Increment the hbl jitter index */
-	HblJitterIndex++;
-	HblJitterIndex %= HBL_JITTER_ARRAY_SIZE;
-	
-	LOG_TRACE ( TRACE_VIDEO_HBL , "HBL %d video_cyc=%d pending_cyc=%d jitter=%d\n" ,
-	               nHBL , FrameCycles , PendingCyclesOver , HblJitterArray[ HblJitterIndex ] );
+	LOG_TRACE ( TRACE_VIDEO_HBL , "HBL %d video_cyc=%d pending_cyc=%d\n" ,
+	               nHBL , FrameCycles , PendingCyclesOver );
 
 	/* Print traces if pending HBL bit changed just before IACK when HBL interrupt is allowed */
 	if ( ( CPU_IACK == true ) && ( regs.intmask < 2 ) )
 	{
 		if ( pendingInterrupts & ( 1 << 2 ) )
 		{
-			LOG_TRACE ( TRACE_VIDEO_HBL , "HBL %d, pending set again just before iack, skip one HBL interrupt VBL=%d video_cyc=%d pending_cyc=%d jitter=%d\n" ,
-				nHBL , nVBLs , FrameCycles , PendingCyclesOver , VblJitterArray[ VblJitterIndex ] );
+			LOG_TRACE ( TRACE_VIDEO_HBL , "HBL %d, pending set again just before iack, skip one HBL interrupt VBL=%d video_cyc=%d pending_cyc=%d\n" ,
+				nHBL , nVBLs , FrameCycles , PendingCyclesOver );
 		}
 		else
 		{
-			LOG_TRACE ( TRACE_VIDEO_HBL , "HBL %d, new pending HBL set just before iack VBL=%d video_cyc=%d pending_cyc=%d jitter=%d\n" ,
-				nHBL , nVBLs , FrameCycles , PendingCyclesOver , VblJitterArray[ VblJitterIndex ] );
+			LOG_TRACE ( TRACE_VIDEO_HBL , "HBL %d, new pending HBL set just before iack VBL=%d video_cyc=%d pending_cyc=%d\n" ,
+				nHBL , nVBLs , FrameCycles , PendingCyclesOver );
 		}
 	}
 
@@ -3038,7 +3055,7 @@ if ( CycInt_From_Opcode )		/* TEMP : to update CYCLES_COUNTER_VIDEO during an op
 		Video_EndHBL();				/* Check some borders removal and copy line to display buffer */
 	}
 
-	DmaSnd_STE_HBL_Update();			/* Update STE DMA sound if needed */
+	DmaSnd_STE_HBL_Update();			/* Update STE/TT DMA sound if needed */
 
 	/* TEMP IPF */
 	IPF_Emulate();
@@ -3388,10 +3405,10 @@ Video_GetPosition_ForceInc = 0;		/* TEMP : to update CYCLES_COUNTER_VIDEO during
  */
 static void Video_StoreFirstLinePalette(void)
 {
-	Uint16 *pp2;
+	uint16_t *pp2;
 	int i;
 
-	pp2 = (Uint16 *)&IoMem[0xff8240];
+	pp2 = (uint16_t *)&IoMem[0xff8240];
 	for (i = 0; i < 16; i++)
 	{
 		HBLPalettes[i] = SDL_SwapBE16(*pp2++);
@@ -3403,7 +3420,7 @@ static void Video_StoreFirstLinePalette(void)
 //	FIXME ; enlever PALETTEMASK_RESOLUTION
 
 //	if ( ShifterFrame.ShifterLines[ nFirstVisibleHbl ].BorderMask == BORDERMASK_NONE )	// no border trick, store the current res
-	HBLPaletteMasks[0] = (PALETTEMASK_RESOLUTION|PALETTEMASK_PALETTE) | (((Uint32)IoMem_ReadByte(0xff8260)&0x3)<<16);
+	HBLPaletteMasks[0] = (PALETTEMASK_RESOLUTION|PALETTEMASK_PALETTE) | (((uint32_t)IoMem_ReadByte(0xff8260)&0x3)<<16);
 //	else						// border removal, assume low res for the whole line
 //		HBLPaletteMasks[0] = (PALETTEMASK_RESOLUTION|PALETTEMASK_PALETTE) | (0<<16);
 }
@@ -3420,7 +3437,7 @@ static void Video_StoreFirstLinePalette(void)
  */
 static void Video_StoreResolution(int y , bool start)
 {
-	Uint8 res;
+	uint8_t res;
 	int Mask;
 
 	/* Clear resolution, and set with current value */
@@ -3446,7 +3463,7 @@ static void Video_StoreResolution(int y , bool start)
 		}
 
 		HBLPaletteMasks[y] &= ~(0x3<<16);
-		HBLPaletteMasks[y] |= PALETTEMASK_RESOLUTION|((Uint32)res)<<16;
+		HBLPaletteMasks[y] |= PALETTEMASK_RESOLUTION|((uint32_t)res)<<16;
 
 //   fprintf ( stderr , "store res %d line %d %x %x\n" , res , y , Mask , HBLPaletteMasks[y] );
 	}
@@ -3459,6 +3476,10 @@ static void Video_StoreResolution(int y , bool start)
  */
 static void Video_CopyScreenLineMono(void)
 {
+	/* We must keep the new video address in a 22 or 24 bit space depending on the machine type */
+	/* (for example in case it pointed to IO space and is now >= 0x1000000) */
+	uint32_t VideoMask = Video_GetAddrMask();
+
 	/* Copy one line - 80 bytes in ST high resolution */
 	memcpy(pSTScreen, pVideoRaster, SCREENBYTES_MONOLINE);
 	pVideoRaster += SCREENBYTES_MONOLINE;
@@ -3466,14 +3487,14 @@ static void Video_CopyScreenLineMono(void)
 	/* Handle STE fine scrolling (HWScrollCount is zero on ST). */
 	if (HWScrollCount)
 	{
-		Uint16 *pScrollAdj;
+		uint16_t *pScrollAdj;
 		int nNegScrollCnt;
 
-		pScrollAdj = (Uint16 *)pSTScreen;
+		pScrollAdj = (uint16_t *)pSTScreen;
 		nNegScrollCnt = 16 - HWScrollCount;
 
 		/* Shift the whole line by the given scroll count */
-		while ((Uint8*)pScrollAdj < pSTScreen + SCREENBYTES_MONOLINE-2)
+		while ((uint8_t*)pScrollAdj < pSTScreen + SCREENBYTES_MONOLINE-2)
 		{
 			do_put_mem_word(pScrollAdj, (do_get_mem_word(pScrollAdj) << HWScrollCount)
 			                | (do_get_mem_word(pScrollAdj+1) >> nNegScrollCnt));
@@ -3525,9 +3546,10 @@ static void Video_CopyScreenLineMono(void)
 	/* Each screen line copied to buffer is always same length */
 	pSTScreen += SCREENBYTES_MONOLINE;
 
-	/* We must keep the new video address in a 24 bit space */
-	/* (in case it pointed to IO space and is now >= 0x1000000) */
-	pVideoRaster = ( ( pVideoRaster - STRam ) & 0xffffff ) + STRam;
+	/* We must keep the new video address in a 22 or 24 bit space depending on the machine type */
+	/* (for example in case it pointed to IO space and is now >= 0x1000000) */
+	pVideoRaster = ( ( pVideoRaster - STRam ) & VideoMask ) + STRam;
+//fprintf ( stderr , "video counter new=%x\n" , pVideoRaster-STRam );
 }
 
 
@@ -3542,16 +3564,16 @@ static void Video_CopyScreenLineColor(void)
 	int VideoOffset = 0;
 	int STF_PixelScroll = 0;
 	int LineRes;
-	Uint8 *pVideoRasterEndLine;			/* addr of the last byte copied from pVideoRaster to pSTScreen (for HWScrollCount) */
+	uint8_t *pVideoRasterEndLine;			/* addr of the last byte copied from pVideoRaster to pSTScreen (for HWScrollCount) */
 	int i;
-	Uint32 VideoMask;
+	uint32_t VideoMask;
 
 	LineBorderMask = ShifterFrame.ShifterLines[ nHBL ].BorderMask;
 	STF_PixelScroll = ShifterFrame.ShifterLines[ nHBL ].DisplayPixelShift;
 
 	/* We must keep the new video address in a 22 or 24 bit space depending on the machine type */
 	/* (for example in case it pointed to IO space and is now >= 0x1000000) */
-	VideoMask = ( DMA_MaskAddressHigh() << 16 ) | 0xffff;		/* 0x3fffff or 0xffffff */
+	VideoMask = Video_GetAddrMask();
 
 	/* Get resolution for this line (in case of mixed low/med screen) */
 	i = nHBL-nFirstVisibleHbl;
@@ -3640,7 +3662,7 @@ static void Video_CopyScreenLineColor(void)
 	/* but this should be improved to really display a black line (requires changes in screen.c convert functions) */
 	if ((nHBL < nStartHBL) || (nHBL >= nEndHBL + BlankLines)
 	    || (LineBorderMask & ( BORDERMASK_EMPTY_LINE|BORDERMASK_NO_DE ) )
-	    || ShifterFrame.VBlank_signal
+	    || ( ShifterFrame.VBlank_signal && ( nHBL >= ShifterFrame.VBlank_On_Line ) )
 	    || ( VerticalOverscan & V_OVERSCAN_NO_DE ) )
 	{
 		/* Clear line to color '0' */
@@ -3714,7 +3736,7 @@ static void Video_CopyScreenLineColor(void)
 			/* Use a slower/more accurate rendering where each word is dynamically read from memory */
 			/* (this is used to test MMU translation and when video address points after end of RAM) */
 			for ( i=0 ; i<80 ; i++ )
-				do_put_mem_word ( pSTScreen+SCREENBYTES_LEFT+i*2 , (Uint16)get_word ( ( pVideoRaster-STRam+i*2 ) & VideoMask ) );
+				do_put_mem_word ( pSTScreen+SCREENBYTES_LEFT+i*2 , (uint16_t)get_word ( ( pVideoRaster-STRam+i*2 ) & VideoMask ) );
 #endif
 			pVideoRaster += SCREENBYTES_MIDDLE;
 		}
@@ -3755,22 +3777,22 @@ static void Video_CopyScreenLineColor(void)
 		/* STE specific */
 		if (!bSteBorderFlag && HWScrollCount)		/* Handle STE fine scrolling (HWScrollCount is zero on ST) */
 		{
-			Uint16 *pScrollAdj;	/* Pointer to actual position in line */
+			uint16_t *pScrollAdj;	/* Pointer to actual position in line */
 			int nNegScrollCnt;
-			Uint16 *pScrollEndAddr;	/* Pointer to end of the line */
+			uint16_t *pScrollEndAddr;	/* Pointer to end of the line */
 
 			nNegScrollCnt = 16 - HWScrollCount;
 			if (LineBorderMask & BORDERMASK_LEFT_OFF)
-				pScrollAdj = (Uint16 *)pSTScreen;
+				pScrollAdj = (uint16_t *)pSTScreen;
 			else if (LineBorderMask & BORDERMASK_LEFT_OFF_2_STE)
 			{
 				if ( SCREENBYTES_LEFT > BORDERBYTES_LEFT_2_STE )
-					pScrollAdj = (Uint16 *)(pSTScreen+8);	/* don't scroll the 8 first bytes (keep color 0)*/
+					pScrollAdj = (uint16_t *)(pSTScreen+8);	/* don't scroll the 8 first bytes (keep color 0)*/
 				else
-					pScrollAdj = (Uint16 *)pSTScreen;	/* we render less bytes on screen than a real ST, scroll the whole line */
+					pScrollAdj = (uint16_t *)pSTScreen;	/* we render less bytes on screen than a real ST, scroll the whole line */
 			}
 			else
-				pScrollAdj = (Uint16 *)(pSTScreen + SCREENBYTES_LEFT);
+				pScrollAdj = (uint16_t *)(pSTScreen + SCREENBYTES_LEFT);
 
 			/* When shifting the line to the left, we will have 'HWScrollCount' missing pixels at	*/
 			/* the end of the line. We must complete these last 16 pixels with pixels from the	*/
@@ -3781,15 +3803,15 @@ static void Video_CopyScreenLineColor(void)
 
 			/* Addr of the last byte to shift in the 1st pass (excluding the last 16 pixels of the line) */
 			if (LineBorderMask & BORDERMASK_RIGHT_OFF)
-				pScrollEndAddr = (Uint16 *)(pSTScreen + SCREENBYTES_LINE - 8);
+				pScrollEndAddr = (uint16_t *)(pSTScreen + SCREENBYTES_LINE - 8);
 			else
-				pScrollEndAddr = (Uint16 *)(pSTScreen + SCREENBYTES_LEFT + SCREENBYTES_MIDDLE - 8);
+				pScrollEndAddr = (uint16_t *)(pSTScreen + SCREENBYTES_LEFT + SCREENBYTES_MIDDLE - 8);
 
 
 			if ( LineRes == 1 )				/* med res */
 			{
 				/* in med res, 16 pixels are 4 bytes, not 8 as in low res, so only the last 4 bytes need a special case */
-				pScrollEndAddr += 2;			/* 2 Uint16 = 4 bytes = 16 pixels */
+				pScrollEndAddr += 2;			/* 2 uint16_t = 4 bytes = 16 pixels */
 
 				/* Shift the whole line to the left by the given scroll count (except the last 16 pixels) */
 				while (pScrollAdj < pScrollEndAddr)
@@ -3883,10 +3905,10 @@ static void Video_CopyScreenLineColor(void)
 		/* the whole displayed area (while the STE scrolls pixels inside the displayed area) */
 		if ( STF_PixelScroll > 0 )
 		{
-			Uint16 *pScreenLineEnd;
+			uint16_t *pScreenLineEnd;
 			int count;
 
-			pScreenLineEnd = (Uint16 *) ( pSTScreen + SCREENBYTES_LINE - 2 );
+			pScreenLineEnd = (uint16_t *) ( pSTScreen + SCREENBYTES_LINE - 2 );
 			if ( LineRes == 0 )			/* low res */
 			{
 				for ( count = 0 ; count < ( SCREENBYTES_LINE - 8 ) / 2 ; count++ , pScreenLineEnd-- )
@@ -3908,13 +3930,13 @@ static void Video_CopyScreenLineColor(void)
 		}
 		else if ( STF_PixelScroll < 0 )
 		{
-			Uint16 *pScreenLineStart;
+			uint16_t *pScreenLineStart;
 			int count;
 			int STE_HWScrollLeft;
-			Uint16 extra_word;
+			uint16_t extra_word;
 
 			STF_PixelScroll = -STF_PixelScroll;
-			pScreenLineStart = (Uint16 *)pSTScreen;
+			pScreenLineStart = (uint16_t *)pSTScreen;
 
 			STE_HWScrollLeft = 0;
 			if ( !bSteBorderFlag && HWScrollCount )
@@ -4055,7 +4077,7 @@ void Video_SetScreenRasters(void)
 {
 	pHBLPaletteMasks = HBLPaletteMasks;
 	pHBLPalettes = HBLPalettes;
-	memset(pHBLPaletteMasks, 0, sizeof(Uint32)*NUM_VISIBLE_LINES);  /* Clear array */
+	memset(pHBLPaletteMasks, 0, sizeof(uint32_t)*NUM_VISIBLE_LINES);  /* Clear array */
 }
 
 
@@ -4108,13 +4130,44 @@ static void Video_SetHBLPaletteMaskPointers(void)
  */
 static void Video_ResetShifterTimings(void)
 {
-	Uint8 nSyncByte;
+	uint8_t nSyncByte;
 	int RefreshRate_prev;
+	int RefreshRate_new;
 
 	nSyncByte = IoMem_ReadByte(0xff820a);
 	RefreshRate_prev = nScreenRefreshRate;
 
-	if ((IoMem_ReadByte(0xff8260) & 3) == 2)
+	if ( Config_IsMachineFalcon() )
+	{
+		RefreshRate_new = VIDEL_Get_VFreq();
+
+		/* Due to rounding RefreshRate_new might not exactly 50, 60 or 71, so we add a small margin */
+		if ( ( RefreshRate_new >= VIDEO_60HZ-2 ) && ( RefreshRate_new <= VIDEO_60HZ+2 ) )
+			RefreshRate_new = VIDEO_60HZ;
+
+		/* Not sure monochrome is set 71 Hz with Falcon, but we can check it anyway */
+		else if ( ( RefreshRate_new >= VIDEO_71HZ-2 ) && ( RefreshRate_new <= VIDEO_71HZ+2 ) )
+			RefreshRate_new = VIDEO_71HZ;
+
+		/* 50 Hz or other freqs : we use 50 Hz by default */
+		else
+			RefreshRate_new = VIDEO_50HZ;
+	}
+	else
+	{
+		if ( (IoMem_ReadByte(0xff8260) & 3) == 2 )		/* High res */
+			RefreshRate_new = VIDEO_71HZ;
+		else							/* Low or Medium res */
+		{
+			if ( nSyncByte & 2 )
+				RefreshRate_new = VIDEO_50HZ;
+			else
+				RefreshRate_new = VIDEO_60HZ;
+		}
+	}
+
+
+	if ( RefreshRate_new == VIDEO_71HZ )
 	{
 		/* 71 Hz, monochrome */
 		nScreenRefreshRate = VIDEO_71HZ;
@@ -4132,7 +4185,7 @@ static void Video_ResetShifterTimings(void)
 		ShifterFrame.VBLank_On_60_CheckFreq = VIDEO_71HZ;
 		ShifterFrame.VBLank_On_50_CheckFreq = VIDEO_71HZ;
 	}
-	else if (nSyncByte & 2)  /* Check if running in 50 Hz or in 60 Hz */
+	else if ( RefreshRate_new == VIDEO_50HZ )		/* ST/STE 50 Hz or Falcon RGB/TV is set to 50 Hz */
 	{
 		/* 50 Hz */
 		nScreenRefreshRate = VIDEO_50HZ;
@@ -4150,9 +4203,8 @@ static void Video_ResetShifterTimings(void)
 		ShifterFrame.VBLank_On_60_CheckFreq = VIDEO_50HZ;
 		ShifterFrame.VBLank_On_50_CheckFreq = VIDEO_50HZ;
 	}
-	else
+	else							/* 60 Hz for ST/STE or Falcon VGA */
 	{
-		/* 60 Hz */
 		nScreenRefreshRate = VIDEO_60HZ;
 		nScanlinesPerFrame = SCANLINES_PER_FRAME_60HZ;
 		nCyclesPerLine = CYCLES_PER_LINE_60HZ;
@@ -4290,9 +4342,9 @@ void Video_GetTTRes(int *width, int *height, int *bpp)
 /**
  * Set a TT palette color
  */
-static void Video_SetTTPaletteColor(int idx, Uint32 addr)
+static void Video_SetTTPaletteColor(int idx, uint32_t addr)
 {
-	Uint8 r,g,b, lowbyte, highbyte;
+	uint8_t r,g,b, lowbyte, highbyte;
 
 	lowbyte = IoMem_ReadByte(addr + 1);
 
@@ -4340,7 +4392,7 @@ static void Video_UpdateTTPalette(int bpp)
 	}
 	else
 	{
-		Uint32 ttpalette = 0xff8400;
+		uint32_t ttpalette = 0xff8400;
 		int i, colors = 1 << bpp;
 
 		if (colors <= 16)
@@ -4373,7 +4425,7 @@ bool Video_RenderTTScreen(void)
 	Video_GetTTRes(&width, &height, &bpp);
 	if (TTRes != nPrevTTRes)
 	{
-		Screen_SetGenConvSize(width, height, ConfigureParams.Screen.nForceBpp, false);
+		Screen_SetGenConvSize(width, height, false);
 		nPrevTTRes = TTRes;
 		if (bpp == 1)   /* Assert that mono palette will be used in mono mode */
 			bTTColorsSync = false;
@@ -4561,9 +4613,6 @@ void Video_InterruptHandler_VBL ( void )
 {
 	int PendingCyclesOver;
 	int PendingInterruptCount_save;
-#ifndef __LIBRETRO__
-	static Uint64 VBL_ClockCounter;
-#endif
 
 	PendingInterruptCount_save = PendingInterruptCount;
 
@@ -4583,10 +4632,6 @@ void Video_InterruptHandler_VBL ( void )
 	if ( CycInt_GetActiveInt() == INTERRUPT_VIDEO_VBL )
 		CycInt_AcknowledgeInterrupt();
 
-	/* Increment the vbl jitter index */
-	VblJitterIndex++;
-	VblJitterIndex %= VBL_JITTER_ARRAY_SIZE;
-	
 	/* Set frame cycles, used for Video Address */
 	Cycles_SetCounter(CYCLES_COUNTER_VIDEO, PendingCyclesOver + ( pVideoTiming->VblVideoCycleOffset << nCpuFreqShift ) );
 
@@ -4630,8 +4675,8 @@ void Video_InterruptHandler_VBL ( void )
 	/* Update the blitter's stats for the previous VBL */
 	Blitter_StatsUpdateRate ( (int)( CyclesGlobalClockCounter - PendingCyclesOver - VBL_ClockCounter ) );
 
-	LOG_TRACE(TRACE_VIDEO_VBL , "VBL %d video_cyc=%d pending_cyc=%d jitter=%d vbl_cycles=%d\n" ,
-			nVBLs , Cycles_GetCounter(CYCLES_COUNTER_VIDEO) , PendingCyclesOver , VblJitterArray[ VblJitterIndex ] ,
+	LOG_TRACE(TRACE_VIDEO_VBL , "VBL %d video_cyc=%d pending_cyc=%d vbl_cycles=%d\n" ,
+			nVBLs , Cycles_GetCounter(CYCLES_COUNTER_VIDEO) , PendingCyclesOver ,
 			(int)( CyclesGlobalClockCounter - PendingCyclesOver - VBL_ClockCounter ) );
 
 	VBL_ClockCounter = CyclesGlobalClockCounter - PendingCyclesOver;
@@ -4641,13 +4686,13 @@ void Video_InterruptHandler_VBL ( void )
 	{
 		if ( pendingInterrupts & ( 1 << 4 ) )
 		{
-			LOG_TRACE ( TRACE_VIDEO_VBL , "VBL %d, pending set again just before iack, skip one VBL interrupt video_cyc=%d pending_cyc=%d jitter=%d\n" ,
-				nVBLs , Cycles_GetCounter(CYCLES_COUNTER_VIDEO) , PendingCyclesOver , VblJitterArray[ VblJitterIndex ] );
+			LOG_TRACE ( TRACE_VIDEO_VBL , "VBL %d, pending set again just before iack, skip one VBL interrupt video_cyc=%d pending_cyc=%d\n" ,
+				nVBLs , Cycles_GetCounter(CYCLES_COUNTER_VIDEO) , PendingCyclesOver );
 		}
 		else
 		{
-			LOG_TRACE ( TRACE_VIDEO_VBL , "VBL %d, new pending VBL set just before iack video_cyc=%d pending_cyc=%d jitter=%d\n" ,
-				nVBLs , Cycles_GetCounter(CYCLES_COUNTER_VIDEO) , PendingCyclesOver , VblJitterArray[ VblJitterIndex ] );
+			LOG_TRACE ( TRACE_VIDEO_VBL , "VBL %d, new pending VBL set just before iack video_cyc=%d pending_cyc=%d\n" ,
+				nVBLs , Cycles_GetCounter(CYCLES_COUNTER_VIDEO) , PendingCyclesOver );
 		}
 	}
 
@@ -4672,8 +4717,8 @@ uint32_t Video_GetScreenBaseAddr(void)
 {
 	uint32_t nBase;
 
-	nBase = (Uint32)IoMem_ReadByte(0xff8201) << 16;
-	nBase |= (Uint32)IoMem_ReadByte(0xff8203) << 8;
+	nBase = (uint32_t)IoMem_ReadByte(0xff8201) << 16;
+	nBase |= (uint32_t)IoMem_ReadByte(0xff8203) << 8;
 	if (!Config_IsMachineST())
 	{
 		/* On STe 2 aligned and on TT 8 aligned. On Falcon 4 aligned
@@ -4726,7 +4771,7 @@ void Video_ScreenBase_WriteByte(void)
  */
 void Video_ScreenCounter_ReadByte(void)
 {
-	Uint32 addr;
+	uint32_t addr;
 
 	addr = Video_CalculateAddress();		/* get current video address */
 
@@ -4762,12 +4807,15 @@ void Video_ScreenCounter_ReadByte(void)
  */
 void Video_ScreenCounter_WriteByte(void)
 {
-	Uint8 AddrByte;
-	Uint32 addr_cur;
-	Uint32 addr_new = 0;
+	uint8_t AddrByte;
+	uint32_t addr_cur;
+	uint32_t addr_new = 0;
 	int FrameCycles, HblCounterVideo, LineCycles;
 	int Delayed;
 	int MMUStartCycle;
+#ifdef __LIBRETRO__
+	(void)Delayed;
+#endif
 
 	Video_GetPosition_OnWriteAccess ( &FrameCycles , &HblCounterVideo , &LineCycles );
 	LineCycles = VIDEO_CYCLE_TO_HPOS ( LineCycles );
@@ -4851,11 +4899,6 @@ void Video_ScreenCounter_WriteByte(void)
 				" video_cyc_w=%d line_cyc_w=%d @ nHBL=%d/video_hbl_w=%d pc=%x instr_cyc=%d\n" ,
 				IoAccessCurrentAddress, AddrByte, addr_cur , addr_new , VideoCounterDelayedOffset , Delayed ? "yes" : "no" ,
 				FrameCycles, LineCycles, nHBL, HblCounterVideo, M68000_GetPC(), CurrentInstrCycles );
-#ifdef __LIBRETRO__
-	#ifndef ENABLE_TRACING
-		(void)Delayed;
-	#endif
-#endif
 }
 
 /*-----------------------------------------------------------------------*/
@@ -4935,9 +4978,12 @@ void Video_HorScroll_Read(void)
  */
 void Video_LineWidth_WriteByte(void)
 {
-	Uint8 NewWidth;
+	uint8_t NewWidth;
 	int FrameCycles, HblCounterVideo, LineCycles;
 	int Delayed;
+#ifdef __LIBRETRO__
+	(void)Delayed;
+#endif
 
 	Video_GetPosition_OnWriteAccess ( &FrameCycles , &HblCounterVideo , &LineCycles );
 	LineCycles = VIDEO_CYCLE_TO_HPOS ( LineCycles );
@@ -4961,11 +5007,6 @@ void Video_LineWidth_WriteByte(void)
 	LOG_TRACE(TRACE_VIDEO_STE , "write ste linewidth=0x%x delayed=%s video_cyc_w=%d line_cyc_w=%d @ nHBL=%d/video_hbl_w=%d pc=%x instr_cyc=%d\n",
 					NewWidth, Delayed ? "yes" : "no" ,
 					FrameCycles, LineCycles, nHBL, HblCounterVideo, M68000_GetPC(), CurrentInstrCycles );
-#ifdef __LIBRETRO__
-	#ifndef ENABLE_TRACING
-		(void)Delayed;
-	#endif
-#endif
 }
 
 /*-----------------------------------------------------------------------*/
@@ -4984,8 +5025,8 @@ void Video_LineWidth_WriteByte(void)
  */
 static void Video_ColorReg_WriteWord(void)
 {
-	Uint32 addr;
-	Uint16 col;
+	uint32_t addr;
+	uint16_t col;
 	int idx;
 
 	addr = IoAccessCurrentAddress;
@@ -5068,12 +5109,12 @@ static void Video_ColorReg_WriteWord(void)
  * we use random values for now.
  * NOTE [NP] : When executing code from the IO addresses between 0xff8240-0xff825e
  * the unused bits on STF are set to '0' (used in "The Union Demo" protection).
- * So we use rand() only if PC is located in RAM.
+ * So we use Hatari_rand() only if PC is located in RAM.
  */
 static void Video_ColorReg_ReadWord(void)
 {
-	Uint16 col;
-	Uint32 addr;
+	uint16_t col;
+	uint32_t addr;
 	addr = IoAccessCurrentAddress;
 
 	/* Access to shifter regs are on a 4 cycle boundary */
@@ -5083,11 +5124,7 @@ static void Video_ColorReg_ReadWord(void)
 
 	if (Config_IsMachineST() && M68000_GetPC() < 0x400000)		/* PC in RAM < 4MB */
 	{
-#ifndef __LIBRETRO__
-		col = ( col & 0x777 ) | ( rand() & 0x888 );
-#else
-		col = ( col & 0x777 ) | ( core_rand() & 0x888 );
-#endif
+		col = ( col & 0x777 ) | ( Hatari_rand() & 0x888 );
 		IoMem_WriteWord ( addr , col );
 	}
 
@@ -5287,10 +5324,14 @@ void Video_Color15_ReadWord(void)
  * - MMU connects the CPU data bus to the RAM data bus
  * - SHIFTER reads the value from the RAM data bus
  * - CPU finishes the bus cycle
+ * Also value "3" is different for GLUE and SHIFTER
+ * - GLUE will interpret "3" as high res (because bit 1 is set)
+ * - SHIFTER will go to a stopped state and not process input words from MMU anymore !
+ *   (this is used by Troed to create a 4 pixels hardscroll on STF)
  */
 void Video_Res_WriteByte(void)
 {
-	Uint8 VideoShifterByte;
+	uint8_t VideoShifterByte;
 
 	if (Config_IsMachineTT())
 	{
@@ -5302,18 +5343,12 @@ void Video_Res_WriteByte(void)
 	{
 		/* We only care for lower 2-bits */
 		VideoShifterByte = IoMem[0xff8260] & 3;
-		/* 3 is not a valid resolution, use high res instead */
-		if ( VideoShifterByte == 3 )
-		{
-			VideoShifterByte = 2;
-			IoMem_WriteByte(0xff8260,2);
-		}
 
 		Video_WriteToGlueShifterRes(VideoShifterByte);
 		Video_SetHBLPaletteMaskPointers();
 		*pHBLPaletteMasks &= 0xff00ffff;
 		/* Store resolution after palette mask and set resolution write bit: */
-		*pHBLPaletteMasks |= (((Uint32)VideoShifterByte|0x04)<<16);
+		*pHBLPaletteMasks |= (((uint32_t)VideoShifterByte|0x04)<<16);
 	}
 
 	/* Access to shifter regs are on a 4 cycle boundary */
@@ -5401,13 +5436,16 @@ void Video_HorScroll_Write_8265(void)
 
 void Video_HorScroll_Write(void)
 {
-	Uint32 RegAddr;
-	Uint8 ScrollCount;
-	Uint8 Prefetch;
+	uint32_t RegAddr;
+	uint8_t ScrollCount;
+	uint8_t Prefetch;
 	int FrameCycles, HblCounterVideo, LineCycles;
 	bool Add16px = false;
-	static Uint8 LastVal8265 = 0;
+	static uint8_t LastVal8265 = 0;
 	int Delayed;
+#ifdef __LIBRETRO__
+	(void)Delayed;
+#endif
 
 	Video_GetPosition_OnWriteAccess ( &FrameCycles , &HblCounterVideo , &LineCycles );
 	LineCycles = VIDEO_CYCLE_TO_HPOS ( LineCycles );
@@ -5477,11 +5515,6 @@ void Video_HorScroll_Write(void)
 	LOG_TRACE(TRACE_VIDEO_STE , "write ste %x hwscroll=%x delayed=%s video_cyc_w=%d line_cyc_w=%d @ nHBL=%d/video_hbl_w=%d pc=%x instr_cyc=%d\n" ,
 		RegAddr , ScrollCount, Delayed ? "yes" : "no" ,
 		FrameCycles, LineCycles, nHBL, HblCounterVideo, M68000_GetPC(), CurrentInstrCycles );
-#ifdef __LIBRETRO__
-	#ifndef ENABLE_TRACING
-		(void)Delayed;
-	#endif
-#endif
 }
 
 
@@ -5489,9 +5522,9 @@ void Video_HorScroll_Write(void)
 /**
  * Helper for TT->ST color reg copies
  */
-static void TT2STColor(Uint32 ttaddr, Uint32 staddr)
+static void TT2STColor(uint32_t ttaddr, uint32_t staddr)
 {
-	Uint16 stcolor, ttcolor;
+	uint16_t stcolor, ttcolor;
 
 	ttcolor = IoMem_ReadWord(ttaddr);
 	stcolor = ((ttcolor & 0xeee) >> 1) | ((ttcolor&0x111) << 3);
@@ -5508,8 +5541,8 @@ static void TT2STColor(Uint32 ttaddr, Uint32 staddr)
  */
 void Video_TTShiftMode_WriteWord(void)
 {
-	Uint32 stpalette = 0xff8240;
-	Uint32 ttpalette = 0xff8400;
+	uint32_t stpalette = 0xff8240;
+	uint32_t ttpalette = 0xff8400;
 	int i;
 
 	TTRes = IoMem_ReadByte(0xff8262) & 7;
@@ -5554,10 +5587,10 @@ void Video_TTShiftMode_WriteWord(void)
  */
 void Video_TTColorRegs_Write(void)
 {
-	const Uint32 stpalette = 0xff8240;
-	const Uint32 ttpalette = 0xff8400;
+	const uint32_t stpalette = 0xff8240;
+	const uint32_t ttpalette = 0xff8400;
 	int offset, i;
-	Uint32 addr;
+	uint32_t addr;
 
 	/* ensure even address for byte accesses */
 	addr = IoAccessCurrentAddress & 0xfffffffe;
@@ -5590,12 +5623,12 @@ void Video_TTColorRegs_Write(void)
  */
 void Video_TTColorRegs_STRegWrite(void)
 {
-	const Uint32 stpalette = 0xff8240;
-	const Uint32 ttpalette = 0xff8400;
-	Uint16 ttcolor;
-	Uint16 stcolor;
+	const uint32_t stpalette = 0xff8240;
+	const uint32_t ttpalette = 0xff8400;
+	uint16_t ttcolor;
+	uint16_t stcolor;
 	int offset, i;
-	Uint32 addr;
+	uint32_t addr;
 
 	/* byte writes don't have effect on TT */
 	if (nIoMemAccessSize < 2)
@@ -5668,7 +5701,7 @@ static void Video_TT_RasterHBL(void)
 /**
  * display video related information (for debugger info command)
  */
-void Video_Info(FILE *fp, Uint32 dummy)
+void Video_Info(FILE *fp, uint32_t dummy)
 {
 	const char *mode;
 	switch (VerticalOverscan) {

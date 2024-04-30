@@ -25,7 +25,6 @@ const char Floppy_fileid[] = "Hatari floppy.c";
 
 #include <sys/stat.h>
 #include <assert.h>
-#include <SDL_endian.h>
 
 #include "main.h"
 #include "configuration.h"
@@ -42,7 +41,6 @@ const char Floppy_fileid[] = "Hatari floppy.c";
 #include "floppy_ipf.h"
 #include "floppy_stx.h"
 #include "zip.h"
-#include "screen.h"
 #include "str.h"
 #include "video.h"
 #include "fdc.h"
@@ -257,7 +255,7 @@ bool Floppy_IsWriteProtected(int Drive)
  */
 static bool Floppy_IsBootSectorExecutable(int Drive)
 {
-	Uint8 *pDiskBuffer;
+	uint8_t *pDiskBuffer;
 	int	sum , i;
 
 	if (EmulationDrives[Drive].bDiskInserted)
@@ -290,7 +288,7 @@ static bool Floppy_IsBootSectorExecutable(int Drive)
  */
 static bool Floppy_IsBootSectorOK(int Drive)
 {
-	Uint8 *pDiskBuffer;
+	uint8_t *pDiskBuffer;
 
 	/* Does our drive have a disk in? */
 	if (EmulationDrives[Drive].bDiskInserted)
@@ -439,14 +437,14 @@ const char* Floppy_SetDiskFileName(int Drive, const char *pszFileName, const cha
 		strcpy(ConfigureParams.DiskImage.szDiskZipPath[Drive], pszZipPath);
 	else
 		ConfigureParams.DiskImage.szDiskZipPath[Drive][0] = '\0';
-	strlcpy(ConfigureParams.DiskImage.szDiskFileName[Drive], filename,
-	        sizeof(ConfigureParams.DiskImage.szDiskFileName[Drive]));
+	Str_Copy(ConfigureParams.DiskImage.szDiskFileName[Drive], filename,
+	         sizeof(ConfigureParams.DiskImage.szDiskFileName[Drive]));
 	free(filename);
 	//File_MakeAbsoluteName(ConfigureParams.DiskImage.szDiskFileName[Drive]);
 #else
 	(void)pszDiskImageNameExts;
 	(void)Floppy_CreateDiskBFileName;
-	strlcpy(ConfigureParams.DiskImage.szDiskFileName[Drive], pszFileName,
+	Str_Copy(ConfigureParams.DiskImage.szDiskFileName[Drive], pszFileName,
 	        sizeof(ConfigureParams.DiskImage.szDiskFileName[Drive]));
 	(void)pszZipPath;
 #endif
@@ -549,7 +547,7 @@ int	Floppy_DriveTransitionUpdateState ( int Drive )
 #ifdef __LIBRETRO__
 extern bool core_floppy_insert(int drive, const char* filename, void* data, unsigned int size, void* extra_data, unsigned int extra_size);
 extern void core_floppy_eject(int drive);
-extern Uint8* core_floppy_file_read(const char *pszFileName, long *pFileSize, bool extra);
+extern uint8_t* core_floppy_file_read(const char *pszFileName, long *pFileSize, bool extra);
 extern const char* core_floppy_inserted(int drive);
 extern void core_floppy_changed(int drive);
 static void* floppy_data[2] = {NULL,NULL};
@@ -577,13 +575,13 @@ bool core_floppy_file_extra(void)
 {
 	return floppy_extra_data[floppy_read_drive] != NULL;
 }
-Uint8* core_floppy_file_read(const char *pszFileName, long *pFileSize, bool extra)
+uint8_t* core_floppy_file_read(const char *pszFileName, long *pFileSize, bool extra)
 {
 	// replaces File_Read
 	// does not handle gz or zip files
-	const Uint8* data = extra ? floppy_extra_data[floppy_read_drive] : floppy_data[floppy_read_drive];
+	const uint8_t* data = extra ? floppy_extra_data[floppy_read_drive] : floppy_data[floppy_read_drive];
 	const unsigned int size = extra ? floppy_extra_size[floppy_read_drive] : floppy_size[floppy_read_drive];
-	Uint8* data_out;
+	uint8_t* data_out;
 	(void)pszFileName;
 	if (data == NULL || size == 0) return NULL;
 	data_out = malloc(size);
@@ -825,7 +823,7 @@ static bool Floppy_EjectBothDrives(void)
  * NOTE - Pass information from boot-sector to this function (if we can't
  * decide we leave it alone).
  */
-static void Floppy_DoubleCheckFormat(long nDiskSize, long nSectorsPerDisk, Uint16 *pnSides, Uint16 *pnSectorsPerTrack)
+static void Floppy_DoubleCheckFormat(long nDiskSize, long nSectorsPerDisk, uint16_t *pnSides, uint16_t *pnSectorsPerTrack)
 {
 	long	TotalSectors;
 	int	Sides_fixed;
@@ -861,9 +859,22 @@ static void Floppy_DoubleCheckFormat(long nDiskSize, long nSectorsPerDisk, Uint1
 	else if ( TotalSectors == 82*12*Sides_fixed )	{ SectorsPerTrack_fixed = 12; }
 	else if ( TotalSectors == 83*12*Sides_fixed )	{ SectorsPerTrack_fixed = 12; }
 	else if ( TotalSectors == 84*12*Sides_fixed )	{ SectorsPerTrack_fixed = 12; }
-
-	/* unknown combination, assume boot sector is correct */
-	else						{ SectorsPerTrack_fixed = *pnSectorsPerTrack; }
+	else	/* unknown combination */
+	{
+		if (*pnSectorsPerTrack >= 5 && *pnSectorsPerTrack <= 48)
+		{
+			/* ED floppies could have up to 48 sectors per track,
+			 * so assume boot sector is correct for such values */
+			SectorsPerTrack_fixed = *pnSectorsPerTrack;
+		}
+		else
+		{
+			/* Looks like the boot sector contains completely bad
+			 * values, so try to calculate it instead, assuming
+			 * the disk has 80 tracks */
+			SectorsPerTrack_fixed = TotalSectors / 80 / Sides_fixed;
+		}
+	}
 
 	/* Valid new values if necessary */
 	if ( ( *pnSides != Sides_fixed ) || ( *pnSectorsPerTrack != SectorsPerTrack_fixed ) )
@@ -886,20 +897,21 @@ static void Floppy_DoubleCheckFormat(long nDiskSize, long nSectorsPerDisk, Uint1
  * is not actually correct with the image - some demos/game disks have incorrect bytes in the
  * boot sector and this attempts to find the correct values.
  */
-void Floppy_FindDiskDetails(const Uint8 *pBuffer, int nImageBytes,
-                            Uint16 *pnSectorsPerTrack, Uint16 *pnSides)
+void Floppy_FindDiskDetails(const uint8_t *pBuffer, int nImageBytes,
+                            uint16_t *pnSectorsPerTrack, uint16_t *pnSides)
 {
-	Uint16 nSectorsPerTrack, nSides, nSectorsPerDisk;
+	uint16_t nSectorsPerTrack, nSides, nSectorsPerDisk;
 
 	/* First do check to find number of sectors and bytes per sector */
-	nSectorsPerTrack = SDL_SwapLE16(*(const Uint16 *)(pBuffer+24));   /* SPT */
-	nSides = SDL_SwapLE16(*(const Uint16 *)(pBuffer+26));             /* SIDE */
-	nSectorsPerDisk = pBuffer[19] | (pBuffer[20] << 8);               /* total sectors */
+	nSectorsPerTrack = pBuffer[24] | (pBuffer[25] << 8);   /* SPT */
+	nSides = pBuffer[26] | (pBuffer[27] << 8);             /* SIDE */
+	nSectorsPerDisk = pBuffer[19] | (pBuffer[20] << 8);    /* total sectors */
 
-	/* If the number of sectors announced is incorrect, the boot-sector may
-	 * contain incorrect information, eg the 'Eat.st' demo, or wrongly imaged
+	/* If the boot sector information looks suspicious, it may contain
+	 * incorrect information, eg the 'Eat.st' demo, or wrongly imaged
 	 * single/double sided floppies... */
-	if (nSectorsPerDisk != nImageBytes/512)
+	if (nSectorsPerDisk != nImageBytes/512 || nSides == 0 || nSides > 2 ||
+	    nSectorsPerTrack == 0 || nSectorsPerTrack > 48)
 		Floppy_DoubleCheckFormat(nImageBytes, nSectorsPerDisk, &nSides, &nSectorsPerTrack);
 
 	/* And set values */
@@ -915,12 +927,12 @@ void Floppy_FindDiskDetails(const Uint8 *pBuffer, int nImageBytes,
  * Read sectors from floppy disk image, return TRUE if all OK
  * NOTE Pass -ve as Count to read whole track
  */
-bool Floppy_ReadSectors(int Drive, Uint8 **pBuffer, Uint16 Sector,
-                        Uint16 Track, Uint16 Side, short Count,
+bool Floppy_ReadSectors(int Drive, uint8_t **pBuffer, uint16_t Sector,
+                        uint16_t Track, uint16_t Side, short Count,
                         int *pnSectorsPerTrack, int *pSectorSize)
 {
-	Uint8 *pDiskBuffer;
-	Uint16 nSectorsPerTrack, nSides, nBytesPerTrack;
+	uint8_t *pDiskBuffer;
+	uint16_t nSectorsPerTrack, nSides, nBytesPerTrack;
 	long Offset;
 	int nImageTracks;
 
@@ -997,12 +1009,12 @@ bool Floppy_ReadSectors(int Drive, Uint8 **pBuffer, Uint16 Sector,
  * Write sectors from floppy disk image, return TRUE if all OK
  * NOTE Pass -ve as Count to write whole track
  */
-bool Floppy_WriteSectors(int Drive, Uint8 *pBuffer, Uint16 Sector,
-                         Uint16 Track, Uint16 Side, short Count,
+bool Floppy_WriteSectors(int Drive, uint8_t *pBuffer, uint16_t Sector,
+                         uint16_t Track, uint16_t Side, short Count,
                          int *pnSectorsPerTrack, int *pSectorSize)
 {
-	Uint8 *pDiskBuffer;
-	Uint16 nSectorsPerTrack, nSides, nBytesPerTrack;
+	uint8_t *pDiskBuffer;
+	uint16_t nSectorsPerTrack, nSides, nBytesPerTrack;
 	long Offset;
 	int nImageTracks;
 

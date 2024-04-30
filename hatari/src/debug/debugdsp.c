@@ -30,8 +30,8 @@ const char DebugDsp_fileid[] = "Hatari debugdsp.c";
 #include "str.h"
 #include "symbols.h"
 
-static Uint16 dsp_disasm_addr;    /* DSP disasm address */
-static Uint16 dsp_memdump_addr;   /* DSP memdump address */
+static uint16_t dsp_disasm_addr;    /* DSP disasm address */
+static uint16_t dsp_memdump_addr;   /* DSP memdump address */
 static char dsp_mem_space = 'P';  /* X, Y, P */
 
 static bool bDspProfiling;        /* Whether profiling is enabled */
@@ -63,7 +63,7 @@ static char *DebugDsp_MatchRegister(const char *text, int state)
 int DebugDsp_Register(int nArgc, char *psArgs[])
 {
 	char *assign;
-	Uint32 value;
+	uint32_t value;
 	char *arg;
 
 	if (!bDspEnabled)
@@ -102,30 +102,12 @@ error_msg:
 
 
 /**
- * Check whether given address matches any DSP symbol and whether
- * there's profiling information available for it.  If yes, show it.
- * 
- * @return true if symbol was shown, false otherwise
- */
-static bool DebugDsp_ShowAddressInfo(Uint16 addr, FILE *fp)
-{
-	const char *symbol = Symbols_GetByDspAddress(addr, SYMTYPE_ALL);
-	if (symbol)
-	{
-		fprintf(fp, "%s:\n", symbol);
-		return true;
-	}
-	return false;
-}
-
-
-/**
  * DSP disassemble - arg = starting address/range, or PC.
  */
 int DebugDsp_DisAsm(int nArgc, char *psArgs[])
 {
-	Uint32 lower, upper;
-	Uint16 prev_addr, dsp_disasm_upper = 0, pc = DSP_GetPC();
+	uint32_t lower, upper;
+	uint16_t prev_addr, dsp_disasm_upper = 0, pc = DSP_GetPC();
 	int shown, lines = INT_MAX;
 
 	if (!bDspEnabled)
@@ -176,6 +158,8 @@ int DebugDsp_DisAsm(int nArgc, char *psArgs[])
 	prev_addr = dsp_disasm_addr;
 	fprintf(debugOutput, "DSP disasm 0x%hx-0x%hx:\n", dsp_disasm_addr, dsp_disasm_upper);
 	for (shown = 1; shown < lines && dsp_disasm_addr < dsp_disasm_upper; shown++) {
+		const char *symbol;
+
 		if (prev_addr < pc && dsp_disasm_addr > pc)
 		{
 			fputs("ERROR, disassembly misaligned with PC address, correcting\n", debugOutput);
@@ -188,8 +172,12 @@ int DebugDsp_DisAsm(int nArgc, char *psArgs[])
 			shown++;
 		}
 		prev_addr = dsp_disasm_addr;
-		if (DebugDsp_ShowAddressInfo(dsp_disasm_addr, debugOutput))
+		symbol = Symbols_GetByDspAddress(dsp_disasm_addr, SYMTYPE_ALL);
+		if (symbol)
+		{
+			fprintf(debugOutput, "%s:\n", symbol);
 			shown++;
+		}
 		dsp_disasm_addr = DSP_DisasmAddress(debugOutput, dsp_disasm_addr, dsp_disasm_addr);
 	}
 	fflush(debugOutput);
@@ -205,8 +193,8 @@ int DebugDsp_DisAsm(int nArgc, char *psArgs[])
  */
 int DebugDsp_MemDump(int nArgc, char *psArgs[])
 {
-	Uint32 lower, upper;
-	Uint16 dsp_memdump_upper = 0;
+	uint32_t lower, upper;
+	uint16_t dsp_memdump_upper = 0;
 	char *range, space;
 
 	if (!bDspEnabled)
@@ -342,7 +330,7 @@ static char *DebugDsp_MatchNext(const char *text, int state)
  * subroutine call depth for "dspnext" breakpoint
  */
 static int DspCallDepth;
-Uint32 DebugDsp_CallDepth(void)
+uint32_t DebugDsp_CallDepth(void)
 {
 	return DspCallDepth;
 }
@@ -394,8 +382,8 @@ static int DebugDsp_Next(int nArgc, char *psArgv[])
 	}
 	else
 	{
-		Uint32 optype;
-		Uint16 nextpc;
+		uint32_t optype;
+		uint16_t nextpc;
 
 		optype = DebugDsp_OpcodeType();
 		/* can this instruction be stepped normally? */
@@ -419,10 +407,10 @@ static int DebugDsp_Next(int nArgc, char *psArgv[])
 /* helper to get instruction type, slightly simpler
  * version from one in profiledsp.c
  */
-Uint32 DebugDsp_OpcodeType(void)
+uint32_t DebugDsp_OpcodeType(void)
 {
 	const char *dummy;
-	Uint32 opcode;
+	uint32_t opcode;
 
 	/* 24-bit instruction opcode */
 	opcode = DSP_ReadMemory(DSP_GetPC(), 'P', &dummy) & 0xFFFFFF;
@@ -511,8 +499,8 @@ static int DebugDsp_Profile(int nArgc, char *psArgs[])
 /**
  * DSP instructions since continuing emulation
  */
-static Uint32 nDspInstructions;
-Uint32 DebugDsp_InstrCount(void)
+static uint32_t nDspInstructions;
+uint32_t DebugDsp_InstrCount(void)
 {
 	return nDspInstructions;
 }
@@ -529,7 +517,10 @@ void DebugDsp_Check(void)
 	}
 	if (LOG_TRACE_LEVEL((TRACE_DSP_DISASM|TRACE_DSP_SYMBOLS)))
 	{
-		DebugDsp_ShowAddressInfo(DSP_GetPC(), TraceFile);
+		const char *symbol;
+		symbol = Symbols_GetByDspAddress(DSP_GetPC(), SYMTYPE_ALL);
+		if (symbol)
+			LOG_TRACE_PRINT("%s\n", symbol);
 	}
 	if (nDspActiveCBs)
 	{
@@ -672,6 +663,7 @@ int DebugDsp_Init(const dbgcommand_t **table)
  */
 void DebugDsp_InitSession(void)
 {
-	dsp_disasm_addr = DSP_GetPC();
+#define MAX_DSP_DISASM_OFFSET 8
+	dsp_disasm_addr = (uint16_t)History_DisasmAddr(DSP_GetPC(), MAX_DSP_DISASM_OFFSET, true);
 	Profile_DspStop();
 }

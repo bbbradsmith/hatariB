@@ -805,9 +805,9 @@ int getDivu68kCycles (uae_u32 dividend, uae_u16 divisor)
 			dividend <<= 1;
 
 			// If carry from shift
-			if ((uae_s32)temp < 0)
+			if ((uae_s32)temp < 0) {
 				dividend -= hdivisor;
-			else {
+			} else {
 				mcycles += 2;
 				if (dividend >= hdivisor) {
 					dividend -= hdivisor;
@@ -820,14 +820,15 @@ int getDivu68kCycles (uae_u32 dividend, uae_u16 divisor)
 	}
 }
 
-int getDivs68kCycles (uae_s32 dividend, uae_s16 divisor)
+int getDivs68kCycles (uae_s32 dividend, uae_s16 divisor, int *extra)
 {
 	int mcycles;
 	uae_u32 aquot;
 	int i;
 
-	if (divisor == 0)
+	if (divisor == 0) {
 		return 0;
+	}
 
 	if (currprefs.cpu_model == 68010) {
 		// Check for absolute overflow
@@ -835,8 +836,10 @@ int getDivs68kCycles (uae_s32 dividend, uae_s16 divisor)
 			return 12;
 		mcycles = 116;
 		// add 2 extra cycles if negative dividend
-		if (dividend < 0)
+		if (dividend < 0) {
 			mcycles += 2;
+			*extra = 1;
+		}
 		return mcycles;
 	}
 
@@ -848,6 +851,9 @@ int getDivs68kCycles (uae_s32 dividend, uae_s16 divisor)
 	// Check for absolute overflow
 	if (((uae_u32)abs (dividend) >> 16) >= (uae_u16)abs (divisor))
 		return (mcycles + 2) * 2 - 4;
+
+	// report special case where IPL check is 2 cycles earlier
+	*extra = (divisor < 0 && dividend >= 0) ? 1 : 0;
 
 	// Absolute quotient
 	aquot = (uae_u32) abs (dividend) / (uae_u16)abs (divisor);
@@ -915,7 +921,7 @@ void divbyzero_special (bool issigned, uae_s32 dst)
 /* DIVU overflow
  *
  * 68000: V=1, N=1, C=0, Z=0
- * 68010: V=1, N=1, C=0, Z=0
+ * 68010: V=1, N=(dividend >=0 or divisor >= 0), C=0, Z=0
  * 68020: V=1, C=0, Z=0, N=X
  * 68040: V=1, C=0, NZ not modified.
  * 68060: V=1, C=0, NZ not modified.
@@ -938,7 +944,11 @@ void setdivuflags(uae_u32 dividend, uae_u16 divisor)
 			SET_NFLG(1);
 	} else if (currprefs.cpu_model == 68010) {
 		SET_VFLG(1);
-		SET_NFLG(1);
+		if ((uae_s32)dividend < 0 && (uae_s16)divisor < 0) {
+			SET_NFLG(0);
+		} else {
+			SET_NFLG(1);
+		}
 		SET_ZFLG(0);
 		SET_CFLG(0);
 	} else {
@@ -954,6 +964,7 @@ void setdivuflags(uae_u32 dividend, uae_u16 divisor)
  * DIVS overflow
  *
  * 68000: V=1, C=0, N=1, Z=0
+ * 68010: V=1, C=0, N=0, Z=
  * 68020: V=1, C=0, ZN = X
  * 68040: V=1, C=0. NZ not modified.
  * 68060: V=1, C=0, NZ not modified.
@@ -1397,12 +1408,6 @@ void Exception_build_stack_frame(uae_u32 oldpc, uae_u32 currpc, uae_u32 ssw, int
 {
 	int i;
 
-#if 0
-	if (nr < 24 || nr > 31) { // do not print debugging for interrupts
-		write_log(_T("Building exception stack frame (format %X)\n"), format);
-	}
-#endif
-
 	switch (format) {
 	case 0x0: // four word stack frame
 	case 0x1: // throwaway four word stack frame
@@ -1608,41 +1613,41 @@ void Exception_build_stack_frame(uae_u32 oldpc, uae_u32 currpc, uae_u32 ssw, int
 	x_put_word(m68k_areg(regs, 7), regs.sr);
 }
 
-void Exception_build_stack_frame_common(uae_u32 oldpc, uae_u32 currpc, uae_u32 ssw, int nr)
+void Exception_build_stack_frame_common(uae_u32 oldpc, uae_u32 currpc, uae_u32 ssw, int nr, int vector_nr)
 {
 	if (nr == 5 || nr == 6 || nr == 7 || nr == 9) {
 		if (nr == 9)
 			oldpc = regs.trace_pc;
 		if (currprefs.cpu_model <= 68010)
-			Exception_build_stack_frame(oldpc, currpc, regs.mmu_ssw, nr, 0x0);
+			Exception_build_stack_frame(oldpc, currpc, regs.mmu_ssw, vector_nr, 0x0);
 		else
-			Exception_build_stack_frame(oldpc, currpc, regs.mmu_ssw, nr, 0x2);
+			Exception_build_stack_frame(oldpc, currpc, regs.mmu_ssw, vector_nr, 0x2);
 	} else if (nr == 60 || nr == 61) {
-		Exception_build_stack_frame(oldpc, regs.instruction_pc, regs.mmu_ssw, nr, 0x0);
+		Exception_build_stack_frame(oldpc, regs.instruction_pc, regs.mmu_ssw, vector_nr, 0x0);
 	} else if (nr >= 48 && nr <= 55) {
 		if (regs.fpu_exp_pre) {
 			if (currprefs.cpu_model == 68060 && nr == 55 && regs.fp_unimp_pend == 2) { // packed decimal real
-				Exception_build_stack_frame(regs.fp_ea, regs.instruction_pc, 0, nr, 0x2);
+				Exception_build_stack_frame(regs.fp_ea, regs.instruction_pc, 0, vector_nr, 0x2);
 			} else {
-				Exception_build_stack_frame(oldpc, regs.instruction_pc, 0, nr, 0x0);
+				Exception_build_stack_frame(oldpc, regs.instruction_pc, 0, vector_nr, 0x0);
 			}
 		} else { /* post-instruction */
 			if (currprefs.cpu_model == 68060 && nr == 55 && regs.fp_unimp_pend == 2) { // packed decimal real
-				Exception_build_stack_frame(regs.fp_ea, currpc, 0, nr, 0x2);
+				Exception_build_stack_frame(regs.fp_ea, currpc, 0, vector_nr, 0x2);
 			} else {
-				Exception_build_stack_frame(oldpc, currpc, 0, nr, 0x3);
+				Exception_build_stack_frame(oldpc, currpc, 0, vector_nr, 0x3);
 			}
 		}
 	} else if (nr == 11 && regs.fp_unimp_ins) {
 		regs.fp_unimp_ins = false;
 		if ((currprefs.cpu_model == 68060 && (currprefs.fpu_model == 0 || (regs.pcr & 2))) ||
 			(currprefs.cpu_model == 68040 && currprefs.fpu_model == 0)) {
-			Exception_build_stack_frame(regs.fp_ea, currpc, regs.instruction_pc, nr, 0x4);
+			Exception_build_stack_frame(regs.fp_ea, currpc, regs.instruction_pc, vector_nr, 0x4);
 		} else {
-			Exception_build_stack_frame(regs.fp_ea, currpc, regs.mmu_ssw, nr, 0x2);
+			Exception_build_stack_frame(regs.fp_ea, currpc, regs.mmu_ssw, vector_nr, 0x2);
 		}
 	} else {
-		Exception_build_stack_frame(oldpc, currpc, regs.mmu_ssw, nr, 0x0);
+		Exception_build_stack_frame(oldpc, currpc, regs.mmu_ssw, vector_nr, 0x0);
 	}
 }
 

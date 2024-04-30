@@ -23,7 +23,7 @@ This is a new project in the initial testing phase. Eventually I would like to s
 
 If you notice any problems or have feedback, please [create a Github issue](https://github.com/bbbradsmith/hatariB/issues).
 
-Emulator: [Hatari 2.4.1](https://git.tuxfamily.org/hatari/hatari.git/tag/?id=v2.4.1) 2022-08-03
+Emulator: [Hatari 2.5.0](https://git.tuxfamily.org/hatari/hatari.git/tag/?id=v2.5.0) 2024-04-18
 
 Development notes: [DEVELOP.md](DEVELOP.md)
 
@@ -217,7 +217,6 @@ See [DEVELOP.md](DEVELOP.md) for more details.
 * MIDI:
   * Libretro has a MIDI interface, and if you have MIDI devices installed you should be able to select them in the *Settings > Audio > MIDI* menu of RetroArch.
   * The [MUNT MT-32 Emulator](url=https://sourceforge.net/projects/munt/) is recommended. It can install on your system as a MIDI device, which you can use with MT-32 supporting Atari ST games.
-  * MIDI Maze is reported as incompatible for Hatari 2.4.1, but it appears this is being improved for 2.5.0, so perhaps it will eventually be playable over emulated MIDI.
 * Accuracy:
   * Some of the default core options are chosen to favour faster load times, but these can be adjusted:
     * *System > Fast Floppy* gives artificially faster disk access, on by default.
@@ -265,6 +264,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * EmuTOS 192uk chosen as default for best compatibility.
   * EmuTOS 1.3 ROMs.
   * Fixed problems with IPF emulation.
+  * Hatari 2.5.0 update.
 * [hatariB v0.3](https://github.com/bbbradsmith/hatariB/releases/tag/0.3) - 2024-04-15
   * On-screen keyboard improvements:
     * Can now hold the key continuously.

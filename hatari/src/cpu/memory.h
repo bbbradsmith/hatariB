@@ -105,7 +105,9 @@ enum
 #define ABFLAG_CACHE_ENABLE_ALL (ABFLAG_CACHE_ENABLE_BOTH | ABFLAG_CACHE_ENABLE_INS_BURST | ABFLAG_CACHE_ENABLE_DATA_BURST)
 
 typedef struct {
-	/* These ones should be self-explanatory... */
+	/* These ones should be self-explanatory...
+	 * Do not move. JIT depends on it
+	 */
 	mem_get_func lget, wget, bget;
 	mem_put_func lput, wput, bput;
 	/* Use xlateaddr to translate an Amiga address to a uae_u8 * that can
@@ -141,6 +143,8 @@ typedef struct {
 	uae_u8 *baseaddr_direct_r;
 	uae_u8 *baseaddr_direct_w;
 	uae_u32 startaccessmask;
+	bool barrier;
+	uae_u32 protectmode;
 } addrbank;
 
 #define MEMORY_MIN_SUBBANK 1024
@@ -515,7 +519,7 @@ extern addrbank *get_mem_bank_real(uaecptr);
 #ifdef WINUAE_FOR_HATARI
 extern bool memory_region_bus_error ( uaecptr addr );
 extern bool memory_region_iomem ( uaecptr addr );
-extern void memory_map_Standard_RAM ( Uint32 MMU_Bank0_Size , Uint32 MMU_Bank1_Size );
+extern void memory_map_Standard_RAM ( uint32_t MMU_Bank0_Size , uint32_t MMU_Bank1_Size );
 #endif
 extern void memory_init(uae_u32 NewSTMemSize, uae_u32 NewTTMemSize, uae_u32 NewRomMemStart);
 extern void memory_uninit (void);
@@ -542,6 +546,7 @@ extern bool read_kickstart_version(struct uae_prefs *p);
 extern void chipmem_setindirect(void);
 extern void initramboard(addrbank *ab, struct ramboard *rb);
 extern void loadboardfile(addrbank *ab, struct boardloadfile *lf);
+extern void mman_set_barriers(bool);
 #endif
 
 uae_u32 memory_get_long(uaecptr);

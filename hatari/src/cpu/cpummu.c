@@ -143,7 +143,7 @@ void mmu_tt_modified (void)
 /* This dump output makes much more sense than old one */
 
 #ifdef WINUAE_FOR_HATARI
-#define	ULONG	Uint32
+#define	ULONG	uae_u32
 #endif
 
 #define LEVELA_SIZE 7
@@ -199,9 +199,9 @@ static void mmu_dump_table(const char * label, uaecptr root_ptr)
 			uae_u8 cm, sp;
 			cm = (odesc >> 5) & 3;
 			sp = (odesc >> 7) & 1;
-			console_out_f(_T("%08x - %08x: %08x WP=%d S=%d CM=%d (%08x)\n"),
+			console_out_f(_T("%08x - %08x: %08x WP=%d S=%d CM=%d V=%d (%08x)\n"),
 				startaddr, addr - 1, odesc & ~((1 << page_size) - 1),
-				(odesc & 4) ? 1 : 0, sp, cm, odesc);
+				(odesc & 4) ? 1 : 0, sp, cm, (odesc & 3) > 0, odesc);
 			startaddr = addr;
 			odesc = desc;
 		}
@@ -409,15 +409,15 @@ void mmu_bus_error(uaecptr addr, uae_u32 val, int fc, bool write, int size,uae_u
 
 		if (ismoves) {
 			// MOVES special behavior
-			int fc2 = write ? regs.dfc : regs.sfc;
-			if (fc2 == 0 || fc2 == 3 || fc2 == 4 || fc2 == 7)
+			int old_fc = fc = write ? regs.dfc : regs.sfc;
+			if ((fc & 3) == 0 || (fc & 3) == 3) {
 				ssw |= MMU_SSW_TT1;
-			if ((fc2 & 3) != 3)
-				fc2 &= ~2;
+			} else if (fc & 2) {
+				fc = (fc & 4) | 1;
+			}
 #if MMUDEBUGMISC > 0
-			write_log (_T("040 MMU MOVES fc=%d -> %d\n"), fc, fc2);
+			write_log (_T("040 MMU MOVES fc=%d -> %d\n"), old_fc, fc);
 #endif
-			fc = fc2;
 		}
 
 		ssw |= fc & MMU_SSW_TM;				/* TM = FC */
@@ -527,6 +527,7 @@ void mmu_bus_error(uaecptr addr, uae_u32 val, int fc, bool write, int size,uae_u
 
 	}
 
+	ismoves = false;
 	rmw_cycle = false;
 	locked_rmw_cycle = false;
 	regs.mmu_fault_addr = addr;
@@ -665,7 +666,7 @@ static uae_u32 mmu_fill_atc(uaecptr addr, bool super, uae_u32 tag, bool write, s
     int i;
 	int old_s;
     
-    // Always use supervisor mode to access descriptors
+    // Use supervisor mode to access descriptors (really is fc = 7)
     old_s = regs.s;
     regs.s = 1;
 
@@ -1090,7 +1091,7 @@ static void REGPARAM2 mmu_put_lrmw_word_unaligned(uaecptr addr, uae_u16 val)
 	SAVE_EXCEPTION;
 	TRY(prb) {
 		mmu_put_user_byte(addr, val >> 8, regs.s != 0, sz_word, true);
-		mmu_put_user_byte(addr + 1, val, regs.s != 0, sz_word, true);
+		mmu_put_user_byte(addr + 1, (uae_u8)val, regs.s != 0, sz_word, true);
 		RESTORE_EXCEPTION;
 	}
 	CATCH(prb) {
@@ -1131,7 +1132,7 @@ void REGPARAM2 mmu_put_word_unaligned(uaecptr addr, uae_u16 val, bool data)
 	SAVE_EXCEPTION;
 	TRY(prb) {
 		mmu_put_byte(addr, val >> 8, data, sz_word);
-		mmu_put_byte(addr + 1, val, data, sz_word);
+		mmu_put_byte(addr + 1, (uae_u8)val, data, sz_word);
 		RESTORE_EXCEPTION;
 	}
 	CATCH(prb) {
@@ -1260,7 +1261,7 @@ void REGPARAM2 dfc_put_word(uaecptr addr, uae_u16 val)
 			mmu_put_user_word(addr, val, super, sz_word, false);
 		} else {
 			mmu_put_user_byte(addr, val >> 8, super, sz_word, false);
-			mmu_put_user_byte(addr + 1, val, super, sz_word, false);
+			mmu_put_user_byte(addr + 1, (uae_u8)val, super, sz_word, false);
 		}
 		RESTORE_EXCEPTION;
 	}
@@ -1572,6 +1573,9 @@ void m68k_do_rte_mmu040 (uaecptr a7)
 		write_log (_T("MMU restarted MOVEM EA=%08X\n"), mmu040_movem_ea);
 #endif
 	}
+	if (mmu_restart) {
+		set_special(SPCFLAG_MMURESTART);
+	}
 }
 
 void m68k_do_rte_mmu060 (uaecptr a7)
@@ -1579,6 +1583,7 @@ void m68k_do_rte_mmu060 (uaecptr a7)
 #if 0
 	mmu060_state = 2;
 #endif
+	set_special(SPCFLAG_MMURESTART);
 }
 
 void flush_mmu040 (uaecptr addr, int n)

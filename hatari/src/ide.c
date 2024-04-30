@@ -23,7 +23,6 @@
 #include "m68000.h"
 #include "mfp.h"
 #include "stMemory.h"
-#include "str.h"
 #include "sysdeps.h"
 
 int nIDEPartitions = 0;
@@ -91,7 +90,7 @@ static IDEState ide_state[2];
 static void ide_ioport_write(IDEState *ide_if, uint32_t addr, uint32_t val);
 static uint32_t ide_ioport_read(IDEState *ide_if, uint32_t addr1);
 static uint32_t ide_status_read(IDEState *ide_if, uint32_t addr);
-static void ide_cmd_write(IDEState *ide_if, uint32_t addr, uint32_t val);
+static void ide_ctrl_write(IDEState *ide_if, uint32_t addr, uint32_t val);
 static void ide_data_writew(IDEState *ide_if, uint32_t addr, uint32_t val);
 static uint32_t ide_data_readw(IDEState *ide_if, uint32_t addr);
 static void ide_data_writel(IDEState *ide_if, uint32_t addr, uint32_t val);
@@ -279,7 +278,7 @@ void REGPARAM3 Ide_Mem_bput(uaecptr addr, uae_u32 val)
 	}
 	else if (ideport == 8 || ideport == 22)
 	{
-		ide_cmd_write(ide_state, 0, val);
+		ide_ctrl_write(ide_state, 0, val);
 	}
 }
 
@@ -749,8 +748,10 @@ static void bdrv_eject(BlockDriverState *bs, int eject_flag)
 #define REL			0x04
 #define TAG_MASK		0xf8
 
-#define IDE_CMD_RESET           0x04
-#define IDE_CMD_DISABLE_IRQ     0x02
+/* Bits of Device Control register */
+#define IDE_CTRL_HOB		0x80
+#define IDE_CTRL_RESET		0x04
+#define IDE_CTRL_DISABLE_IRQ	0x02
 
 /* ATA/ATAPI Commands pre T13 Spec */
 #define WIN_NOP				0x00
@@ -1023,6 +1024,7 @@ static void ide_identify(IDEState *s)
 	uint16_t *p;
 	unsigned int oldsize;
 	char buf[40];
+	int64_t nb_sectors_lba28;
 
 	if (s->identify_set)
 	{
@@ -1065,8 +1067,14 @@ static void ide_identify(IDEState *s)
 	put_le16(p + 58, oldsize >> 16);
 	if (s->mult_sectors)
 		put_le16(p + 59, 0x100 | s->mult_sectors);
-	put_le16(p + 60, s->nb_sectors);
-	put_le16(p + 61, s->nb_sectors >> 16);
+
+	nb_sectors_lba28 = s->nb_sectors;
+	if (nb_sectors_lba28 >= 1 << 28) {
+		nb_sectors_lba28 = (1 << 28) - 1;
+	}
+	put_le16(p + 60, nb_sectors_lba28);
+	put_le16(p + 61, nb_sectors_lba28 >> 16);
+
 	put_le16(p + 63, 0x07); /* mdma0-2 supported */
 	put_le16(p + 65, 120);
 	put_le16(p + 66, 120);
@@ -1181,7 +1189,7 @@ static inline void ide_abort_command(IDEState *s)
 
 static inline void ide_set_irq(IDEState *s)
 {
-	if (!(s->cmd & IDE_CMD_DISABLE_IRQ))
+	if (!(s->cmd & IDE_CTRL_DISABLE_IRQ))
 	{
 		/* Set IRQ (set line to low) */
 		MFP_GPIP_Set_Line_Input ( pMFP_Main , MFP_GPIP_LINE_FDC_HDC , MFP_GPIP_STATE_LOW );
@@ -1576,12 +1584,14 @@ static void ide_atapi_cmd(IDEState *s)
 	if (LOG_TRACE_LEVEL(TRACE_IDE))
 	{
 		int i;
-		LOG_TRACE_PRINT("IDE: ATAPI limit=0x%x packet", s->lcyl | (s->hcyl << 8));
+		LOG_TRACE_DIRECT_INIT();
+		LOG_TRACE_DIRECT("IDE: ATAPI limit=0x%x packet", s->lcyl | (s->hcyl << 8));
 		for (i = 0; i < ATAPI_PACKET_SIZE; i++)
 		{
-			LOG_TRACE_PRINT(" %02x", packet[i]);
+			LOG_TRACE_DIRECT(" %02x", packet[i]);
 		}
-		LOG_TRACE_PRINT("\n");
+		LOG_TRACE_DIRECT("\n");
+		LOG_TRACE_DIRECT_FLUSH();
 	}
 
 	switch (s->io_buffer[0])
@@ -2010,71 +2020,97 @@ static void ide_cmd_lba48_transform(IDEState *s, int lba48)
 static void ide_clear_hob(IDEState *ide_if)
 {
 	/* any write clears HOB high bit of device control register */
-	ide_if[0].select &= ~(1 << 7);
-	ide_if[1].select &= ~(1 << 7);
+	ide_if[0].cmd &= ~IDE_CTRL_HOB;
 }
+
+/* IOport [W]rite [R]egisters */
+enum ATA_IOPORT_WR {
+	ATA_IOPORT_WR_DATA = 0,
+	ATA_IOPORT_WR_FEATURES = 1,
+	ATA_IOPORT_WR_SECTOR_COUNT = 2,
+	ATA_IOPORT_WR_SECTOR_NUMBER = 3,
+	ATA_IOPORT_WR_CYLINDER_LOW = 4,
+	ATA_IOPORT_WR_CYLINDER_HIGH = 5,
+	ATA_IOPORT_WR_DEVICE_HEAD = 6,
+	ATA_IOPORT_WR_COMMAND = 7,
+	ATA_IOPORT_WR_NUM_REGISTERS,
+};
+
+const char *ATA_IOPORT_WR_lookup[ATA_IOPORT_WR_NUM_REGISTERS] = {
+	[ATA_IOPORT_WR_DATA] = "Data",
+	[ATA_IOPORT_WR_FEATURES] = "Features",
+	[ATA_IOPORT_WR_SECTOR_COUNT] = "Sector Count",
+	[ATA_IOPORT_WR_SECTOR_NUMBER] = "Sector Number",
+	[ATA_IOPORT_WR_CYLINDER_LOW] = "Cylinder Low",
+	[ATA_IOPORT_WR_CYLINDER_HIGH] = "Cylinder High",
+	[ATA_IOPORT_WR_DEVICE_HEAD] = "Device/Head",
+	[ATA_IOPORT_WR_COMMAND] = "Command"
+};
 
 static void ide_ioport_write(IDEState *ide_if, uint32_t addr, uint32_t val)
 {
 	IDEState *s;
 	int unit, n;
 	int lba48 = 0;
+	int reg_num = addr & 7;
 
-	LOG_TRACE(TRACE_IDE, "IDE: write addr=0x%x val=0x%02x\n", addr, val);
+	LOG_TRACE(TRACE_IDE, "IDE: write addr=0x%x reg='%s' val=0x%02x\n",
+	          addr, ATA_IOPORT_WR_lookup[reg_num], val);
 
-	addr &= 7;
-	switch (addr)
+	/* NOTE: Device0 and Device1 both receive incoming register writes.
+	 * (They're on the same bus! They have to!) */
+
+	switch (reg_num)
 	{
 	case 0:
 		break;
-	case 1:
+	case ATA_IOPORT_WR_FEATURES:
 		ide_clear_hob(ide_if);
-		/* NOTE: data is written to the two drives */
 		ide_if[0].hob_feature = ide_if[0].feature;
 		ide_if[1].hob_feature = ide_if[1].feature;
 		ide_if[0].feature = val;
 		ide_if[1].feature = val;
 		break;
-	case 2:
+	case ATA_IOPORT_WR_SECTOR_COUNT:
 		ide_clear_hob(ide_if);
 		ide_if[0].hob_nsector = ide_if[0].nsector;
 		ide_if[1].hob_nsector = ide_if[1].nsector;
 		ide_if[0].nsector = val;
 		ide_if[1].nsector = val;
 		break;
-	case 3:
+	case ATA_IOPORT_WR_SECTOR_NUMBER:
 		ide_clear_hob(ide_if);
 		ide_if[0].hob_sector = ide_if[0].sector;
 		ide_if[1].hob_sector = ide_if[1].sector;
 		ide_if[0].sector = val;
 		ide_if[1].sector = val;
 		break;
-	case 4:
+	case ATA_IOPORT_WR_CYLINDER_LOW:
 		ide_clear_hob(ide_if);
 		ide_if[0].hob_lcyl = ide_if[0].lcyl;
 		ide_if[1].hob_lcyl = ide_if[1].lcyl;
 		ide_if[0].lcyl = val;
 		ide_if[1].lcyl = val;
 		break;
-	case 5:
+	case ATA_IOPORT_WR_CYLINDER_HIGH:
 		ide_clear_hob(ide_if);
 		ide_if[0].hob_hcyl = ide_if[0].hcyl;
 		ide_if[1].hob_hcyl = ide_if[1].hcyl;
 		ide_if[0].hcyl = val;
 		ide_if[1].hcyl = val;
 		break;
-	case 6:
-		/* FIXME: HOB readback uses bit 7 */
-		ide_if[0].select = (val & ~0x10) | 0xa0;
-		ide_if[1].select = (val | 0x10) | 0xa0;
+	case ATA_IOPORT_WR_DEVICE_HEAD:
+		ide_clear_hob(ide_if);
+		ide_if[0].select = val | 0xa0;
+		ide_if[1].select = val | 0xa0;
 		/* select drive */
 		unit = (val >> 4) & 1;
 		s = ide_if + unit;
 		ide_if->cur_drive = s;
 		break;
 	default:
-	case 7:
-		/* command */
+	case ATA_IOPORT_WR_COMMAND:
+		ide_clear_hob(ide_if);
 		LOG_TRACE(TRACE_IDE, "IDE: CMD=%02x\n", val);
 
 		s = ide_if->cur_drive;
@@ -2357,23 +2393,45 @@ static void ide_ioport_write(IDEState *ide_if, uint32_t addr, uint32_t val)
 	}
 }
 
-static uint32_t ide_ioport_read(IDEState *ide_if, uint32_t addr1)
+/* IOport [R]ead [R]egisters */
+enum ATA_IOPORT_RR {
+	ATA_IOPORT_RR_DATA = 0,
+	ATA_IOPORT_RR_ERROR = 1,
+	ATA_IOPORT_RR_SECTOR_COUNT = 2,
+	ATA_IOPORT_RR_SECTOR_NUMBER = 3,
+	ATA_IOPORT_RR_CYLINDER_LOW = 4,
+	ATA_IOPORT_RR_CYLINDER_HIGH = 5,
+	ATA_IOPORT_RR_DEVICE_HEAD = 6,
+	ATA_IOPORT_RR_STATUS = 7,
+	ATA_IOPORT_RR_NUM_REGISTERS,
+};
+
+const char *ATA_IOPORT_RR_lookup[ATA_IOPORT_RR_NUM_REGISTERS] = {
+	[ATA_IOPORT_RR_DATA] = "Data",
+	[ATA_IOPORT_RR_ERROR] = "Error",
+	[ATA_IOPORT_RR_SECTOR_COUNT] = "Sector Count",
+	[ATA_IOPORT_RR_SECTOR_NUMBER] = "Sector Number",
+	[ATA_IOPORT_RR_CYLINDER_LOW] = "Cylinder Low",
+	[ATA_IOPORT_RR_CYLINDER_HIGH] = "Cylinder High",
+	[ATA_IOPORT_RR_DEVICE_HEAD] = "Device/Head",
+	[ATA_IOPORT_RR_STATUS] = "Status"
+};
+
+static uint32_t ide_ioport_read(IDEState *ide_if, uint32_t addr)
 {
 	IDEState *s = ide_if->cur_drive;
-	uint32_t addr;
-	int ret;
+	uint32_t reg_num;
+	int ret, hob;
 
-	/* FIXME: HOB readback uses bit 7, but it's always set right now */
-	//int hob = s->select & (1 << 7);
-	const int hob = 0;
+	reg_num = addr & 7;
+	hob = ide_if[0].cmd & IDE_CTRL_HOB;
 
-	addr = addr1 & 7;
-	switch (addr)
+	switch (reg_num)
 	{
-	case 0:
+	case ATA_IOPORT_RR_DATA:
 		ret = 0xff;
 		break;
-	case 1:
+	case ATA_IOPORT_RR_ERROR:
 		if (!ide_if[0].bs && !ide_if[1].bs)
 			ret = 0;
 		else if (!hob)
@@ -2381,7 +2439,7 @@ static uint32_t ide_ioport_read(IDEState *ide_if, uint32_t addr1)
 		else
 			ret = s->hob_feature;
 		break;
-	case 2:
+	case ATA_IOPORT_RR_SECTOR_COUNT:
 		if (!ide_if[0].bs && !ide_if[1].bs)
 			ret = 0;
 		else if (!hob)
@@ -2389,7 +2447,7 @@ static uint32_t ide_ioport_read(IDEState *ide_if, uint32_t addr1)
 		else
 			ret = s->hob_nsector;
 		break;
-	case 3:
+	case ATA_IOPORT_RR_SECTOR_NUMBER:
 		if (!ide_if[0].bs && !ide_if[1].bs)
 			ret = 0;
 		else if (!hob)
@@ -2397,7 +2455,7 @@ static uint32_t ide_ioport_read(IDEState *ide_if, uint32_t addr1)
 		else
 			ret = s->hob_sector;
 		break;
-	case 4:
+	case ATA_IOPORT_RR_CYLINDER_LOW:
 		if (!ide_if[0].bs && !ide_if[1].bs)
 			ret = 0;
 		else if (!hob)
@@ -2405,7 +2463,7 @@ static uint32_t ide_ioport_read(IDEState *ide_if, uint32_t addr1)
 		else
 			ret = s->hob_lcyl;
 		break;
-	case 5:
+	case ATA_IOPORT_RR_CYLINDER_HIGH:
 		if (!ide_if[0].bs && !ide_if[1].bs)
 			ret = 0;
 		else if (!hob)
@@ -2413,14 +2471,14 @@ static uint32_t ide_ioport_read(IDEState *ide_if, uint32_t addr1)
 		else
 			ret = s->hob_hcyl;
 		break;
-	case 6:
+	case ATA_IOPORT_RR_DEVICE_HEAD:
 		if (!ide_if[0].bs && !ide_if[1].bs)
 			ret = 0;
 		else
 			ret = s->select;
 		break;
 	default:
-	case 7:
+	case ATA_IOPORT_RR_STATUS:
 		if ((!ide_if[0].bs && !ide_if[1].bs) ||
 		        (s != ide_if && !s->bs))
 			ret = 0;
@@ -2431,7 +2489,8 @@ static uint32_t ide_ioport_read(IDEState *ide_if, uint32_t addr1)
 		MFP_GPIP_Set_Line_Input ( pMFP_Main , MFP_GPIP_LINE_FDC_HDC , MFP_GPIP_STATE_HIGH );
 		break;
 	}
-	LOG_TRACE(TRACE_IDE, "IDE: read addr=0x%x val=%02x\n", addr1, ret);
+	LOG_TRACE(TRACE_IDE, "IDE: read addr=0x%x reg='%s' val=%02x\n",
+	          addr, ATA_IOPORT_RR_lookup[reg_num], ret);
 	return ret;
 }
 
@@ -2450,7 +2509,7 @@ static uint32_t ide_status_read(IDEState *ide_if, uint32_t addr)
 	return ret;
 }
 
-static void ide_cmd_write(IDEState *ide_if, uint32_t addr, uint32_t val)
+static void ide_ctrl_write(IDEState *ide_if, uint32_t addr, uint32_t val)
 {
 	IDEState *s;
 	int i;
@@ -2458,8 +2517,8 @@ static void ide_cmd_write(IDEState *ide_if, uint32_t addr, uint32_t val)
 	LOG_TRACE(TRACE_IDE, "IDE: write control addr=0x%x val=%02x\n", addr, val);
 
 	/* common for both drives */
-	if (!(ide_if[0].cmd & IDE_CMD_RESET) &&
-	        (val & IDE_CMD_RESET))
+	if (!(ide_if[0].cmd & IDE_CTRL_RESET) &&
+	        (val & IDE_CTRL_RESET))
 	{
 		/* reset low to high */
 		for (i = 0;i < 2; i++)
@@ -2469,8 +2528,8 @@ static void ide_cmd_write(IDEState *ide_if, uint32_t addr, uint32_t val)
 			s->error = 0x01;
 		}
 	}
-	else if ((ide_if[0].cmd & IDE_CMD_RESET) &&
-	         !(val & IDE_CMD_RESET))
+	else if ((ide_if[0].cmd & IDE_CTRL_RESET) &&
+	         !(val & IDE_CTRL_RESET))
 	{
 		/* high to low */
 		for (i = 0;i < 2; i++)

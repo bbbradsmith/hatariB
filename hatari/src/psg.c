@@ -187,16 +187,16 @@ const char PSG_fileid[] = "Hatari psg.c";
 #if ENABLE_DSP_EMU
 #include "falcon/dsp.h"
 #endif
-#include "screen.h"
 #include "video.h"
 #include "statusbar.h"
 #include "mfp.h"
 #include "fdc.h"
+#include "scc.h"
 
 
-static Uint8 PSGRegisterSelect;		/* Write to 0xff8800 sets the register number used in read/write accesses */
-static Uint8 PSGRegisterReadData;	/* Value returned when reading from 0xff8800 */
-Uint8 PSGRegisters[MAX_PSG_REGISTERS];	/* Registers in PSG, see PSG_REG_xxxx */
+static uint8_t PSGRegisterSelect;		/* Write to 0xff8800 sets the register number used in read/write accesses */
+static uint8_t PSGRegisterReadData;	/* Value returned when reading from 0xff8800 */
+uint8_t PSGRegisters[MAX_PSG_REGISTERS];	/* Registers in PSG, see PSG_REG_xxxx */
 
 static unsigned int LastStrobe=0; /* Falling edge of Strobe used for printer */
 
@@ -207,7 +207,7 @@ static unsigned int LastStrobe=0; /* Falling edge of Strobe used for printer */
  */
 void PSG_Reset(void)
 {
-        int     i;
+	int i;
 
 	if (LOG_TRACE_LEVEL(TRACE_PSG_WRITE))
 	{
@@ -223,7 +223,7 @@ void PSG_Reset(void)
 	PSGRegisters[PSG_REG_IO_PORTA] = 0xff;			/* no drive selected + side 0 after a reset */
 
 	/* Update sound's emulation registers */
-        for ( i=0 ; i < NUM_PSG_SOUND_REGISTERS; i++ )
+	for (i = 0; i < NUM_PSG_SOUND_REGISTERS; i++)
 		Sound_WriteReg ( i , 0 );
 
 	LastStrobe=0;
@@ -249,7 +249,7 @@ void PSG_MemorySnapShot_Capture(bool bSave)
  * Write byte to the YM address register (usually 0xff8800). This is used
  * as a selector for when we read/write the YM data register (0xff8802).
  */
-void PSG_Set_SelectRegister(Uint8 val)
+void PSG_Set_SelectRegister(uint8_t val)
 {
 	/* Store register used to read/write in $ff8802. This register */
 	/* is 8 bits on the YM2149, this means it should not be masked */
@@ -277,7 +277,7 @@ void PSG_Set_SelectRegister(Uint8 val)
 /**
  * Read byte from 0xff8800, return PSG data
  */
-Uint8 PSG_Get_DataRegister(void)
+uint8_t PSG_Get_DataRegister(void)
 {
 	/* Is a valid PSG register currently selected ? */
 	if ( PSGRegisterSelect >= MAX_PSG_REGISTERS )
@@ -318,9 +318,9 @@ Uint8 PSG_Get_DataRegister(void)
 /**
  * Write byte to YM's register (0xff8802), store according to PSG select register (0xff8800)
  */
-void PSG_Set_DataRegister(Uint8 val)
+void PSG_Set_DataRegister(uint8_t val)
 {
-	Uint8	val_old;
+	uint8_t	val_old;
 
 	if (LOG_TRACE_LEVEL(TRACE_PSG_WRITE))
 	{
@@ -416,7 +416,13 @@ void PSG_Set_DataRegister(Uint8 val)
 		/* Report a possible drive/side change */
 		FDC_SetDriveSide ( val_old & 7 , PSGRegisters[PSG_REG_IO_PORTA] & 7 );
 
-		/* handle Falcon specific bits in PORTA of the PSG */
+		/* Handle MegaSTE / TT specific bit 7 in PORTA of the PSG */
+		if (Config_IsMachineMegaSTE() || Config_IsMachineTT())
+		{
+			SCC_Check_Lan_IsEnabled ();
+		}
+
+		/* Handle Falcon specific bits in PORTA of the PSG */
 		if (Config_IsMachineFalcon())
 		{
 			/* Bit 3 - centronics port SELIN line (pin 17) */
@@ -470,7 +476,7 @@ static void PSG_WaitState(void)
 #if 0
 	M68000_WaitState(1);				/* [NP] FIXME not 100% accurate, but gives good results */
 #else
-	static Uint64	PSG_InstrPrevClock;
+	static uint64_t	PSG_InstrPrevClock;
 	static int	NbrAccesses;
 
 	if ( PSG_InstrPrevClock != CyclesGlobalClockCounter )	/* New instruction accessing YM2149 : add 4 cycles */
@@ -660,7 +666,7 @@ void PSG_ff8803_WriteByte(void)
 /* ------------------------------------------------------------------
  * YM-2149 register content dump (for debugger info command)
  */
-void PSG_Info(FILE *fp, Uint32 dummy)
+void PSG_Info(FILE *fp, uint32_t dummy)
 {
 	int i;
 	for(i = 0; i < ARRAY_SIZE(PSGRegisters); i++)

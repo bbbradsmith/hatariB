@@ -79,6 +79,7 @@ version available in the given remote directory!
 
   Rootfs mount from SCSI device fails after following debug output:
 ------------------------------------------------------------
+...
 DEBUG: raw_scsi: selected id 0
 DEBUG: raw_scsi_put_data got message c0 (1/1)
 DEBUG: raw_scsi_put_data got message c0 (1 bytes)
@@ -106,54 +107,13 @@ DEBUG: raw_scsi: got command byte 00 (6/6)
 WARN : HDC: *** Strange REQUEST SENSE ***!
 DEBUG: raw_scsi: data in 22 bytes waiting
 DEBUG: raw_scsi: data in finished, 22 bytes: status phase
-DEBUG: DMA initiator recv PC=001839da
+DEBUG: DMA initiator recv PC=001ba66a
 DEBUG: SCSI BUS reset
 sd 0:0:0:0: Device offlined - not ready after error recovery
-sd 0:0:0:0: rejecting I/O to offline device
-sd 0:0:0:0: [sda] Write Protect is off
-sd 0:0:0:0: [sda] Mode Sense: 00 00 1f ff
-sd 0:0:0:0: rejecting I/O to offline device
 sd 0:0:0:0: [sda] Asking for cache data failed
 sd 0:0:0:0: [sda] Assuming drive cache: write through
-sd 0:0:0:0: rejecting I/O to offline device
-sd 0:0:0:0: rejecting I/O to offline device
 sd 0:0:0:0: [sda] Attached SCSI disk
-VFS: Cannot open root device "sda" or unknown-block(8,0): error -6
-------------------------------------------------------------
-
-- Oops on kernel boot in init (Busybox shell) when either 030 CPU
-  cache or prefetch emulation is enabled, resulting in kernel panic.
-  According to kernel developer, there are no panics on real HW, so
-  they seem to be Hatari issue.
-
-  Whether 24-bit or 32-bit addressing (and TT-RAM) is needed, does
-  not affect the issue.
-
-  Kernel gives same backtrace on 030 (Mega)ST(e), TT and Falcon,
-  regardless of whether it is started with LILO, or by native
-  bootstrap program:
-------------------------------------------------------------
-Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
-CPU: 0 PID: 1 Comm: sh Not tainted
-5.18.0hatari-00003-g7ca5f4b0eda3-dirty #7
-Stack from 0081dddc:
-        ...
-Call Trace:
- [<00275c20>] panic+0xc4/0x230
- [<00027584>] arch_local_irq_enable+0x0/0x22
- [<0002f37a>] do_signal_stop+0x0/0x14a
- [<00028534>] do_exit+0x108/0x616
- [<0002f37a>] do_signal_stop+0x0/0x14a
- [<00028b2e>] do_group_exit+0x22/0x6e
- [<0002fec6>] get_signal+0xee/0x4b4
- [<00003e9e>] do_notify_resume+0x3c/0x47a
- [<0000561c>] send_fault_sig+0x28/0x8c
- [<000057fe>] do_page_fault+0x17e/0x200
- [<00002810>] do_signal_return+0x10/0x1a
- [<00020007>] _I_CALL_TOP+0xedf/0x1900
- [<0000b280>] p_moven+0x2/0xc
- [<00007201>] atari_irq_startup+0x31/0x46
- [<000066f6>] atari_get_model+0x9a/0xf0
+VFS: Cannot open root device "/dev/sda" or unknown-block(8,0): error -6
 ------------------------------------------------------------
 
 
@@ -167,7 +127,7 @@ Call Trace:
    $ sudo apt install gcc-m68k-linux-gnu
 
 2. Get latest upstream kernel release sources (without history):
-   $ git clone --depth 1 --branch v5.18 \
+   $ git clone --depth 1 --branch v6.8 \
      git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
    $ cd linux
 
@@ -209,7 +169,7 @@ a directory named disk/, rename it, or use another name).
 1. Create root file system directories:
    $ mkdir disk
    $ cd disk
-   $ mkdir -p dev etc mnt proc run sys tmp sbin usr/bin usr/sbin root
+   $ mkdir -p dev bin etc lib mnt proc root run sbin sys tmp usr/bin usr/sbin
 
 2. Add minimal init script for mounting virtual file systems
    before starting shell:
@@ -235,7 +195,7 @@ host).
 5. Fetch statically linked m68k BusyBox and extract it:
    $ wget http://ftp.ports.debian.org/debian-ports/pool-m68k/main/b/busybox/busybox-static_*_m68k.deb
    $ ar x busybox-static_*_m68k.deb
-   $ tar xvf data.tar.xz ./bin/busybox
+   $ tar xvf data.tar.xz --wildcards *bin/busybox
 
 6. Install host BusyBox and add symlinks for the m68k one to bin/
    directory, based on what tools host one lists to be included:
@@ -243,7 +203,7 @@ host).
    $ /path/to/hatari/tools/linux/symlink-busybox.sh
 
 7. Cleanup directory content:
-   $ rm *.* debian-binary
+   $ rm *.tar.* debian-binary
    $ cd ..
 
 8. Make 4MB EXT2 HD image out of it:
@@ -277,7 +237,7 @@ hundred KB of space though.
 
 7. Move utilities to bin/ and clean directory:
    $ mv usr/lib/klibc/bin/ .
-   $ rm -r *.* debian-binary usr/
+   $ rm -r *.tar.* debian-binary
    $ cd ..
 
 8. Make 4MB EXT2 HD image out of it:
@@ -287,7 +247,7 @@ Notes:
 - these utilities would fit even to a floppy image:
 	$ zip2st disk/ klibc.st
   But FAT file system cannot be used for Linux root fs because it is
-  lacking security features required from one
+  lacking security features required from one.
 
 
 5. Building initrd
@@ -334,8 +294,8 @@ Notes:
 1. Set suitable options in lilo.cfg, for example:
 -------------------------------------
 [LILO]
-Kernel = vmlinux-v5.18
-Symbols = System.map-v5.18
+Kernel = vmlinux-v6.8
+Symbols = System.map-v6.8
 Ramdisk =
 Args = video=atafb:sthigh console=tty
 KernelToFastRam = FALSE
@@ -396,15 +356,14 @@ shows easiest method to simulate that with Hatari.
 3. Get kernel to bootstrap:
    $ cp /path/to/m68k-kernel/vmlinux gemdos-hd/
 
-4. If you do not have a TOS ROM image, download latest EmuTOS release
-   from:
-     https://sourceforge.net/projects/emutos/files/emutos/1.1.1/emutos-1024k-1.1.1.zip/download
+4. If you do not have a TOS ROM image, download latest EmuTOS release from:
+     https://sourceforge.net/projects/emutos/files/emutos/1.3/emutos-1024k-1.3.zip/download
    and extract it:
-   $ unzip emutos-1024k-1.1.1.zip
+   $ unzip emutos-1024k-1.3.zip
 
 5. Then run Hatari with them:
    $ hatari --trace os_base --log-level info \
-      --tos emutos-1024k-1.1.1/etos1024k.img \
+      --tos emutos-1024k-1.3/etos1024k.img \
       --fast-forward on --fastfdc on --timer-d on \
       --machine falcon --dsp none --fpu 68882 \
       --cpuclock 32 --cpu-exact off --compatible off \
@@ -536,6 +495,8 @@ actually *is* writable and try again.
 
 9.1 Debian installer
 --------------------
+
+Note: this section is out of date.
 
 These are setup instructions for testing Debian installer in Hatari.
 You need matching kernel, initrd and installation ISO image files for
@@ -676,12 +637,6 @@ $ aranym-mmu -l linux.config
 
   Workaround: Hatari lilo.c gives ST-RAM before TT-RAM in bootinfo
 
-- Linux NULL pointer Oops with following, due to its bus_error030()
-  not respecting page faults being disabled in kernel_probe_read():
-	# echo t > /proc/sysrq-trigger
-
-  Workaround: kernel patch (see kernel build section)
-
 - Hatari debug output shows IDE and DSP reset messages on Falcon at
   2Hz (from floppy media change detection) if Linux is started with
   --lilo, instead of from TOS.  This is because TOS initializes PSG
@@ -696,8 +651,14 @@ $ aranym-mmu -l linux.config
 - Kernel does not recognize ACSI drives at all, although kernel
   reports finding Atari ACSI HW:
 ------------------------------------------------------------
-Atari hardware found: STND_SHIFTER ST_MFP YM2149 MSTE_CLK ACSI
+Atari hardware found: TT_SHIFTER ST_MFP TT_MFP TT_SCSI_DMA TT_SCSI YM2149 PCM SCC_DMA SCC MICROWIRE TT_CLK FDC_SPEED ACSI
 ...
+scsi host0: Atari native SCSI, irq 39, io_port 0x0, base 0x0, can_queue 16, cmd_per_lun 2, sg_tablesize 128, this_id 7, flags { }
+...
+Core driver edition 01.06 : TT driver edition 00.03
+Write will use    4 fragments of   32768 bytes as default
+NET: Registered PF_PACKET protocol family
+VFS: Cannot open root device "/dev/sda" or unknown-block(0,0): error -6
 Please append a correct "root=" boot option; here are the available
 partitions:
 0200            3280 fd0
@@ -710,200 +671,58 @@ Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(0,0)
 ------------------------------------------------------------
   Only SCSI & IDE drives are recognized
 
-- Kernel double bus errors right at start when 040/060 is used with
-  CPU cache/prefetch enabled.  It is possible that compiling 040 (or
-  060) specific kernel would help:
-	http://www.linux-m68k.org/faq/afterburner.html
+- with Hatari 2.5, Linux works again on 040 & 060, when both CPU cache
+  & prefetch are disabled (with few previous Hatari versions, there
+  was panic on reaching user-space).
 
-- Hatari v.2.3.x regression to above: With 040/060 CPU cache /
-  prefetch emulation disabled, kernel dies to NULL pointer in
-  mfp_timer_c_handler() when first user-space process is started:
----------------------- 040 -------------------------------
-Unable to handle kernel access at virtual address (ptrval)
-Oops: 00000000
-PC: [<00006860>] mfp_timer_c_handler+0xc/0x3c
-...
----------------------- 060 -------------------------------
-pc=0x6860, fa=0xfffa23
-68060 access error, fslw=1210000
-*** BUS ERROR ***   FORMAT=4
-Current process id is 1
-BAD KERNEL TRAP: 00000000
-PC: [<00006860>] mfp_timer_c_handler+0xc/0x3c
-SR: 2700  SP: (ptrval)  a2: 00816aa0
-d0: 00000000    d1: 0000000d    d2: 00002d04    d3: 00000000
-d4: 0000000d    d5: 00049a88    a0: 00006854    a1: 00334324
-Process init (pid: 1, task=(ptrval))
-Frame format=4 fault addr=00fffa23 fslw=01210000
-Stack from 00819b98:
-...
-Call Trace:
- [<00049b10>] __handle_irq_event_percpu+0x42/0xc4
- [<00112cca>] wake_up_sem_queue_prepare+0x2e/0x3a
- [<00049ba6>] handle_irq_event_percpu+0x14/0x44
- [<00049bf8>] handle_irq_event+0x22/0x36
- [<0004c74a>] handle_simple_irq+0x5a/0x5e
- [<0004951e>] handle_irq_desc+0x22/0x2e
- [<00049540>] generic_handle_irq+0x16/0x1a
- [<0000298c>] do_IRQ+0x24/0x3a
- [<00002898>] user_irqvec_fixup+0xc/0x14
- [<00112cca>] wake_up_sem_queue_prepare+0x2e/0x3a
- [<000648f4>] filemap_add_folio+0x0/0xa0
- [<0006afac>] page_cache_ra_unbounded+0xea/0x124
- [<00112cca>] wake_up_sem_queue_prepare+0x2e/0x3a
- [<0006b03e>] do_page_cache_ra+0x58/0x66
- [<0006b0e6>] page_cache_ra_order+0x18/0x20
- [<00065838>] filemap_fault+0x29c/0x3cc
- [<00084d80>] find_vma+0x0/0x64
- [<0007f788>] __do_fault+0x22/0x60
- [<00081e4a>] handle_mm_fault+0x3f4/0x5bc
- [<00100cca>] ext2_direct_IO+0x3a/0x7a
- [<00001e14>] kernel_pg_dir+0xe14/0x1000
- [<00001b00>] kernel_pg_dir+0xb00/0x1000
- [<00005730>] do_page_fault+0xb0/0x200
- [<00085aa0>] do_brk_flags+0x166/0x188
- [<00004ef4>] buserr_c+0x182/0x4a6
- [<000026cc>] buserr+0x20/0x28
- [<000e4150>] padzero+0x34/0x3e
- [<000e483e>] load_elf_binary+0x532/0xb3a
-...
-------------------------------------------------------------
+  If CPU cache or prefetch are enabled, 060 boot crashes to double bus
+  error, and 040 boot freezes early on.  Although screen is black, CPU
+  trace indicates latter being a panic.
 
-  This did not happen with 2019 v2.3-dev Git version, and Linux
-  boots fine on real 060 Falcon:
+  This did not happen with 2019 v2.3-dev Git version (and Linux
+  version of that time). Linux also boots fine on real 060 Falcon:
 	https://www.youtube.com/watch?v=8Sriz45Z4oM
 
 
 11. User-space issues with cache/prefetch enabled
 --------------------------------------------------
 
-These cannot be tested any more because booting fails when
-cache & prefetch are enabled, but with Hatari v2.2.1, Linux
-could occasionally booted successfully with them enabled too.
+These problems happen only when CPU caching is enabled.
 
--  busybox 'setsid cttyhack' fails to:
-------------------------------------------------------------
-*** ILLEGAL INSTRUCTION ***   FORMAT=0
-Current process id is 34
-BAD KERNEL TRAP: 00000000
-PC: [<00146c6a>] strncpy_from_user+0x62/0xec
-SR: 2200  SP: 0a4161ff  a2: 009e4a00
-d0: 00000000    d1: 00000ff0    d2: 2f737973    d3: 00000ff0
-d4: 00000000    d5: 00000000    a0: 00000ff0    a1: 80155c8c
-Process cttyhack (pid: 34, task=3c322bc4)
-Frame format=0
-Stack from 009f3f1c:
-...
-Call Trace: [<000a8504>] getname_flags+0x40/0x130
- [<00020000>] _I_CALL_TOP+0x828/0x1900
- [<000a8606>] getname+0x12/0x18
- [<0009e674>] do_sys_open+0xc2/0x1b0
- [<00020000>] _I_CALL_TOP+0x828/0x1900
- [<00260002>] format_decode+0x314/0x324
- [<0009e7aa>] sys_openat+0x22/0x26
- [<00020000>] _I_CALL_TOP+0x828/0x1900
- [<000028c4>] syscall+0x8/0xc
- [<00020000>] _I_CALL_TOP+0x828/0x1900
-------------------------------------------------------------
+On quick testing, klibc based (dynamically linked) tools do not have
+problems, but tools in (statically linked) BusyBox do have a lot of
+problems:
+http://ftp.ports.debian.org/debian-ports/pool-m68k/main/b/busybox/busybox-static_1.36.1-6_m68k.deb
 
-- Busybox 'fdisk' command dies to similar issue:
-------------------------------------------------------------
-*** LINE 1111 ***   FORMAT=0
-Current process id is 32
-BAD KERNEL TRAP: 00000000
-PC: [<00146ce0>] strncpy_from_user+0xd8/0xec
-SR: 2208  SP: (ptrval)  a2: 009e4000
-d0: 00000000    d1: 00000ff0    d2: 00000000    d3: 00000ff0
-d4: 0000002f    d5: 8017b168    a0: 00000000    a1: 8015095a
-Process fdisk (pid: 32, task=(ptrval))
-Frame format=0
-Stack from 009e9f1c:
-...
-Call Trace: [<000a8504>] getname_flags+0x40/0x130
- [<00020000>] _I_CALL_TOP+0x828/0x1900
- [<000a8606>] getname+0x12/0x18
- [<0009e674>] do_sys_open+0xc2/0x1b0
- [<00020000>] _I_CALL_TOP+0x828/0x1900
- [<0009e7aa>] sys_openat+0x22/0x26
- [<00020000>] _I_CALL_TOP+0x828/0x1900
- [<000028c4>] syscall+0x8/0xc
- [<00020000>] _I_CALL_TOP+0x828/0x1900
-Code: 6086 2408 0e31 4000 0800 4a82 6600 ff58 <1784> 0800 6700 ff52 5280 60ce 4280 6000 ff48 4e75 4e56 0000 48e7 3c10 242e 0008
-Disabling lock debugging due to kernel taint
-Segmentation fault
-------------------------------------------------------------
+- following BusyBox commands segfault before outputting anything:
 
-- 'hostid' dies also to somewhat similar issue:
-------------------------------------------------------------
-*** LINE 1111 ***   FORMAT=0
-Current process id is 70
-BAD KERNEL TRAP: 00000000
-PC: [<00146ce0>] strncpy_from_user+0xd8/0xec
-SR: 2208  SP: eacbcb5e  a2: 009e4a00
-d0: 00000000    d1: 00000ff0    d2: 00000000    d3: 00000ff0
-d4: 0000002f    d5: efce1d1b    a0: 00000000    a1: 801514ba
-Process hostid (pid: 70, task=229939e1)
-Frame format=0
-Stack from 00603e8c:
-...
-Call Trace: [<000a8504>] getname_flags+0x40/0x130
- [<000aa568>] user_path_at_empty+0x0/0x36
- [<000a4670>] vfs_getattr_nosec+0x0/0xaa
- [<000a88c4>] path_put+0x0/0x26
- [<000aa582>] user_path_at_empty+0x1a/0x36
- [<000a4800>] vfs_statx+0x5a/0x9e
- [<000a4a3c>] sys_stat64+0x28/0x46
- [<00266400>] schedule+0x5e/0x86
- [<00002908>] resume_userspace+0x0/0x16
- [<00005042>] bad_super_trap+0x6e/0x14a
- [<000028c4>] syscall+0x8/0xc
-...
-Segmentation fault
-------------------------------------------------------------
+  adjtimex, arch, awk, basename, blockdev, chgrp, chmod, chown,
+  chroot, chvt, clear, cp, date, df, dirname, dumpkmap, env, expr,
+  find, fold, free, getopt, head, hexdump, hostid, hostname, id,
+  ionice, ip, ipcalc, groups, killall, link, ln, logname, ls, lsmod,
+  md5sum, mkdir, mkfifo, mknod, mkpasswd, mktemp, modinfo, modprobe,
+  mv, nameif, nproc, ps, readlink, realpath, renice, reset, rm, rmdir,
+  seq, sha*sum, sort, start, stty, sync, sysctl, taskset, touch,
+  umount, which, uname, uptime, usleep, w, who, whoami, xargs, yes
 
-- Busybox 'arping' command randomly dies to something else:
-------------------------------------------------------------
-Data read fault at 0x80185a18 in Super Data (pc=0x2f61a)
-BAD KERNEL BUSERR
-Oops: 00000000
-PC: [<0002f61a>] __lock_task_sighand+0xe/0x32
-SR: 2d00  SP: 245d79b7  a2: 80185740
-d0: 00000005    d1: 00000040    d2: 80185740    d3: 00000004
-d4: 0000022b    d5: 00000001    a0: c0026004    a1: 00955fb4
-Process arping (pid: 40, task=af4d80ca)
-Frame format=B ssw=0345 isc=6714 isb=40c0 daddr=80185a18 dobuf=efeadfe2
-baddr=80185a18 dibuf=80185a18 ver=0
-Stack from 00955f9c:
-...
-Call Trace: [<00030c66>] do_send_sig_info+0x16/0x44
- [<000097fe>] busy_fr+0x48/0x58
- [<00030eea>] send_sig_info+0x20/0x2c
- [<00030f14>] send_sig+0x1e/0x22
- [<00002948>] do_delayed_trace+0x16/0x1e
-Code: ...
-Segmentation fault
-------------------------------------------------------------
+  And for example following do not segfault:
 
-- Several times I've gotten this, once followed with
-  consecutively worse errors:
-------------------------------------------------------------
-BAD KERNEL BUSERR
-Oops: 00000000
-PC: [<0002f8d8>] __lock_task_sighand+0xe/0x32
-SR: 2d00  SP: fff52c96  a2: 80184aec
-d0: 00000005    d1: 00000040    d2: 80184aec    d3: 00000008
-d4: 00000244    d5: 00000009    a0: c0028004    a1: 009ebfb4
-Process egrep (pid: 38, task=fe82a760)
-Frame format=B ssw=0345 isc=6714 isb=40c0 daddr=80184dc0 dobuf=efca243e
-baddr=80184dc0 dibuf=80184dc0 ver=0
-Stack from 009ebf9c:
-...
-Call Trace: [<0002f912>] do_send_sig_info+0x16/0x44
-  [<00009ffe>] mtry_zero+0x1e/0x38
-  [<0002fbfe>] send_sig_info+0x20/0x2c
-  [<0002fc28>] send_sig+0x1e/0x22
-  [<00002960>] do_delayed_trace+0x16/0x1e
-------------------------------------------------------------
+  arping, arp, ascii, ash, bc, bzcat, cal, cat, cmp, dmesg, du, echo,
+  egrep, expand, factor, false, fdisk, fgrep, grep, gunzip, gzip,
+  halt, hwclock, ifconfig, kill, last, less, more, mount, netstat,
+  nologin, nsenter, nslookup, openvt, patch, pidof, ping, ping6,
+  poweroff, printf, pwd, uname, sed, set, setsid, sh, sleep, strings,
+  syslogd, tail, tee, telnet, test, top, traceroute, true, uniq, vi,
+  watch, wget
+
+- "sed" does not segfault, but does not work correctly either.
+
+- 'setsid cttyhack' (without "-c" option) freezes (shell or kernel?)
+
+----
+
+TODO: rest is old information for 5.x kernels and old Hatari versions
+that needs to be re-checked!
 
 - Some Busybox commands (e.g. 'setsid') randomly hang
   kernel v5.2, with Hatari showing following:
