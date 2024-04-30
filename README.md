@@ -265,6 +265,8 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * EmuTOS 1.3 ROMs.
   * Fixed problems with IPF emulation.
   * Hatari 2.5.0 update.
+  * SDL2 2.30.2 update.
+  * Raspberry Pi builds now have dlopen available for capsimg support.
 * [hatariB v0.3](https://github.com/bbbradsmith/hatariB/releases/tag/0.3) - 2024-04-15
   * On-screen keyboard improvements:
     * Can now hold the key continuously.
