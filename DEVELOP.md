@@ -40,8 +40,7 @@ By default SDL ant hatariB are built with the `-j` option to multithread the bui
 
 By default `-Wall -Werror` is used, but if spurious warnings are blocking compliation this can be disabled with `WERROR=` on the command line.
 
-The windows build can be debugged with Visual Studio by attaching to process. Set `DEBUG=1` for the make and run
-[cv2pdb](https://github.com/rainers/cv2pdb) on the DLL to generate PDB debug symbols that VS can use.
+The windows build can be debugged with Visual Studio. Set `DEBUG=1` for the make and run [cv2pdb](https://github.com/rainers/cv2pdb) on the DLL to generate PDB debug symbols that VS can use. You can open the hatariB source folder in Visual Studio (`start devenv /Edit C:\path\to\hatariB`), start RetroArch, then `Debug > Attach to Process` and look for RetroArch (or just `Reattach to Process` for subsequent runs).
 
 ## Changes to Hatari
 
