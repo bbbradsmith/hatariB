@@ -110,7 +110,7 @@ extern void core_statusbar_update(void);
 
 // external
 
-int core_pixel_format = 0;
+int core_pixel_format = -1;
 bool core_init_return = false;
 uint8_t core_runflags = 0;
 uint8_t* core_rom_mem_pointer = NULL;
@@ -1044,13 +1044,20 @@ RETRO_API void retro_init(void)
 	retro_log(RETRO_LOG_INFO,"retro_init()\n");
 
 	// try to get the best pixel format we can
+	// (after Hatari 2.5.0 we can only produce XRGB8888)
 	{
 		const char* PIXEL_FORMAT_NAMES[3] = { "0RGB1555", "XRGB8888", "RGB565" };
-		core_pixel_format = 0;
+		core_pixel_format = -1;
 		if      (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, (void*)&RPF_XRGB8888)) core_pixel_format = 1;
-		else if (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, (void*)&RPF_RGB565  )) core_pixel_format = 2;
-		else if (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, (void*)&RPF_0RGB1555)) core_pixel_format = 0;
-		retro_log(RETRO_LOG_INFO,"Pixel format: %s\n",PIXEL_FORMAT_NAMES[core_pixel_format]);
+		//else if (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, (void*)&RPF_RGB565  )) core_pixel_format = 2;
+		//else if (environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, (void*)&RPF_0RGB1555)) core_pixel_format = 0;
+		if (core_pixel_format < 0)
+		{
+			core_pixel_format = 1;
+			retro_log(RETRO_LOG_ERROR,"Unsupport pixel format: %s\n",PIXEL_FORMAT_NAMES[core_pixel_format]);
+		}
+		else
+			retro_log(RETRO_LOG_INFO,"Pixel format: %s\n",PIXEL_FORMAT_NAMES[core_pixel_format]);
 	}
 
 	// initialize other modules

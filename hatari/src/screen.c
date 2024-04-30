@@ -704,14 +704,35 @@ static bool Screen_SetSDLVideoSize(int width, int height, bool bForceChange)
 
 	#else
 		// no renderer, no window, just a SWSURFACE buffer
-		int am;
+		int am, bitdepth;
 
-		// XRGB8888
-		rm = 0x00FF0000;
-		gm = 0x0000FF00;
-		bm = 0x000000FF;
-		am = 0xFF000000;
-		sdlscrn = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, 32,
+		// in Hatari 2.5.0 bitdepth is no longer supported, always 32
+		//switch (core_pixel_format)
+		//{
+		//default:
+		//case 0: // 0RGB1555
+		//	bitdepth = 16;
+		//	rm = 0x7C00;
+		//	gm = 0x03E0;
+		//	bm = 0x001F;
+		//	am = 0x8000;
+		//	break;
+		//case 1: // XRGB8888
+			bitdepth = 32;
+			rm = 0x00FF0000;
+			gm = 0x0000FF00;
+			bm = 0x000000FF;
+			am = 0xFF000000;
+		//	break;
+		//case 2: // RGB565
+		//	bitdepth = 16;
+		//	rm = 0xF800;
+		//	gm = 0x07E0;
+		//	bm = 0x001F;
+		//	am = 0x0000;
+		//	break;
+		//}
+		sdlscrn = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, bitdepth,
 		                               rm, gm, bm, am);
 		// make sure core has valid pointer to screen data (even if not yet initialized)
 		core_video_update(sdlscrn->pixels, sdlscrn->w, sdlscrn->h, sdlscrn->pitch, coreRes);
