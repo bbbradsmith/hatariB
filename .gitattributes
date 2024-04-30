@@ -1,0 +1,6 @@
+# ignore line endings difference
+* text=auto
+
+# if any files are discovered to be misidentified, we can identify them like this:
+# .c text
+# .bin binary
