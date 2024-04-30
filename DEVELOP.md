@@ -64,6 +64,8 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Added `core` library target to be linked with our Libretro core instead of a stand-alone executable.
 * **hatari/tools/CMakeLists.txt**
   * Removed `hmsa` support tool build, which is unnecessary but also can't link with our changes to the `floppy` library.
+* **hatari/src/.vscode/c_cpp_properties.json**
+  * Added to assist VSCode intellisense.
 * **makefile** - Our makefile also controls Hatari's cmake in the following ways:
   * Exports `CFLAGS` for global compiler settings.
     * `__LIBRETRO__` define provides our primary means to contain our C code alterations.
