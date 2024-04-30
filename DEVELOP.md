@@ -56,6 +56,8 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Disabled `tests` subdirectory, because we do not build the executable needed for these tests.
   * Disabled `FindPythonInterp`, because we don't need the python interpreter or GTK, which are used for Hatari's debugger.
   * Add `HAVE_DLOPEN` to use for dynamic loading of CAPSIMAGE library for IPF support.
+* **hatari/cmake/config-cmake.h**
+  * Add `HAVE_DLOPEN` definition for dynamic loading of CAPSIMAGE.
 * **hatari/src/CMakeLists.txt**
   * Removed platform-specific GUI dependencies.
   * Removed stand-alone executable build.
@@ -144,6 +146,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
 * **hatari/src/includes/hdc.h**
   * Use core's file system to provide ACSI/SCSI image hard disk support.
   * Replace `FILE` with `corefile`.
+  * `HDC_CmdInfoStr` unused function warning.
 * **hatari/src/ide.c**
   * Use core's file system to provide IDE image hard disk support.
   * File locking is not directly provided by the virtual file system (though the host OS might do it automatically).
@@ -248,6 +251,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
 * **hatari/src/video.c**
   * `Video_ResetShifterTimings` relays current framerate to `core_set_fps`.
   * `Delayed` unread variable warning.
+  * `PendingCyclesOver` unread variable warning.
 * **hatari/src/zip.c**
   * Disable use of `unzOpen` which was modified (see: unzip.c) and not needed by this core.
 * **hatari/src/cpu/hatari-glue.c**

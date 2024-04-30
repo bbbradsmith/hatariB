@@ -2978,7 +2978,9 @@ void Video_InterruptHandler_HBL ( void )
 	int FrameCycles , HblCounterVideo , LineCycles;
 	int PendingCyclesOver;
 	int NewHBLPos;
-
+#ifdef __LIBRETRO__
+	(void)PendingCyclesOver;
+#endif
 
 if ( CycInt_From_Opcode )		/* TEMP : to update CYCLES_COUNTER_VIDEO during an opcode */
 {

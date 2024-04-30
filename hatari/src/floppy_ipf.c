@@ -50,8 +50,8 @@ const char floppy_ipf_fileid[] = "Hatari floppy_ipf.c";
 #define __cdecl
 #ifdef HAVE_DLOPEN
 #include <dlfcn.h>
-#define SO_HANDLE void*
 #endif
+#define SO_HANDLE void*
 #endif
 
 #ifndef __cdecl

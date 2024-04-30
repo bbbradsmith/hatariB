@@ -191,6 +191,7 @@ static void HDC_Cmd_Seek(SCSI_CTRLR *ctr)
 	    fseeko(dev->image_file, (off_t)dev->nLastBlockAddr * dev->blockSize, SEEK_SET) == 0)
 #else
 	    core_file_seek(dev->image_file, (off_t)dev->nLastBlockAddr * dev->blockSize, SEEK_SET) == 0)
+		(void)HDC_CmdInfoStr;
 #endif
 	{
 		LOG_TRACE(TRACE_SCSI_CMD, " -> OK\n");

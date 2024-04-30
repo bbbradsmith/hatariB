@@ -96,6 +96,7 @@
 /* Define to 1 if you have the 'd_type' member in the 'dirent' struct */
 #cmakedefine HAVE_DIRENT_D_TYPE 1
 
+/* # hatariB */
 /* Define to 1 if you have the 'dlopen' function. */
 #cmakedefine HAVE_DLOPEN 1
 
