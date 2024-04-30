@@ -50,6 +50,7 @@ const char floppy_ipf_fileid[] = "Hatari floppy_ipf.c";
 #define __cdecl
 #ifdef HAVE_DLOPEN
 #include <dlfcn.h>
+#pragma message("dlfcn included")
 #endif
 #define SO_HANDLE void*
 #endif
@@ -679,6 +680,7 @@ static bool core_ipf_load(void)
 #ifdef HAVE_DLOPEN
 	capsHandle = dlopen(CAPS_SONAME, RTLD_NOW);
 	if (!capsHandle) core_error_msg(dlerror());
+	#pragma message("dlopen used")
 #else
 	core_error_msg("dlopen unavailable");
 #endif
@@ -697,6 +699,7 @@ static bool core_ipf_load(void)
 #else
 #ifdef HAVE_DLOPEN
 			dlsym(capsHandle, CAPSIMPORT[i].funcname);
+			#pragma message("dlsym used")
 #else
 			NULL;
 #endif
@@ -841,6 +844,7 @@ void	IPF_Exit ( void )
 		#else
 		#ifdef HAVE_DLOPEN
 			dlclose(capsHandle);
+			#pragma message("dlclose used")
 		#endif
 		#endif
 		capsHandle = NULL;

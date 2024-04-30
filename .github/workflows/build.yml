@@ -112,6 +112,7 @@ jobs:
           path: artifact/
 
   build-ubuntu:
+    if: false
     name: Ubuntu Linux
     runs-on: ubuntu-latest
     steps:
