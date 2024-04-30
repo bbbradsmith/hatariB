@@ -12,7 +12,7 @@ concurrency:
 jobs:
 
   build-win64:
-  if: false
+    if: false
     name: Windows 64-bit
     runs-on: windows-latest
     steps:
@@ -62,7 +62,7 @@ jobs:
           path: artifact/
 
   build-win32:
-  if: false
+    if: false
     name: Windows 32-bit
     runs-on: windows-latest
     steps:
@@ -156,7 +156,7 @@ jobs:
           path: artifact/
 
   build-macos:
-  if: false
+    if: false
     name: MacOS Fat
     runs-on: macos-latest
     steps:
@@ -349,7 +349,7 @@ jobs:
           path: artifact/
 
   build-android64:
-  if: false
+    if: false
     name: Android 64-bit
     runs-on: ubuntu-latest
     steps:
@@ -414,7 +414,7 @@ jobs:
           path: artifact/
 
   build-android32:
-  if: false
+    if: false
     name: Android 32-bit
     runs-on: ubuntu-latest
     steps:
