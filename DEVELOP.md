@@ -10,7 +10,7 @@ Incorporated sources:
 * [EmuTOS/](https://emutos.sourceforge.io/) 1.3 2024-03-17
 * [libretro/libretro.h](https://github.com/libretro/libretro-common/blob/7edbfaf17baffa1b8a00231762aa7ead809711b5/include/libretro.h) 24a9210 2023-07-16
 * [libretro/libretro_sdl_keymap.h](https://github.com/libretro/RetroArch/blob/b4143882245edd737c7e7c522b25e32f8d1f64ad/input/input_keymaps.c#L607) 9ca5c5e 2023-07-08
-* [SDL2](https://github.com/libsdl-org/SDL/releases/tag/release-2.28.2) 2.28.2 2023-08-02
+* [SDL2](https://github.com/libsdl-org/SDL/releases/tag/release-2.30.2) 2.30.2 2024-04-01
 * [zlib](https://github.com/madler/zlib/releases/tag/v1.3) 1.3 2023-08-18
 
 ## Build
@@ -318,7 +318,7 @@ The SDL library is not initialized. Aside from some type definitions, it is most
 
 If direct replacements for these were provided, we could remove SDL entirely. Most have a simple function and not used in high-performance code, but `SDL_UpperBlit` and `SDL_FillRect` are both used extensively by the status bar and onscreen keyboard. A naive replacement of those would be simple, but they both have very intensive target-specific optimizations which seem worth keeping, despite the dependency overhead.
 
-You may provide your own SDL2 by overriding the `SDL2_INCLUDE`, `SDL2_LIB`, and `SDL2_LINK` variables found in `makefile`. A minimal static build was chosen instead because on some platforms the dependency was difficult to provide to the user, and it also appeared that it could cause conflicts with RetroArch's SDL2 drivers, if used. (These conflicts seemed to be resolved by removing any SDL initialization, but it seemed prudent to avoid using the global shared object altogether.)
+You may provide your own SDL2 by overriding the `SDL2_INCLUDE`, `SDL2_LIB`, `SDL2_LINK` and `SDL2_DIR` variables found in `makefile`. A minimal static build was chosen instead because on some platforms the dependency was difficult to provide to the user, and it also appeared that it could cause conflicts with RetroArch's SDL2 drivers, if used. (These conflicts seemed to be resolved by removing any SDL initialization, but it seemed prudent to avoid using the global shared object altogether.)
 
 Notes for removing SDL2:
 * We probably need to keep the configure step of `makefile.sdl` to generate headers, but the make is no longer needed. Instead just `make install-hdrs` will copy the needed header files.
