@@ -108,6 +108,7 @@ extern const char* core_file_system_dirname(int index); // "hatarib/dir"
 extern const char* core_file_system_dirlabel(int index); // "dir/"
 
 // core_disk.c
+extern uint8_t* unzip_gz(const uint8_t* gz_data, size_t gz_size, const char* gz_filename, size_t* filesize, size_t size_estimate);
 extern void core_disk_set_environment(retro_environment_t cb);
 extern void core_disk_init(void);
 extern void core_disk_load_game(const struct retro_game_info *game);
