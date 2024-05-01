@@ -987,7 +987,6 @@ RETRO_API void retro_set_environment(retro_environment_t cb)
 	core_midi_set_environment(cb);
 	core_perf_set_environment(cb);
 
-
 	// M3U/M3U8 and hard disk image need fullpath to find the linked files
 	{
 		static const struct retro_system_content_info_override CONTENT_OVERRIDE[] = {
