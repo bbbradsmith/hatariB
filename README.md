@@ -27,13 +27,34 @@ Emulator: [Hatari 2.5.0](https://git.tuxfamily.org/hatari/hatari.git/tag/?id=v2.
 
 Development notes: [DEVELOP.md](DEVELOP.md)
 
+## Table of Contents
+
+* [Installation](#Installation)
+  * [MacOS](#MacOS)
+  * [Android](#Android)
+  * [Manual Build](#Manual-Build)
+* [Notes](#Notes)
+  * [Hatari Manual](#Hatari-Manual)
+  * [Controls](#Controls)
+  * [File formats](#File-Formats)
+  * [Hard Disks](#Hard-Disks)
+  * [M3U playlists and Auto-Run](#M3U-Playlists-and-Auto-Run)
+  * [On-Screen Keyboard](#On-Screen-Keyboard)
+  * [Savestates](#Savestates)
+  * [Netplay](#Netplay)
+  * [Unsupported Features](#Unsupported-Features)
+  * [Quirks](#Quirks)
+* [History](#History)
+* [License](#License)
+* [Authors](#Authors)
+
 ## Installation
 
 The build artifact ZIP files contain a `core/` and `info/` folder. The core folder contains the hatariB core object, and the info folder contains metadata that allows RetroArch to know its associated file types.
 
 On Windows, if using RetroArch's portable *Download* version instead of the installer, you can simply copy the core and info files into the RetroArch folder and it will merge into those folders. If installed, or on other platforms, you may need to locate the needed core and info folders. You can find these in RetroArch's *Settings > Directories* menu under *Cores* and *Core Info*. Similarly the `system/` folder referred to below where you can place your TOS and hard disk image files is actually the RetroArch *System/BIOS* directory.
 
-Depending on the platform, you may also need to add executable permission to the core file (e.g. `chmod +x hatarib.so`). See below for MacOS instructions.
+Depending on the platform, you may also need to add executable permission to the core file (e.g. `chmod +x hatarib.so`). See below for [MacOS instructions](#MacOS).
 
 For *IPF* and *CTR* floppy disk image support, you will also need to provide the **capsimg 5.1** support library, originally created by the [Software Preservation Society](http://www.softpres.org/download). This library will be a file named `capsimg.dll` or `capsimg.so`, depending on your platform. On Windows this DLL should be placed in your RetroArch installation folder next to `retroarch.exe`. On other platforms it must be installed [in your search path for dlopen](https://linux.die.net/man/8/ldconfig), so if it isn't found next to the SO, maybe try `/usr/lib`? An up to date version of capsimg for many platforms can be downloaded here:
 * [capsimg 5.1 binaries](https://github.com/rsn8887/capsimg/releases)
@@ -91,9 +112,9 @@ See [DEVELOP.md](DEVELOP.md) for more details.
 
 ## Notes
 
-* Hatari Manual:
+### Hatari Manual
   * [Hatari Online Manual](https://hatari.tuxfamily.org/doc/manual.html)
-* Controls:
+### Controls
   * Left Stick and D-Pad - Joystick
   * Right Stick - Mouse
   * B - Joystick Fire
@@ -140,7 +161,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
     * *Joystick / Mouse Toggle* - Temporarily swaps stick/d-pad assigned to Joystick to Mouse, and vice versa. Also swaps the joystick fire button for mouse left.
     * *Key Space/Return/Up/Down...* - Any keyboard key can be assigned to a button.
   * The help screen mapped to *Start* can be configured to display other information, such as the floppy disk list. See *Video > Pause Screen Display* in the core options.
-* File formats:
+### File formats
   * Floppy disk: **ST**, **MSA**, **DIM**, **STX**, **IPF**, **CTR** (can be inside **ZIP** or **GZ**)
   * Hard disk: **ACSI**, **AHD**, **VHD**, **SCSI**, **SHD**, **IDE**, **GEM**
   * Muli-disk: **M3U**, **M3U8**, **ZST**
@@ -149,12 +170,12 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * TOS, Cartridge, and permanent Hard disk files should be placed in **system/hatarib/**.
   * When loading multiple disks, the best method is to use *M3U* playlists to specify all needed disks at once during *Load Content*. This can also include temporary hard disk images. Information: [M3U file tutorial](https://docs.retroachievements.org/Multi-Disc-Games-Tutorial/).
   * *ZST* file are a renamed *ZIP*, but it will be able to load all images contained inside. If there is an *M3U* or *M3U8* file inside, it will be used to index and load images from the *ZST*. Hard disk images cannot be used from inside a *ZST*.
-  * *Load New Disk* can add additional disks while running, but has several caveats, especially regarding savestates. See *Savestates* section below.
-  * The first two disks of an M3U list will be loaded into drive A and B at startup, but this can be overridden with `#BOOTA` or `#BOOTB`, see *M3U* notes below.
+  * *Load New Disk* can add additional disks while running, but has several caveats, especially regarding savestates. See [*Savestates*](#Savestates) section below.
+  * The first two disks of an M3U list will be loaded into drive A and B at startup, but this can be overridden with `#BOOTA` or `#BOOTB`, see [*M3U* notes](#M3U-Playlists-and-Auto-Run) below.
   * Libretro only has an interface for one disk drive, but you can use the *Select* button to switch between whether the Disc Control menu currently shows drive A or drive B.
   * *IPF* and *CTR* formats are only available with the addition of the `capsimg` support libraray. See [Installation](#Installation) for more information.
   * *ZIP* files will only load the first floppy image file found inside, though the RetroArch *Load Content* menu may be able to select a specific file inside. This is a RetroArch limitation, because it automatically opens one file from the ZIP and the core cannot access its other contents.
-* Hard Disks:
+### Hard Disks
   * A permanent hard disk in your *system/* folder can be configured from the *System* core options menu, but this setting can be overridden by a temporary hard disk loaded from the content menu, or using an *M3U* playlist.
   * *GemDOS* type hard disks can select a subdirectory within *system/hatarib/* to use as a simulated drive.
   * Permanent hard disks:
@@ -174,7 +195,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Using more than one permanent hard disk image at a time is unsupported, though a single image can have multiple partitions with individual drive letters. An M3U can be used for multiple temporary hard disks.
   * If you need an easy way to switch between permanent hard disk configurations, you could create a "boot" floppy disk to go along with the hard disk, and use *Manage Core Options > Save Game Options* to create a settings override associated with that floppy.
   * See [Hatari's Manual: Hard Disk Support](https://hatari.tuxfamily.org/doc/manual.html#Hard_disk_support) for further information.
-* M3U playlists and Auto-Run:
+### M3U playlists and Auto-Run
   * M3U playlists can be used to specify a collection of disk images, accessible via *Disc Control* in the *Quick Menu* of RetroArch.
   * Each line of the M3U is the filename of a disk image, relative to the M3U file.
   * A line starting with `#` will normally be ignored, allowing you to write a comment on the rest of that line, if needed.
@@ -209,7 +230,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * *EmuTOS 192uk* may be slightly more compatible with *ST* software, but provides fewer features. With a colour monitor it starts up in 50hz. This was chosen as a default for the greatest compatibility with games.
   * *EmuTOS 192us* is similar to *192uk* but instead starts in 60hz.
   * Most other TOS files are only compatible with certain machines.
-* On-Screen Keyboard:
+### On-Screen Keyboard
   * An on-screen keyboard can be used to simulate using the Atari's keyboard from your gamepad.
   * Press *L1* to raise the on-screen keyboard, select a key with the d-pad, and press *L1* again to press the key. Press *R1* to close the keyboard.
   * Press *R1* to raise the keyboard in one-shot mode, which pauses emulation and will resume immediately when you press *L1* to press the key, or *R1* to cancel.
@@ -227,7 +248,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
     * *System > CPU Prefetch Emulation* - Emulates memory prefetch, needed for some games. On by default.
     * *System > Cycle-exact Cache Emulation* - More accurate cache emulation, needed for some games. On by default.
   * See the *Advanced* category for other relevant options.
-* Savestates:
+### Savestates
   * Savestates are seamless, allowing run-ahead and netplay.
   * *Load New Disk* has several caveats with savesates:
       * RetroArch will change the savestate name to match the newest loaded disk, so be sure that you know what savestates are associated with that disk.
@@ -238,20 +259,20 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * If you increase the size of the Atari system memory, you should close content and restart the core before using savestates, to allow RetroArch to update the savestate size.
   * For run-ahead or netplay disable *System > Floppy Savestate Safety Save* to prevent high disk activity. When enabled, this option causes any savestate reload to always rewrite a disk to your saves folder if a save file for it already exists here. This helps prevent losing unsaved data when reloading longer term save states, but makes the rapid savestates needed for run-ahead significantly slower.
     * Enabling *Advanced > Write Protect Floppy Disks* will also prevent the safety save feature, as it will not allow the disk to be modified at all.
-* Netplay:
-  * Disable *System > Floppy Savestate Safety Save*, or consider enabling *Advanced > Write Protect Floppy Disks*. See note about savestates above.
+### Netplay
+  * Disable *System > Floppy Savestate Safety Save*, or consider enabling *Advanced > Write Protect Floppy Disks*. See note about [savestates](#Savestates) above.
   * Disable *Input > Host Mouse Enabled* and *Input > Host Keyboard Enabled*, because RetroArch netplay does not send this activity over the network. Instead, use the onscreen keyboard and gamepad to operate the ST keyboard and mouse.
   * RetroArch does not allow analog stick inputs during netplay. The *RetroPad > Joystick / Mouse Toggle* button assignment may be useful for switching between mouse and joystick d-pad input during netplay.
   * Make sure your core options match, especially the TOS image, before attempting to connect.
   * Netplay for hatariB may be more network and CPU intensive than other retro sytems, due to the large onboard RAM of the ST, and volatile floppy disk media.
   * The Libretro API does not provide a way to detect whether netplay is active, so appropriate setting changes like the safety save unfortunately can't be done automatically.
   * The IPF format appears to have drive state that cannot be completely restored, a limitation of the `capsimg` library. Netplay may have problems after disk activity when using IPF disk images, due to savestate divergence.
-* Unsupported Features:
+### Unsupported Features
   * [Printer](https://github.com/bbbradsmith/hatariB/issues/23)
   * [RS232](https://github.com/bbbradsmith/hatariB/issues/22)
   * [Host keyboard remapping](https://github.com/bbbradsmith/hatariB/issues/21)
   * [Falcon microphone](https://github.com/bbbradsmith/hatariB/issues/20)
-* Quirks:
+### Quirks
   * If the on-screen keyboard confirm/cancel buttons aren't mapped to dedicated buttons, you might end up suddenly holding the underlying button when the keyboard closes. (Inputs from buttons mapped to the on-screen keyboard are suppressed while it remains open.)
   * Though the on-screen keyboard is available in [several language layouts](https://tho-otto.de/keyboards/), for your physical keyboard there aren't any direct configuration options, currently. RetroArch ignores the OS keyboard layout, and [all keys report as-if in US layout](https://github.com/libretro/RetroArch/issues/13838) (e.g. German Z reports as RETROK_y). Because of this, if you pick a TOS that matches your keyboard language, the mappings are likely to be mostly compatible. Otherwise, if you need finer control of the mapping, RetroArch's *Input* settings can be used to remap individual keys.
   * The *Floppy Disk List* pause screen won't display unicode filenames correctly, though they can still be viewed through RetroArch's *Disk Control* menu when the selected drive is ejected.
@@ -260,6 +281,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * If *IPF* support is enabled, an *M3U* playlist can also be used to load the *RAW* format supported by that library. I kept it out of the associated file types list because I have not yet encountered dumps in this format.
   * The *Advanced > CPU Clock Rate* core option is only applied at boot/reset, but you can *CPU Speed* to a gamepad button in the *RetroPad* core options to change it while running.
   * RetroArch may report "failed to set last used disc", because it tries to remember the last inserted disk for the next time you load the same game. This makes no sense for the Atari ST, where games normally boot from one specific disk only, but there seems to be no way to tell RetroArch not to display an error message for this.
+  * Because this core has mouse control support, RetroArch will sometimes restrict the mouse to the current monitor while the game window is focused. You can click off the window, or Alt+Tab to get away, but I don't know of a way to prevent this aside from removing all mouse support.
 
 ## History
 
