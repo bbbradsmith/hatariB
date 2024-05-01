@@ -51,11 +51,11 @@ const uint64_t QUIRKS = RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT;
 // When using this, disable host mouse and keyboard to prevent input divergence.
 #define DEBUG_SAVESTATE_DUMP_AUTO   0
 
-// Simpler savestate integrity test: whenever a savestate is saved, it will store another state in X frames,
-// and then every savestate restore will compare its own state after X frames. 0 to disable.
+// Simpler savestate integrity test: whenever a savestate is saved (F2), it will store another state in X frames,
+// and then every savestate restore (F4) will compare its own state after X frames. 0 to disable.
 // Try to test with different delays, 1 frame, 10 frames, 100 frames, etc.
-// Note that any input pressed or held is part of the savestate so generally you want to do this with nothing held.
-// (Usually the DIFF will indicate core_input in this case.)
+// Note that any input pressed or held is part of the savestate so generally you want to do this with nothing held,
+// and the host mouse/keyboard input option disabled. (Usually the DIFF will indicate core_input in this case.)
 #define DEBUG_SAVESTATE_SIMPLE   0
 
 // Will print the savestate section list each time the savestate is saved or restored.
@@ -64,6 +64,7 @@ const uint64_t QUIRKS = RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT;
 // Enable LIBRETRO_DEBUG_SNAPSHOT in memorySnapshot.c to list the the data locations and structure of snapshots.
 // Turn off hatarib_savestate_floppy_modify (Floppy Savestate Safety Save) in the core settings before testing savestates,
 // because it causes bContentsChanged divergence for any floppies that have save files.
+// (if DEBUG=1 in the make file, CORE_DEBUG will automatically enable LIBRETRO_DEBUG_SNAPSHOT)
 
 #define DEBUG_SAVESTATE   (DEBUG_SAVESTATE_DUMP | DEBUG_SAVESTATE_DUMP_AUTO | DEBUG_SAVESTATE_SIMPLE | DEBUG_SAVESTATE_LIST)
 
@@ -1434,6 +1435,10 @@ RETRO_API void retro_run(void)
 							core_debug_snapshot_sections_list();
 							first_mismatch = false;
 						}
+						// diff0 = new save after restored savestate, diff1 = first save after initial savestate
+						retro_log(RETRO_LOG_DEBUG,"Dumped to: saves/hatarib_diff0.bin + saves/hatarib_diff1.bin");
+						core_write_file_save("hatarib_diff0.bin",(unsigned int)snapshot_size,snapshot_buffer);
+						core_write_file_save("hatarib_diff1.bin",(unsigned int)debug_snapshot_buffer_size,debug_snapshot_buffer);
 					}
 					else
 					{

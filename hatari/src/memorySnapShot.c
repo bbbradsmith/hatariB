@@ -374,8 +374,11 @@ void MemorySnapShot_Capture_Immediate(const char *pszFileName, bool bConfirm)
  * Do the real saving (called from newcpu.c / m68k_go()
  */
 // use to figure out the structure of a snapshot (logs the start of each block in the savestate)
-//#define LIBRETRO_DEBUG_SNAPSHOT(x) core_debug_snapshot(x)
-#define LIBRETRO_DEBUG_SNAPSHOT(x) {}
+#if CORE_DEBUG
+	#define LIBRETRO_DEBUG_SNAPSHOT(x) core_debug_snapshot(x)
+#else
+	#define LIBRETRO_DEBUG_SNAPSHOT(x) {}
+#endif
 void MemorySnapShot_Capture_Do(void)
 {
 	uint32_t magic = SNAPSHOT_MAGIC;

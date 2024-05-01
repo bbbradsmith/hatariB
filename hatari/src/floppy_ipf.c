@@ -488,7 +488,24 @@ void IPF_MemorySnapShot_Capture(bool bSave)
 
 		if ( StructSize > 0 )
 		{
+			#ifdef __LIBRETRO__
+				// temporarily store pointers that may not be rebuilt
+				PVOID restore_userptr = IPF_State.Fdc.userptr;
+				PVOID restore_drive_userptr[MAX_FLOPPYDRIVES];
+				for (int i=0; i < MAX_FLOPPYDRIVES; ++i)
+					restore_drive_userptr[ i] = IPF_State.Drive[i].userptr;
+				// trackbuf/timebuf seem to get restored by the internal implemenation,
+				// maybe in CAPSFdcInvalidateTrack?
+				// However, the state after restore is still not fully consistent.
+			#endif
+
 			MemorySnapShot_Store(&IPF_State, sizeof(IPF_State));
+
+			#ifdef __LIBRETRO__
+				IPF_State.Fdc.userptr       = restore_userptr;
+				for (int i=0; i < MAX_FLOPPYDRIVES; ++i)
+					IPF_State.Drive[i].userptr  = restore_drive_userptr[ i];
+			#endif
 
 #ifdef HAVE_CAPSIMAGE
 			/* For IPF structures, we need to update some pointers in Fdc/Drive/CapsImage */

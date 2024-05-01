@@ -243,6 +243,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Make sure your core options match, especially the TOS image, before attempting to connect.
   * Netplay for hatariB may be more network and CPU intensive than other retro sytems, due to the large onboard RAM of the ST, and volatile floppy disk media.
   * The Libretro API does not provide a way to detect whether netplay is active, so appropriate setting changes like the safety save unfortunately can't be done automatically.
+  * The IPF format appears to have drive state that cannot be completely restored, a limitation of the `capsimg` library. Netplay may have problems after disk activity when using IPF disk images, due to savestate divergence.
 * Unsupported Features:
   * [Printer](https://github.com/bbbradsmith/hatariB/issues/23)
   * [RS232](https://github.com/bbbradsmith/hatariB/issues/22)
