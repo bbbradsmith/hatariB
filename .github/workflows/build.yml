@@ -1,9 +1,9 @@
 name: Core Builds
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "ntxc-drivesound" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "ntxc-drivesound" ]
   workflow_dispatch:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
