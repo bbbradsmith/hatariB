@@ -21,7 +21,7 @@ This is intended as an alternative or replacement for the older [Libretro Hatari
 
 This is a new project in the initial testing phase. Eventually I would like to submit it to Libretro.
 
-If you notice any problems or have feedback, please [create a Github issue](https://github.com/bbbradsmith/hatariB/issues).
+If you notice any problems or have feedback, please [create a Github issue](https://github.com/bbbradsmith/hatariB/issues). If you can, test in Hatari's stand-alone emulator first to see if the problem exists there as well.
 
 Emulator: [Hatari 2.5.0](https://git.tuxfamily.org/hatari/hatari.git/tag/?id=v2.5.0) 2024-04-18
 
