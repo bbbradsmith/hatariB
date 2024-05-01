@@ -1663,11 +1663,14 @@ void Sound_MemorySnapShot_Capture(bool bSave)
 
 	MemorySnapShot_Store(&YM2149_Clock_250, sizeof(YM2149_Clock_250));
 	MemorySnapShot_Store(&YM2149_Clock_250_CpuClock, sizeof(YM2149_Clock_250_CpuClock));
+#ifdef __LIBRETRO__
+	MemorySnapShot_Store(&YM2149_Freq_div_2, sizeof(YM2149_Freq_div_2)); // new state that wasn't in the savestate
+#endif
 
 	MemorySnapShot_Store(&YmVolumeMixing, sizeof(YmVolumeMixing));
 
 #ifdef __LIBRETRO__
-	MemorySnapShot_Store(&YM2149_LPF_Filter, sizeof(YM2149_LPF_Filter));
+	MemorySnapShot_Store(&YM2149_LPF_Filter, sizeof(YM2149_LPF_Filter)); // added filter options
 	MemorySnapShot_Store(&YM2149_HPF_Filter, sizeof(YM2149_HPF_Filter));
 #endif
 
