@@ -280,7 +280,6 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * You can use *Load New Disk* or *M3U* playlists to load the same floppy multiple times, or multiple floppies with the same name. This mostly works okay, but a savestate restore might be unable to identify which of them was actually inserted.
   * If *IPF* support is enabled, an *M3U* playlist can also be used to load the *RAW* format supported by that library. I kept it out of the associated file types list because I have not yet encountered dumps in this format.
   * The *Advanced > CPU Clock Rate* core option is only applied at boot/reset, but you can *CPU Speed* to a gamepad button in the *RetroPad* core options to change it while running.
-  * RetroArch may report "failed to set last used disc", because it tries to remember the last inserted disk for the next time you load the same game. This makes no sense for the Atari ST, where games normally boot from one specific disk only, but there seems to be no way for the core to tell RetroArch not to display an error message for this. This notification can be globally disabled in *Settings > User-Interface > On-Screen Display > On-Screen Notifications > Notification Visibility > Initial Disc Restored Notifications*.
   * Because this core has mouse control support, RetroArch will sometimes restrict the mouse to the current monitor while the game window is focused. You can click off the window, or Alt+Tab to get away, but I don't know of a way to prevent this aside from removing all mouse support.
 
 ## History
@@ -293,6 +292,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * SDL2 2.30.2 update.
   * Raspberry Pi builds now have dlopen available for capsimg support.
   * Multi-file ZST (ZIP) support, also with M3U playlist inside.
+  * Fixed incorrect "Failed to set last used disc..." RetroArch notification.
 * [hatariB v0.3](https://github.com/bbbradsmith/hatariB/releases/tag/0.3) - 2024-04-15
   * On-screen keyboard improvements:
     * Can now hold the key continuously.

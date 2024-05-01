@@ -35,7 +35,6 @@ static int drive;
 static unsigned int image_index[2];
 static bool image_insert[2];
 static unsigned int image_count;
-static int initial_image;
 static int boot_index[2];
 
 //
@@ -838,19 +837,6 @@ static bool add_image_index(void)
 	return false;
 }
 
-static bool set_initial_image(unsigned index, const char* path)
-{
-	retro_log(RETRO_LOG_DEBUG,"set_initial_image(%d,%p)\n",index,path);
-	if(path) retro_log(RETRO_LOG_DEBUG,"path: %s\n",path); // logging this path but not doing anything with it
-	//initial_image = index;
-	//return true;
-	// Disabling this. RetroArch appears to give you the last disk you had in the drive, last time you played.
-	// This is inappropriate for Atari ST, where you almost always need a boot disk to start the game.
-	// It also conflicts with the drive B workaround, where RetroArch won't know which drive it is saving the last index of.
-	initial_image = 0;
-	return false;
-}
-
 bool get_image_path(unsigned index, char* path, size_t len)
 {
 	//retro_log(RETRO_LOG_DEBUG,"get_image_path(%d,%p,%d)\n",index,path,(int)len);
@@ -902,7 +888,7 @@ void core_disk_set_environment(retro_environment_t cb)
 		get_num_images,
 		replace_image_index,
 		add_image_index,
-		set_initial_image,
+		NULL, //set_initial_image, (disable this feature because it is almost never appropriate to boot from a different disk)
 		get_image_path,
 		get_image_label,
 	};
@@ -924,12 +910,12 @@ void core_disk_init(void)
 		first_init = false;
 	}
 	disks_clear();
-	initial_image = 0;
 }
 
 void core_disk_load_game(const struct retro_game_info *game)
 {
 	//retro_log(RETRO_LOG_DEBUG,"core_disk_load_game(%p)\n",game);
+	int initial_image = 0;
 
 	disks_clear();
 	if (game == NULL) return;
