@@ -21,6 +21,7 @@
 #define HD_SCSI_EXTENSIONS "scsi\0" "shd\0" "\0"
 #define HD_IDE_EXTENSIONS "ide\0" "\0"
 #define HD_GEM_EXTENSIONS "gem\0" "\0"
+#define STX_SAVE_EXT "wd1772"
 
 struct disk_image
 {
@@ -786,7 +787,7 @@ static bool replace_image_index(unsigned index, const struct retro_game_info* ga
 			strcpy_trunc(disks[index].extra_filename,path,CORE_MAX_FILENAME);
 			int l = strlen(disks[index].extra_filename);
 			if (l >= 3) disks[index].extra_filename[l-3] = 0;
-			strcat_trunc(disks[index].extra_filename,"wd1772",CORE_MAX_FILENAME);
+			strcat_trunc(disks[index].extra_filename,STX_SAVE_EXT,CORE_MAX_FILENAME);
 			unsigned int extra_size = 0;
 			uint8_t* extra_data = core_read_file_save(disks[index].extra_filename,&extra_size);
 			if (extra_data != NULL)
@@ -1076,7 +1077,6 @@ void core_disk_reindex(void)
 				// do a save test for possible modifications
 				if (core_disk_enable_save && core_savestate_floppy_modify && core_disk_save_exists(infile))
 				{
-					// TODO this doesn't work for STX because it wants an overlay file instead (change extension if STX)
 					core_floppy_changed(d);
 					//retro_log(RETRO_LOG_DEBUG,"Savestate marks uncached floppy contents changed: %s\n",infile);
 				}
@@ -1339,5 +1339,14 @@ bool core_disk_save_write(const uint8_t* data, unsigned int size, corefile* file
 
 bool core_disk_save_exists(const char* filename)
 {
+	if (has_extension(filename,STX_EXTENSIONS))
+	{
+		char stx_savename[CORE_MAX_FILENAME];
+		strcpy_trunc(stx_savename,filename,CORE_MAX_FILENAME);
+		int l = strlen(stx_savename);
+		if (l >= 3) stx_savename[l-3] = 0;
+		strcat_trunc(stx_savename,STX_SAVE_EXT,CORE_MAX_FILENAME);
+		return core_file_exists_save(stx_savename);
+	}
 	return core_file_exists_save(filename);
 }
