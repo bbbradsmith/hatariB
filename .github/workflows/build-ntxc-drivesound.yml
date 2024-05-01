@@ -113,7 +113,7 @@ jobs:
           path: artifact/
 
   build-macos:
-  if: false # disable, this mac build script is out of date, and this branch does not have the needed changes to support the update
+    if: false # disable, this mac build script is out of date, and this branch does not have the needed changes to support the update
     name: MacOS 10.13
     runs-on: macos-latest
     steps:
