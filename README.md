@@ -108,17 +108,17 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * R3 - Return key
   * On-screen keyboard
     * L1 - Confirm
-    * L2 - Cancel
+    * R1 - Cancel
     * X - Toggle Position
   * RetroArch
     * Scroll-Lock - Game Focus mode captures mouse, and full host keyboard input.
     * F11 - Captures or releases the mouse.
   * Keyboard
-    * Atari ST special keys
-      * F11 - Home
-      * F12, End - Undo
-      * Page Up - Numpad (
-      * Page Down - Numpad )
+    * Atari ST special keys (Your Key -> Atari Key)
+      * F11 -> Home
+      * F12, End -> Undo
+      * Page Up -> Numpad (
+      * Page Down -> Numpad )
     * Other keys map directly to a standard keyboard, but Game Focus mode (Scroll-Lock) may be neeed to access keys normally assigned to RetroArch hotkeys.
   * Gamepad buttons can be reassigned in the *Retropad* core options:
     * *None* - To disable the button.
@@ -139,22 +139,23 @@ See [DEVELOP.md](DEVELOP.md) for more details.
     * *Toggle Status Bar* - A quick hide/reveal of the status bar, in case you like it hidden but still want to check it sometimes.
     * *Joystick / Mouse Toggle* - Temporarily swaps stick/d-pad assigned to Joystick to Mouse, and vice versa. Also swaps the joystick fire button for mouse left.
     * *Key Space/Return/Up/Down...* - Any keyboard key can be assigned to a button.
+  * The help screen mapped to *Start* can be configured to display other information, such as the floppy disk list. See *Video > Pause Screen Display* in the core options.
 * File formats:
-  * Floppy disk: ST, MSA, DIM, STX, IPF, CTR (can be inside ZIP or GZ)
-  * Hard disk: ACSI, AHD, VHD, SCSI, SHD, IDE, GEM
-  * Muli-disk: M3U, M3U8, ZST
-  * TOS ROM: TOS, IMG, ROM, BIN
-  * Cartridge: IMG, ROM, BIN, CART
-  * TOS, Cartridge, and Hard disk files should be placed in **system/hatarib/**.
-  * When loading multiple disks, the best method is to use M3U playlists to specify all needed disks at once during *Load Content*. This can also include hard disk images. Information: [M3U file tutorial](https://docs.retroachievements.org/Multi-Disc-Games-Tutorial/).
-  * *Load New Disk* can add additional disks while running, but has several caveats, especially regarding savestates. See below.
-  * The first two disks of an M3U list will be loaded into drive A and B at startup.
-  * Libretro only has an interface for one disk drive, but you can use the Select button to switch between whether the Disc Control menu currently shows drive A or drive B.
-  * *IPF* and *CTR* formats are only available with the addition of the `capsimg` support libraray. See [Installation](#Installation) for more information.
+  * Floppy disk: **ST**, **MSA**, **DIM**, **STX**, **IPF**, **CTR** (can be inside **ZIP** or **GZ**)
+  * Hard disk: **ACSI**, **AHD**, **VHD**, **SCSI**, **SHD**, **IDE**, **GEM**
+  * Muli-disk: **M3U**, **M3U8**, **ZST**
+  * TOS ROM: **TOS**, **IMG**, **ROM**, **BIN**
+  * Cartridge: **IMG**, **ROM**, **BIN**, **CART**
+  * TOS, Cartridge, and permanent Hard disk files should be placed in **system/hatarib/**.
+  * When loading multiple disks, the best method is to use *M3U* playlists to specify all needed disks at once during *Load Content*. This can also include temporary hard disk images. Information: [M3U file tutorial](https://docs.retroachievements.org/Multi-Disc-Games-Tutorial/).
   * *ZST* file are a renamed *ZIP*, but it will be able to load all images contained inside. If there is an *M3U* or *M3U8* file inside, it will be used to index and load images from the *ZST*. Hard disk images cannot be used from inside a *ZST*.
-  * *ZIP* files will only load the first floppy image file found inside, though the RetroArch *Load Content* menu may be able to select a specific file inside. (This is a RetroArch limitation, it automatically opens one file from the ZIP and the core cannot access its other contents.)
+  * *Load New Disk* can add additional disks while running, but has several caveats, especially regarding savestates. See *Savestates* section below.
+  * The first two disks of an M3U list will be loaded into drive A and B at startup, but this can be overridden with `#BOOTA` or `#BOOTB`, see *M3U* notes below.
+  * Libretro only has an interface for one disk drive, but you can use the *Select* button to switch between whether the Disc Control menu currently shows drive A or drive B.
+  * *IPF* and *CTR* formats are only available with the addition of the `capsimg` support libraray. See [Installation](#Installation) for more information.
+  * *ZIP* files will only load the first floppy image file found inside, though the RetroArch *Load Content* menu may be able to select a specific file inside. This is a RetroArch limitation, because it automatically opens one file from the ZIP and the core cannot access its other contents.
 * Hard Disks:
-  * A permanent hard disk in your *system/* folder can be configured from the *System* core options menu, but this setting can be overridden by a temporary hard disk loaded from the content menu, or using an M3U playlist.
+  * A permanent hard disk in your *system/* folder can be configured from the *System* core options menu, but this setting can be overridden by a temporary hard disk loaded from the content menu, or using an *M3U* playlist.
   * *GemDOS* type hard disks can select a subdirectory within *system/hatarib/* to use as a simulated drive.
   * Permanent hard disks:
     * A *GemDOS* folder can represent multiple paritions by having its base directory contain only single-letter folder names representing drive letters. *C/*, *D/*, etc.
@@ -210,10 +211,10 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Most other TOS files are only compatible with certain machines.
 * On-Screen Keyboard:
   * An on-screen keyboard can be used to simulate using the Atari's keyboard from your gamepad.
-  * Press L1 to raise the on-screen keyboard, select a key with the d-pad, and press L1 again to press the key. Press R1 to close the keyboard.
-  * Press L2 to raise the keyboard in one-shot mode, which pauses emulation and will resume immediately when you press L1 or R2.
-  * To alternate between a top and bottom keyboard position, press X.
-  * Modifier keys like Shift, Control, Alt are toggled instead of a single press, allowing you to hold the modifier while you press another key. When you close the keyboard, all modifiers will be released.
+  * Press *L1* to raise the on-screen keyboard, select a key with the d-pad, and press *L1* again to press the key. Press *R1* to close the keyboard.
+  * Press *R1* to raise the keyboard in one-shot mode, which pauses emulation and will resume immediately when you press *L1* to press the key, or *R1* to cancel.
+  * To alternate between a top and bottom keyboard position, press *X*.
+  * Modifier keys like *Shift*, *Control*, *Alt* are toggled instead of a single press, allowing you to hold the modifier while you press another key. When you close the keyboard, all modifiers will be released.
   * The keyboard language layout can be chosen in the *Input > On-Screen Keyboard Language* core option. This should usually be chosen to match your TOS region.
 * MIDI:
   * Libretro has a MIDI interface, and if you have MIDI devices installed you should be able to select them in the *Settings > Audio > MIDI* menu of RetroArch.
@@ -229,12 +230,12 @@ See [DEVELOP.md](DEVELOP.md) for more details.
 * Savestates:
   * Savestates are seamless, allowing run-ahead and netplay.
   * *Load New Disk* has several caveats with savesates:
-      * RetroArch will change the savestate name to match the newest loaded disk, so be sure that you know that savestates associated with that disk.
+      * RetroArch will change the savestate name to match the newest loaded disk, so be sure that you know what savestates are associated with that disk.
       * To restore in a later session, start the core as you did before and use *Load New Disk* to add all needed disks before attempting to restore the savestate. The last disk loaded must be the same as before, so that the savestate name will match correctly.
-      * In rare cases, inserting a unusually large new disk may increase the needed savestate size and cause a failure to save. You can eject the disk and try reducing the savestate size before trying again. (RetroArch has a limitation that savestate size must be fixed, determined at Load Content time.)
+      * In rare cases, inserting a unusually large new disk may increase the needed savestate size and cause a failure to save. You can eject the disk and try reducing the savestate size before trying again. (RetroArch has a limitation that savestate size must be fixed, determined at *Load Content* time.)
       * It is generally recommended to use M3U playlists instead of *Load New Disk* when possible ([tutorial](https://docs.retroachievements.org/Multi-Disc-Games-Tutorial/)).
   * Hard Disk modifications are written directly to their source files, and are not included in savestates. Try to avoid making savestates during a hard disk write.
-  * If you increase the size of memory, you should close content and restart the core before using savestates, to allow RetroArch to update the savestate size.
+  * If you increase the size of the Atari system memory, you should close content and restart the core before using savestates, to allow RetroArch to update the savestate size.
   * For run-ahead or netplay disable *System > Floppy Savestate Safety Save* to prevent high disk activity. When enabled, this option causes any savestate reload to always rewrite a disk to your saves folder if a save file for it already exists here. This helps prevent losing unsaved data when reloading longer term save states, but makes the rapid savestates needed for run-ahead significantly slower.
     * Enabling *Advanced > Write Protect Floppy Disks* will also prevent the safety save feature, as it will not allow the disk to be modified at all.
 * Netplay:
