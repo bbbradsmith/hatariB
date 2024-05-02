@@ -310,6 +310,14 @@ static bool load_m3u(uint8_t* data, unsigned int size, const char* m3u_path, uns
 					}
 					else
 					{
+						// NOTE: The zip search does not support or a path using ./ or ../ but it is probably
+						//       unnessary to resolve this. I can't think of a reason to put images above the M3U,
+						//       only at the same level or below. Also, ZIP standardizes paths as UTF-8,
+						//       which is good since M3U8 is UTF-8 too.
+						
+						// ZIP specifies only '/' as the path separator
+						for (char* c = link; *c; ++c) { if(*c=='\\') *c='/'; }
+
 						size_t zsize;
 						zdata = load_zip_search_file(zip, m3u_path, &zsize, link);
 						if (zdata)

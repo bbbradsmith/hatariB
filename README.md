@@ -169,7 +169,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Cartridge: **IMG**, **ROM**, **BIN**, **CART**
   * TOS, Cartridge, and permanent Hard disk files should be placed in **system/hatarib/**.
   * When loading multiple disks, the best method is to use *M3U* playlists to specify all needed disks at once during *Load Content*. This can also include temporary hard disk images. Information: [M3U file tutorial](https://docs.retroachievements.org/Multi-Disc-Games-Tutorial/).
-  * *ZIP* files will load all contained disk images, but if there is an *M3U* or *M3U8* file it will be used to index and load images from the *ZIP*. Hard disk images cannot be used from inside a *ZIP*.
+  * *ZIP* files will load all contained disk images, but if there is an *M3U* or *M3U8* file it will be used to index and load images from the *ZIP*. Hard disk images cannot be used from inside a *ZIP*. Only one *M3U* can be used from inside a *ZIP*.
   * *ZST* is a renamed *ZIP* file. It does the same thing as the *ZIP* but the alternate extension lets you skip the "Load Archive" menu.
   * *GZ* is a single file compressed in the *gzip* format. It can be used to contain any of the floppy disk formats.
   * *Load New Disk* can add additional disks while running, but has several caveats, especially regarding savestates. See [*Savestates*](#Savestates) section below.
@@ -212,7 +212,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Whenever a new floppy disk is added (*Load Content*, or *Load New Disk*), the saved copy will be substituted for the original if it exists. (Also, if you want to return to the original disk, you can delete it from *saves/*.)
   * If the *System > Save Floppy Disks* core option is disabled, only the original copy of the file will be used, and the *saves/* folder will not be accessed. However, the modified disk images will still persist in memory for the duration of the session, until you close the content.
   * Only the two currently inserted disks are included in savestates. If there are other disks in your loaded collection, they may take on their most recent version from the *saves/* folder next time you open this content. A savestate will not be able to restore them to an earlier version.
-  * Floppy disks in *saves/* must have a unique filename. Try not to use generic names like *savedisk.st*, and instead include the game title in its filename.
+  * Floppy disks in *saves/* must have a unique filename. Try not to use generic names like *savedisk.st*, and instead include the game title in its filename. (Even if contained within a *ZIP* the save disk filename should be unique.)
   * If possible, it is recommended that save disks for games use the *ST* format, because it is the simplest and least error prone format. You can download a prepared blank disk here: **[blank.st](../../raw/main/blank.st)**.
   * The images written to *saves/* will be standard Atari ST image formats, and you should be able to load them in other emulators if you wish.
   * Note that Hatari is not able to simulate the formatting of a blank disk in-emulator. The [stand-alone version of Hatari](https://hatari.tuxfamily.org/download.html) has a utility in its menu that can be used to create a blank ST file. A different Atari ST emulator [Steem.SSE](https://sourceforge.net/projects/steemsse/) can simulate the formatting process.
