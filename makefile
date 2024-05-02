@@ -71,7 +71,7 @@ else
 endif
 
 BD=build/
-CORE=$(BD)hatarib$(SO_SUFFIX)
+CORE=$(BD)hatarib_drivesound$(SO_SUFFIX)
 SOURCES = \
 	core/core.c \
 	core/core_file.c \
