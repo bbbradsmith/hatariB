@@ -3,6 +3,7 @@
 #include "core_internal.h"
 #include <SDL.h>
 #include "../hatari/src/includes/sdlgui.h"
+#include "core_font.h" // FONTMAP
 
 // hatari/src/screen.c
 extern SDL_Surface* sdlscrn;
@@ -155,6 +156,49 @@ static inline void draw_box(int x, int y, int w, int h, Uint32 c)
 	r.w = w;
 	r.h = h;
 	SDL_FillRect(sdlscrn, &r, c);
+}
+
+// adaptation of get_image_label, converting UTF-8 to Hatari's sdl-gui font
+static bool map_image_label(unsigned index, char* label, size_t len)
+{
+	char utf8[CORE_MAX_FILENAME] = "<Unknown>";
+	bool result = get_image_label(index,utf8,CORE_MAX_FILENAME);
+	int i=0;
+	int j=0;
+	for (; i<CORE_MAX_FILENAME && (j+1)<len; ++i)
+	{
+		uint8_t  c = (uint8_t)(utf8[i]);
+		uint32_t u = c; // unicode
+		uint8_t  m = c; // mapped value
+		if (c == 0) break;
+		if (c & 0x80) // multi-byte character
+		{
+			m = 0x0C; // a fallback circle character if unmappable
+			// decode multi-byte character
+			int mb = 1;
+			if      ((c & 0xE0) == 0xC0) { u &= 0x1F; mb = 2; }
+			else if ((c & 0xF0) == 0xE0) { u &= 0x0F; mb = 3; }
+			else if ((c & 0xF8) == 0xF0) { u &= 0x07; mb = 4; }
+			for (int k=1; k<mb; ++k)
+			{
+				uint8_t mc = (uint8_t)(utf8[i+k]);
+				if ((mc & 0xC0) != 0x80) // invalid UTF-8 encoding
+				{
+					mb = 1; m = c; break; // cancel the decoding, just pass 1 byte as-is
+				}
+				u = (u << 6) | (mc & 0x3F);
+			}
+			i += (mb-1);
+			if (mb > 1) // map the result
+			{
+				for (int k=0; k<FONTMAP_COUNT; ++k)
+					if (FONTMAP[k].unicode == u) { m = FONTMAP[k].map; break; }
+			}
+		}
+		label[j] = (char)(m); ++j;
+	}
+	label[j] = 0;
+	return result;
 }
 
 //
@@ -444,7 +488,7 @@ static void render_pause(void)
 			static const char* NONE = "(NONE)";
 			int tw = strlen(HEADER);
 			int mw = (screen_w / sdlgui_fontwidth) - 3; // characters that fit on screen
-			if (mw > (sizeof(label)-1)) mw = sizeof(label)-1; // character that fit in label
+			if (mw > (sizeof(label)-1)) mw = sizeof(label)-1; // characters that fit in label
 			int n = get_num_images();
 			int mh = (screen_h / sdlgui_fontheight) - 3;
 			if (n > mh) n = mh; // had intended to leave this uncapped, but SDL's clipping seems to fail mysteriously if I don't?
@@ -452,7 +496,7 @@ static void render_pause(void)
 			for (int i=0; i<n; ++i)
 			{
 				label[0] = 0;
-				get_image_label(i,label,mw);
+				map_image_label(i,label,mw);
 				int l = strlen(label) + 1; // +1 for left indent
 				if (l > tw) tw = l;
 			}
@@ -477,7 +521,7 @@ static void render_pause(void)
 					if (i < n)
 					{
 						label[0] = 0;
-						get_image_label(i,label,mw);
+						map_image_label(i,label,mw);
 						t = label;
 					}
 					else t = NONE;
