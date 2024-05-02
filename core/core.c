@@ -34,7 +34,7 @@
 #define CORE_VERSION   "v0.4 unstable preview " SHORTHASH " " __DATE__ " " __TIME__;
 
 // make sure this matches ../info/hatarib.info
-static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|ipf|ctr|m3u|m3u8|zip|zst|gz|acsi|ahd|vhd|scsi|shd|ide|gem";
+static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|ipf|ctr|m3u|m3u8|zip|gz|acsi|ahd|vhd|scsi|shd|ide|gem";
 
 // serialization quirks
 const uint64_t QUIRKS = RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT;
@@ -992,6 +992,7 @@ RETRO_API void retro_set_environment(retro_environment_t cb)
 		static const struct retro_system_content_info_override CONTENT_OVERRIDE[] = {
 			{ "m3u|m3u8", true, false },
 			{ "acsi|ahd|vhd|scsi|shd|ide|gem", true, false },
+			{ "zip", true, false }, // when using block_extract, fullpath is required to read the ZIP
 			{ NULL, false, false },
 		};
 		if (content_override_set || cb(RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE, (void*)CONTENT_OVERRIDE))
@@ -1109,7 +1110,7 @@ RETRO_API void retro_get_system_info(struct retro_system_info *info)
 	info->library_version = CORE_VERSION;
 	info->valid_extensions = CORE_FILE_EXTENSIONS;
 	info->need_fullpath = false;
-	info->block_extract = false;
+	info->block_extract = true;
 }
 
 RETRO_API void retro_get_system_av_info(struct retro_system_av_info *info)

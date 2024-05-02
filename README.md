@@ -164,17 +164,16 @@ See [DEVELOP.md](DEVELOP.md) for more details.
 ### File formats
   * Floppy disk: **ST**, **MSA**, **DIM**, **STX**, **IPF**, **CTR** (can be inside **ZIP** or **GZ**)
   * Hard disk: **ACSI**, **AHD**, **VHD**, **SCSI**, **SHD**, **IDE**, **GEM**
-  * Muli-disk: **M3U**, **M3U8**, **ZST**
+  * Muli-disk: **M3U**, **M3U8**, **ZIP**
   * TOS ROM: **TOS**, **IMG**, **ROM**, **BIN**
   * Cartridge: **IMG**, **ROM**, **BIN**, **CART**
   * TOS, Cartridge, and permanent Hard disk files should be placed in **system/hatarib/**.
   * When loading multiple disks, the best method is to use *M3U* playlists to specify all needed disks at once during *Load Content*. This can also include temporary hard disk images. Information: [M3U file tutorial](https://docs.retroachievements.org/Multi-Disc-Games-Tutorial/).
-  * *ZST* file are a renamed *ZIP*, but it will be able to load all images contained inside. If there is an *M3U* or *M3U8* file inside, it will be used to index and load images from the *ZST*. Hard disk images cannot be used from inside a *ZST*.
+  * *ZIP* files will load all contained disk images, but if there is an *M3U* or *M3U8* file it will be used to index and load images from the *ZIP*. Hard disk images cannot be used from inside a *ZIP*.
   * *Load New Disk* can add additional disks while running, but has several caveats, especially regarding savestates. See [*Savestates*](#Savestates) section below.
   * The first two disks of an M3U list will be loaded into drive A and B at startup, but this can be overridden with `#BOOTA` or `#BOOTB`, see [*M3U* notes](#M3U-Playlists-and-Auto-Run) below.
   * Libretro only has an interface for one disk drive, but you can use the *Select* button to switch between whether the Disc Control menu currently shows drive A or drive B.
   * *IPF* and *CTR* formats are only available with the addition of the `capsimg` support libraray. See [Installation](#Installation) for more information.
-  * *ZIP* files will only load the first floppy image file found inside, though the RetroArch *Load Content* menu may be able to select a specific file inside. This is a RetroArch limitation, because it automatically opens one file from the ZIP and the core cannot access its other contents.
 ### Hard Disks
   * A permanent hard disk in your *system/* folder can be configured from the *System* core options menu, but this setting can be overridden by a temporary hard disk loaded from the content menu, or using an *M3U* playlist.
   * *GemDOS* type hard disks can select a subdirectory within *system/hatarib/* to use as a simulated drive.
@@ -291,7 +290,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Hatari 2.5.0 update.
   * SDL2 2.30.2 update.
   * Raspberry Pi builds now have dlopen available for capsimg support.
-  * Multi-file ZST (ZIP) support, also with M3U playlist inside.
+  * Multi-file ZIP support, also with M3U playlist inside.
   * Fixed incorrect "Failed to set last used disc..." RetroArch notification.
 * [hatariB v0.3](https://github.com/bbbradsmith/hatariB/releases/tag/0.3) - 2024-04-15
   * On-screen keyboard improvements:
