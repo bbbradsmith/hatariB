@@ -218,17 +218,15 @@ static bool load_m3u(uint8_t* data, unsigned int size, const char* m3u_path, uns
 		retro_log(RETRO_LOG_ERROR,"load_m3u with no path?\n");
 		m3u_path = "";
 	}
-	if (!zip) // if not inside a zip, use the M3U's directory as our base path
+	// use the M3U's directory as our base path
+	strcpy_trunc(path,m3u_path,sizeof(path));
 	{
-		strcpy_trunc(path,m3u_path,sizeof(path));
+		int e = strlen(path);
+		for(;e>0;--e)
 		{
-			int e = strlen(path);
-			for(;e>0;--e)
-			{
-				if(path[e-1] == '/' || path[e-1] == '\\') break;
-			}
-			path[e] = 0;
+			if(path[e-1] == '/' || path[e-1] == '\\') break;
 		}
+		path[e] = 0;
 	}
 
 	if (data == NULL)
@@ -473,7 +471,7 @@ static bool load_zip(uint8_t* data, unsigned int size, const char* zip_filename,
 			uint8_t* zdata = load_zip_current_file(zip, zip_filename, &zsize);
 			if (zdata)
 			{
-				bool result = load_m3u(zdata,zsize,zip_filename,first_index,zip); // load_m3u now owns zdata
+				bool result = load_m3u(zdata,zsize,zip_file_filename,first_index,zip); // load_m3u now owns zdata
 				unzClose(zip); free(data);
 				return result;
 			}
