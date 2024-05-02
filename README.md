@@ -162,14 +162,16 @@ See [DEVELOP.md](DEVELOP.md) for more details.
     * *Key Space/Return/Up/Down...* - Any keyboard key can be assigned to a button.
   * The help screen mapped to *Start* can be configured to display other information, such as the floppy disk list. See *Video > Pause Screen Display* in the core options.
 ### File formats
-  * Floppy disk: **ST**, **MSA**, **DIM**, **STX**, **IPF**, **CTR** (can be inside **ZIP** or **GZ**)
+  * Floppy disk: **ST**, **MSA**, **DIM**, **STX**, **IPF**, **CTR** (can be inside **ZIP/ZST** or **GZ**)
   * Hard disk: **ACSI**, **AHD**, **VHD**, **SCSI**, **SHD**, **IDE**, **GEM**
-  * Muli-disk: **M3U**, **M3U8**, **ZIP**
+  * Muli-disk: **M3U**, **M3U8**, **ZIP**, **ZST**
   * TOS ROM: **TOS**, **IMG**, **ROM**, **BIN**
   * Cartridge: **IMG**, **ROM**, **BIN**, **CART**
   * TOS, Cartridge, and permanent Hard disk files should be placed in **system/hatarib/**.
   * When loading multiple disks, the best method is to use *M3U* playlists to specify all needed disks at once during *Load Content*. This can also include temporary hard disk images. Information: [M3U file tutorial](https://docs.retroachievements.org/Multi-Disc-Games-Tutorial/).
   * *ZIP* files will load all contained disk images, but if there is an *M3U* or *M3U8* file it will be used to index and load images from the *ZIP*. Hard disk images cannot be used from inside a *ZIP*.
+  * *ZST* is a renamed *ZIP* file. It does the same thing as the *ZIP* but the alternate extension lets you skip the "Load Archive" menu.
+  * *GZ* is a single file compressed in the *gzip* format. It can be used to contain any of the floppy disk formats.
   * *Load New Disk* can add additional disks while running, but has several caveats, especially regarding savestates. See [*Savestates*](#Savestates) section below.
   * The first two disks of an M3U list will be loaded into drive A and B at startup, but this can be overridden with `#BOOTA` or `#BOOTB`, see [*M3U* notes](#M3U-Playlists-and-Auto-Run) below.
   * Libretro only has an interface for one disk drive, but you can use the *Select* button to switch between whether the Disc Control menu currently shows drive A or drive B.
@@ -290,7 +292,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Hatari 2.5.0 update.
   * SDL2 2.30.2 update.
   * Raspberry Pi builds now have dlopen available for capsimg support.
-  * Multi-file ZIP support, also with M3U playlist inside.
+  * Multi-file ZIP/ZST support, also with M3U playlist inside.
   * Fixed incorrect "Failed to set last used disc..." RetroArch notification.
 * [hatariB v0.3](https://github.com/bbbradsmith/hatariB/releases/tag/0.3) - 2024-04-15
   * On-screen keyboard improvements:

@@ -14,7 +14,7 @@
 #define M3U_EXTENSIONS "m3u\0" "m3u8\0" "\0"
 #define DISK_EXTENSIONS "st\0" "msa\0" "dim\0" "stx\0" "ipf\0" "ctr\0" "raw\0" "\0"
 #define HD_EXTENSIONS "acsi\0" "ahd\0" "vhd\0" "scsi\0" "shd\0" "ide\0" "gem\0" "\0"
-#define ZIP_EXTENSIONS "zip\0" "\0"
+#define ZIP_EXTENSIONS "zip\0" "zst\0" "\0"
 #define GZ_EXTENSIONS "gz\0" "\0"
 #define STX_EXTENSIONS "stx\0" "\0"
 #define HD_ACSI_EXTENSIONS "acsi\0" "ahd\0" "vhd\0" "\0"
