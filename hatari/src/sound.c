@@ -148,6 +148,9 @@ const char Sound_fileid[] = "Hatari sound.c";
 #include "ymFormat.h"
 #include "avi_record.h"
 #include "clocks_timings.h"
+#ifdef __LIBRETRO__
+#include "drivesound.h"
+#endif
 
 
 
@@ -1843,6 +1846,10 @@ void Sound_Update(uint64_t CPU_Clock)
 		}
 		Sound_BufferIndexNeedReset = true;
 	}
+
+#ifdef __LIBRETRO__
+	DriveSound_Render(CPU_Clock, AudioMixBuffer, pos_write_prev, Samples_Nbr);
+#endif
 
 	/* Allow audio callback function to occur again */
 	Audio_Unlock();

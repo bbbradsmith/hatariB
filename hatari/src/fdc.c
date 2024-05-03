@@ -37,6 +37,9 @@ const char FDC_fileid[] = "Hatari fdc.c";
 #include "clocks_timings.h"
 #include "utils.h"
 #include "statusbar.h"
+#ifdef __LIBRETRO__
+#include "drivesound.h"
+#endif
 
 
 /*
@@ -954,6 +957,10 @@ void FDC_Reset ( bool bCold )
 
 	/* Also reset IPF emulation */
 	IPF_Reset( bCold );
+
+#ifdef __LIBRETRO__
+	DriveSound_Reset( CyclesGlobalClockCounter );
+#endif
 }
 
 
@@ -2206,6 +2213,10 @@ static int FDC_UpdateMotorStop ( void )
 	int	FdcCycles = 0;
 	int	FrameCycles, HblCounterVideo, LineCycles;
 
+	#ifdef __LIBRETRO__
+		DriveSound_Motor( CyclesGlobalClockCounter, FDC.DriveSelSignal, false );
+	#endif
+
 	/* Which command is running? */
 	switch (FDC.CommandState)
 	{
@@ -2303,6 +2314,9 @@ static int FDC_UpdateRestoreCmd ( void )
 			{
 				FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack--;	/* Move physical head only if an enabled drive is selected */
 				FDC_UpdateFloppyDensity ( FDC.DriveSelSignal , FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack , FDC.SideSignal );
+				#ifdef __LIBRETRO__
+					DriveSound_Track( CyclesGlobalClockCounter, FDC.DriveSelSignal, FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack, -1 );
+				#endif
 			}
 			FdcCycles = FDC_DelayToFdcCycles ( FDC_StepRate_ms[ FDC_STEP_RATE ] * 1000 );
 		}
@@ -2463,6 +2477,10 @@ static int FDC_UpdateSeekCmd ( void )
 					FDC_UpdateFloppyDensity ( FDC.DriveSelSignal , FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack , FDC.SideSignal );
 				}
 
+				#ifdef __LIBRETRO__
+					DriveSound_Track( CyclesGlobalClockCounter, FDC.DriveSelSignal, FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack, FDC.StepDirection );
+				#endif
+
 				if ( FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack == 0 )
 					FDC_Update_STR ( 0 , FDC_STR_BIT_TR00 );	/* Set bit TR00 */
 			}
@@ -2599,6 +2617,10 @@ static int FDC_UpdateStepCmd ( void )
 				FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack += FDC.StepDirection;	/* Move physical head */
 				FDC_UpdateFloppyDensity ( FDC.DriveSelSignal , FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack , FDC.SideSignal );
 			}
+
+			#ifdef __LIBRETRO__
+				DriveSound_Track( CyclesGlobalClockCounter, FDC.DriveSelSignal, FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack, FDC.StepDirection );
+			#endif
 
 			if ( FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack == 0 )
 				FDC_Update_STR ( 0 , FDC_STR_BIT_TR00 );	/* Set bit TR00 */
@@ -3440,6 +3462,10 @@ static bool FDC_Set_MotorON ( uint8_t FDC_CR )
 {
 	int	FrameCycles, HblCounterVideo, LineCycles;
 	bool	SpinUp;
+
+	#ifdef __LIBRETRO__
+		DriveSound_Motor( CyclesGlobalClockCounter, FDC.DriveSelSignal, true );
+	#endif
 
 	Video_GetPosition ( &FrameCycles , &HblCounterVideo , &LineCycles );
 

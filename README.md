@@ -352,6 +352,7 @@ This Libretro core was begun by [Brad Smith](https://github.com/bbbradsmith).
 
 Other contributors:
 * [DJM75](https://github.com/DJM75) - [Android build](https://github.com/bbbradsmith/hatariB/issues/26).
+* [NTxC](https://github.com/NTxC) - [Floppy drive sound](https://github.com/bbbradsmith/hatariB/issues/33).
 
 Incorporated works contributor documentation:
 * [Hatari](hatari/doc/authors.txt)

@@ -56,6 +56,9 @@ const char MemorySnapShot_fileid[] = "Hatari memorySnapShot.c";
 #include "falcon/videl.h"
 #include "statusbar.h"
 #include "hatari-glue.h"
+#ifdef __LIBRETRO__
+#include "drivesound.h"
+#endif
 
 
 #define VERSION_STRING      "2.5.0"   /* Version number of compatible memory snapshots - Always 6 bytes (inc' NULL) */
@@ -397,6 +400,10 @@ void MemorySnapShot_Capture_Do(void)
 		Cycles_MemorySnapShot_Capture(true);			/* Before fdc (for CyclesGlobalClockCounter) */
 	LIBRETRO_DEBUG_SNAPSHOT("FDC");
 		FDC_MemorySnapShot_Capture(true);
+#ifdef __LIBRETRO__
+	LIBRETRO_DEBUG_SNAPSHOT("DriveSound");
+		DriveSound_MemorySnapShot_Capture(true);
+#endif
 	LIBRETRO_DEBUG_SNAPSHOT("Floppy");
 		Floppy_MemorySnapShot_Capture(true);
 	LIBRETRO_DEBUG_SNAPSHOT("IPF");
@@ -519,6 +526,10 @@ void MemorySnapShot_Restore_Do(void)
 		Cycles_MemorySnapShot_Capture(false);			/* Before fdc (for CyclesGlobalClockCounter) */
 	LIBRETRO_DEBUG_SNAPSHOT("FDC");
 		FDC_MemorySnapShot_Capture(false);
+#ifdef __LIBRETRO__
+	LIBRETRO_DEBUG_SNAPSHOT("DriveSound");
+		DriveSound_MemorySnapShot_Capture(false);
+#endif
 	LIBRETRO_DEBUG_SNAPSHOT("Floppy");
 		Floppy_MemorySnapShot_Capture(false);
 	LIBRETRO_DEBUG_SNAPSHOT("IPF");

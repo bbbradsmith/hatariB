@@ -60,6 +60,9 @@ const char Main_fileid[] = "Hatari main.c";
 #include "debugui.h"
 #include "clocks_timings.h"
 #include "utils.h"
+#ifdef __LIBRETRO__
+#include "drivesound.h"
+#endif
 
 #include "hatari-glue.h"
 
@@ -815,6 +818,9 @@ static void Main_Init(void)
 
 	DSP_Init();
 	Floppy_Init();
+#ifdef __LIBRETRO__
+	DriveSound_Init();
+#endif
 	M68000_Init();                /* Init CPU emulation */
 	Audio_Init();
 	Keymap_Init();
@@ -867,6 +873,9 @@ static void Main_UnInit(void)
 {
 	Screen_ReturnFromFullScreen();
 	Floppy_UnInit();
+#ifdef __LIBRETRO__
+	DriveSound_UnInit();
+#endif
 	HDC_UnInit();
 	Ncr5380_UnInit();
 	Midi_UnInit();

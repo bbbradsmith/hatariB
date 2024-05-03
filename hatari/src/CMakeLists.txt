@@ -11,6 +11,9 @@ set(SOURCES
 	shortcut.c sound.c spec512.c statusbar.c str.c tos.c utils.c
 	vdi.c vme.c inffile.c video.c wavFormat.c xbios.c ymFormat.c lilo.c)
 
+# hatariB - drivesound
+set (SOURCES ${SOURCES} drivesound.c)
+
 if(EMSCRIPTEN)
 	set(SOURCES ${SOURCES} emscripten.js emscripten_shell.html)
 endif()
