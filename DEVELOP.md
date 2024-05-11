@@ -63,6 +63,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Removed platform-specific GUI dependencies.
   * Removed stand-alone executable build.
   * Added `core` library target to be linked with our Libretro core instead of a stand-alone executable.
+  * Added `drivesound.c` to `SOURCES`.
 * **hatari/tools/CMakeLists.txt**
   * Removed `hmsa` support tool build, which is unnecessary but also can't link with our changes to the `floppy` library.
 * **hatari/src/.vscode/c_cpp_properties.json**
@@ -110,6 +111,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
     * Remove `File_MakeAbsoluteSpecialName` path conversions, which modify the paths we provide directly. Since all file access is through our core's file system, absolute paths are inappropriate. This also prevents Hatari from making modifications to the paths which might have caused a reset check, disk re-insertion, etc. on options change.
   * Use standardized path length for snapshot of filenames.
   * Remove unsupported Lilo and DiskZip paths.
+  * Added `DriveSound` configuration.
 * **hatari/src/cycles.c**
   * Update counters before save or restore of state to prevent divergence.
 * **hatari/src/dialog.c**
@@ -117,9 +119,13 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
 * **hatari/src/dim.c**
   * Use core's file system to load floppy image.
   * Error notification for attempting to save DIM image (unsupported).
+* **hatari/src/drivesound.c**
+* **hatari/src/include/drivesound.h**
+  * Added to support floppy drive sounds.
 * **hatari/src/fdc.c**
 * **hatari/src/include/fdc.h**
   * Add `FDC_FloppyInsertRestore` to re-apply pulse index timing and disk change signal after savestate.
+  * Add hooks for added `drivesound`.
 * **hatari/src/file.c**
 * **hatari/src/include/file.h**
   * `File_QueryOverwrite` always returns true instead of checking a file. In all instances where this is used (savestates, floppy saves) we are using the core's file system and don't need to ensure this (usually writing to memory instead of a file when this is checked).
@@ -188,6 +194,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Include `core.h` in main header to provide global extern access to some core functions.
   * Disable log output requirement.
   * Use srand of 1 instead of taking current time.
+  * Add hooks for added `drivesound`.
 * **hatari/src/memorySnapShot.c**
 * **hatari/src/includes/memorySnapShot.h**
   * Disable compression of savestate data, Libretro does its own compression for save to disk, but also needs an uncompressed form for run-ahead or netplay to work.
@@ -198,6 +205,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Create inline MemorySnapShot_Store to accelerate savestate load and save.
   * Create inline MemorySnapShot_StoreFilename to store filenames of a standardized length.
   * Add error log for SNAPSHOT_MAGIC failure.
+  * Add hooks for added `drivesound`.
 * **hatari/src/midi.c**
   * Connect MIDI read and write to the core's MIDI interface, assume the host device is always open/available from Hatari's perspective.
 * **hatari/src/msa.c**
@@ -235,6 +243,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Deliver generated audio to core with `core_audio_update`.
   * Clear `YM2149_ConvertCycles_250.Cycles` after they're consumed to prevent state divergence during pause.
   * Add `YM2149_Freq_div_2` to save state to prevent divergence.
+  * Add hooks for added `drivesound`.
 * **hatari/src/st.c**
   * Use core's file system to load and save floppy image.
 * **hatari/src/statusbar.c**

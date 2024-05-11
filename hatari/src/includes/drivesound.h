@@ -8,6 +8,7 @@
 
 extern void	DriveSound_Init ( void );
 extern void	DriveSound_Reset ( uint64_t cycle );
+extern void DriveSound_Reconfigure ( void );
 extern void	DriveSound_UnInit ( void );
 extern void	DriveSound_MemorySnapShot_Capture ( bool bSave );
 extern void	DriveSound_Motor ( uint64_t cycle, int drive, bool on );

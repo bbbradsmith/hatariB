@@ -366,3 +366,6 @@ I would also like to acknowledge the prior work of libretro/hatari project:
 * [libretro/hatari](https://github.com/libretro/hatari)
 
 Though none of hatariB's code is directly borrowed from libretro/hatari (aside from our mutual use of Hatari), as a past contributor I had learned much from it. As an example to work from and compare against, it was a direct inspiration and source of ideas for hatariB.
+
+Other references:
+* [Video: Epson SMD-480L disk drive loading Atari ST game "Road Blasters"](https://www.youtube.com/watch?v=X_JCWWHKXIc) - Video by [Stefan Lindberg](http://www.ym2149.com/) demonstrating operation and sound of a drive loading an ST game, used as a direct reference for the floppy drive sound emulation.

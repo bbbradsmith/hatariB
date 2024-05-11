@@ -82,6 +82,10 @@ typedef struct
 #ifdef __LIBRETRO__
   int YmLpf;
   int YmHpf;
+  bool bEnableDriveSound;
+  bool bDriveSoundWav;    /* Use WAV files instead of synthesis */
+  int nDriveSoundMix;     /* 0-1000 proportion of DriveSound to ST Audio */
+  int nDriveSoundPan[2];  /* 0-1000 left to right panning of each drive */
 #endif  
 } CNF_SOUND;
 

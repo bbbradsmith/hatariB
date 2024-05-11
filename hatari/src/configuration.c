@@ -39,6 +39,9 @@ const char Configuration_fileid[] = "Hatari configuration.c";
 #include "stMemory.h"
 #include "tos.h"
 #include "screenSnapShot.h"
+#ifdef __LIBRETRO__
+#include "drivesound.h"
+#endif
 
 
 CNF_PARAMS ConfigureParams;                 /* List of configuration for the emulator */
@@ -327,6 +330,11 @@ static const struct Config_Tag configs_Sound[] =
 #ifdef __LIBRETRO__
 	{ "YmLpf", Int_Tag, &ConfigureParams.Sound.YmLpf },
 	{ "YmHpf", Int_Tag, &ConfigureParams.Sound.YmHpf },
+	{ "bEnableDriveSound", Bool_Tag, &ConfigureParams.Sound.bEnableDriveSound },
+	{ "bDriveSoundWav", Bool_Tag, &ConfigureParams.Sound.bDriveSoundWav },
+	{ "nDriveSoundMix", Int_Tag, &ConfigureParams.Sound.nDriveSoundMix },
+	{ "nDriveSoundPan0", Int_Tag, &ConfigureParams.Sound.nDriveSoundPan[0] },
+	{ "nDriveSoundPan1", Int_Tag, &ConfigureParams.Sound.nDriveSoundPan[1] },
 #endif
 	{ NULL , Error_Tag, NULL }
 };
@@ -819,6 +827,12 @@ void Configuration_SetDefault(void)
 	                 psWorkingDir, "hatari", "wav");
 	ConfigureParams.Sound.SdlAudioBufferSize = 0;
 	ConfigureParams.Sound.YmVolumeMixing = YM_TABLE_MIXING;
+#ifdef __LIBRETRO__
+	ConfigureParams.Sound.YmLpf = YM2149_LPF_FILTER_IIR;
+	ConfigureParams.Sound.YmHpf = YM2149_HPF_FILTER_IIR;
+	ConfigureParams.Sound.bEnableDriveSound = false;
+	ConfigureParams.Sound.nDriveSoundMix = 250;
+#endif
 
 	/* Set defaults for Rom */
 	File_MakePathBuf(ConfigureParams.Rom.szTosImageFileName,
@@ -887,8 +901,6 @@ void Configuration_SetDefault(void)
 	ConfigureParams.Screen.bLowResolutionDouble = 0;
 	ConfigureParams.Screen.bMedResolutionDouble = 1;
 	ConfigureParams.Screen.nCropOverscan = 2;
-	ConfigureParams.Sound.YmLpf = YM2149_LPF_FILTER_IIR;
-	ConfigureParams.Sound.YmHpf = YM2149_HPF_FILTER_IIR;
 	ConfigureParams.System.nBootCpuFreq = 8;
 	// override some of the defaults
 	ConfigureParams.Screen.nFrameSkips = 0;
@@ -975,6 +987,14 @@ void Configuration_Apply(bool bReset)
 	YM2149_HPF_Filter = ConfigureParams.Sound.YmHpf;
 #endif
 	Sound_SetYmVolumeMixing();
+
+#ifdef __LIBRETRO__
+	if ( ConfigureParams.Sound.nDriveSoundMix < 0 )
+		ConfigureParams.Sound.nDriveSoundMix = 0;
+	if ( ConfigureParams.Sound.nDriveSoundMix > 1000 )
+		ConfigureParams.Sound.nDriveSoundMix = 1000;
+	DriveSound_Reconfigure();
+#endif
 
 	/* Falcon : update clocks values if sound freq changed  */
 	if ( Config_IsMachineFalcon() )
