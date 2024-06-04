@@ -41,7 +41,9 @@ const char floppy_ipf_fileid[] = "Hatari floppy_ipf.c";
 #else
 
 // dynamically link with CAPSIMAGE library at runtime instead of implicitly linking it into the build
+#ifndef HAVE_CAPSIMAGE
 #define HAVE_CAPSIMAGE
+#endif
 
 #ifdef WIN32
 #include <windows.h>
