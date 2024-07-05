@@ -653,7 +653,6 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 			{"32000","32000 Hz"},
 			{"44100","44100 Hz"},
 			{"48000","48000 Hz"},
-			{"50066","55066 Hz"},
 			{NULL,NULL}
 		},"48000"
 	},
