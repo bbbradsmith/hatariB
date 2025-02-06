@@ -88,10 +88,10 @@ extern int core_file_mkdir_hard(const char* path);
 extern int core_file_rename(const char* old_path, const char* new_path);
 extern int core_file_rename_system(const char* old_path, const char* new_path);
 extern int core_file_rename_hard(const char* old_path, const char* new_path);
-extern int core_file_stat(const char* path, struct stat* fs);
+extern int core_file_stat(const char* path, struct stat* fs); // note st_size result is valid only for files <2GB
 extern int core_file_stat_system(const char* path, struct stat* fs);
 extern int core_file_stat_hard(const char* path, struct stat* fs);
-extern int64_t core_file_size(const char* path);
+extern int64_t core_file_size(const char* path); // slower than core_file_stat (temporarily opens file) but supports >2GB
 extern int64_t core_file_size_system(const char* path);
 extern int64_t core_file_size_hard(const char* path);
 extern coredir* core_file_opendir(const char* path);

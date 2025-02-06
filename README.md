@@ -294,6 +294,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Raspberry Pi builds now have dlopen available for capsimg support.
   * Multi-file ZIP/ZST support, also with M3U playlist inside.
   * Fixed incorrect "Failed to set last used disc..." RetroArch notification.
+  * Added support for hard disk images over 2GB in size.
 * [hatariB v0.3](https://github.com/bbbradsmith/hatariB/releases/tag/0.3) - 2024-04-15
   * On-screen keyboard improvements:
     * Can now hold the key continuously.

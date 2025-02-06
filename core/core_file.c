@@ -460,8 +460,7 @@ int core_file_remove(const char* path)
 
 	if (retro_vfs_version >= 3)
 	{
-		// RetroArch VFS will faill to remove directories on windows (1.15.0)
-		// but will probably be fixed in a later version.
+		// RetroArch VFS will faill to remove directories on windows on versions <= 1.15.0
 		// https://github.com/libretro/RetroArch/issues/15578
 		return retro_vfs->remove(path);
 	}
@@ -585,7 +584,7 @@ int core_file_stat(const char* path, struct stat* fs)
 			}
 			if (vst & RETRO_VFS_STAT_IS_CHARACTER_SPECIAL) fs->st_mode |= S_IFCHR; // not used but retro vfs has it
 			fs->st_size = (off_t)vsize;
-			// note that off_t is likely 32-bit, so we may have a 2GB boundary problem for very large hard disk images
+			// note that vsize is 32-bit, so st_size is be valid for files <2GB
 		}
 		return 0;
 	}
@@ -609,10 +608,27 @@ int core_file_stat_hard(const char* path, struct stat* fs)
 int64_t core_file_size(const char* path)
 {
 	CFD(retro_log(RETRO_LOG_DEBUG,"core_file_size('%s')\n",path));
-	struct stat fs;
-	if (0 == core_file_stat(path, &fs))
-		return fs.st_size;
-	return -1;
+	if (retro_vfs_version >= 3)
+	{
+		// note: retro vfs stat is limited to int32_t file size (<2GB)
+		// but as a workaround, we can temporarily open the file
+		// then use retro vfs size instead.
+		struct retro_vfs_file_handle* f = retro_vfs->open(path,RETRO_VFS_FILE_ACCESS_READ,0);
+		if (f)
+		{
+			int64_t fsize = retro_vfs->size(f);
+			retro_vfs->close(f);
+			return fsize;
+		}
+		return -1;
+	}
+	else
+	{
+		struct stat fs;
+		if (0 == core_file_stat(path, &fs))
+			return fs.st_size;
+		return -1;
+	}
 }
 
 int64_t core_file_size_system(const char* path)
