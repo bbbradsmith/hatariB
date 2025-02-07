@@ -105,12 +105,12 @@ int core_mouse_speed = 6; // 1-20 speed factor
 int core_mouse_dead = 5; // percentage of stick deadzone
 
 //
-// From Hatari
+// From Hatari/core
 //
 
-extern void Main_EventHandler(void);
-extern int Reset_Warm(void);
-extern int Reset_Cold(void);
+extern void Main_EventHandler(void); // main.c
+extern int Reset_Warm(void); // reset.c
+extern int core_reset_colder(void); // core.c
 
 //
 // translated SDL event queue
@@ -975,7 +975,7 @@ void core_input_update(void)
 
 	// perform reset
 	if (warm_boot && !AUX(WARM_BOOT)) Reset_Warm();
-	if (cold_boot && !AUX(COLD_BOOT)) Reset_Cold();
+	if (cold_boot && !AUX(COLD_BOOT)) core_reset_colder();
 	AUX_SET(warm_boot,WARM_BOOT);
 	AUX_SET(cold_boot,COLD_BOOT);
 
