@@ -980,14 +980,19 @@ extern void core_auto_start(const char* path);
 extern void core_auto_res(const char* res);
 void core_auto_start(const char* path)
 {
-	INF_SetAutoStart(path, OPT_AUTOSTART);
-	// needs a reset to apply
-	if (core_first_reset) Reset_Cold();
+	if (core_first_reset) // only allowed at first boot
+	{
+		INF_SetAutoStart(path, OPT_AUTOSTART);
+		Reset_Cold(); // applies via Cart_ResetImage()
+	}
 }
 void core_auto_res(const char* res)
 {
-	INF_SetResolution(res, OPT_TOS_RESOLUTION);
-	if (core_first_reset) Reset_Cold();
+	if (core_first_reset) // only allowed at first boot
+	{
+		INF_SetResolution(res, OPT_TOS_RESOLUTION);
+		Reset_Cold(); // applies via Cart_ResetImage()
+	}
 }
 #endif
 
