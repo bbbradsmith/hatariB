@@ -196,18 +196,20 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Using more than one permanent hard disk image at a time is unsupported, though a single image can have multiple partitions with individual drive letters. An M3U can be used for multiple temporary hard disks.
   * If you need an easy way to switch between permanent hard disk configurations, you could create a "boot" floppy disk to go along with the hard disk, and use *Manage Core Options > Save Game Options* to create a settings override associated with that floppy.
   * See [Hatari's Manual: Hard Disk Support](https://hatari.tuxfamily.org/doc/manual.html#Hard_disk_support) for further information.
-### M3U playlists and Auto-Run
+### M3U playlists and TOS 1.04 Auto-Run
   * M3U playlists can be used to specify a collection of disk images, accessible via *Disc Control* in the *Quick Menu* of RetroArch.
   * Each line of the M3U is the filename of a disk image, relative to the M3U file.
   * A line starting with `#` will normally be ignored, allowing you to write a comment on the rest of that line, if needed.
   * The first 2 disk images will be loaded into drives A and B when the content is opened, but this behaviour can be overridden.
     * A temporary hard disk image can also be listed in the M3U. Place hard disks after any floppy disk mages.
-  * `#AUTO:filename` can be used to automatically run a TOS file at boot. This is the same as [Hatari's --auto command line option](https://hatari.tuxfamily.org/doc/manual.html#General_options). **TOS 1.04** or later is required to use this feature. Example: `#AUTO:C:\GAMES\JOUST.PRG`
   * `#BOOTA:number` can be used to select an image from the list to insert into drive A at boot. 1 is the first image in the list. 0 will leave the drive empty.
   * `#BOOTB:number` selects the image for drive B at boot.
-  * If using the `#AUTO`/`#BOOTA`/`#BOOTB` features, technically `#EXTM3U` should be added as the first line of the M3U to indicate this is an [Extended M3U](https://en.wikipedia.org/wiki/M3U#Extended_M3U), but hatariB will not enforce this.
+  * `#AUTO:filename` **TOS 1.04+ only**: Automatically run a TOS file at boot. This is the same as [Hatari's --auto command line option](https://hatari.tuxfamily.org/doc/manual.html#General_options).  or later is required to use this feature. Example: `#AUTO:C:\GAMES\JOUST.PRG`
+  * `#RES:res` **TOS 1.04+ only**: Automatically set the TOS resolution at boot. Valid values are `low`, `med`, `high`, `ttlow`, `ttmed`. Normally only needed in combination with `#AUTO` because it overrides the desktop `INF` file on the disk. This is the same as [Hatari's --tos-res command line option](https://hatari.tuxfamily.org/doc/manual.html#General_options). Example: `#RES:med`
+  * If using the `#BOOTA`/`#BOOTB`/`#AUTO`/`#RES` features, technically `#EXTM3U` should be added as the first line of the M3U to indicate this is an [Extended M3U](https://en.wikipedia.org/wiki/M3U#Extended_M3U), but hatariB will not enforce this.
   * *Manage Core Options > Save Game Options* can be used to associate other core options with an M3U playlist.
-* Saving:
+  * For games that don't need the GEM desktop, even without TOS 1.04 you may be able to create an auto-run floppy by creating an `AUTO` folder on the disk and moving the PRG inside. See this article: [Compute! July 1987: Medium-Resolution Autorun](https://www.atarimagazines.com/compute/issue86/057_1_Medium-Resolution_Autorun.php)
+### Saving
   * When a modified floppy disk is ejected, or the core is closed, a modified copy of that disk image will be written to the *saves/* folder.
   * Whenever a new floppy disk is added (*Load Content*, or *Load New Disk*), the saved copy will be substituted for the original if it exists. (Also, if you want to return to the original disk, you can delete it from *saves/*.)
   * If the *System > Save Floppy Disks* core option is disabled, only the original copy of the file will be used, and the *saves/* folder will not be accessed. However, the modified disk images will still persist in memory for the duration of the session, until you close the content.
@@ -222,7 +224,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * *IPF* and *CTR* format disks cannot be saved by Hatari.
   * Hard Disk folders or images in *system/* will be written to directly when they are modified.
   * The TT and Falcon machines have a small non-volatile RAM (NVRAM) that stores system settings. This is saved to **system/hatarib.nvram** when the content is closed.
-* TOS ROMs:
+### TOS ROMs
   * The TOS ROM can be chosen in the core option *Sstem > TOS ROM*.
   * The default TOS ROM is **system/tos.img**, but *[EmuTOS](https://emutos.sourceforge.io/)* is provided built-in as a free substitute.
   * Additional TOS ROMs can be supplied in **system/hatarib/**, up to a limit of 100 files.
@@ -231,6 +233,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * *EmuTOS 192uk* may be slightly more compatible with *ST* software, but provides fewer features. With a colour monitor it starts up in 50hz. This was chosen as a default for the greatest compatibility with games.
   * *EmuTOS 192us* is similar to *192uk* but instead starts in 60hz.
   * Most other TOS files are only compatible with certain machines.
+  * The `#AUTO` and `#RES` M3U file features can only be used with TOS version 1.04 or higher, or EMUTOS.
 ### On-Screen Keyboard
   * An on-screen keyboard can be used to simulate using the Atari's keyboard from your gamepad.
   * Press *L1* to raise the on-screen keyboard, select a key with the d-pad, and press *L1* again to press the key. Press *R1* to close the keyboard.
@@ -238,10 +241,10 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * To alternate between a top and bottom keyboard position, press *X*.
   * Modifier keys like *Shift*, *Control*, *Alt* are toggled instead of a single press, allowing you to hold the modifier while you press another key. When you close the keyboard, all modifiers will be released.
   * The keyboard language layout can be chosen in the *Input > On-Screen Keyboard Language* core option. This should usually be chosen to match your TOS region.
-* MIDI:
+### MIDI
   * Libretro has a MIDI interface, and if you have MIDI devices installed you should be able to select them in the *Settings > Audio > MIDI* menu of RetroArch.
   * The [MUNT MT-32 Emulator](url=https://sourceforge.net/projects/munt/) is recommended. It can install on your system as a MIDI device, which you can use with MT-32 supporting Atari ST games.
-* Accuracy:
+### Accuracy
   * Some of the default core options are chosen to favour faster load times, but these can be adjusted:
     * *System > Fast Floppy* gives artificially faster disk access, on by default.
     * *System > Patch TOS for Fast Boot* modifies known TOS images to boot faster, on by default.
@@ -295,6 +298,8 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Multi-file ZIP/ZST support, also with M3U playlist inside.
   * Fixed incorrect "Failed to set last used disc..." RetroArch notification.
   * Added support for hard disk images over 2GB in size.
+  * M3U can be used to set resolution at boot (TOS 1.04+).
+  * Fixed `_stprintf` build issue with MinGW64 compiler update.
 * [hatariB v0.3](https://github.com/bbbradsmith/hatariB/releases/tag/0.3) - 2024-04-15
   * On-screen keyboard improvements:
     * Can now hold the key continuously.
@@ -312,7 +317,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Resolution doubling settings now work for TT and Falcon.
   * Border cropping settings now apply to Falcon.
   * Hard disk images can be loaded as content.
-  * M3U can be used to auto-run a program at boot.
+  * M3U can be used to auto-run a program at boot (TOS 1.04+).
   * Fixes to savestates on non-Windows platforms.
   * Attempting to make savestates as cross-platform compatible as possible.
   * Option to disable boot notification.

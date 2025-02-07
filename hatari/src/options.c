@@ -977,10 +977,16 @@ bool Opt_IsAtariProgram(const char *path)
 extern int Reset_Cold(void);
 extern bool core_first_reset;
 extern void core_auto_start(const char* path);
+extern void core_auto_res(const char* res);
 void core_auto_start(const char* path)
 {
 	INF_SetAutoStart(path, OPT_AUTOSTART);
 	// needs a reset to apply
+	if (core_first_reset) Reset_Cold();
+}
+void core_auto_res(const char* res)
+{
+	INF_SetResolution(res, OPT_TOS_RESOLUTION);
 	if (core_first_reset) Reset_Cold();
 }
 #endif

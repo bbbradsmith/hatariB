@@ -60,6 +60,7 @@ extern const char* core_floppy_inserted(int drive);
 extern void core_floppy_changed(int drive);
 // options.c
 extern void core_auto_start(const char* path);
+extern void core_auto_res(const char* res);
 
 //
 // Utilities
@@ -344,6 +345,12 @@ static bool load_m3u(uint8_t* data, unsigned int size, const char* m3u_path, uns
 				const char* auto_start = line+6;
 				while (*auto_start == ' ' || *auto_start == '\t') ++auto_start; // skip leading whitespace
 				core_auto_start(auto_start);
+			}
+			else if (lp != 0 && !strncasecmp(line,"#RES:",5)) // EXTM3U RES directive passed to Hatari --tos-res parameter.
+			{
+				const char* auto_res = line+5;
+				while (*auto_res == ' ' || *auto_res == '\t') ++auto_res; // skip leading whitespace
+				core_auto_res(auto_res);
 			}
 			else if (lp != 0 && (!strncasecmp(line,"#BOOTA:",7) || !strncasecmp(line,"#BOOTB:",7))) // EXTM3U BOOTA/BOOTB directive
 			{
