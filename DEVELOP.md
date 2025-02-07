@@ -259,6 +259,11 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * `PendingCyclesOver` unread variable warning.
 * **hatari/src/zip.c**
   * Disable use of `unzOpen` which was modified (see: unzip.c) and not needed by this core.
+* **hatari/src/cpu/debug.c**
+* **hatari/src/cpu/disasm.c**
+* **hatari/src/cpu/fpp_native.c**
+* **hatari/src/cpu/fpp_softfloat.c**
+  * Added [a workaround](https://github.com/bbbradsmith/hatariB/commit/846ee699c5b75f0cbd64dbfdfdfc6dc6450b0b01) for MinGW UCRT64 `_stprintf` incompatibility, replacing it with `sprintf`. This seems to be an issue in GCC 14.2.0 but I found [a mailing list thread](https://sourceforge.net/p/mingw-w64/mailman/mingw-w64-public/thread/20240927231145.24708-1-pali.rohar%40gmail.com/) that seemed to be addressing it, so hopefully this can be removed with a later compiler version.
 * **hatari/src/cpu/hatari-glue.c**
   * Added `core_save_state`, `core_restore_state` and `core_flush_audio` to facilitate seamless savestates.
 * **hatari/src/cpu/memory.c**
