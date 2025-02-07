@@ -12,6 +12,14 @@
 #include "disasm.h"
 #include "profile.h"
 
+#ifdef __LIBRETRO__
+// _stprintf has incompatibility in MSYS2 MINGW64 UCRT64 as of 2024-02-06 (GCC 14.2.0)
+#ifdef __MINGW64__
+#undef _stprintf
+#define _stprintf sprintf
+#endif
+#endif
+
 int disasm_flags = DISASM_FLAG_LC_MNEMO | DISASM_FLAG_LC_REG | DISASM_FLAG_LC_SIZE | DISASM_FLAG_LC_HEX |
 	DISASM_FLAG_CC | DISASM_FLAG_EA | DISASM_FLAG_VAL | DISASM_FLAG_WORDS | DISASM_FLAG_ABSSHORTLONG;
 int disasm_min_words = 5;

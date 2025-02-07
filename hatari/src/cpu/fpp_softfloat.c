@@ -37,6 +37,14 @@
 #include "softfloat/softfloat-macros.h"
 #include "softfloat/softfloat-specialize.h"
 
+#ifdef __LIBRETRO__
+// _stprintf has incompatibility in MSYS2 MINGW64 UCRT64 as of 2024-02-06 (GCC 14.2.0)
+#ifdef __MINGW64__
+#undef _stprintf
+#define _stprintf sprintf
+#endif
+#endif
+
 #define	FPCR_ROUNDING_MODE	0x00000030
 #define	FPCR_ROUND_NEAR		0x00000000
 #define	FPCR_ROUND_ZERO		0x00000010

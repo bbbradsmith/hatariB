@@ -33,6 +33,14 @@
 #include "uae/vm.h"
 #include "newcpu.h"
 
+#ifdef __LIBRETRO__
+// _stprintf has incompatibility in MSYS2 MINGW64 UCRT64 as of 2024-02-06 (GCC 14.2.0)
+#ifdef __MINGW64__
+#undef _stprintf
+#define _stprintf sprintf
+#endif
+#endif
+
 #ifdef JIT
 uae_u32 xhex_exp_1[] ={0xa2bb4a9a, 0xadf85458, 0x4000};
 uae_u32 xhex_ln_10[] ={0xaaa8ac17, 0x935d8ddd, 0x4000};

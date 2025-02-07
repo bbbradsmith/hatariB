@@ -64,6 +64,14 @@
 #include "scc.h"
 #endif
 
+#ifdef __LIBRETRO__
+// _stprintf has incompatibility in MSYS2 MINGW64 UCRT64 as of 2024-02-06 (GCC 14.2.0)
+#ifdef __MINGW64__
+#undef _stprintf
+#define _stprintf sprintf
+#endif
+#endif
+
 
 #ifdef JIT
 #include "jit/compemu.h"
