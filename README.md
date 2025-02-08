@@ -27,6 +27,8 @@ Emulator: [Hatari 2.5.0](https://git.tuxfamily.org/hatari/hatari.git/tag/?id=v2.
 
 Development notes: [DEVELOP.md](DEVELOP.md)
 
+Useful files and information: [extras/](extras/#Extras)
+
 ## Table of Contents
 
 * [Installation](#Installation)
@@ -38,8 +40,12 @@ Development notes: [DEVELOP.md](DEVELOP.md)
   * [Controls](#Controls)
   * [File formats](#File-Formats)
   * [Hard Disks](#Hard-Disks)
-  * [M3U playlists and Auto-Run](#M3U-Playlists-and-Auto-Run)
+  * [M3U Playlists and Auto-Run](#M3U-Playlists-and-Auto-Run)
+  * [Saving](#Saving)
+  * [TOS ROMs](#TOS-ROMs)
   * [On-Screen Keyboard](#On-Screen-Keyboard)
+  * [MIDI](#MIDI)
+  * [Accuracy](#Accuracy)
   * [Savestates](#Savestates)
   * [Netplay](#Netplay)
   * [Unsupported Features](#Unsupported-Features)
@@ -173,7 +179,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * *ZST* is a renamed *ZIP* file. It does the same thing as the *ZIP* but the alternate extension lets you skip the "Load Archive" menu.
   * *GZ* is a single file compressed in the *gzip* format. It can be used to contain any of the floppy disk formats.
   * *Load New Disk* can add additional disks while running, but has several caveats, especially regarding savestates. See [*Savestates*](#Savestates) section below.
-  * The first two disks of an M3U list will be loaded into drive A and B at startup, but this can be overridden with `#BOOTA` or `#BOOTB`, see [*M3U* notes](#M3U-Playlists-and-Auto-Run) below.
+  * The first two disks of an M3U list will be loaded into drive A and B at startup, but this can be overridden with `#BOOTA` or `#BOOTB`, see [*M3U* notes](#M3U-playlists-and-Auto-Run) below.
   * Libretro only has an interface for one disk drive, but you can use the *Select* button to switch between whether the Disc Control menu currently shows drive A or drive B.
   * *IPF* and *CTR* formats are only available with the addition of the `capsimg` support libraray. See [Installation](#Installation) for more information.
 ### Hard Disks
@@ -196,7 +202,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Using more than one permanent hard disk image at a time is unsupported, though a single image can have multiple partitions with individual drive letters. An M3U can be used for multiple temporary hard disks.
   * If you need an easy way to switch between permanent hard disk configurations, you could create a "boot" floppy disk to go along with the hard disk, and use *Manage Core Options > Save Game Options* to create a settings override associated with that floppy.
   * See [Hatari's Manual: Hard Disk Support](https://hatari.tuxfamily.org/doc/manual.html#Hard_disk_support) for further information.
-### M3U playlists and TOS 1.04 Auto-Run
+### M3U Playlists and Auto-Run
   * M3U playlists can be used to specify a collection of disk images, accessible via *Disc Control* in the *Quick Menu* of RetroArch.
   * Each line of the M3U is the filename of a disk image, relative to the M3U file.
   * A line starting with `#` will normally be ignored, allowing you to write a comment on the rest of that line, if needed.
@@ -204,18 +210,19 @@ See [DEVELOP.md](DEVELOP.md) for more details.
     * A temporary hard disk image can also be listed in the M3U. Place hard disks after any floppy disk mages.
   * `#BOOTA:number` can be used to select an image from the list to insert into drive A at boot. 1 is the first image in the list. 0 will leave the drive empty.
   * `#BOOTB:number` selects the image for drive B at boot.
-  * `#AUTO:filename` **TOS 1.04+ only**: Automatically run a TOS file at boot. [Some games](https://github.com/bbbradsmith/hatariB/issues/54#issuecomment-2642024539) may be incompatible with this feature. This is the same as [Hatari's --auto command line option](https://hatari.tuxfamily.org/doc/manual.html#General_options).  or later is required to use this feature. Example: `#AUTO:C:\GAMES\JOUST.PRG`
-  * `#RES:res` **TOS 1.04+ only**: Automatically set the TOS resolution at boot. Valid values are `low`, `med`, `high`, `ttlow`, `ttmed`. Normally only needed in combination with `#AUTO` because it overrides the desktop `INF` file on the disk. This is the same as [Hatari's --tos-res command line option](https://hatari.tuxfamily.org/doc/manual.html#General_options). Example: `#RES:med`
+  * `#AUTO:filename` **TOS 1.04+ only**: Automatically run a TOS file at boot. **Not all games are compatible with this feature** and may crash on boot (eg. [1](https://github.com/bbbradsmith/hatariB/issues/54), [2](https://github.com/bbbradsmith/hatariB/issues/60)). For many games it is a better solution to create an `AUTO` folder on the disk, see note below. This feature is the same as [Hatari's --auto command line option](https://hatari.tuxfamily.org/doc/manual.html#General_options), so if you find an incompatible game, please test [Hatari stand-alone](https://hatari.tuxfamily.org/download.html) first. If the crash is in Hatari too, please send the issue to Hatari and not to me. Example: `#AUTO:C:\GAMES\JOUST.PRG`
+  * `#RES:res` **TOS 1.04+ only**: Automatically set the TOS resolution at boot. Valid values are `low`, `med`, `high`, `ttlow`, `ttmed`. Normally only needed in combination with `#AUTO` for medium resolution games, because it overrides the desktop `INF` file on the disk. This is the same as [Hatari's --tos-res command line option](https://hatari.tuxfamily.org/doc/manual.html#General_options). Example: `#RES:med`
   * If using the `#BOOTA`/`#BOOTB`/`#AUTO`/`#RES` features, technically `#EXTM3U` should be added as the first line of the M3U to indicate this is an [Extended M3U](https://en.wikipedia.org/wiki/M3U#Extended_M3U), but hatariB will not enforce this.
   * *Manage Core Options > Save Game Options* can be used to associate other core options with an M3U playlist.
-  * For games that don't need the GEM desktop, even without TOS 1.04 you may be able to make an auto-run floppy by creating an `AUTO` folder on the disk and moving the PRG inside. See this article: [Compute! July 1987: Medium-Resolution Autorun](https://www.atarimagazines.com/compute/issue86/057_1_Medium-Resolution_Autorun.php)
+  * **Auto-start for all TOS versions**: Many games can be auto-started on the ST simply by creating an `AUTO` folder on the floppy disk, and moving the PRG/TOS inside. This is a built-in feature of all versions of TOS, but not all games are compatible. For more information:
+    * [Auto-Run](extras/#Auto-Run)
 ### Saving
   * When a modified floppy disk is ejected, or the core is closed, a modified copy of that disk image will be written to the *saves/* folder.
   * Whenever a new floppy disk is added (*Load Content*, or *Load New Disk*), the saved copy will be substituted for the original if it exists. (Also, if you want to return to the original disk, you can delete it from *saves/*.)
   * If the *System > Save Floppy Disks* core option is disabled, only the original copy of the file will be used, and the *saves/* folder will not be accessed. However, the modified disk images will still persist in memory for the duration of the session, until you close the content.
   * Only the two currently inserted disks are included in savestates. If there are other disks in your loaded collection, they may take on their most recent version from the *saves/* folder next time you open this content. A savestate will not be able to restore them to an earlier version.
   * Floppy disks in *saves/* must have a unique filename. Try not to use generic names like *savedisk.st*, and instead include the game title in its filename. (Even if contained within a *ZIP* the save disk filename should be unique.)
-  * If possible, it is recommended that save disks for games use the *ST* format, because it is the simplest and least error prone format. You can download a prepared blank disk here: **[blank.st](../../raw/main/blank.st)**.
+  * If possible, it is recommended that save disks for games use the *ST* format, because it is the simplest and least error prone format. You can download a prepared blank disk here: **[blank.st](../../raw/main/extras/blank.st)**.
   * The images written to *saves/* will be standard Atari ST image formats, and you should be able to load them in other emulators if you wish.
   * Note that Hatari is not able to simulate the formatting of a blank disk in-emulator. The [stand-alone version of Hatari](https://hatari.tuxfamily.org/download.html) has a utility in its menu that can be used to create a blank ST file. A different Atari ST emulator [Steem.SSE](https://sourceforge.net/projects/steemsse/) can simulate the formatting process.
   * In the core options *Advanced > Write Protect Floppy Disks* will act as if all inserted disks have their write protect tab open. This means the emulated operating system will refuse to write any further data to the disk, and will report the error. This is independent of the save feature, and can be turned on and off at will. Turning it on after a disk is modified will not prevent previous modifications from being saved when it is ejected.
@@ -284,7 +291,6 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * You can use *Load New Disk* or *M3U* playlists to load the same floppy multiple times, or multiple floppies with the same name. This mostly works okay, but a savestate restore might be unable to identify which of them was actually inserted.
   * If *IPF* support is enabled, an *M3U* playlist can also be used to load the *RAW* format supported by that library. I kept it out of the associated file types list because I have not yet encountered dumps in this format.
   * The *Advanced > CPU Clock Rate* core option is only applied at boot/reset, but you can *CPU Speed* to a gamepad button in the *RetroPad* core options to change it while running.
-  * Because this core has keyboard control support, when a game is started in a window RetroArch seems to have a bug that restricts the mouse to the current monitor. You can click off the window or Alt+Tab to get away. (The bug may have something to do with failing to "ungrab" the mouse in response to game focus being turned off at game launch? Not sure.)
 
 ## History
 

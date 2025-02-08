@@ -1,0 +1,8 @@
+***************************************************************************
+This is a new version of STARTGEM.PRG.  It auto runs any program of your
+choice.  This version works with the new MEGA/BLITTER roms and older 1040
+& 520 roms.  Place it in your AUTO folder.  Then place a file called
+STARTGEM.INF in your root directory (in your boot disk) that reads the name
+of the file to execute with its path, "A:\1STWORD.PRG" or such...
+***************************************************************************
+
