@@ -29,6 +29,8 @@ In many cases you can simply create an `AUTO` folder on your floppy disk, and th
 
 Some programs are not compatible with the AUTO folder, and may crash, or simply not run. There are alternative solutions to some of these compatibility problems.
 
+Please note that only `.ST` image file or other standard uncompressed image formats can be modified. `.STX` and `.IPF` are preservation formats that are not modifyable.
+
 #### DESKTOP.INF
 
 If the AUTO folder does not work, know that all TOS versions can save a desktop layout that is applied at startup. You simply have to open the folder windows, and arrange them as you would like to see them, and then go to `Options > Save Desktop` to save it to disk.
@@ -71,11 +73,13 @@ AUTO folder files are run in their natural disk order, which is normally the sam
 
 Some games will crash, or otherwise not successfully auto-run with any of the methods given above. Your best option may be to [save the Desktop](#DESKTOP.INF) as described above to make opening the game as convenient as you can manage.
 
-If you can't get a game to auto-run, please don't submit a bug report to me until you have already tried the equivalent in [stand-alone Hatari]((https://hatari.tuxfamily.org/download.html)). If they only fail in hatariB, but work in Hatari 2.5.0, then it is an issue that I may try to address. Otherwise, please submit your bug reports to [Hatari](https://hatari.tuxfamily.org/) directly. Thank you.
+If you can't get a game to auto-run, please don't submit a bug report to me until you have already tried the equivalent in [stand-alone Hatari]((https://hatari.tuxfamily.org/download.html)). If they only fail in hatariB, but work in Hatari 2.5.0, then it is an issue that I can try to address.
+
+However, it it fails in Hatari stand-alone it could also just be that the game is incompatible with that auto-run method, and it may not be considered an emulation bug at all. Nevertheless, if you wish to report an issue like this as a bug, please submit it to [Hatari](https://hatari.tuxfamily.org/) directly. Thank you.
 
 ### Links
 
   * [Hatari](https://hatari.tuxfamily.org/) / [User Manual](https://hatari.tuxfamily.org/doc/manual.html) - The emulator that hatariB is built on.
   * [EmuTOS](https://emutos.sourceforge.io/) / [User Manual](https://emutos.github.io/manual/) - The free TOS included with hatariB.
   * [SPS Downloads](http://www.softpres.org/download) - **capsimg 5.1** can be downloaded here, for using **IPF** files. (More info: [Installation](../#Installation))
-  * [MUNT MT-32 Emulator](url=https://sourceforge.net/projects/munt/) - Simulates the Roland MT-32 MIDI sound device.
+  * [MUNT MT-32 Emulator](https://sourceforge.net/projects/munt/) - Simulates the Roland MT-32 MIDI sound device.
