@@ -235,12 +235,16 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * The TOS ROM can be chosen in the core option *Sstem > TOS ROM*.
   * The default TOS ROM is **system/tos.img**, but *[EmuTOS](https://emutos.sourceforge.io/)* is provided built-in as a free substitute.
   * Additional TOS ROMs can be supplied in **system/hatarib/**, up to a limit of 100 files.
-  * *EmuTOS* is compatible with most software, but not all. In most incompatibility cases it will show a "Panic" message at boot.
+  * *EmuTOS* is compatible with most software, but not all. In most incompatibility cases it will show a "Panic" message at boot. Games that do not auto-run will tediously start up in low resolution with all windows closed. See [Quirks](#Quirks) below for information and suggestions about this.
   * *EmuTOS 1024k* has a full feature set, and univeral support for all emulated machine types.
   * *EmuTOS 192uk* may be slightly more compatible with *ST* software, but provides fewer features. With a colour monitor it starts up in 50hz. This was chosen as a default for the greatest compatibility with games.
   * *EmuTOS 192us* is similar to *192uk* but instead starts in 60hz.
   * Most other TOS files are only compatible with certain machines.
   * The `#AUTO` and `#RES` M3U file features can only be used with TOS version 1.04 or higher, or EMUTOS.
+  * Recommendations:
+    * **TOS 1.00** for best compatibility with preserved Atari ST floppy disk games. There are a small minority of games that only run on 1.00, and an even smaller minority that don't run on 1.00. **European TOS** is generally recommended, since more games were released for 50hz regions than 60hz, though a lot of games will set the ST to their intended framerate anyway, so it usually doesn't matter.
+	* **TOS 1.04** for ST games from a hard disk image. 1.04 has much better support for hard disks, and games that were patched for hard disk would normally have any incompatibilities with later TOS patched at the same time.
+	* **EmuTOS 1024k** for productivity. It has built-in hard disk drivers, and a lot of features that make dealing with the desktop environment a little easier. It is compatible with most games, too, but not as much as the original TOS versions are.
 ### On-Screen Keyboard
   * An on-screen keyboard can be used to simulate using the Atari's keyboard from your gamepad.
   * Press *L1* to raise the on-screen keyboard, select a key with the d-pad, and press *L1* again to press the key. Press *R1* to close the keyboard.
@@ -284,6 +288,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * [Host keyboard remapping](https://github.com/bbbradsmith/hatariB/issues/21)
   * [Falcon microphone](https://github.com/bbbradsmith/hatariB/issues/20)
 ### Quirks
+  * Using EmuTOS, if a game program is not auto-run, it can't read the TOS `DESKTOP.INF` which normally sets the correct resolution and opens a window with the intended program ready to double-click on. If there disk is writable you can set up the resolution/window yourself then go to `Options > Save Desktop` to save `EMUDESK.INF` which will remember the equivalent settings for EmuTOS. Alternatively, you might be able to create an [M3U file with #AUTO](#M3U-Playlists-and-Auto-Run) to automatically start the program.
   * If the on-screen keyboard confirm/cancel buttons aren't mapped to dedicated buttons, you might end up suddenly holding the underlying button when the keyboard closes. (Inputs from buttons mapped to the on-screen keyboard are suppressed while it remains open.)
   * Though the on-screen keyboard is available in [several language layouts](https://tho-otto.de/keyboards/), for your physical keyboard there aren't any direct configuration options, currently. RetroArch ignores the OS keyboard layout, and [all keys report as-if in US layout](https://github.com/libretro/RetroArch/issues/13838) (e.g. German Z reports as RETROK_y). Because of this, if you pick a TOS that matches your keyboard language, the mappings are likely to be mostly compatible. Otherwise, if you need finer control of the mapping, RetroArch's *Input* settings can be used to remap individual keys.
   * The *Floppy Disk List* pause screen can only display a limited subset of unicode characters, due to Hatari's UI font. They can still be viewed through RetroArch's *Disk Control* menu when the selected drive is ejected.
