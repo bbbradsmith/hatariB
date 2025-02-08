@@ -75,7 +75,7 @@ Some games will crash, or otherwise not successfully auto-run with any of the me
 
 If you can't get a game to auto-run, please don't submit a bug report to me until you have already tried the equivalent in [stand-alone Hatari]((https://hatari.tuxfamily.org/download.html)). If they only fail in hatariB, but work in Hatari 2.5.0, then it is an issue that I can try to address.
 
-However, it it fails in Hatari stand-alone it could also just be that the game is incompatible with that auto-run method, and it may not be considered an emulation bug at all. Nevertheless, if you wish to report an issue like this as a bug, please submit it to [Hatari](https://hatari.tuxfamily.org/) directly. Thank you.
+However, if it fails in Hatari stand-alone it could also just be that the game is incompatible with that auto-run method, and it may not be considered an emulation bug at all. Nevertheless, if you wish to report it as a bug, and the failure occurs in stand-alone Hatari, please contact the [Hatari](https://hatari.tuxfamily.org/) project instead of me. Thank you.
 
 ### Links
 
