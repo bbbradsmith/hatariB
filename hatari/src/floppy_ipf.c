@@ -416,7 +416,7 @@ void IPF_MemorySnapShot_Capture(bool bSave)
 		{
 			if (!core_ipf_ready())
 			{
-				core_error_msg("Savestate used IPF which is unavailable here.");
+				core_error_printf("Savestate used IPF which is unavailable here.\n");
 				MemorySnapShot_Store(&StructSize, sizeof(StructSize));
 				MemorySnapShot_Skip( StructSize );
 				return;
@@ -697,17 +697,17 @@ static bool core_ipf_load(void)
 #else
 #ifdef HAVE_DLOPEN
 	capsHandle = dlopen(CAPS_SONAME, RTLD_NOW);
-	if (!capsHandle) core_error_msg(dlerror());
+	if (!capsHandle) core_error_printf("%s\n",dlerror());
 #else
-	core_error_msg("dlopen unavailable");
+	core_error_printf("dlopen unavailable\n");
 #endif
 #endif
 	if (capsHandle == NULL)
 	{
-		core_error_msg(CAPS_SONAME " could not be loaded.");
+		core_error_printf(CAPS_SONAME " could not be loaded.\n");
 		return false;
 	}
-	core_info_msg(CAPS_SONAME " loaded.");
+	core_info_printf(CAPS_SONAME " loaded.\n");
 	for (int i=0; i<CAPSIMPORT_COUNT; ++i)
 	{
 		*CAPSIMPORT[i].funcptr = 
@@ -722,11 +722,11 @@ static bool core_ipf_load(void)
 #endif
 		if (*CAPSIMPORT[i].funcptr == NULL)
 		{
-			core_error_msg(CAPSIMPORT[i].funcname);
-			core_error_msg(CAPS_SONAME " missing function.");
+			core_error_printf("%s\n",CAPSIMPORT[i].funcname);
+			core_error_printf(CAPS_SONAME " missing function.\n");
 			return false;
 		}
-		core_debug_msg(CAPSIMPORT[i].funcname);
+		core_debug_printf("%s\n",CAPSIMPORT[i].funcname);
 	}
 
 	// DLL and needed functions are now loaded

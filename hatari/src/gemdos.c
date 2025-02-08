@@ -695,8 +695,8 @@ static int core_scandir_hard(const char *dirname, struct dirent ***namelist,
 	}
 	if (core_file_readdir(dir) != NULL || real_count != count)
 	{
-		core_error_msg(dirname);
-		core_error_msg("GemDOS directory contents changed during scandir.");
+		core_error_printf("GemDOS dir: %s\n",dirname);
+		core_error_printf("GemDOS directory contents changed during scandir.\n");
 	}
 	core_file_closedir(dir);
 	for (unsigned int i=real_count; i<count; ++i)
@@ -840,7 +840,7 @@ void GemDOS_InitDrives(void)
 		}
 	}
 #ifndef __LIBRETRO__
-	core_debug_int("GemDOS drives: ",nMaxDrives);
+	core_debug_printf("GemDOS drives: %d\n",nMaxDrives);
 #endif
 
 	ImagePartitions = nAcsiPartitions + nScsiPartitions + nIDEPartitions;

@@ -10,7 +10,6 @@
 extern retro_environment_t environ_cb;
 extern retro_input_poll_t input_poll_cb;
 extern retro_input_state_t input_state_cb;
-extern retro_log_printf_t retro_log;
 extern int core_video_aspect_mode;
 extern int core_video_aspect_adjust;
 extern bool core_video_changed;

@@ -97,7 +97,7 @@ static inline void screen_copy_allocate(uint32_t size)
 		screen_copy_size = 0;
 		screen_copy = malloc(size);
 		if (screen_copy) screen_copy_size = size;
-		else retro_log(RETRO_LOG_WARN,"Unable to allocate screen_copy for on-screen overlay.\n");
+		else core_warn_printf("Unable to allocate screen_copy for on-screen overlay.\n");
 	}
 }
 
@@ -639,7 +639,7 @@ void core_osk_render(void* video_buffer, int w, int h, int pitch)
 {
 	if (core_osk_mode == CORE_OSK_OFF || core_osk_mode > CORE_OSK_KEY_SHOT)
 	{
-		retro_log(RETRO_LOG_ERROR,"Unexpected core_osk_render mode? %d\n",core_osk_mode);
+		core_error_printf("Unexpected core_osk_render mode? %d\n",core_osk_mode);
 		core_input_osk_close();
 		core_osk_screen_restore = false;
 		return;
@@ -649,7 +649,7 @@ void core_osk_render(void* video_buffer, int w, int h, int pitch)
 	screen_size = (uint32_t)(h * pitch);
 	if (screen == NULL)
 	{
-		retro_log(RETRO_LOG_WARN,"No video_buffer, unable to render on-screen overlay.\n");
+		core_warn_printf("No video_buffer, unable to render on-screen overlay.\n");
 		screen_size = 0;
 		return;
 	}
@@ -672,7 +672,7 @@ void core_osk_render(void* video_buffer, int w, int h, int pitch)
 	
 	if (sdlscrn == NULL)
 	{
-		retro_log(RETRO_LOG_WARN,"No hatari sdlscrn surface, unable to render on-screen overlay.\n");
+		core_warn_printf("No hatari sdlscrn surface, unable to render on-screen overlay.\n");
 		return;
 	}
 

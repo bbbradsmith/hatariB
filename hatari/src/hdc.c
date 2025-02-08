@@ -769,7 +769,7 @@ int HDC_PartitionCount(corefile *fp, const uint64_t tracelevel, int *pIsByteSwap
 	if (core_file_seek(fp, 0, SEEK_SET) != 0
 	    || core_file_read(bootsector, sizeof(bootsector), 1, fp) != 1)
 	{
-		core_error_msg("HDC_PartitionCount failed.");
+		core_error_printf("HDC_PartitionCount failed.\n");
 #endif
 		return 0;
 	}
@@ -872,7 +872,7 @@ int HDC_PartitionCount(corefile *fp, const uint64_t tracelevel, int *pIsByteSwap
 		perror("HDC_PartitionCount");
 #else
 	if (core_file_seek(fp, offset, SEEK_SET) != 0)
-		core_error_msg("HDC_PartitionCount failed seek.");
+		core_error_printf("HDC_PartitionCount failed seek.\n");
 #endif
 	return parts;
 }

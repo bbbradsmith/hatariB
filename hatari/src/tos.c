@@ -1323,8 +1323,8 @@ int TOS_InitImage(void)
 			newconf = (newconf & 0xFFFE) | (ConfigureParams.Rom.nEmuTosFramerate     & 0x0001);
 		if (newconf != osconf)
 			STMemory_WriteWord(TosAddress+0x1C, newconf);
-		//core_debug_hex("EmuTOS region old: ",osconf);
-		//core_debug_hex("EmuTOS region new: ",newconf);
+		//core_debug_printf("EmuTOS region old: %04X\n",osconf);
+		//core_debug_printf("EmuTOS region new: %04X\n",newconf);
 		osconf = newconf;
 	}
 #endif

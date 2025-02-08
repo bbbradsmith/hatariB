@@ -301,6 +301,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * M3U can be used to set resolution at boot (TOS 1.04+).
   * Fixed `_stprintf` build issue with MinGW64 compiler update.
   * Strengthen user-requested cold boot, fixes unresponsive emulation after some crashes.
+  * Cleanup of core logging code.
 * [hatariB v0.3](https://github.com/bbbradsmith/hatariB/releases/tag/0.3) - 2024-04-15
   * On-screen keyboard improvements:
     * Can now hold the key continuously.

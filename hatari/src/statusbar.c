@@ -1117,7 +1117,7 @@ void core_statusbar_update(void)
 {
 	if(sdlscrn && StatusbarHeight && ConfigureParams.Screen.bShowStatusbar)
 	{
-		core_debug_msg("core_statusbar_update: yes");
+		core_debug_printf("core_statusbar_update: yes\n");
 		Statusbar_Init(sdlscrn);
 	}
 }

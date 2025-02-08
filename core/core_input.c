@@ -138,15 +138,15 @@ static void event_queue_push(const SDL_Event* event)
 		if (event_queue_overflows < EVENT_QUEUE_MAX_OVERFLOW_ERRORS)
 		{
 			++event_queue_overflows;
-			retro_log(RETRO_LOG_ERROR,"core_input event queue overflow, %d input events lost.\n",event_queue_overflows);
+			core_error_printf("core_input event queue overflow, %d input events lost.\n",event_queue_overflows);
 			if (event_queue_overflows == EVENT_QUEUE_MAX_OVERFLOW_ERRORS)
-				retro_log(RETRO_LOG_ERROR,"Further overflows will now be ignored.\n");
+				core_error_printf("Further overflows will now be ignored.\n");
 		}
 		return;
 	}
 	event_queue[next] = *event;
 	++event_queue_len;
-	//retro_log(RETRO_LOG_DEBUG,"event_queue_push: %d (%d)\n",next,event->type);
+	//core_debug_printf("event_queue_push: %d (%d)\n",next,event->type);
 }
 
 static int event_queue_pop(SDL_Event* event)
@@ -155,7 +155,7 @@ static int event_queue_pop(SDL_Event* event)
 	if (event)
 	{
 		*event = event_queue[event_queue_pos];
-		//retro_log(RETRO_LOG_DEBUG,"event_queue_pop: %d (%d)\n",event_queue_pos,event->type);
+		//core_debug_printf("event_queue_pop: %d (%d)\n",event_queue_pos,event->type);
 		event_queue_pos = (event_queue_pos + 1) % EVENT_QUEUE_SIZE;
 		--event_queue_len;
 		if (event->type == SDL_KEYDOWN || event->type == SDL_KEYUP)
@@ -179,7 +179,7 @@ static void event_queue_finish(void)
 {
 	// this shouldn't happen because of the force feed
 	if (event_queue_len != 0)
-		retro_log(RETRO_LOG_WARN,"core event_queue not empty at end of retro_run? %d",event_queue_len);
+		core_warn_printf("core event_queue not empty at end of retro_run? %d",event_queue_len);
 }
 
 //
@@ -225,7 +225,7 @@ uint16_t core_input_mod_state(void)
 
 void core_input_keyboard_event(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers)
 {
-	//retro_log(RETRO_LOG_DEBUG,"core_input_keyboard_event(%d,%d,%d,%04X)\n",down,keycode,character,key_modifiers);
+	//core_debug_printf("core_input_keyboard_event(%d,%d,%d,%04X)\n",down,keycode,character,key_modifiers);
 	SDL_Event event; memset(&event,0,sizeof(event));
 	event.key.type = down ? SDL_KEYDOWN : SDL_KEYUP;
 	event.key.state = down ? SDL_PRESSED : SDL_RELEASED;
@@ -257,9 +257,9 @@ void core_input_keyboard_event_callback(bool down, unsigned keycode, uint32_t ch
 {
 	#if CORE_DEBUG
 	if (core_input_debug)
-		retro_log(RETRO_LOG_INFO,"core_input_keyboard_event_callback(%d,%d,%d,%04X)\n",down,keycode,character,key_modifiers);
+		core_info_printf("core_input_keyboard_event_callback(%d,%d,%d,%04X)\n",down,keycode,character,key_modifiers);
 	#endif
-	//retro_log(RETRO_LOG_DEBUG,"core_input_keyboard_event_callback(%d,%d,%d,%04X)\n",down,keycode,character,key_modifiers);
+	//core_debug_printf("core_input_keyboard_event_callback(%d,%d,%d,%04X)\n",down,keycode,character,key_modifiers);
 	// assuming we don't need to mutex the event queue,
 	// because it doesn't make sense for retro_keyboard_callback to operate during retro_run,
 	// (run-ahead, netplay, etc. would need to depend on this?)
@@ -283,10 +283,10 @@ void core_input_keyboard_unstick() // release any keys that don't currently matc
 		if (!core_host_keyboard || !input_state_cb(0,RETRO_DEVICE_KEYBOARD,0,i))
 		{
 			core_input_keyboard_event(false,i,0,mod); // release key
-			//retro_log(RETRO_LOG_DEBUG,"core_input_keyboard_unstick() released: %d\n",i);
+			//core_debug_printf("core_input_keyboard_unstick() released: %d\n",i);
 			#if CORE_DEBUG
 			if (core_input_debug)
-				retro_log(RETRO_LOG_INFO,"core_input_keyboard_unstick() released: %d\n",i);
+				core_info_printf("core_input_keyboard_unstick() released: %d\n",i);
 			#endif
 		}
 	}
@@ -351,13 +351,13 @@ void core_input_update(void)
 	static int framecount = 0;
 	if (core_input_debug)
 	{
-		retro_log(RETRO_LOG_INFO,"core_input_update() frame: %08X M %c%c\n",framecount,AUX(MOUSE_L)?'L':'.',AUX(MOUSE_R)?'R':'.');
+		core_info_printf("core_input_update() frame: %08X M %c%c\n",framecount,AUX(MOUSE_L)?'L':'.',AUX(MOUSE_R)?'R':'.');
 		++framecount;
 		if ((framecount % 512) == 0) // big state dump every ~10 seconds
 		{
-			retro_log(RETRO_LOG_INFO,"mappings: \n");
+			core_info_printf("mappings: \n");
 			for (int i=0; i<4; ++i)
-				retro_log(RETRO_LOG_INFO,"pad%d>%d (%d%d%d) (%d %d %d %d %d %d %d %d %d %d %d %d)\n",
+				core_info_printf("pad%d>%d (%d%d%d) (%d %d %d %d %d %d %d %d %d %d %d %d)\n",
 					i,core_joy_port_map[i],
 					core_stick_map[i][0],
 					core_stick_map[i][1],
@@ -810,7 +810,7 @@ void core_input_update(void)
 		}
 		#if CORE_DEBUG
 		if (core_input_debug && debug_pad)
-			retro_log(RETRO_LOG_INFO,"P%d %c%c%c%c%c%c%c%c%c%c%c%c %2d%2d %2d%2d %2d%2d\n",
+			core_info_printf("P%d %c%c%c%c%c%c%c%c%c%c%c%c %2d%2d %2d%2d %2d%2d\n",
 				i,
 				debug_b[ 0] ? 'A' : '.',
 				debug_b[ 1] ? 'B' : '.',
@@ -866,7 +866,7 @@ void core_input_update(void)
 			vm_ry += pm_y * MOUSE_PRECISION;
 			#if CORE_DEBUG
 			if (core_input_debug && (pm_l || pm_r || pm_x || pm_y))
-				retro_log(RETRO_LOG_INFO,"M %c%c %3d %3d\n",
+				core_info_printf("M %c%c %3d %3d\n",
 					pm_l ? 'L' : '.',
 					pm_r ? 'R' : '.',
 					pm_x, pm_y);
@@ -899,7 +899,7 @@ void core_input_update(void)
 			AUX_SET(vm_l,MOUSE_L);
 			#if CORE_DEBUG
 			if (core_input_debug)
-				retro_log(RETRO_LOG_INFO,"Mouse L %s\n",vm_l ? "DOWN" : "UP");
+				core_info_printf("Mouse L %s\n",vm_l ? "DOWN" : "UP");
 			#endif
 		}
 
@@ -916,7 +916,7 @@ void core_input_update(void)
 			AUX_SET(vm_r,MOUSE_R);
 			#if CORE_DEBUG
 			if (core_input_debug)
-				retro_log(RETRO_LOG_INFO,"Mouse R %s\n",vm_r ? "DOWN" : "UP");
+				core_info_printf("Mouse R %s\n",vm_r ? "DOWN" : "UP");
 			#endif
 		}
 
@@ -936,7 +936,7 @@ void core_input_update(void)
 			vmouse_y = vm_y;
 			#if CORE_DEBUG
 			if (core_input_debug)
-				retro_log(RETRO_LOG_INFO,"Mouse Move %3d %3d\n",vm_x/MOUSE_PRECISION,vm_y/MOUSE_PRECISION);
+				core_info_printf("Mouse Move %3d %3d\n",vm_x/MOUSE_PRECISION,vm_y/MOUSE_PRECISION);
 			#endif
 		}
 	}
@@ -1008,7 +1008,7 @@ void core_input_update(void)
 		{
 			core_input_osk_close();
 		}
-		//retro_log(RETRO_LOG_DEBUG,"pause toggle: %d\n",core_osk_mode);
+		//core_debug_printf("pause toggle: %d\n",core_osk_mode);
 	}
 	AUX_SET(pause,PAUSE);
 
@@ -1051,7 +1051,7 @@ void core_input_update(void)
 	#if CORE_DEBUG
 	if (core_input_debug)
 	{
-		retro_log(RETRO_LOG_INFO,"--- J01: %02X %02X  M: %c%c %5d %5d\n",
+		core_info_printf("--- J01: %02X %02X  M: %c%c %5d %5d\n",
 			joy_fire[0],
 			joy_fire[1],
 			AUX(MOUSE_L) ? 'L' : '.',

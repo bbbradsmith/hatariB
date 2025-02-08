@@ -1000,7 +1000,7 @@ bool cfg_read_int_pad(int pad, const char* key, int* v)
 static void core_config_hard(CNF_PARAMS *param, const char* image, int ht)
 {
 	int i = 0;
-	retro_log(RETRO_LOG_INFO,"core_config_hard(%p,'%s',%d)\n",param,image,ht);
+	core_info_printf("core_config_hard(%p,'%s',%d)\n",param,image,ht);
 
 	// set new drive
 	switch(ht)
@@ -1300,7 +1300,7 @@ void core_config_set_environment(retro_environment_t cb)
 {
 	unsigned version = 0;
 	struct retro_core_option_v2_definition* def;
-	//retro_log(RETRO_LOG_DEBUG,"core_config_set_environment(%p)\n",cb);
+	//core_debug_printf("core_config_set_environment(%p)\n",cb);
 	bool tos_img = false;
 
 	if ((def = get_core_option_def("hatarib_tos")))
@@ -1377,7 +1377,7 @@ void core_config_set_environment(retro_environment_t cb)
 				{
 					def->values[k].value = NUMBERS[k];
 					// for debugging the list
-					//retro_log(RETRO_LOG_DEBUG,"%s[%d] = %s (%s)\n",key,k,def->values[k].value,def->values[k].label);
+					//core_debug_printf("%s[%d] = %s (%s)\n",key,k,def->values[k].value,def->values[k].label);
 				}
 			}
 		}

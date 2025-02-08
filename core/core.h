@@ -44,14 +44,12 @@ extern uint8_t core_runflags;
 #define CORE_MAX_FILENAME   256
 
 // print to Libretro log
-extern void core_debug_msg(const char* msg);
-extern void core_debug_int(const char* msg, int num); // msg followed by num
-extern void core_debug_hex(const char* msg, unsigned int num); // msg followed by hex
-extern void core_error_msg(const char* msg);
-extern void core_info_msg(const char* msg);
-extern void core_debug_bin(const char* data, int len, int offset); // hex dump to log (offset is added to the address display)
-extern void core_debug_hatari(bool error, const char* msg); // log message from hatari
 extern void core_debug_printf(const char* fmt, ...); // DEBUG log, expects newline in fmt.
+extern void core_info_printf(const char* fmt, ...); // INFO log, expects newline in fmt.
+extern void core_warn_printf(const char* fmt, ...); // WARN log, expects newline in fmt.
+extern void core_error_printf(const char* fmt, ...); // ERROR log, expects newline in fmt.
+extern void core_debug_hatari(bool error, const char* msg); // log message from hatari
+extern void core_debug_bin(const char* data, int len, int offset); // hex dump to log (offset is added to the address display)
 extern void core_debug_snapshot(const char* name); // prints the current write position of snapshot (for debugging savestate dumps)
 extern void core_debug_profile(const char* name); // prints name with time since previous
 

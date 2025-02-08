@@ -157,13 +157,13 @@ static bool NvRam_Load(void)
 		if (core_file_read(fnvram, 1, NVRAM_LEN, f) == NVRAM_LEN)
 		{
 			memcpy(nvram+NVRAM_START, fnvram, NVRAM_LEN);
-			core_info_msg("system/" NVRAM_FILENAME " loaded.");
+			core_info_printf("system/" NVRAM_FILENAME " loaded.\n");
 			ret = true;
 		}
 		core_file_close(f);
 	}
 	if (!ret)
-		core_error_msg("system/" NVRAM_FILENAME " not found.");
+		core_error_printf("system/" NVRAM_FILENAME " not found.\n");
 #endif
 
 	return ret;

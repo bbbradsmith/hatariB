@@ -72,7 +72,7 @@ static SDL_Surface *SDLGui_LoadXBM(int w, int h, const Uint8 *pXbmBits)
 #ifndef __LIBRETRO__
 		Log_Printf(LOG_ERROR, "SDLGui: failed to allocate bitmap: %s", SDL_GetError());
 #else
-		core_error_msg("SDLGui: failed to allocate bitmap (SDLGui_LoadXBM)");
+		core_error_printf("SDLGui: failed to allocate bitmap (SDLGui_LoadXBM)\n");
 #endif
 		return NULL;
 	}

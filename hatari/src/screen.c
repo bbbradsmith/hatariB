@@ -737,7 +737,7 @@ static bool Screen_SetSDLVideoSize(int width, int height, bool bForceChange)
 		// make sure core has valid pointer to screen data (even if not yet initialized)
 		core_video_update(sdlscrn->pixels, sdlscrn->w, sdlscrn->h, sdlscrn->pitch, coreRes);
 		if (SDL_MUSTLOCK(sdlscrn))
-			core_error_msg("Screen display may fail: sdlscrn SWSURFACE has MUSTLOCK");
+			core_error_printf("Screen display may fail: sdlscrn SWSURFACE has MUSTLOCK\n");
 	#endif
 
 		Screen_SetTextureScale(width, height, win_width, win_height, true);

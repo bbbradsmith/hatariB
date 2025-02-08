@@ -69,7 +69,7 @@ const uint64_t QUIRKS = RETRO_SERIALIZATION_QUIRK_ENDIAN_DEPENDENT;
 #define DEBUG_SAVESTATE   (DEBUG_SAVESTATE_DUMP | DEBUG_SAVESTATE_DUMP_AUTO | DEBUG_SAVESTATE_SIMPLE | DEBUG_SAVESTATE_LIST)
 
 //
-// Libretro/core
+// Libretro
 //
 
 static void null_log(enum retro_log_level level, const char* msg, ...) { (void)level; (void)msg; }
@@ -109,8 +109,6 @@ extern void core_statusbar_update(void);
 // Available to Hatari
 //
 
-// external
-
 int core_pixel_format = -1;
 bool core_init_return = false;
 uint8_t core_runflags = 0;
@@ -124,7 +122,9 @@ bool core_first_reset = true;
 bool core_perf_display = false;
 bool core_midi_enable = true;
 
-// internal
+//
+// Core internal variables
+//
 
 bool content_override_set = false;
 
@@ -155,11 +155,9 @@ bool core_statusbar_restore = false;
 // in a single frame, and onl the last one matters.
 // (Savestate tends to set them once spuriously during its reset phase.)
 
-#if CORE_DEBUG
-int core_tracing = 0;
-int core_tracing_last = 0;
-int core_trace_countdown = 0;
-#endif
+//
+// Debug logging
+//
 
 static void retro_log_init()
 {
@@ -168,56 +166,28 @@ static void retro_log_init()
 		retro_log = log_cb.log;
 	else
 		retro_log = null_log;
-	retro_log(RETRO_LOG_INFO,"retro_set_environment()\n");
+	core_info_printf("retro_set_environment()\n");
 }
 
-static void retro_memory_maps()
+static void core_retro_log_va(enum retro_log_level level, const char* fmt, va_list args)
 {
-	// updates memory map information
-	static struct retro_memory_descriptor memory_map[] = {
-		{
-			RETRO_MEMDESC_BIGENDIAN | RETRO_MEMDESC_SYSTEM_RAM | RETRO_MEMDESC_VIDEO_RAM | RETRO_MEMDESC_ALIGN_2 | RETRO_MEMDESC_MINSIZE_2,
-			NULL, 0, 0, 0, 0, 0, "Main RAM"
-		},
-		{
-			RETRO_MEMDESC_BIGENDIAN | RETRO_MEMDESC_CONST | RETRO_MEMDESC_ALIGN_2 | RETRO_MEMDESC_MINSIZE_2,
-			NULL, 0, 0xE00000, 0, 0, 0, "High ROM"
-		},
-	};
-	static struct retro_memory_map memory_maps = { memory_map, CORE_ARRAY_SIZE(memory_map) };
-	memory_map[0].ptr = STRam;
-	memory_map[0].len = STRamEnd;
-	memory_map[1].ptr = core_rom_mem_pointer + 0xE00000;
-	memory_map[1].len =                        0x200000;
-	environ_cb(RETRO_ENVIRONMENT_SET_MEMORY_MAPS, (void*)&memory_maps);
+	static char line[256];
+	vsnprintf(line,sizeof(line),fmt,args);
+	line[sizeof(line)-1] = 0;
+	retro_log(level,line);
 }
+#define CORE_RETRO_LOG_PRINTF(_level_) \
+	va_list args; \
+	va_start(args, fmt); \
+	core_retro_log_va(_level_,fmt,args); \
+	va_end(args);
 
-void core_debug_msg(const char* msg)
-{
-	retro_log(RETRO_LOG_DEBUG,"%s\n",msg);
-}
+void core_debug_printf(const char* fmt, ...) { CORE_RETRO_LOG_PRINTF(RETRO_LOG_DEBUG); }
+void core_error_printf(const char* fmt, ...) { CORE_RETRO_LOG_PRINTF(RETRO_LOG_ERROR); }
+void core_warn_printf(const char* fmt, ...) { CORE_RETRO_LOG_PRINTF(RETRO_LOG_WARN); }
+void core_info_printf(const char* fmt, ...) { CORE_RETRO_LOG_PRINTF(RETRO_LOG_INFO); }
 
-void core_debug_int(const char* msg, int num)
-{
-	retro_log(RETRO_LOG_DEBUG,"%s%d\n",msg,num);
-}
-
-void core_debug_hex(const char* msg, unsigned int num)
-{
-	retro_log(RETRO_LOG_DEBUG,"%s%08X\n",msg,num);
-}
-
-void core_error_msg(const char* msg)
-{
-	retro_log(RETRO_LOG_ERROR,"%s\n",msg);
-}
-
-void core_info_msg(const char* msg)
-{
-	retro_log(RETRO_LOG_INFO,"%s\n",msg);
-}
-
-void core_debug_hatari(bool error, const char* msg)
+void core_debug_hatari(bool error, const char* msg) // relay from Hatari log
 {
 	int len;
 	len = strlen(msg);
@@ -227,21 +197,13 @@ void core_debug_hatari(bool error, const char* msg)
 		msg);
 }
 
-#if CORE_DEBUG
-void core_trace_next(int count)
-{
-	Log_SetTraceOptions("cpu_all");
-	core_trace_countdown = count;
-}
-#endif
-
-void core_debug_bin(const char* data, int len, int offset)
+void core_debug_bin(const char* data, int len, int offset) // hex dump to debug log
 {
 	#define DEBUG_BIN_COLUMNS 32
 	static char line[3+(DEBUG_BIN_COLUMNS*4)];
 	static const char HEX[] = "0123456789ABCDEF";
 	static const int cols = DEBUG_BIN_COLUMNS;
-	retro_log(RETRO_LOG_DEBUG,"core_debug_bin(%p,%d,%x)\n",data,len,offset);
+	core_debug_printf("core_debug_bin(%p,%d,%x)\n",data,len,offset);
 	for (; len > 0; data += cols, offset += cols, len -= cols)
 	{
 		// fill line with spaces, terminal zero
@@ -261,20 +223,25 @@ void core_debug_bin(const char* data, int len, int offset)
 			line[pos] = '.'; // default if not printable
 			if (b >= 0x20 && b < 0x7F) line[pos] = b;
 		}
-		retro_log(RETRO_LOG_DEBUG,"%010X: %s\n",offset,line);
+		core_debug_printf("%010X: %s\n",offset,line);
 	}
 }
 
-extern void core_debug_printf(const char* fmt, ...)
+// debug CPU tracing
+#if CORE_DEBUG
+int core_tracing = 0;
+int core_tracing_last = 0;
+int core_trace_countdown = 0;
+void core_trace_next(int count)
 {
-	static char line[256];
-	va_list args;
-	va_start(args, fmt);
-	vsnprintf(line,sizeof(line),fmt,args);
-	va_end(args);
-	line[sizeof(line)-1] = 0;
-	retro_log(RETRO_LOG_DEBUG,line);
+	Log_SetTraceOptions("cpu_all");
+	core_trace_countdown = count;
 }
+#endif
+
+//
+// Core video, audio
+//
 
 // resolution values are in hatari/src/includes/screen.h:
 //  0 ST_LOW
@@ -384,17 +351,21 @@ static void core_audio_hold(int length)
 
 void core_set_fps(int rate)
 {
-	//retro_log(RETRO_LOG_DEBUG,"core_set_fps(%d)\n",rate);
+	//core_debug_printf("core_set_fps(%d)\n",rate);
 	if (rate != core_video_fps_new) core_rate_changed = true;
 	core_video_fps_new = rate;
 }
 
 void core_set_samplerate(int rate)
 {
-	//retro_log(RETRO_LOG_DEBUG,"core_set_samplerate(%d)\n",rate);
+	//core_debug_printf("core_set_samplerate(%d)\n",rate);
 	if (rate != core_audio_samplerate_new) core_rate_changed = true;
 	core_audio_samplerate_new = rate;
 }
+
+//
+// Core reset, halt, onscreen alerts
+//
 
 void core_m68k_reinit(bool cold) // stops and restarts emulation
 {
@@ -407,9 +378,9 @@ void core_m68k_reinit(bool cold) // stops and restarts emulation
 	core_init_return = false;
 }
 
-int core_reset_colder(void)
+int core_reset_colder(void) // user-initiated cold reset (stronger than Reset_Cold)
 {
-	core_debug_msg("core_reset_colder()");
+	core_debug_printf("core_reset_colder()\n");
 	// Hatari seems unable to recover from some crashes with just one cold reset.
 	// It may come back in an unresponsive (but not halted) state,
 	// but a second cold reset will finally restart.
@@ -423,17 +394,15 @@ int core_reset_colder(void)
 	return Reset_Cold(); // reset again
 }
 
-// signals to core for halt, reset, onscreen alerts, etc.
-
 void core_signal_reset(bool cold) // called by Reset_ST, allows the retro_run loop to know a reset happened.
 {
-	//retro_log(RETRO_LOG_DEBUG,"core_signal_reset(%d)\n",cold);
+	//core_debug_printf("core_signal_reset(%d)\n",cold);
 	core_runflags |= cold ? CORE_RUNFLAG_RESET_COLD : CORE_RUNFLAG_RESET_WARM;
 }
 
-void core_signal_halt(void)
+void core_signal_halt(void) // called when the CPU crashes,.popup error
 {
-	retro_log(RETRO_LOG_ERROR,"CPU has halted.\n");
+	core_error_printf("CPU has halted.\n");
 	if (!(core_runflags & CORE_RUNFLAG_HALT))
 	{
 		struct retro_message_ext msg;
@@ -450,9 +419,9 @@ void core_signal_halt(void)
 	core_crash_frames = 0;
 }
 
-void core_signal_tos_fail(void)
+void core_signal_tos_fail(void) // called if TOS could not initialize, popup error
 {
-	retro_log(RETRO_LOG_ERROR,"Could not load TOS.\n");
+	core_error_printf("Could not load TOS.\n");
 	struct retro_message_ext msg;
 	msg.msg = "TOS not found. See System > TOS ROM in core settings.";
 	msg.duration = 10 * 1000;
@@ -466,7 +435,7 @@ void core_signal_tos_fail(void)
 	core_crash_frames = 0;
 }
 
-void core_signal_alert(const char* alertmsg)
+void core_signal_alert(const char* alertmsg) // popup info
 {
 	struct retro_message_ext msg;
 	msg.msg = alertmsg;
@@ -481,7 +450,7 @@ void core_signal_alert(const char* alertmsg)
 
 static char alertmsg2[1024];
 
-void core_signal_alert2(const char* alertmsg, const char* suffix)
+void core_signal_alert2(const char* alertmsg, const char* suffix) // popup info
 {
 	strcpy_trunc(alertmsg2,alertmsg,sizeof(alertmsg2));
 	strcat_trunc(alertmsg2,suffix,sizeof(alertmsg2));
@@ -496,7 +465,7 @@ void core_signal_alert2(const char* alertmsg, const char* suffix)
 	msg.progress = -1;
 	environ_cb(RETRO_ENVIRONMENT_SET_MESSAGE_EXT, &msg);
 }
-void core_signal_error(const char* alertmsg, const char* suffix)
+void core_signal_error(const char* alertmsg, const char* suffix) // popup error
 {
 	strcpy_trunc(alertmsg2,alertmsg,sizeof(alertmsg2));
 	strcat_trunc(alertmsg2,suffix,sizeof(alertmsg2));
@@ -533,24 +502,24 @@ static void core_midi_set_environment(retro_environment_t cb)
 	}
 	if (retro_midi)
 	{
-		retro_log(RETRO_LOG_INFO,"MIDI interface available.\n");
+		core_info_printf("MIDI interface available.\n");
 		// I don't think these return enabled until the game is loaded?
-		//retro_log(RETRO_LOG_INFO,"MIDI IN: %s\n",retro_midi->input_enabled() ? "Enabled" : "Disabled");
-		//retro_log(RETRO_LOG_INFO,"MIDI OUT: %s\n",retro_midi->output_enabled() ? "Enabled" : "Disabled");
+		//core_info_printf("MIDI IN: %s\n",retro_midi->input_enabled() ? "Enabled" : "Disabled");
+		//core_info_printf("MIDI OUT: %s\n",retro_midi->output_enabled() ? "Enabled" : "Disabled");
 	}
 	else
 	{
 		retro_midi = NULL;
-		retro_log(RETRO_LOG_INFO,"MIDI interface not available.\n");
+		core_info_printf("MIDI interface not available.\n");
 	}
 }
 
 bool core_midi_read(uint8_t* data)
 {
-	//retro_log(RETRO_LOG_DEBUG,"core_midi_read(%p)\n",data);
+	//core_debug_printf("core_midi_read(%p)\n",data);
 	if (retro_midi && core_midi_enable && retro_midi->input_enabled() && retro_midi->read(data))
 	{
-		//retro_log(RETRO_LOG_DEBUG,"MIDI READ: %02X\n",*data);
+		//core_debug_printf("MIDI READ: %02X\n",*data);
 		return true;
 	}
 	return false;
@@ -558,10 +527,10 @@ bool core_midi_read(uint8_t* data)
 
 bool core_midi_write(uint8_t data)
 {
-	//retro_log(RETRO_LOG_DEBUG,"core_midi_write(%02X)\n",data);
+	//core_debug_printf("core_midi_write(%02X)\n",data);
 	if (retro_midi && core_midi_enable && retro_midi->output_enabled() && retro_midi->write(data,midi_delta_time))
 	{
-		//retro_log(RETRO_LOG_DEBUG,"MIDI WRITE: %02X (%d ms)\n",data,midi_delta_time);
+		//core_debug_printf("MIDI WRITE: %02X (%d ms)\n",data,midi_delta_time);
 		midi_delta_time = 0;
 		midi_needs_flush = true;
 		return true;
@@ -607,12 +576,12 @@ static void core_perf_set_environment(retro_environment_t cb)
 	}
 	if (retro_perf)
 	{
-		retro_log(RETRO_LOG_INFO,"PERF interface available.\n");
+		core_info_printf("PERF interface available.\n");
 	}
 	else
 	{
 		retro_perf = NULL;
-		retro_log(RETRO_LOG_INFO,"PERF interface not available.\n");
+		core_info_printf("PERF interface not available.\n");
 	}
 }
 
@@ -622,7 +591,7 @@ void core_debug_profile(const char* name)
 	if (retro_perf)
 	{
 		retro_time_t t = retro_perf->get_time_usec();
-		retro_log(RETRO_LOG_DEBUG,"%40s: %8d\n",name,(int)(t-time_last));
+		core_debug_printf("%40s: %8d\n",name,(int)(t-time_last));
 		time_last = retro_perf->get_time_usec();
 	}
 }
@@ -694,7 +663,7 @@ static int debug_savestate_dump_auto = 0;
 
 static void core_snapshot_open_internal(void)
 {
-	//retro_log(RETRO_LOG_DEBUG,"core_snapshot_open_internal()\n");
+	//core_debug_printf("core_snapshot_open_internal()\n");
 	snapshot_pos = 0;
 	snapshot_max = 0;
 	snapshot_error = false;
@@ -702,7 +671,7 @@ static void core_snapshot_open_internal(void)
 
 void core_snapshot_open(void)
 {
-	//retro_log(RETRO_LOG_DEBUG,"core_snapshot_open()\n");
+	//core_debug_printf("core_snapshot_open()\n");
 	if (snapshot_buffer && snapshot_max < SNAPSHOT_HEADER_SIZE) // fill rest of header with 0
 		memset(snapshot_buffer+snapshot_max,0,SNAPSHOT_HEADER_SIZE-snapshot_max);
 	snapshot_pos = SNAPSHOT_HEADER_SIZE;
@@ -711,7 +680,7 @@ void core_snapshot_open(void)
 
 void core_snapshot_close(void)
 {
-	//retro_log(RETRO_LOG_DEBUG,"core_snapshot_close() max: %X = %d\n",snapshot_max,snapshot_max);
+	//core_debug_printf("core_snapshot_close() max: %X = %d\n",snapshot_max,snapshot_max);
 }
 
 void core_debug_snapshot(const char* name) // annotates and indexes the snapshot debug
@@ -734,9 +703,9 @@ void core_debug_snapshot(const char* name) // annotates and indexes the snapshot
 #if DEBUG_SAVESTATE
 void core_debug_snapshot_sections_list()
 {
-	retro_log(RETRO_LOG_DEBUG,"Snapshot structure:\n");
+	core_debug_printf("Snapshot structure:\n");
 	for (int i=0; i<debug_snapshot_section_count; ++i)
-		retro_log(RETRO_LOG_DEBUG,"%16s %8X\n",
+		core_debug_printf("%16s %8X\n",
 			debug_snapshot_section_name[i],
 			debug_snapshot_section_pos[i]);
 }
@@ -745,12 +714,12 @@ void core_debug_snapshot_sections_list()
 void core_snapshot_read(char* buf, int len)
 {
 	int copy_len = len;
-	//retro_log(RETRO_LOG_DEBUG,"core_snapshot_read(%p,%d) @ %X\n",buf,len,snapshot_pos);
+	//core_debug_printf("core_snapshot_read(%p,%d) @ %X\n",buf,len,snapshot_pos);
 	if ((snapshot_pos+len) > snapshot_size)
 	{
 		if (!snapshot_error)
 		{
-			retro_log(RETRO_LOG_ERROR,"core_snapshot_read out of bounds: %X + %d > %d\n",snapshot_pos,len,snapshot_size);
+			core_error_printf("core_snapshot_read out of bounds: %X + %d > %d\n",snapshot_pos,len,snapshot_size);
 		}
 		copy_len = snapshot_size - snapshot_pos;
 		if (copy_len < 0) copy_len = 0;
@@ -763,7 +732,7 @@ void core_snapshot_read(char* buf, int len)
 
 void core_snapshot_write(const char* buf, int len)
 {
-	//retro_log(RETRO_LOG_DEBUG,"core_snapshot_write(%p,%d) @ %X\n",buf,len,snapshot_pos);
+	//core_debug_printf("core_snapshot_write(%p,%d) @ %X\n",buf,len,snapshot_pos);
 	if (snapshot_buffer)
 	{
 		int write_len = len;
@@ -771,7 +740,7 @@ void core_snapshot_write(const char* buf, int len)
 		{
 			if (!snapshot_error)
 			{
-				retro_log(RETRO_LOG_ERROR,"core_snapshot_write: snapshot_size estimate too small (%d), data loss.\n",snapshot_size);
+				core_error_printf("core_snapshot_write: snapshot_size estimate too small (%d), data loss.\n",snapshot_size);
 			}
 			write_len = snapshot_size - snapshot_pos;
 			if (write_len < 0) write_len = 0;
@@ -785,14 +754,14 @@ void core_snapshot_write(const char* buf, int len)
 
 void core_snapshot_seek(int pos)
 {
-	//retro_log(RETRO_LOG_DEBUG,"core_snapshot_seek(%X)\n",pos);
+	//core_debug_printf("core_snapshot_seek(%X)\n",pos);
 	snapshot_pos = SNAPSHOT_HEADER_SIZE + pos;
 	if (snapshot_pos > snapshot_max) snapshot_max = snapshot_pos;
 }
 
 void core_snapshot_skip(int len)
 {
-	//retro_log(RETRO_LOG_DEBUG,"core_snapshot_skip(%d)\n",len);
+	//core_debug_printf("core_snapshot_skip(%d)\n",len);
 	snapshot_pos += len;
 	if (snapshot_pos > snapshot_max) snapshot_max = snapshot_pos;
 }
@@ -801,7 +770,7 @@ static void snapshot_buffer_prepare(size_t size, void* data)
 {
 	if (size > snapshot_size)
 	{
-		retro_log(RETRO_LOG_ERROR,"serialize size %d > snapshot_size %d: enlarging.\n",size,snapshot_size);
+		core_error_printf("serialize size %d > snapshot_size %d: enlarging.\n",size,snapshot_size);
 		free(snapshot_buffer_internal); snapshot_buffer_internal = NULL;
 		snapshot_size = size;
 	}
@@ -827,7 +796,7 @@ uint32_t core_rand_seed = 1;
 int core_rand(void)
 {
 	core_rand_seed = ((core_rand_seed * 1103515245U) + 12345U) & 0x7fffffff;
-	//core_debug_hex("core_rand_seed: ",core_rand_seed);
+	//core_debug_printf("core_rand_seed: %08X\n",core_rand_seed);
 	return core_rand_seed;
 }
 
@@ -861,21 +830,21 @@ static bool core_serialize(bool write)
 	core_serialize_int32(&result);
 	if (result != SNAPSHOT_VERSION)
 	{
-		retro_log(RETRO_LOG_ERROR,"savestate version does not match SNAPSHOT_VERSION (%d != %d)\n",result,SNAPSHOT_VERSION);
+		core_error_printf("savestate version does not match SNAPSHOT_VERSION (%d != %d)\n",result,SNAPSHOT_VERSION);
 		return false;
 	}
 	result = (int32_t)0x12345678UL;
 	core_serialize_int32(&result);
 	if (result != (int32_t)0x12345678UL)
 	{
-		retro_log(RETRO_LOG_ERROR,"savestate endian does not match system (%08X != %08X)\n",(uint32_t)result,0x12345678UL);
+		core_error_printf("savestate endian does not match system (%08X != %08X)\n",(uint32_t)result,0x12345678UL);
 		return false;
 	}
 	bval = sizeof(void*);
 	core_serialize_uint8(&bval);
 	if (bval != sizeof(void*))
 	{
-		retro_log(RETRO_LOG_ERROR,"savessate memory address size does not match system (%d != %d)\n",result*8,sizeof(void*)*8);
+		core_error_printf("savestate memory address size does not match system (%d != %d)\n",result*8,sizeof(void*)*8);
 		return false;
 	}
 
@@ -892,9 +861,9 @@ static bool core_serialize(bool write)
 		core_debug_snapshot("core_osk");
 	#endif
 	core_osk_serialize();
-	//retro_log(RETRO_LOG_DEBUG,"core_serialize header: %d <= %d\n",snapshot_pos,SNAPSHOT_HEADER_SIZE);
+	//core_debug_printf("core_serialize header: %d <= %d\n",snapshot_pos,SNAPSHOT_HEADER_SIZE);
 	if (snapshot_pos > SNAPSHOT_HEADER_SIZE)
-		retro_log(RETRO_LOG_ERROR,"core_serialize header too large! %d > %d\n",snapshot_pos,SNAPSHOT_HEADER_SIZE);
+		core_error_printf("core_serialize header too large! %d > %d\n",snapshot_pos,SNAPSHOT_HEADER_SIZE);
 
 	// suffix (hatari data)
 
@@ -932,7 +901,7 @@ static bool core_serialize(bool write)
 
 	if (write && snapshot_error)
 	{
-		retro_log(RETRO_LOG_ERROR,"core_serialize error: new size > original size? %d > %d\n",snapshot_max,snapshot_size);
+		core_error_printf("core_serialize error: new size > original size? %d > %d\n",snapshot_max,snapshot_size);
 		struct retro_message_ext msg;
 		msg.msg = "Savestate size may have increased. Try ejecting floppy disks?";
 		msg.duration = 5 * 1000;
@@ -965,21 +934,21 @@ static bool core_serialize(bool write)
 	}
 #endif
 #if DEBUG_SAVESTATE_LIST
-	core_debug_int("core_serialize: ",write);
+	core_debug_printf("core_serialize: %d\n",write);
 	core_debug_snapshot_sections_list();
 #endif
 
-	//retro_log(RETRO_LOG_DEBUG,"core_serialized: %d of %d used\n",snapshot_max,snapshot_size);
+	//core_debug_printf("core_serialized: %d of %d used\n",snapshot_max,snapshot_size);
 	if (result != 0)
 	{
 		snapshot_error = true;
-		retro_log(RETRO_LOG_ERROR,"hatari state save/restore error: %d bytes\n",snapshot_size);
+		core_error_printf("hatari state save/restore error: %d bytes\n",snapshot_size);
 	}
 	return !snapshot_error;
 }
 
 //
-// config update
+// config update, memory map
 //
 
 void core_config_update(bool force)
@@ -989,8 +958,28 @@ void core_config_update(bool force)
 	{
 		if (!environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE,&force) || !force) return;
 	}
-	retro_log(RETRO_LOG_INFO,"Applying configuration update.\n");
+	core_info_printf("Applying configuration update.\n");
 	core_config_apply();
+}
+
+static void retro_memory_maps() // updates memory map information for Libretro
+{
+	static struct retro_memory_descriptor memory_map[] = {
+		{
+			RETRO_MEMDESC_BIGENDIAN | RETRO_MEMDESC_SYSTEM_RAM | RETRO_MEMDESC_VIDEO_RAM | RETRO_MEMDESC_ALIGN_2 | RETRO_MEMDESC_MINSIZE_2,
+			NULL, 0, 0, 0, 0, 0, "Main RAM"
+		},
+		{
+			RETRO_MEMDESC_BIGENDIAN | RETRO_MEMDESC_CONST | RETRO_MEMDESC_ALIGN_2 | RETRO_MEMDESC_MINSIZE_2,
+			NULL, 0, 0xE00000, 0, 0, 0, "High ROM"
+		},
+	};
+	static struct retro_memory_map memory_maps = { memory_map, CORE_ARRAY_SIZE(memory_map) };
+	memory_map[0].ptr = STRam;
+	memory_map[0].len = STRamEnd;
+	memory_map[1].ptr = core_rom_mem_pointer + 0xE00000;
+	memory_map[1].len =                        0x200000;
+	environ_cb(RETRO_ENVIRONMENT_SET_MEMORY_MAPS, (void*)&memory_maps);
 }
 
 //
@@ -1024,12 +1013,12 @@ RETRO_API void retro_set_environment(retro_environment_t cb)
 		};
 		if (content_override_set || cb(RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE, (void*)CONTENT_OVERRIDE))
 		{
-			retro_log(RETRO_LOG_DEBUG,"SET_CONTENT_INFO_OVERRIDE requested need_fullpath\n");
+			core_debug_printf("SET_CONTENT_INFO_OVERRIDE requested need_fullpath\n");
 			content_override_set = true; // seems to fail if called twice?
 		}
 		else
 		{
-			retro_log(RETRO_LOG_ERROR,"SET_CONTENT_INFO_OVERRIDE failed, M3U or hard disk loading may be broken?\n");
+			core_error_printf("SET_CONTENT_INFO_OVERRIDE failed, M3U or hard disk loading may be broken?\n");
 		}
 	}
 
@@ -1069,7 +1058,7 @@ RETRO_API void retro_init(void)
 {
 	const char* argv[1] = {""};
 	retro_log_init();
-	retro_log(RETRO_LOG_INFO,"retro_init()\n");
+	core_info_printf("retro_init()\n");
 
 	// try to get the best pixel format we can
 	// (after Hatari 2.5.0 we can only produce XRGB8888)
@@ -1084,10 +1073,10 @@ RETRO_API void retro_init(void)
 		if (core_pixel_format < 0)
 		{
 			core_pixel_format = 1;
-			retro_log(RETRO_LOG_ERROR,"Unsupported pixel format: %s\n",PIXEL_FORMAT_NAMES[core_pixel_format]);
+			core_error_printf("Unsupported pixel format: %s\n",PIXEL_FORMAT_NAMES[core_pixel_format]);
 		}
 		else
-			retro_log(RETRO_LOG_INFO,"Pixel format: %s\n",PIXEL_FORMAT_NAMES[core_pixel_format]);
+			core_info_printf("Pixel format: %s\n",PIXEL_FORMAT_NAMES[core_pixel_format]);
 	}
 
 	// initialize other modules
@@ -1118,7 +1107,7 @@ RETRO_API void retro_init(void)
 
 RETRO_API void retro_deinit(void)
 {
-	retro_log(RETRO_LOG_INFO,"retro_deinit()\n");
+	core_info_printf("retro_deinit()\n");
 
 	m68k_go_quit();
 	main_deinit();
@@ -1131,7 +1120,7 @@ RETRO_API unsigned retro_api_version(void)
 
 RETRO_API void retro_get_system_info(struct retro_system_info *info)
 {
-	retro_log(RETRO_LOG_INFO,"retro_get_system_info()\n");
+	core_info_printf("retro_get_system_info()\n");
 	memset(info, 0, sizeof(*info));
 	info->library_name = "hatariB";
 	info->library_version = CORE_VERSION;
@@ -1142,7 +1131,7 @@ RETRO_API void retro_get_system_info(struct retro_system_info *info)
 
 RETRO_API void retro_get_system_av_info(struct retro_system_av_info *info)
 {
-	retro_log(RETRO_LOG_INFO,"retro_get_system_av_info()\n");
+	core_info_printf("retro_get_system_av_info()\n");
 
 	core_video_fps = core_video_fps_new;
 	core_audio_samplerate = core_audio_samplerate_new;
@@ -1175,20 +1164,20 @@ RETRO_API void retro_get_system_av_info(struct retro_system_av_info *info)
 
 	if (core_video_fps != 50 && core_video_fps != 60 && core_video_fps != 71)
 	{
-		retro_log(RETRO_LOG_ERROR,"Unexpected fps (%d), assuming 50\n",core_video_fps);
+		core_error_printf("Unexpected fps (%d), assuming 50\n",core_video_fps);
 		info->timing.fps = 50;
 	}
 
-	retro_log(RETRO_LOG_INFO," geometry.base_width = %d\n",info->geometry.base_width);
-	retro_log(RETRO_LOG_INFO," geometry.base_height = %d\n",info->geometry.base_height);
-	retro_log(RETRO_LOG_INFO," geometry.aspect_radio = %f\n",info->geometry.aspect_ratio);
-	retro_log(RETRO_LOG_INFO," timing.fps = %f\n",info->timing.fps);
-	retro_log(RETRO_LOG_INFO," timing.sample_rate = %f\n",info->timing.sample_rate);
+	core_info_printf(" geometry.base_width = %d\n",info->geometry.base_width);
+	core_info_printf(" geometry.base_height = %d\n",info->geometry.base_height);
+	core_info_printf(" geometry.aspect_radio = %f\n",info->geometry.aspect_ratio);
+	core_info_printf(" timing.fps = %f\n",info->timing.fps);
+	core_info_printf(" timing.sample_rate = %f\n",info->timing.sample_rate);
 }
 
 RETRO_API void retro_set_controller_port_device(unsigned port, unsigned device)
 {
-	retro_log(RETRO_LOG_INFO,"retro_set_controller_port_device(%d,%d)\n",port,device);
+	core_info_printf("retro_set_controller_port_device(%d,%d)\n",port,device);
 }
 
 RETRO_API void retro_reset(void)
@@ -1252,7 +1241,7 @@ RETRO_API void retro_run(void)
 	// handle any pending configuration updates
 	core_config_update(false);
 
-	//retro_log(RETRO_LOG_DEBUG,"retro_run()\n");
+	//core_debug_printf("retro_run()\n");
 	// poll input, generate event queue for hatari
 	core_input_update();
 
@@ -1302,7 +1291,7 @@ RETRO_API void retro_run(void)
 	{
 		// automatic reset timer after halt
 		++core_crash_frames;
-		//core_debug_int("core_crash_frames: ",core_crash_frames);
+		//core_debug_printf("core_crash_frames: %d\n",core_crash_frames);
 		if ((core_crash_frames / core_video_fps) >= core_crashtime)
 		{
 			core_reset_colder();
@@ -1313,7 +1302,7 @@ RETRO_API void retro_run(void)
 	// update video nature
 	if (core_rate_changed)
 	{
-		retro_log(RETRO_LOG_INFO,"core_rate_changed\n");
+		core_info_printf("core_rate_changed\n");
 		struct retro_system_av_info info;
 		retro_get_system_av_info(&info);
 		environ_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info);
@@ -1322,7 +1311,7 @@ RETRO_API void retro_run(void)
 	}
 	else if (core_video_changed)
 	{
-		retro_log(RETRO_LOG_INFO,"core_video_changed\n");
+		core_info_printf("core_video_changed\n");
 		struct retro_system_av_info info;
 		retro_get_system_av_info(&info);
 		environ_cb(RETRO_ENVIRONMENT_SET_GEOMETRY, &info);
@@ -1361,7 +1350,7 @@ RETRO_API void retro_run(void)
 		int hold_samples = (int)core_audio_hold_remain;
 		core_audio_hold_remain -= (double)hold_samples;
 		core_audio_hold(hold_samples);
-		//retro_log(RETRO_LOG_DEBUG,"audio hold: %d\n",hold_samples);
+		//core_debug_printf("audio hold: %d\n",hold_samples);
 	}
 
 	// send audio
@@ -1370,9 +1359,9 @@ RETRO_API void retro_run(void)
 		unsigned int len = core_audio_samples_pending;
 		if (len > AUDIO_BUFFER_LEN) len = AUDIO_BUFFER_LEN;
 		audio_batch_cb(core_audio_buffer, len/2);
-		//retro_log(RETRO_LOG_DEBUG,"audio_batch_cb(%p,%d)\n",core_audio_buffer,len/2);
+		//core_debug_printf("audio_batch_cb(%p,%d)\n",core_audio_buffer,len/2);
 		core_audio_samples_pending = 0;
-		//retro_log(RETRO_LOG_DEBUG,"audio send: %d\n",len/2);
+		//core_debug_printf("audio send: %d\n",len/2);
 	}
 
 	// event queue end of frame
@@ -1403,15 +1392,15 @@ RETRO_API void retro_run(void)
 					debug_snapshot_buffer_size = snapshot_size;
 				}
 				memcpy(debug_snapshot_buffer,snapshot_buffer,snapshot_size);
-				core_debug_msg("DEBUG SNAPSHOT saved");
+				core_debug_printf("DEBUG SNAPSHOT saved\n");
 			}
 			else
 			{
 				bool match = false;
 				if (debug_snapshot_buffer == NULL)
-					core_debug_msg("DEBUG SNAPSHOT no snapshot to compare?");
+					core_debug_printf("DEBUG SNAPSHOT no snapshot to compare?\n");
 				else if (debug_snapshot_buffer_size != snapshot_size)
-					core_debug_msg("DEBUG SNAPSHOT size mismatch?");
+					core_debug_printf("DEBUG SNAPSHOT size mismatch?\n");
 				else
 				{
 					match = true;
@@ -1428,7 +1417,7 @@ RETRO_API void retro_run(void)
 						{
 							if (diff0 >= 0)
 							{
-								retro_log(RETRO_LOG_DEBUG,"DIFF: %8X - %8X %16s +%5d / %16s -%5d\n",
+								core_debug_printf("DIFF: %8X - %8X %16s +%5d / %16s -%5d\n",
 									diff0, diff1,
 									debug_snapshot_section_name[section], diff0 - debug_snapshot_section_pos[section],
 									debug_snapshot_section_name[section+1], debug_snapshot_section_pos[section+1] - diff1);
@@ -1449,7 +1438,7 @@ RETRO_API void retro_run(void)
 					}
 					if (!match)
 					{
-						retro_log(RETRO_LOG_DEBUG,"DEBUG SNAPSHOT mismatch! %8X - %8X\n",gdiff0,gdiff1);
+						core_debug_printf("DEBUG SNAPSHOT mismatch! %8X - %8X\n",gdiff0,gdiff1);
 						static bool first_mismatch = true;
 						if (first_mismatch) // dump the sections first time only
 						{
@@ -1457,13 +1446,13 @@ RETRO_API void retro_run(void)
 							first_mismatch = false;
 						}
 						// diff0 = new save after restored savestate, diff1 = first save after initial savestate
-						retro_log(RETRO_LOG_DEBUG,"Dumped to: saves/hatarib_diff0.bin + saves/hatarib_diff1.bin");
+						core_debug_printf("Dumped to: saves/hatarib_diff0.bin + saves/hatarib_diff1.bin");
 						core_write_file_save("hatarib_diff0.bin",(unsigned int)snapshot_size,snapshot_buffer);
 						core_write_file_save("hatarib_diff1.bin",(unsigned int)debug_snapshot_buffer_size,debug_snapshot_buffer);
 					}
 					else
 					{
-						core_debug_msg("DEBUG SNAPSHOT match!");
+						core_debug_printf("DEBUG SNAPSHOT match!\n");
 					}
 				}
 			}
@@ -1513,7 +1502,7 @@ RETRO_API bool retro_serialize(void *data, size_t size)
 {
 	bool result = false;
 	PERF_START(PERF_SERIALIZE);
-	//retro_log(RETRO_LOG_DEBUG,"retro_serialize(%p,%d)\n",data,size);
+	//core_debug_printf("retro_serialize(%p,%d)\n",data,size);
 	snapshot_buffer_prepare(size,data);
 	if (core_serialize(true))
 	{
@@ -1528,7 +1517,7 @@ RETRO_API bool retro_serialize(void *data, size_t size)
 #if DEBUG_SAVESTATE_SIMPLE
 	debug_snapshot_countdown = DEBUG_SAVESTATE_SIMPLE;
 	debug_snapshot_read = false;
-	core_debug_msg("DEBUG SNAPSHOT open...");	
+	core_debug_printf("DEBUG SNAPSHOT open...\n");	
 #endif
 	return result;
 }
@@ -1537,7 +1526,7 @@ RETRO_API bool retro_unserialize(const void *data, size_t size)
 {
 	bool result = false;
 	PERF_START(PERF_UNSERIALIZE);
-	//retro_log(RETRO_LOG_DEBUG,"retro_unserialize(%p,%z)\n",data,size);
+	//core_debug_printf("retro_unserialize(%p,%z)\n",data,size);
 	//core_debug_bin(data,size,0);
 	snapshot_buffer_prepare(size,(void*)data);
 	if (core_serialize(false))
@@ -1556,18 +1545,18 @@ RETRO_API bool retro_unserialize(const void *data, size_t size)
 
 RETRO_API void retro_cheat_reset(void)
 {
-	retro_log(RETRO_LOG_DEBUG,"retro_cheat_reset()\n");
+	core_debug_printf("retro_cheat_reset()\n");
 }
 
 RETRO_API void retro_cheat_set(unsigned index, bool enabled, const char *code)
 {
-	retro_log(RETRO_LOG_DEBUG,"retro_cheat_set(%d,%d,'%s')\n",index,enabled,code?code:"(NULL)");
+	core_debug_printf("retro_cheat_set(%d,%d,'%s')\n",index,enabled,code?code:"(NULL)");
 	// no cheat mechanism available
 }
 
 RETRO_API bool retro_load_game(const struct retro_game_info *game)
 {
-	retro_log(RETRO_LOG_INFO,"retro_load_game(%s)\n",game?"game":"NULL");
+	core_info_printf("retro_load_game(%s)\n",game?"game":"NULL");
 
 	if (game)
 		core_disk_load_game(game);
@@ -1608,7 +1597,7 @@ RETRO_API bool retro_load_game_special(unsigned game_type, const struct retro_ga
 
 RETRO_API void retro_unload_game(void)
 {
-	retro_log(RETRO_LOG_DEBUG,"retro_unload_game()\n");
+	core_debug_printf("retro_unload_game()\n");
 	core_disk_unload_game(); // chance to save
 }
 

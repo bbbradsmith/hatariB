@@ -576,7 +576,7 @@ void MemorySnapShot_Restore_Do(void)
 			bCaptureError = true;
 #else
 		{
-			core_error_msg("Savestate check failed.");
+			core_error_printf("Savestate check failed.\n");
 			bCaptureError = true;
 		}
 #endif

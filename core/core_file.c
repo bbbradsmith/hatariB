@@ -72,7 +72,7 @@ void strcat_trunc(char* dest, const char* src, unsigned int len)
 // compare against exts list of null terminated strings, ended with a double null
 bool has_extension(const char* fn, const char* exts)
 {
-	//retro_log(RETRO_LOG_DEBUG,"has_extension('%s',%p)\n",fn,exts);
+	//core_debug_printf("has_extension('%s',%p)\n",fn,exts);
 	size_t e = strlen(fn);
 	for(;e>0;--e)
 	{
@@ -83,7 +83,7 @@ bool has_extension(const char* fn, const char* exts)
 	const char* ext = fn + e;
 	while (exts[0] != 0)
 	{
-		//retro_log(RETRO_LOG_DEBUG,"exts: '%s' (%p)\n",exts,exts);
+		//core_debug_printf("exts: '%s' (%p)\n",exts,exts);
 		if (!strcasecmp(ext,exts)) return true;
 		exts = exts + strlen(exts) + 1;
 	}
@@ -141,7 +141,7 @@ void save_path_init()
 	if (save_path_ready) return;
 	if (environ_cb(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY,(void*)&cp) && cp)
 	{
-		//retro_log(RETRO_LOG_DEBUG,"GET_SAVE_DIRECTORY success\n");
+		//core_debug_printf("GET_SAVE_DIRECTORY success\n");
 		strcpy_trunc(save_path, cp, sizeof(save_path));
 		if (strlen(save_path) > 0)
 			strcat_trunc(save_path, "/", sizeof(save_path));
@@ -150,7 +150,7 @@ void save_path_init()
 	{
 		save_path[0] = 0;
 	}
-	retro_log(RETRO_LOG_INFO,"save_path: %s\n",save_path);
+	core_info_printf("save_path: %s\n",save_path);
 	save_path_ready = true;
 }
 
@@ -158,7 +158,7 @@ uint8_t* core_read_file(const char* filename, unsigned int* size_out)
 {
 	uint8_t* d = NULL;
 	unsigned int size = 0;
-	retro_log(RETRO_LOG_INFO,"core_read_file('%s')\n",filename);
+	core_info_printf("core_read_file('%s')\n",filename);
 	filename = temp_fn_sepfix(filename);
 
 	if (size_out) *size_out = 0;
@@ -168,20 +168,20 @@ uint8_t* core_read_file(const char* filename, unsigned int* size_out)
 		struct retro_vfs_file_handle* f = retro_vfs->open(filename,RETRO_VFS_FILE_ACCESS_READ,0);
 		if (f == NULL)
 		{
-			retro_log(RETRO_LOG_DEBUG,"core_read_file (VFS) not found: %s\n",filename);
+			core_debug_printf("core_read_file (VFS) not found: %s\n",filename);
 			return NULL; // note: not necessarily an error
 		}
 		rs = retro_vfs->size(f);
 		if (rs < 0)
 		{
-			retro_log(RETRO_LOG_ERROR,"core_read_file (VFS) size error: %s\n",filename);
+			core_error_printf("core_read_file (VFS) size error: %s\n",filename);
 			return NULL;
 		}
 		size = (unsigned int)rs;
 		d = malloc(size);
 		if (d == NULL)
 		{
-			retro_log(RETRO_LOG_ERROR,"core_read_file (VFS) out of memory: %s\n",filename);
+			core_error_printf("core_read_file (VFS) out of memory: %s\n",filename);
 			retro_vfs->close(f);
 			return NULL;
 		}
@@ -193,7 +193,7 @@ uint8_t* core_read_file(const char* filename, unsigned int* size_out)
 		FILE* f = fopen(filename,"rb");
 		if (f == NULL)
 		{
-			retro_log(RETRO_LOG_DEBUG,"core_read_file not found: %s\n",filename);
+			core_debug_printf("core_read_file not found: %s\n",filename);
 			return NULL; // note: not necessarily an error
 		}
 		fseek(f,0,SEEK_END);
@@ -202,7 +202,7 @@ uint8_t* core_read_file(const char* filename, unsigned int* size_out)
 		d = malloc(size);
 		if (d == NULL)
 		{
-			retro_log(RETRO_LOG_ERROR,"core_read_file out of memory: %s\n",filename);
+			core_error_printf("core_read_file out of memory: %s\n",filename);
 			fclose(f);
 			return NULL;
 		}
@@ -215,7 +215,7 @@ uint8_t* core_read_file(const char* filename, unsigned int* size_out)
 
 bool core_write_file(const char* filename, unsigned int size, const uint8_t* data)
 {
-	retro_log(RETRO_LOG_INFO,"core_write_file('%s',%d)\n",filename,size);
+	core_info_printf("core_write_file('%s',%d)\n",filename,size);
 	filename = temp_fn_sepfix(filename);
 
 	if (retro_vfs_version >= 3)
@@ -223,12 +223,12 @@ bool core_write_file(const char* filename, unsigned int size, const uint8_t* dat
 		struct retro_vfs_file_handle* f = retro_vfs->open(filename,RETRO_VFS_FILE_ACCESS_WRITE,0);
 		if (f == NULL)
 		{
-			retro_log(RETRO_LOG_ERROR,"core_write_file (VFS) could not open: %s\n",filename);
+			core_error_printf("core_write_file (VFS) could not open: %s\n",filename);
 			return false;
 		}
 		if (retro_vfs->write(f,data,size) < 0)
 		{
-			retro_log(RETRO_LOG_ERROR,"core_write_file (VFS) could not write: %s\n",filename);
+			core_error_printf("core_write_file (VFS) could not write: %s\n",filename);
 			retro_vfs->close(f);
 			return false;
 		}
@@ -239,12 +239,12 @@ bool core_write_file(const char* filename, unsigned int size, const uint8_t* dat
 		FILE* f = fopen(filename,"wb");
 		if (f == NULL)
 		{
-			retro_log(RETRO_LOG_ERROR,"core_write_file could not open: %s\n",filename);
+			core_error_printf("core_write_file could not open: %s\n",filename);
 			return false;
 		}
 		if (size != fwrite(data,1,size,f))
 		{
-			retro_log(RETRO_LOG_ERROR,"core_write_file could not write: %s\n",filename);
+			core_error_printf("core_write_file could not write: %s\n",filename);
 			fclose(f);
 			return false;
 		}
@@ -288,7 +288,7 @@ bool core_write_file_save(const char* filename, unsigned int size, const uint8_t
 
 corefile* core_file_open(const char* path, int access)
 {
-	CFD(retro_log(RETRO_LOG_INFO,"core_file_open('%s',%d)\n",path,access));
+	CFD(core_info_printf("core_file_open('%s',%d)\n",path,access));
 	path = temp_fn_sepfix(path);
 
 	corefile* handle = NULL;
@@ -312,7 +312,7 @@ corefile* core_file_open(const char* path, int access)
 		f = fopen(path,mode);
 		handle = (corefile*)f;
 	}
-	CFD(retro_log(RETRO_LOG_DEBUG,"core_file_open('%s',%d) = %p\n",path,access,handle));
+	CFD(core_debug_printf("core_file_open('%s',%d) = %p\n",path,access,handle));
 	return handle;
 }
 
@@ -335,7 +335,7 @@ corefile* core_file_open_save(const char* path, int access)
 
 bool core_file_exists(const char* path)
 {
-	CFD(retro_log(RETRO_LOG_DEBUG,"core_file_exists('%s')\n",path));
+	CFD(core_debug_printf("core_file_exists('%s')\n",path));
 	path = temp_fn_sepfix(path);
 
 	if (retro_vfs_version >= 3)
@@ -366,7 +366,7 @@ bool core_file_exists_save(const char* filename)
 
 void core_file_close(corefile* file)
 {
-	CFD(retro_log(RETRO_LOG_DEBUG,"core_file_close(%p)\n",file));
+	CFD(core_debug_printf("core_file_close(%p)\n",file));
 	if (retro_vfs_version >= 3)
 	{
 		retro_vfs->close((struct retro_vfs_file_handle*)file);
@@ -379,7 +379,7 @@ void core_file_close(corefile* file)
 
 int core_file_seek(corefile* file, int64_t offset, int dir)
 {
-	CFD(retro_log(RETRO_LOG_DEBUG,"core_file_seek(%p,%d,%d)\n",file,(int)offset,dir));
+	CFD(core_debug_printf("core_file_seek(%p,%d,%d)\n",file,(int)offset,dir));
 	if (retro_vfs_version >= 3)
 	{
 		int mode = RETRO_VFS_SEEK_POSITION_START;
@@ -399,7 +399,7 @@ int core_file_seek(corefile* file, int64_t offset, int dir)
 
 int64_t core_file_tell(corefile* file)
 {
-	CFD(retro_log(RETRO_LOG_DEBUG,"core_file_tell(%p)\n",file));
+	CFD(core_debug_printf("core_file_tell(%p)\n",file));
 	if (retro_vfs_version >= 3)
 	{
 		return retro_vfs->tell((struct retro_vfs_file_handle*)file);
@@ -412,7 +412,7 @@ int64_t core_file_tell(corefile* file)
 
 int64_t core_file_read(void* buf, int64_t size, int64_t count, corefile* file)
 {
-	CFD(retro_log(RETRO_LOG_DEBUG,"core_file_read(%p,%d,%d,%p)\n",buf,(int)size,(int)count,file));
+	CFD(core_debug_printf("core_file_read(%p,%d,%d,%p)\n",buf,(int)size,(int)count,file));
 	if (retro_vfs_version >= 3)
 	{
 		int64_t result = retro_vfs->read((struct retro_vfs_file_handle*)file,buf,(size*count));
@@ -427,7 +427,7 @@ int64_t core_file_read(void* buf, int64_t size, int64_t count, corefile* file)
 
 int64_t core_file_write(const void* buf, int64_t size, int64_t count, corefile* file)
 {
-	CFD(retro_log(RETRO_LOG_DEBUG,"core_file_write(%p,%d,%d,%p)\n",buf,(int)size,(int)count,file));
+	CFD(core_debug_printf("core_file_write(%p,%d,%d,%p)\n",buf,(int)size,(int)count,file));
 	if (retro_vfs_version >= 3)
 	{
 		int64_t result = retro_vfs->write((struct retro_vfs_file_handle*)file,buf,(size*count));
@@ -442,7 +442,7 @@ int64_t core_file_write(const void* buf, int64_t size, int64_t count, corefile* 
 
 int core_file_flush(corefile* file)
 {
-	CFD(retro_log(RETRO_LOG_DEBUG,"core_file_flush(%p)\n",file));
+	CFD(core_debug_printf("core_file_flush(%p)\n",file));
 	if (retro_vfs_version >= 3)
 	{
 		return retro_vfs->flush((struct retro_vfs_file_handle*)file);
@@ -455,7 +455,7 @@ int core_file_flush(corefile* file)
 
 int core_file_remove(const char* path)
 {
-	CFD(retro_log(RETRO_LOG_DEBUG,"core_file_remove('%s')\n",path));
+	CFD(core_debug_printf("core_file_remove('%s')\n",path));
 	path = temp_fn_sepfix(path);
 
 	if (retro_vfs_version >= 3)
@@ -493,7 +493,7 @@ int core_file_remove_hard(const char* path)
 
 int core_file_mkdir(const char* path)
 {
-	CFD(retro_log(RETRO_LOG_DEBUG,"core_file_mkdir('%s')\n",path));
+	CFD(core_debug_printf("core_file_mkdir('%s')\n",path));
 	path = temp_fn_sepfix(path);
 
 	if (retro_vfs_version >= 3)
@@ -525,7 +525,7 @@ int core_file_mkdir_hard(const char* path)
 int core_file_rename(const char* old_path, const char* new_path)
 {
 	char op_fix[MAX_PATH];
-	CFD(retro_log(RETRO_LOG_DEBUG,"core_file_rename('%s','%s')\n",old_path,new_path));
+	CFD(core_debug_printf("core_file_rename('%s','%s')\n",old_path,new_path));
 
 	strcpy_trunc(op_fix,temp_fn_sepfix(old_path),sizeof(op_fix));
 	old_path = op_fix;
@@ -558,7 +558,7 @@ int core_file_rename_hard(const char* old_path, const char* new_path)
 
 int core_file_stat(const char* path, struct stat* fs)
 {
-	CFD(retro_log(RETRO_LOG_DEBUG,"core_file_stat('%s',%p)\n",path,fs));
+	CFD(core_debug_printf("core_file_stat('%s',%p)\n",path,fs));
 	path = temp_fn_sepfix(path);
 
 	if (retro_vfs_version >= 3)
@@ -607,7 +607,7 @@ int core_file_stat_hard(const char* path, struct stat* fs)
 
 int64_t core_file_size(const char* path)
 {
-	CFD(retro_log(RETRO_LOG_DEBUG,"core_file_size('%s')\n",path));
+	CFD(core_debug_printf("core_file_size('%s')\n",path));
 	if (retro_vfs_version >= 3)
 	{
 		// note: retro vfs stat is limited to int32_t file size (<2GB)
@@ -647,7 +647,7 @@ static int opendir_debug_count = 0; // for diagnosing unpaired opendir/closedir
 coredir* core_file_opendir(const char* path)
 {
 	coredir* result;
-	CFD(retro_log(RETRO_LOG_DEBUG,"core_file_opendir('%s')\n",path));
+	CFD(core_debug_printf("core_file_opendir('%s')\n",path));
 	path = temp_fn_sepfix(path);
 	if (retro_vfs_version >= 3)
 	{
@@ -658,7 +658,7 @@ coredir* core_file_opendir(const char* path)
 		result = (coredir*)opendir(path);
 	}
 	if (result) ++opendir_debug_count;
-	//retro_log(RETRO_LOG_DEBUG,"(opendir) open directories: %d\n",opendir_debug_count);
+	//core_debug_printf("(opendir) open directories: %d\n",opendir_debug_count);
 	return result;
 }
 
@@ -678,7 +678,7 @@ struct coredirent* core_file_readdir(coredir* dir)
 	// only used by gemdos.c and all we need is the name
 	static struct coredirent d;
 	const char* name = NULL;
-	CFD(retro_log(RETRO_LOG_DEBUG,"core_file_readdir('%p')\n",dir));
+	CFD(core_debug_printf("core_file_readdir('%p')\n",dir));
 	memset(&d,0,sizeof(d));
 	if (retro_vfs_version >= 3)
 	{
@@ -702,7 +702,7 @@ struct coredirent* core_file_readdir(coredir* dir)
 int core_file_closedir(coredir* dir)
 {
 	int result;
-	CFD(retro_log(RETRO_LOG_DEBUG,"core_file_closedir('%p')\n",dir));
+	CFD(core_debug_printf("core_file_closedir('%p')\n",dir));
 	if (retro_vfs_version >= 3)
 	{
 		result = retro_vfs->closedir((struct retro_vfs_dir_handle*)dir);
@@ -712,7 +712,7 @@ int core_file_closedir(coredir* dir)
 		result = closedir((DIR*)dir);
 	}
 	if (result == 0) --opendir_debug_count;
-	//retro_log(RETRO_LOG_DEBUG,"(closedir) open directories: %d\n",opendir_debug_count);
+	//core_debug_printf("(closedir) open directories: %d\n",opendir_debug_count);
 	return result;
 }
 
@@ -727,7 +727,7 @@ static void core_file_system_add(const char* filename, bool prefix_hatarib)
 	if (prefix_hatarib)
 		strcpy_trunc(sf_filename[sf_count],"hatarib/",CORE_MAX_FILENAME);
 	strcat_trunc(sf_filename[sf_count],filename,CORE_MAX_FILENAME);
-	//retro_log(RETRO_LOG_DEBUG,"core_file_system_add: %s\n",sf_filename[sf_count]);
+	//core_debug_printf("core_file_system_add: %s\n",sf_filename[sf_count]);
 	++sf_count;
 }
 
@@ -740,7 +740,7 @@ static void core_file_system_add_dir(const char* filename)
 	strcat_trunc(sf_dirname[sf_dir_count],filename,CORE_MAX_FILENAME);
 	strcpy_trunc(sf_dirlabel[sf_dir_count],filename,CORE_MAX_FILENAME);
 	strcat_trunc(sf_dirlabel[sf_dir_count],"/",CORE_MAX_FILENAME);
-	//retro_log(RETRO_LOG_DEBUG,"core_file_system_add_dir: %s\n",sf_filename[sf_count]);
+	//core_debug_printf("core_file_system_add_dir: %s\n",sf_filename[sf_count]);
 	++sf_dir_count;
 }
 
@@ -760,30 +760,30 @@ void core_file_set_environment(retro_environment_t cb)
 	{
 		// if already initialized RETRO_ENVIRONMENT_GET_VFS_INTERFACE seems to fail,
 		// so just keep what we've got.
-		retro_log(RETRO_LOG_INFO,"retro_vfs version: %d\n",retro_vfs_version);
+		core_info_printf("retro_vfs version: %d\n",retro_vfs_version);
 	}
 	else if (cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE,(void*)&retro_vfs_info))
 	{
 		retro_vfs_version = retro_vfs_info.required_interface_version;
 		retro_vfs = retro_vfs_info.iface;
-		retro_log(RETRO_LOG_INFO,"retro_vfs version: %d\n",retro_vfs_version);
+		core_info_printf("retro_vfs version: %d\n",retro_vfs_version);
 	}
 	else
 #endif
 	{
 		(void)retro_vfs_info;
-		retro_log(RETRO_LOG_INFO,"retro_vfs not available\n");
+		core_info_printf("retro_vfs not available\n");
 	}
 
 	// system path is available immediately
 	if (cb(RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY,(void*)&cp) && cp)
 	{
-		//retro_log(RETRO_LOG_DEBUG,"GET_SYSTEM_DIRECTORY success\n");
+		//core_debug_printf("GET_SYSTEM_DIRECTORY success\n");
 		strcpy_trunc(system_path, cp, sizeof(system_path));
 		if (strlen(system_path) > 0)
 			strcat_trunc(system_path, "/", sizeof(system_path));
 	}
-	retro_log(RETRO_LOG_INFO,"system_path: %s\n",system_path);
+	core_info_printf("system_path: %s\n",system_path);
 
 	// save path is not ready until retro_load_game
 	save_path_ready = false;
