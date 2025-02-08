@@ -7629,7 +7629,7 @@ void m68k_go (int may_quit)
 	for (;;) {
 #else
 }
-void m68k_go_frame(void)
+void m68k_go_frame(bool run)
 {
 	for (int loop_count=1;loop_count;--loop_count) {
 #endif
@@ -7895,7 +7895,7 @@ void m68k_go_frame(void)
 		}
 #endif
 #ifdef __LIBRETRO__
-		if (core_init_return) break;
+		if (!run) break; // init-only if !run
 #endif
 		run_func();
 

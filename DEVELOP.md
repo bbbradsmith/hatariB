@@ -271,7 +271,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
 * **hatari/src/cpu/newcpu.c**
   * Split `m68k_go` into `m68k_go`, `m68k_go_frame`, and `m68k_go_quit` to allow emulation loop to return to the Libretro core after each frame.
     * `m68k_go` initializes the CPU and prepares to emulate the first frame before it exits. This is the last thing done during `retro_init`.
-    * `m68k_go_frame` runs the main emulation loop, returning after one frame. This is called once each frame from `retro_run`.
+    * `m68k_go_frame` runs the main emulation loop, returning after one frame. This is called once each frame from `retro_run`. It takes a `run` parameter that is used when we need the initialization only, without executing the CPU.
     * `m68k_go_quit` provides some final shutdown when exiting the emulation loop. This is called in `retro_deinit`.
     * When performing a configuration change or other full reset, we also use `m68k_go_quit -> m68k_go` to provide the equivalent of exiting and re-entering the original `m68k_go`, which the stand-alone Hatari does during resets.
   * Use `LOG_TRACE_PRINT` to direct traces to the log instead of the CPU system's separate log file.

@@ -182,7 +182,7 @@ int core_restore_state(void)
 	//   savestate_state = STATE_RESTORE
 	//   SPCFLAG_MODE_CHANGE
 	// restart the m68k loop
-	m68k_go_frame();
+	m68k_go_frame(true);
 	// runs:
 	//   restore_state
 	//     MemorySnapShot_Restore_Do
@@ -211,9 +211,7 @@ int core_restore_state(void)
 	// in_m68k_go++
 	// hardboot = 1
 	// startup = 1
-	core_init_return = true;
-	m68k_go_frame();
-	core_init_return = false;
+	m68k_go_frame(false); // init-only, no execution
 	core_flush_audio();
 	return result;
 }

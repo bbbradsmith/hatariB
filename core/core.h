@@ -24,9 +24,6 @@ struct coredirent
 // 0=0RGB1555, 1=XRGB8888, 2=RGB565
 extern int core_pixel_format;
 
-// will exit from m68k_go_frame before running CPU cycles if true
-extern bool core_init_return;
-
 // core running state flags
 #define CORE_RUNFLAG_HALT         0x01
 #define CORE_RUNFLAG_RESET_COLD   0x02
@@ -49,7 +46,7 @@ extern void core_info_printf(const char* fmt, ...); // INFO log, expects newline
 extern void core_warn_printf(const char* fmt, ...); // WARN log, expects newline in fmt.
 extern void core_error_printf(const char* fmt, ...); // ERROR log, expects newline in fmt.
 extern void core_debug_hatari(bool error, const char* msg); // log message from hatari
-extern void core_debug_bin(const char* data, int len, int offset); // hex dump to log (offset is added to the address display)
+extern void core_debug_bin(const char* data, int len, int offset); // hex dump to log (offset is added to the address display, not data)
 extern void core_debug_snapshot(const char* name); // prints the current write position of snapshot (for debugging savestate dumps)
 extern void core_debug_profile(const char* name); // prints name with time since previous
 
@@ -92,7 +89,7 @@ extern int core_rand(void);
 extern int main_init(int argc, char *argv[]);
 extern int main_deinit(void);
 extern void m68k_go(int may_quit);
-extern void m68k_go_frame(void);
+extern void m68k_go_frame(bool run); // run=false used for initialization only without execution
 extern void m68k_go_quit(void);
 // for enabling tracing at surgical points
 extern const char* Log_SetTraceOptions (const char *FlagsStr);
