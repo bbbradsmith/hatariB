@@ -5,10 +5,10 @@ This folder contains extra files, information and links, which might be useful w
 * [Files](#Files)
 * [Auto-Run](#Auto-Run)
   * [Auto Folder](#Auto-Folder)
-  * [DESKTOP.INF](#DESKTOP.INF)
+  * [DESKTOP.INF](#DESKTOPINF)
   * [GEM Programs](#GEM-Programs)
-    * [TOS 1.04+ and EmuTOS](#TOS-1.04+-and-EmuTOS)
-	* [TOS 1.00 and 1.02](#TOS-1.00-and-1.02)
+    * [TOS 1.04+ and EmuTOS](#TOS-104-and-EmuTOS)
+	* [TOS 1.00 and 1.02](#TOS-100-and-102)
   * [Medium Resolution](#Medium-Resolution)
   * [Incompatible Games](#Incompatible-Games)
 * [Links](#Links)
@@ -19,7 +19,7 @@ This folder contains extra files, information and links, which might be useful w
 * [**utils.st**](../../../raw/main/extras/utils.st) - A collection of utility programs that may be useful.
   * [**AUTOSORT.PRG**](../../../raw/main/extras/AUTOSORT.PRG) - Sorts the disk order of files in a folder, useful when you need an `AUTO` folder to run programs in a specific order. Version 1.1, Public Domain, 1998. Author: Gene Sothan
   * [**MEDRES.PRG**](../../../raw/main/extras/MEDRES.PRG) - Sets the resolution to medium, intended to be placed into an `AUTO` folder before another program that needs its resolution changed. [Compute Magazine, 1987](https://www.atarimagazines.com/compute/issue86/057_1_Medium-Resolution_Autorun.php). Author: Brian McCorkle
-  * [**STARTGEM.PRG**](../../../raw/main/extras/STARTGEM.PRG) - **TOS 1.00 and 1.02 only**: for auto-starting programs that need the GEM window system. See [Auto-Run: GEM Programs](#GEM-Programs) below. Author: *Unknown*
+  * [**STARTGEM.PRG**](../../../raw/main/extras/STARTGEM.PRG) - **TOS 1.00 and 1.02 only**: for auto-starting programs that need the GEM window system. See [Auto-Run: GEM Programs](#GEM-Programs). Author: *Unknown*
     * [**STARTGEM.DOC**](../../../raw/main/extras/STARTGEM.DOC) - Original ASCII instructions for STARTGEM.
 
 ### Auto-Run
@@ -43,7 +43,7 @@ You can use this to open a window showing exactly the program you want to open i
 Some caveats:
   * The original ST TOS saves the desktop to `DESKTOP.INF`, but unfortunately EmuTOS uses its own file `EMUDESK.INF`. To create an image that supports both, you will have to save the desktop twice, once using each TOS.
   * Because EmuTOS does not support DESKTOP.INF, most Atari ST disks intended to boot this way will unfortunately boot with an empty desktop that you have to open manually on EmuTOS.
-  * TOS 1.04+ adds an auto-run feature to its DESKTOP.INF (see GEM Programs [below](#TOS-1.04+-and-EmuTOS)), and though this isn't supported by earlier TOS, the saved layout still works in all ST TOS versions, so you can still use this as a fallback for that case.
+  * TOS 1.04+ adds an auto-run feature to its DESKTOP.INF (see [below](#GEM-Programs)), and though this isn't supported by earlier TOS, the saved layout still works in all ST TOS versions, so you can still use this as a fallback for that case.
 
 #### GEM Programs
 
