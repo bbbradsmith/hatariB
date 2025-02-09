@@ -79,7 +79,7 @@ const char* const HELPTEXT[] = {
 	" Libretro API (MIT), SDL2 (zlib), zlib (zlib)",
 	"",
 	"https://github.com/bbbradsmith/hatariB/",
-	"https://hatari.tuxfamily.org/",
+	"https://www.hatari-emu.org/",
 	SHORTHASH " " __DATE__ " " __TIME__,
 };
 

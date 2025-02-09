@@ -1,6 +1,6 @@
 # hatariB
 
-A [Libretro](https://www.libretro.com/) core integrating the [Hatari](https://hatari.tuxfamily.org/) emulation of Atari ST, STE, TT, and Falcon computers.
+A [Libretro](https://www.libretro.com/) core integrating the [Hatari](https://www.hatari-emu.org/) emulation of Atari ST, STE, TT, and Falcon computers.
 
 * Current Build Platforms:
   * Windows 64-bit, 32-bit
@@ -21,13 +21,13 @@ This is intended as an alternative or replacement for the older [Libretro Hatari
 
 This is a new project in the initial testing phase. Eventually I would like to submit it to Libretro.
 
-If you notice any problems or have feedback, please [create a Github issue](https://github.com/bbbradsmith/hatariB/issues). If you can, test in Hatari's stand-alone emulator first to see if the problem exists there as well.
+**Bugs and Issues:** If you notice any problems or have feedback, please [create a Github issue](https://github.com/bbbradsmith/hatariB/issues). **Before creating an issue, please note:** except for user interface problems, issues are often caused by the underlying emulator Hatari. It would help *a lot* if you could first **test the problem in [Hatari's stand-alone emulator](https://hatari-emu.org/download.html)** to see if the problem exists there. If Hatari does the same thing as hatariB, the bug report should instead go directly to the [Hatari](https://hatari-emu.org/) project. [Atari-Forum's Hatari subforum](https://www.atari-forum.com/viewforum.php?f=51) might be the best place to ask about issues with Hatari.
 
-Emulator: [Hatari 2.5.0](https://git.tuxfamily.org/hatari/hatari.git/tag/?id=v2.5.0) 2024-04-18
+**Emulator:** [Hatari 2.5.0](https://framagit.org/hatari/hatari/-/releases/v2.5.0) 2024-04-18
 
-Development notes: [DEVELOP.md](DEVELOP.md)
+**Development notes:** [DEVELOP.md](DEVELOP.md)
 
-Useful files and information: [extras/](extras/#Extras)
+**Useful files and information:** [extras/](extras/#Extras)
 
 ## Table of Contents
 
@@ -119,7 +119,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
 ## Notes
 
 ### Hatari Manual
-  * [Hatari Online Manual](https://hatari.tuxfamily.org/doc/manual.html)
+  * [Hatari Online Manual](https://www.hatari-emu.org/doc/manual.html)
 ### Controls
   * Left Stick and D-Pad - Joystick
   * Right Stick - Mouse
@@ -201,21 +201,20 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Later TOS versions (or EmuTOS) are recommended when using hard drives, as TOS 1.0 has only limited support for them. Without EmuTOS you may need to use a hard disk driver.
   * Using more than one permanent hard disk image at a time is unsupported, though a single image can have multiple partitions with individual drive letters. An M3U can be used for multiple temporary hard disks.
   * If you need an easy way to switch between permanent hard disk configurations, you could create a "boot" floppy disk to go along with the hard disk, and use *Manage Core Options > Save Game Options* to create a settings override associated with that floppy.
-  * See [Hatari's Manual: Hard Disk Support](https://hatari.tuxfamily.org/doc/manual.html#Hard_disk_support) for further information.
+  * See [Hatari's Manual: Hard Disk Support](https://www.hatari-emu.org/doc/manual.html#Hard_disk_support) for further information.
 ### M3U Playlists and Auto-Run
   * M3U playlists can be used to specify a collection of disk images, accessible via *Disc Control* in the *Quick Menu* of RetroArch.
-  * Each line of the M3U is the filename of a disk image, relative to the M3U file.
-  * A line starting with `#` will normally be ignored, allowing you to write a comment on the rest of that line, if needed.
+  * Each line of the M3U is the filename of a disk image, relative to directory of the M3U file.
+  * A line starting with `#` will be ignored, unless it is a special command (see below), allowing you to write a comment on the rest of that line, if needed. Blank lines are also ignored.
   * The first 2 disk images will be loaded into drives A and B when the content is opened, but this behaviour can be overridden.
-    * A temporary hard disk image can also be listed in the M3U. Place hard disks after any floppy disk mages.
-  * `#BOOTA:number` can be used to select an image from the list to insert into drive A at boot. 1 is the first image in the list. 0 will leave the drive empty.
+  * A temporary hard disk image can also be listed in the M3U. Hard disks should be listed after any/all floppy disk mages.
+  * `#EXTM3U` should normally be the first line of any M3U using the `#` special commands below ([Extended M3U](https://en.wikipedia.org/wiki/M3U#Extended_M3U)) but hatariB does not enforce this requirement.
+  * `#BOOTA:number` can be used to select an image from the list to insert into drive A at boot. 1 is the first image in the list. Number 0 will leave the drive empty.
   * `#BOOTB:number` selects the image for drive B at boot.
-  * `#AUTO:filename` **TOS 1.04+ only**: Automatically run a TOS file at boot. **Not all games are compatible with this feature** and may crash on boot (eg. [1](https://github.com/bbbradsmith/hatariB/issues/54), [2](https://github.com/bbbradsmith/hatariB/issues/60)). For many games it is a better solution to create an `AUTO` folder on the disk, see note below. This feature is the same as [Hatari's --auto command line option](https://hatari.tuxfamily.org/doc/manual.html#General_options), so if you find an incompatible game, please test [Hatari stand-alone](https://hatari.tuxfamily.org/download.html) first. If the crash is in Hatari too, please send the issue to Hatari and not to me. Example: `#AUTO:C:\GAMES\JOUST.PRG`
-  * `#RES:res` **TOS 1.04+ only**: Automatically set the TOS resolution at boot. Valid values are `low`, `med`, `high`, `ttlow`, `ttmed`. Normally only needed in combination with `#AUTO` for medium resolution games, because it overrides the desktop `INF` file on the disk. This is the same as [Hatari's --tos-res command line option](https://hatari.tuxfamily.org/doc/manual.html#General_options). Example: `#RES:med`
-  * If using the `#BOOTA`/`#BOOTB`/`#AUTO`/`#RES` features, technically `#EXTM3U` should be added as the first line of the M3U to indicate this is an [Extended M3U](https://en.wikipedia.org/wiki/M3U#Extended_M3U), but hatariB will not enforce this.
+  * `#AUTO:filename` **TOS 1.04+ only**: Automatically run a TOS file at boot. **Not all games are compatible with this feature** and may crash on boot (eg. [1](https://github.com/bbbradsmith/hatariB/issues/54), [2](https://github.com/bbbradsmith/hatariB/issues/60)). For many games there might be a better solution: see [Auto-Run](extras/#Auto-Run). This feature is the same as [Hatari's --auto](https://www.hatari-emu.org/doc/manual.html#General_options) command line option. Example: `#AUTO:C:\GAMES\JOUST.PRG`
+  * `#RES:res` **TOS 1.04+ only**: Automatically set the TOS resolution at boot. Valid values are `low`, `med`, `high`, `ttlow`, `ttmed`. Normally only needed in combination with `#AUTO` for medium resolution games, because it overrides the desktop `INF` file on the disk. This is the same as [Hatari's --tos-res](https://www.hatari-emu.org/doc/manual.html#General_options) command line option. Example: `#RES:med`
   * *Manage Core Options > Save Game Options* can be used to associate other core options with an M3U playlist.
-  * **Auto-start for all TOS versions**: Many games can be auto-started on the ST simply by creating an `AUTO` folder on the floppy disk, and moving the PRG/TOS inside. This is a built-in feature of all versions of TOS, but not all games are compatible. For more information:
-    * [Auto-Run](extras/#Auto-Run)
+  * **Auto-Run for all TOS versions**: Many games can be auto-started on the ST simply by creating an `AUTO` folder on the floppy disk, and moving the PRG/TOS inside. This is a built-in feature of all versions of TOS, but not all games are compatible. For more information, see: [Auto-Run](extras/#Auto-Run)
 ### Saving
   * When a modified floppy disk is ejected, or the core is closed, a modified copy of that disk image will be written to the *saves/* folder.
   * Whenever a new floppy disk is added (*Load Content*, or *Load New Disk*), the saved copy will be substituted for the original if it exists. (Also, if you want to return to the original disk, you can delete it from *saves/*.)
@@ -224,7 +223,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Floppy disks in *saves/* must have a unique filename. Try not to use generic names like *savedisk.st*, and instead include the game title in its filename. (Even if contained within a *ZIP* the save disk filename should be unique.)
   * If possible, it is recommended that save disks for games use the *ST* format, because it is the simplest and least error prone format. You can download a prepared blank disk here: **[blank.st](../../raw/main/extras/blank.st)**.
   * The images written to *saves/* will be standard Atari ST image formats, and you should be able to load them in other emulators if you wish.
-  * Note that Hatari is not able to simulate the formatting of a blank disk in-emulator. The [stand-alone version of Hatari](https://hatari.tuxfamily.org/download.html) has a utility in its menu that can be used to create a blank ST file. A different Atari ST emulator [Steem.SSE](https://sourceforge.net/projects/steemsse/) can simulate the formatting process.
+  * Note that Hatari is not able to simulate the formatting of a blank disk in-emulator. The [stand-alone version of Hatari](https://www.hatari-emu.org/download.html) has a utility in its menu that can be used to create a blank ST file. A different Atari ST emulator [Steem.SSE](https://sourceforge.net/projects/steemsse/) can simulate the formatting process.
   * In the core options *Advanced > Write Protect Floppy Disks* will act as if all inserted disks have their write protect tab open. This means the emulated operating system will refuse to write any further data to the disk, and will report the error. This is independent of the save feature, and can be turned on and off at will. Turning it on after a disk is modified will not prevent previous modifications from being saved when it is ejected.
   * *STX* saves will create a *WD1772* file instead of an *STX* when saved. This is an overlay of changes made to the file, because the STX format itself cannot be re-written. If you wish to use these with the stand-alone Hatari, place the overlay file in the same folder as its STX.
   * *DIM* format disks cannot be saved by Hatari. It is recommended to convert them to *ST* files instead.

@@ -4,6 +4,7 @@ This folder contains extra files, information and links, which might be useful w
 #### Contents
 * [Files](#Files)
 * [Auto-Run](#Auto-Run)
+  * [Auto Folder](#Auto-Folder)
   * [DESKTOP.INF](#DESKTOP.INF)
   * [GEM Programs](#GEM-Programs)
     * [TOS 1.04+ and EmuTOS](#TOS-1.04+-and-EmuTOS)
@@ -25,6 +26,8 @@ This folder contains extra files, information and links, which might be useful w
 
 A few tips for making Atari ST disks that auto-run a program.
 
+#### Auto Folder
+
 In many cases you can simply create an `AUTO` folder on your floppy disk, and then move the program you want to run at boot into this folder. This works on all versions of TOS, and is usually the most ideal solution. If you want to modify a disk with hatariB you will have to find the modified copy made in your saves folder (see: [Saving](../#Saving)), though it may be more convenient to use the stand-alone version of Hatari, which will save directly to the image.
 
 Some programs are not compatible with the AUTO folder, and may crash, or simply not run. There are alternative solutions to some of these compatibility problems.
@@ -40,7 +43,7 @@ You can use this to open a window showing exactly the program you want to open i
 Some caveats:
   * The original ST TOS saves the desktop to `DESKTOP.INF`, but unfortunately EmuTOS uses its own file `EMUDESK.INF`. To create an image that supports both, you will have to save the desktop twice, once using each TOS.
   * Because EmuTOS does not support DESKTOP.INF, most Atari ST disks intended to boot this way will unfortunately boot with an empty desktop that you have to open manually on EmuTOS.
-  * TOS 1.04+ adds an auto-run feature to its DESKTOP.INF (see [below](#TOS-1.04+-and-EmuTOS)), and though this isn't supported by earlier TOS, the saved layout still works in all ST TOS versions, so you can still use this as a fallback for that case.
+  * TOS 1.04+ adds an auto-run feature to its DESKTOP.INF (see GEM Programs [below](#TOS-1.04+-and-EmuTOS)), and though this isn't supported by earlier TOS, the saved layout still works in all ST TOS versions, so you can still use this as a fallback for that case.
 
 #### GEM Programs
 
@@ -51,7 +54,7 @@ These OS versions support GEM auto-run through their desktop preferences:
   * Select the `.PRG` in the window, then go to `Options > Install Application...`. Select `Auto` boot status. (For EmuTOS also select `Application` for default dir.) Next click `Install` to close the dialog. Finally go to `Options > Save Desktop` to commit this to disk.
   * TOS 1.04+ saves the auto-run information to `DESKTOP.INF`, and EmuTOS saves it to `EMUDESK.INF`. To make auto-run compatible with both, you will have to save both.
   * To remove an auto-run application, return to the `Install Application...` menu and click instead `Remove`, and then `Save Desktop` to write the change to the disk.
-  * hatariB can create a virtual auto-run INF file without having to modify the disk image. Using an `.M3U` file with an `#AUTO` statement, the emulator will pretend that your chosen application has already been installed to the INF file. See [M3U Playlists and Auto-Run](../#M3U-Playlists-and-Auto-Run) for more information. (In Hatari this is the command line option `--auto`.)
+  * hatariB can create a virtual auto-run INF file without having to modify the disk image. Using an `.M3U` file with an `#AUTO` statement, the emulator will pretend that your chosen application has already been installed to the INF file. See [M3U Playlists and Auto-Run](../#M3U-Playlists-and-Auto-Run) for more information. (In Hatari this is the command line option `--auto`.) Medium-resolution programs will also need `#RES:med`.
 
 ##### TOS 1.00 and 1.02
 These can sometimes use the STARTGEM program (see [Files](#Files) above) to initialize the GEM system before running your chosen program automatically:
@@ -73,13 +76,13 @@ AUTO folder files are run in their natural disk order, which is normally the sam
 
 Some games will crash, or otherwise not successfully auto-run with any of the methods given above. Your best option may be to [save the Desktop](#DESKTOP.INF) as described above to make opening the game as convenient as you can manage.
 
-If you can't get a game to auto-run, please don't submit a bug report to me until you have already tried the equivalent in [stand-alone Hatari]((https://hatari.tuxfamily.org/download.html)). If they only fail in hatariB, but work in Hatari 2.5.0, then it is an issue that I can try to address.
+If you can't get a game to auto-run, please don't submit a bug report to me until you have already tried the equivalent in [stand-alone Hatari]((https://www.hatari-emu.org/download.html)). If they only fail in hatariB, but work in Hatari 2.5.0, then it is an issue that I can try to address.
 
-However, if it fails in Hatari stand-alone it could also just be that the game is incompatible with that auto-run method, and it may not be considered an emulation bug at all. Nevertheless, if you wish to report it as a bug, and the failure occurs in stand-alone Hatari, please contact the [Hatari](https://hatari.tuxfamily.org/) project instead of me. Thank you.
+However, if it fails in Hatari stand-alone it could also just be that the game is incompatible with that auto-run method, and it may not be considered an emulation bug at all. Nevertheless, if you still wish to report it as a bug, please contact the [Hatari](https://www.hatari-emu.org/) project instead of me. The best place to ask a question like this is probably [Atari-Forum's Hatari subforum](https://www.atari-forum.com/viewforum.php?f=51). Thank you.
 
 ### Links
 
-  * [Hatari](https://hatari.tuxfamily.org/) / [User Manual](https://hatari.tuxfamily.org/doc/manual.html) - The emulator that hatariB is built on.
+  * [Hatari](https://www.hatari-emu.org/) / [User Manual](https://www.hatari-emu.org/doc/manual.html) - The emulator that hatariB is built on.
   * [EmuTOS](https://emutos.sourceforge.io/) / [User Manual](https://emutos.github.io/manual/) - The free TOS included with hatariB.
   * [SPS Downloads](http://www.softpres.org/download) - **capsimg 5.1** can be downloaded here, for using **IPF** files. (More info: [Installation](../#Installation))
   * [MUNT MT-32 Emulator](https://sourceforge.net/projects/munt/) - Simulates the Roland MT-32 MIDI sound device.
