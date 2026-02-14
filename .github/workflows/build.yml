@@ -154,8 +154,6 @@ jobs:
           path: artifact/
 
   build-macos:
-    if: false
-    # disabled until zlib can be updated
     name: MacOS Fat
     runs-on: macos-latest
     steps:
@@ -244,7 +242,7 @@ jobs:
 
   build-rpi64:
     name: Raspberry Pi OS 64-bit
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Files
         uses: actions/checkout@v4
@@ -297,9 +295,7 @@ jobs:
 
   build-rpi32:
     name: Raspberry Pi OS 32-bit
-    runs-on: ubuntu-20.04
-    # ubuntu-latest was building with a newer GLIBC than current Rpi images, making them incompatible,
-    # but 20.04 builds seem to have an older GLIBC that is compatible.
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Files
         uses: actions/checkout@v4
