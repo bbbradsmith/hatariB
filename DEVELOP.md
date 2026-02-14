@@ -11,7 +11,7 @@ Incorporated sources:
 * [libretro/libretro.h](https://github.com/libretro/libretro-common/blob/7edbfaf17baffa1b8a00231762aa7ead809711b5/include/libretro.h) 24a9210 2023-07-16
 * [libretro/libretro_sdl_keymap.h](https://github.com/libretro/RetroArch/blob/b4143882245edd737c7e7c522b25e32f8d1f64ad/input/input_keymaps.c#L607) 9ca5c5e 2023-07-08
 * [SDL2](https://github.com/libsdl-org/SDL/releases/tag/release-2.30.2) 2.30.2 2024-04-01
-* [zlib](https://github.com/madler/zlib/releases/tag/v1.3) 1.3 2023-08-18
+* [zlib](https://github.com/madler/zlib/releases/tag/v1.3.1.2) 1.3.1.2 2025-12-8
 
 ## Build
 
