@@ -6,11 +6,11 @@
 #
 
 Name:         hatari
-URL:          http://hatari.tuxfamily.org/
+URL:          https://www.hatari-emu.org/
 License:      GPLv2+
 Group:        System/Emulators/Other
 Autoreqprov:  on
-Version:      2.5.0
+Version:      2.6.1
 Release:      1
 Summary:      An Atari ST/STE/TT/Falcon emulator
 Source:       %{name}-%{version}.tar.bz2
@@ -40,8 +40,7 @@ and demos.  Because of this, it may be somewhat slower than less accurate
 emulators.
 
 %prep
-%setup
-#%patch
+%autosetup -p1
 
 %build
 ./configure --enable-werror --prefix=/usr
@@ -70,6 +69,12 @@ rm -rf $RPM_BUILD_ROOT
 %license gpl.txt
 
 %changelog -n hatari
+
+* Fri Aug 15 2025 - Nicolas Pomarede
+- Hatari version 2.6.1
+
+* Sun Jun 22 2025 - Nicolas Pomarede
+- Hatari version 2.6.0
 
 * Thu Apr 18 2024 - Nicolas Pomarede
 - Hatari version 2.5.0

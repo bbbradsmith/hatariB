@@ -50,7 +50,7 @@ Emulation improvements
     (currently they're incremented so that programs checking them
     don't get stuck, but values aren't quite correct yet)
   - Video timings for the Falcon Videl chip (60Hz support):
-    https://listengine.tuxfamily.org/lists.tuxfamily.org/hatari-devel/2016/07/msg00013.html
+    https://hatari.frama.io/archive/mailing-lists/tuxfamily-devel/2016/07/msg00013.html
   - ST screen modes centering when Videl borders are enabled
   - Some demos (like Yepyha) use odd (e.g. 384x1) Videl resolutions
     for transitions between screens. Size of Hatari window shouldn't
@@ -61,8 +61,6 @@ Emulation improvements
       window Falcon resolution should be
 
 - Improve experimental SCSI hard disk emulation for Falcon/TT mode.
-
-- Improve experimental SCC serial port emulation for Falcon/TT mode.
 
 - Last DSP emulation / Falcon sound matrix items:
 	- Dsp SSI internal clock (is it used on falcon ?)
@@ -81,7 +79,7 @@ Emulation improvements
 	https://github.com/tonioni/WinUAE/issues/133
 
 - Properly emulate the DMA sector count register for ACSI transfers
-  https://listengine.tuxfamily.org/lists.tuxfamily.org/hatari-devel/2021/09/msg00006.html
+  https://hatari.frama.io/archive/mailing-lists/tuxfamily-devel/2021/09/msg00006.html
 
 
 Programs known as not fully functional (not an exhaustive list)
@@ -147,9 +145,6 @@ Other potential Hatari functionality improvements
   contain GST symbol tables, so checking that isn't enough.
 
 - Preliminary debugger work for the other features + cleanup:
-	- Eval_Number() could take DSP/CPU flag like Eval_Range()
-	  does so that all commands taking numeric args can accept
-	  also symbol, variable & register names
 	- Skip & tell user to rename any of the loaded symbols that
 	  have same name as internal Hatari variables
 	- Change "" for expressions to {} so that quotes can
@@ -165,17 +160,15 @@ Other potential Hatari functionality improvements
 	  and showing the value as long/word/byte requires ANDing it)
 	- All register values being shown with above info
           (= Steem Register monitor)
-	- info commands for PSG, MFP, FDC and IKBD register values
+	- info commands for PSG and FDC register values
 	  (= Steem monitors for these)
 	- Info command for "timings" i.e. cycles since HBL/VBL,
 	  timer values, video address & scanline
 	  (= Steem Timings view)
-	- memory dump in text format
+	- memory dump with just text format
 	  (= Steem Text monitor)
         - Stack content display: m "a7-$40"-"a7"
 	  (= Steem Stack display)
-	- Text string and binary values (hex) search
-	  (= widgets in Steem monitor windows)
 	- Run for N cycles
 	  (Hatari 'continue' command accepts only instructions, not cycles)
 
@@ -203,7 +196,6 @@ Other potential Hatari functionality improvements
 	- A stop/run button and a debugger "step" button
 	- Possibility to click to an address on dump window to define
 	  a simple PC breakpoint (or monitor memory on B/W/L accesses)
-	- A way to search for hex/text in Hatari's RAM.
 
 (See "Steem debugger features not in Hatari debugger"
 on BerliOS hatari-devel mail thread for more info.)
@@ -227,24 +219,12 @@ on BerliOS hatari-devel mail thread for more info.)
 	- Fill and copy memory command
 	- Search for an address which disassembly output matches
 	  given instruction substring
-	- User variables which values can be set & used in expressions
 
 - Improved screen handling:
 	- Line based screen change detection/checks:
 		- blit only changed lines
 		- simpler / faster (LED) overlay handling
 	- Include some fancy zooming routines like 2xSaI or Super-Eagle
-
-- Improve directory handling:
-	- Currently screenshots & anim go always to current dir,
-	  whereas memsave, sound recording, printer & midi & serial &
-	  output and log output go to file specified in config file.
-	  There should be support for setting also anim/screenshot
-	  directory / file name from config file (needs change also
-	  in screenSnapShot.c).
-	- By default the directory config values should be empty in
-	  which case the code will at run-time decide to use current
-	  directory, but not modify the path config setting.
 
 - Add Hatari "fileid" to more files (to ease locating "stolen" code)
   and Git hook to remove trailing whitespace (sed -i 's/[\t ]*$//')?

@@ -58,7 +58,7 @@
 	<key>CFBundleIconFile</key>
 	<string>Hatari.icns</string>
 	<key>CFBundleIdentifier</key>
-	<string>org.tuxfamily.Hatari</string>
+	<string>org.hatari-emu.Hatari</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -66,11 +66,11 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>2.5.0</string>
+	<string>2.6.1</string>
 	<key>CFBundleSignature</key>
 	<string>HATA</string>
 	<key>CFBundleVersion</key>
-	<string>2.5.0</string>
+	<string>2.6.1</string>
 	<key>Hatari</key>
 	<string>SDL Cocoa App</string>
 	<key>LSMinimumSystemVersion</key>

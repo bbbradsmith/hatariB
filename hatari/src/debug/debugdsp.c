@@ -86,7 +86,7 @@ int DebugDsp_Register(int nArgc, char *psArgs[])
 		goto error_msg;
 
 	*assign++ = '\0';
-	if (!Eval_Number(Str_Trim(assign), &value))
+	if (!Eval_Number(Str_Trim(assign), &value, NUM_TYPE_DSP))
 		goto error_msg;
 
 	if (DSP_Disasm_SetRegister(Str_Trim(arg), value))
@@ -188,7 +188,7 @@ int DebugDsp_DisAsm(int nArgc, char *psArgs[])
 
 /**
  * Do a DSP memory dump, args = starting address or range.
- * <x|y|p> <address>: dump from X, Y or P, starting from given address,
+ * `x|y|p` `address`: dump from X, Y or P, starting from given address,
  * e.g. "x 200" or "p 200-300"
  */
 int DebugDsp_MemDump(int nArgc, char *psArgs[])
@@ -595,7 +595,7 @@ static const dbgcommand_t dspcommands[] =
 	  "\tdump DSP memory from given memory space and address, or\n"
 	  "\tcontinue from previous address if none specified.",
 	  false },
-	{ Symbols_Command, NULL,
+	{ Symbols_Command, Symbols_MatchDspCommand,
 	  "dspsymbols", "",
 	  "load DSP symbols & their addresses",
 	  Symbols_Description,

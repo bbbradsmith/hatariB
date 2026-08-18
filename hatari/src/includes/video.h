@@ -185,6 +185,9 @@ extern const char* Video_GetTimings_Name ( void );
 extern uint8_t	Video_Get_MONO_Line ( void );
 
 extern void	Video_ConvertPosition( int FrameCycles , int *pHBL , int *pLineCycles );
+extern int	Video_GetCyclesSinceVbl ( void );
+extern int	Video_GetCyclesSinceVbl_OnWriteAccess ( void );
+extern int	Video_GetCyclesSinceVbl_OnReadAccess ( void );
 extern void	Video_GetPosition( int *pFrameCycles , int *pHBL , int *pLineCycles );
 extern void	Video_GetPosition_OnWriteAccess( int *pFrameCycles , int *pHBL , int *pLineCycles );
 extern void	Video_GetPosition_OnReadAccess( int *pFrameCycles , int *pHBL , int *pLineCycles );
@@ -195,6 +198,8 @@ extern int	Video_TimerB_GetPos( int LineNumber );
 
 extern void	Video_InterruptHandler_HBL(void);
 extern void	Video_InterruptHandler_EndLine(void);
+
+extern void	Video_Set_Memcpy ( bool Force_MMU_Translation );
 
 extern void	Video_SetScreenRasters(void);
 extern void	Video_GetTTRes(int *width, int *height, int *bpp);
@@ -212,7 +217,8 @@ extern void Video_ScreenCounter_WriteByte(void);
 extern void Video_Sync_ReadByte(void);
 extern void Video_BaseLow_ReadByte(void);
 extern void Video_LineWidth_ReadByte(void);
-extern void Video_Res_ReadByte(void);
+extern void Video_ResGlueShifter_ReadByte(void);
+extern void Video_ResShifter_ReadByte(void);
 extern void Video_HorScroll_Read(void);
 extern void Video_LineWidth_WriteByte(void);
 extern void Video_Color0_WriteWord(void);
@@ -247,7 +253,8 @@ extern void Video_Color12_ReadWord(void);
 extern void Video_Color13_ReadWord(void);
 extern void Video_Color14_ReadWord(void);
 extern void Video_Color15_ReadWord(void);
-extern void Video_Res_WriteByte(void);
+extern void Video_ResGlueShifter_WriteByte(void);
+extern void Video_ResShifter_WriteByte(void);
 extern void Video_HorScroll_Read_8264(void);
 extern void Video_HorScroll_Read_8265(void);
 extern void Video_HorScroll_Write_8264(void);

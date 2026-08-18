@@ -1,7 +1,7 @@
 /*
  * Hatari - gst2ascii.c
  * 
- * Copyright (C) 2013-2023 by Eero Tamminen
+ * Copyright (C) 2013-2025 by Eero Tamminen
  * 
  * This file is distributed under the GNU General Public License, version 2
  * or at your option any later version. Read the file gpl.txt for details.
@@ -57,8 +57,8 @@ static void usage(const char *msg)
 		{ 'g', "GCC internal (object) symbols" },
 		{ 'l', "local (.L*) symbols" },
 		{ 's', "symbols with duplicate addresses" },
-		{ 't', "TEXT symbols" },
-		{ 'w', "weak symbols" },
+		{ 't', "TEXT (code) symbols" },
+		{ 'w', "weak (code) symbols" },
 	};
 	const char *name;
 	int i;
@@ -126,7 +126,7 @@ static bool update_sections(prg_section_t *sections)
 }
 
 /**
- * Load symbols of given type and the symbol address addresses from
+ * Load symbols of given type and the symbol addresses from
  * the given file and add given offsets to the addresses.
  * Return symbols list or NULL for failure.
  */
@@ -258,10 +258,10 @@ int main(int argc, const char *argv[])
 			notype = SYMTYPE_DATA;
 			break;
 		case 't':
-			opts.notypes |= SYMTYPE_TEXT;
+			notype = SYMTYPE_TEXT;
 			break;
 		case 'w':
-			opts.notypes |= SYMTYPE_WEAK;
+			notype = SYMTYPE_WEAK;
 			break;
 			/* symbol flags */
 		case 'f':

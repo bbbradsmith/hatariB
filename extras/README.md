@@ -76,7 +76,7 @@ AUTO folder files are run in their natural disk order, which is normally the sam
 
 Some games will crash, or otherwise not successfully auto-run with any of the methods given above. Your best option may be to [save the Desktop](#DESKTOP.INF) as described above to make opening the game as convenient as you can manage.
 
-If you can't get a game to auto-run, please don't submit a bug report to me until you have already tried the equivalent in [stand-alone Hatari]((https://www.hatari-emu.org/download.html)). If they only fail in hatariB, but work in Hatari 2.5.0, then it is an issue that I can try to address.
+If you can't get a game to auto-run, please don't submit a bug report to me until you have already tried the equivalent in [stand-alone Hatari]((https://www.hatari-emu.org/download.html)). If they only fail in hatariB, but work in Hatari 2.6.1, then it is an issue that I can try to address.
 
 However, if it fails in Hatari stand-alone it could also just be that the game is incompatible with that auto-run method, and it may not be considered an emulation bug at all. Nevertheless, if you still wish to report it as a bug, please contact the [Hatari](https://www.hatari-emu.org/) project instead of me. The best place to ask a question like this is probably [Atari-Forum's Hatari subforum](https://www.atari-forum.com/viewforum.php?f=51). Thank you.
 

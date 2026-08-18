@@ -1,0 +1,67 @@
+From 08e43110a164a1b3f12f306342b63b9be88666e5 Mon Sep 17 00:00:00 2001
+From: Eero Tamminen <oak@helsinkinet.fi>
+Date: Tue, 31 Mar 2020 22:41:40 +0300
+Subject: [PATCH 2/2] m68k: Set reasonable PSG port-A default value
+
+Fixes continuous IDE & DSP reset requests on Atari Falcon from 2Hz
+floppy media change detection if those bits happen to be set (to
+a different value than ROM defaults) before Linux starts.
+
+All successive port-A requests preserve unrelated bits.  If bits 4 & 6
+are set, that means every PSG port-A request, such as floppy media
+change detection, being also Falcon DSP & IDE reset request.
+
+Signed-off-by: Eero Tamminen <oak@helsinkinet.fi>
+---
+ Documentation/arch/m68k/kernel-options.rst |  4 +++-
+ arch/m68k/atari/config.c                   | 10 ++++++----
+ 2 files changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/Documentation/arch/m68k/kernel-options.rst b/Documentation/arch/m68k/kernel-options.rst
+index 2008a20b4..cae270018 100644
+--- a/Documentation/arch/m68k/kernel-options.rst
++++ b/Documentation/arch/m68k/kernel-options.rst
+@@ -674,8 +674,10 @@ items:
+ 	set RTS of the MIDI ACIA high
+   snd6:
+ 	set bit 6 of the PSG port A
++	(Falcon: internal speaker on/off, others: monitor jack GPO pin)
+   snd7:
+-	set bit 6 of the PSG port A
++	set bit 7 of the PSG port A
++	(Falcon: IDE drive on/off, TT: SCC-A LAN/serial2)
+ 
+ It doesn't make sense to mention a switch more than once (no
+ difference to only once), but you can give as many switches as you
+diff --git a/arch/m68k/atari/config.c b/arch/m68k/atari/config.c
+index b48a0606a..0e4bd90fe 100644
+--- a/arch/m68k/atari/config.c
++++ b/arch/m68k/atari/config.c
+@@ -188,6 +188,7 @@ early_param("switches", atari_switches_setup);
+ void __init config_atari(void)
+ {
+ 	unsigned short tos_version;
++	unsigned char porta_init = 0x07;
+ 
+ 	memset(&atari_hw_present, 0, sizeof(atari_hw_present));
+ 
+@@ -212,11 +213,12 @@ void __init config_atari(void)
+ 	if (atari_switches & ATARI_SWITCH_MIDI)
+ 		acia.mid_ctrl = ACIA_DIV16 | ACIA_D8N1S | ACIA_RHTID;
+ 	if (atari_switches & (ATARI_SWITCH_SND6|ATARI_SWITCH_SND7)) {
+-		sound_ym.rd_data_reg_sel = 14;
+-		sound_ym.wd_data = sound_ym.rd_data_reg_sel |
+-				   ((atari_switches&ATARI_SWITCH_SND6) ? 0x40 : 0) |
+-				   ((atari_switches&ATARI_SWITCH_SND7) ? 0x80 : 0);
++		porta_init |= ((atari_switches&ATARI_SWITCH_SND6) ? 0x40 : 0) |
++			      ((atari_switches&ATARI_SWITCH_SND7) ? 0x80 : 0);
+ 	}
++	/* Set PSG port-A defaults */
++	sound_ym.rd_data_reg_sel = 14;
++	sound_ym.wd_data = porta_init;
+ 
+ 	/* ++bjoern:
+ 	 * Determine hardware present
+-- 
+2.39.5
+

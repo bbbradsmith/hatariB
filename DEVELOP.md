@@ -6,7 +6,7 @@ This is intended as reference documentation for future maintenance of this proje
 
 Incorporated sources:
 
-* [Hatari/](https://framagit.org/hatari/hatari/-/releases/v2.5.0) 2.5.0 2024-04-18
+* [Hatari/](https://framagit.org/hatari/hatari/-/releases/v2.6.1) 2.6.1 2025-08-15
 * [EmuTOS/](https://emutos.sourceforge.io/) 1.3 2024-03-17
 * [libretro/libretro.h](https://github.com/libretro/libretro-common/blob/7edbfaf17baffa1b8a00231762aa7ead809711b5/include/libretro.h) 24a9210 2023-07-16
 * [libretro/libretro_sdl_keymap.h](https://github.com/libretro/RetroArch/blob/b4143882245edd737c7e7c522b25e32f8d1f64ad/input/input_keymaps.c#L607) 9ca5c5e 2023-07-08
@@ -165,7 +165,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Disable dispatch of keypresses to `ShortCut` system (Hatari's own GUI hotkeys).
   * Disable using Num Lock to remap Numpad. (ST has no Num Lock. Numpad is Numpad.)
   * Disable use of `SDL_GetKeyFromName`/`SDL_GetKeyName`, only needed by configuration GUI.
-  * Fix broken mapping for minus (`- _`).
+  * Disable symbolic mapping sets for TOS region and use the old map. HatariB implements regional keyboards in its own code.
 * **hatari/src/main.c**
 * **hatari/src/includes/main.h**
   * Disable `SDL_GetTicks` timer.
@@ -188,6 +188,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Include `core.h` in main header to provide global extern access to some core functions.
   * Disable log output requirement.
   * Use srand of 1 instead of taking current time.
+  * Disable `Win_ForceCon`.
 * **hatari/src/memorySnapShot.c**
 * **hatari/src/includes/memorySnapShot.h**
   * Disable compression of savestate data, Libretro does its own compression for save to disk, but also needs an uncompressed form for run-ahead or netplay to work.
@@ -206,6 +207,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Use core's file system to provide SCSI image hard disk support.
 * **hatari/src/options.c**
   * Add `core_auto_start` access to provide way to use the `--auto` command line option.
+  * Disable `Win_ForceCon`.
 * **hatari/src/paths.c**
   * Disable attempt to read host's working directory for absolute paths, replace any attempt with "<nopath>".
 * **hatari/src/reset.c**
@@ -214,9 +216,6 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Disable `SDL_GetDesktopDisplayMode` and assume the desktop is the size we need.
 * **hatari/src/scandir.c**
   * Remove unused scandir implementations enabled by !HAVE_SCANDIR.
-* **hatari/src/scc.c**
-  * Fix uninitialized `ReadHandle_Lan`, `WriteHandle_Lan` crash bug.
-  * `ClockName` unread variable warning.
 * **hatari/src/screen.c**
   * Disable SDL rendering, reduce use of SDL to merely creating a software render SDL_Surface which can be used by the gui-sdl system to render the status bar and onscreen keyboard.
   * Replace `SDL_RenderPresent` with `core_video_update` to deliver the new frame buffer.
@@ -234,7 +233,6 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Fix incorrect lowpass filter frequency, and provide cleaner lowpass filter implementation to replace the existing compromised ones. Also [submitted to Hatari](https://github.com/hatari/hatari/pull/25).
   * Deliver generated audio to core with `core_audio_update`.
   * Clear `YM2149_ConvertCycles_250.Cycles` after they're consumed to prevent state divergence during pause.
-  * Add `YM2149_Freq_div_2` to save state to prevent divergence.
 * **hatari/src/st.c**
   * Use core's file system to load and save floppy image.
 * **hatari/src/statusbar.c**
@@ -251,23 +249,15 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
 * **hatari/src/unzip.c**
 * **hatari/src/includes/unzip.h**
   * Replace direct file access to unzip from a memory buffer instead.
-* **hatari/src/util.c**
+* **hatari/src/utils.c**
   * Replace `rand()` with `core_rand()`.
 * **hatari/src/video.c**
   * `Video_ResetShifterTimings` relays current framerate to `core_set_fps`.
-  * `Delayed` unread variable warning.
   * `PendingCyclesOver` unread variable warning.
 * **hatari/src/zip.c**
   * Disable use of `unzOpen` which was modified (see: unzip.c) and not needed by this core.
-* **hatari/src/cpu/debug.c**
-* **hatari/src/cpu/disasm.c**
-* **hatari/src/cpu/fpp_native.c**
-* **hatari/src/cpu/fpp_softfloat.c**
-  * Added [a workaround](https://github.com/bbbradsmith/hatariB/commit/846ee699c5b75f0cbd64dbfdfdfc6dc6450b0b01) for MinGW UCRT64 `_stprintf` incompatibility, replacing it with `sprintf`. This seems to be an issue in GCC 14.2.0 but I found [a mailing list thread](https://sourceforge.net/p/mingw-w64/mailman/mingw-w64-public/thread/20240927231145.24708-1-pali.rohar%40gmail.com/) that seemed to be addressing it, so hopefully this can be removed with a later compiler version.
 * **hatari/src/cpu/hatari-glue.c**
   * Added `core_save_state`, `core_restore_state` and `core_flush_audio` to facilitate seamless savestates.
-* **hatari/src/cpu/memory.c**
-  * Disable `SDL_Quit`.
 * **hatari/src/cpu/newcpu.c**
   * Split `m68k_go` into `m68k_go`, `m68k_go_frame`, and `m68k_go_quit` to allow emulation loop to return to the Libretro core after each frame.
     * `m68k_go` initializes the CPU and prepares to emulate the first frame before it exits. This is the last thing done during `retro_init`.

@@ -21,19 +21,11 @@ const char STMemory_fileid[] = "Hatari stMemory.c";
 #include "m68000.h"
 #include "video.h"
 
-/* STRam points to our ST Ram. Unless the user enabled SMALL_MEM where we have
- * to save memory, this includes all TOS ROM and IO hardware areas for ease
- * and emulation speed - so we create a 16 MiB array directly here.
- * But when the user turned on ENABLE_SMALL_MEM, this only points to a malloc'ed
- * buffer with the ST RAM; the ROM and IO memory will be handled separately. */
-#if ENABLE_SMALL_MEM
+/* STRam points to our malloc'ed buffer with the ST RAM.
+ * Note that the ROM and IO memory will be handled separately. */
 uint8_t *STRam;
-#else
-uint8_t STRam[16*1024*1024];
-#endif
 
 uint32_t STRamEnd;		/* End of ST Ram, above this address is no-mans-land and ROM/IO memory */
-
 
 
 uint32_t RAM_Bank0_Size;	/* Physical RAM on board in bank0 (in bytes) : 128, 512 or 2048 KB */
@@ -62,8 +54,7 @@ static uint32_t	STMemory_MMU_Translate_Addr_STE ( uint32_t addr_logical , int RA
 
 /**
  * Set default value for MMU bank size and RAM bank size
- * NOTE : when using SMALL_MEM, IoMem will not be allocated yet on the first call
- * so we default to 0x0.
+ * NOTE : IoMem will not be allocated yet on the first call so we default to 0.
  * TODO [NP] : don't call STMemory_MMU_ConfToBank from here ? Better ensure STMemory_Reset()
  * is called early enough.
  */
@@ -72,15 +63,12 @@ void	STMemory_Init ( int RAM_Size_Byte )
 	uint8_t val;
 
 	/* Set default MMU bank size values */
-#if ENABLE_SMALL_MEM
 	if ( IOmemory == NULL )
-		val = 0x0;	
+		val = 0x0;
 	else
 		val = IoMem[ 0xff8001 ];
-#else
-	val = IoMem[ 0xff8001 ];
-#endif
-//fprintf ( stderr , "STMemory_Init %d %x\n" , RAM_Size_Byte , val );
+
+	// fprintf ( stderr , "STMemory_Init %d %x\n" , RAM_Size_Byte , val );
 	STMemory_MMU_ConfToBank ( val, &MMU_Bank0_Size, &MMU_Bank1_Size );
 
 	if ( RAM_Size_Byte <= 0x400000 )
@@ -100,20 +88,15 @@ void	STMemory_Init ( int RAM_Size_Byte )
  * and MMU_Bank1_Size have a consistent value (ie != 0) before calling memory_init()
  * (MMU_BankX_Size can be 0 in case Hatari was started with > 4 MB RAM, which is not standard
  * for STF/STE)
- * NOTE : as with STMemory_Init() when using SMALL_MEM, IoMem will not be allocated yet
- * on the first call
+ * NOTE: as with STMemory_Init(), IoMem will not be allocated yet on the first call
  */
 void	STMemory_Reset ( bool bCold )
 {
 	if ( bCold )
 	{
-//fprintf ( stderr , "STMemory_Reset\n" );
-#if ENABLE_SMALL_MEM
+		// fprintf ( stderr , "STMemory_Reset\n" );
 		if ( IOmemory != NULL )
 			IoMem[ 0xff8001 ] = 0x0;
-#else
-		IoMem[ 0xff8001 ] = 0x0;
-#endif
 		STMemory_MMU_ConfToBank ( 0 , &MMU_Bank0_Size , &MMU_Bank1_Size );
 	}
 }
@@ -121,10 +104,10 @@ void	STMemory_Reset ( bool bCold )
 
 /**
  * Clear section of ST's memory space.
- * @addr  Destination Atari RAM address
- * @len   Number of bytes to clear
+ * @param addr  Destination Atari RAM address
+ * @param len   Number of bytes to clear
  *
- * Return true if whole clear was safe / valid.
+ * @return true if whole clear was safe / valid.
  */
 bool STMemory_SafeClear(uint32_t addr, unsigned int len)
 {
@@ -141,6 +124,9 @@ bool STMemory_SafeClear(uint32_t addr, unsigned int len)
 			assert(TTmemory && addr + len <= TTmem_size + 0x1000000);
 			memset(&TTmemory[addr - 0x1000000], 0, len);
 		}
+		/* We modify the memory, so we flush the instr/data caches if needed */
+		M68000_Flush_All_Caches ( addr , len );
+
 		return true;
 	}
 	Log_Printf(LOG_WARN, "Invalid RAM clear range 0x%x+%i!\n", addr, len);
@@ -148,7 +134,11 @@ bool STMemory_SafeClear(uint32_t addr, unsigned int len)
 	for (end = addr + len; addr < end; addr++)
 	{
 		if (STMemory_CheckAreaType(addr, 1, ABFLAG_RAM))
+		{
 			put_byte(addr, 0);
+			/* We modify the memory, so we flush the instr/data caches if needed */
+			M68000_Flush_All_Caches ( addr , 1 );
+		}
 	}
 	return false;
 }
@@ -180,6 +170,9 @@ bool STMemory_SafeCopy(uint32_t addr, uint8_t *src, unsigned int len, const char
 			assert(TTmemory && addr + len <= TTmem_size + 0x1000000);
 			memcpy(&TTmemory[addr - 0x1000000], src, len);
 		}
+		/* We modify the memory, so we flush the instr/data caches if needed */
+		M68000_Flush_All_Caches ( addr , len );
+
 		return true;
 	}
 	Log_Printf(LOG_WARN, "Invalid '%s' RAM range 0x%x+%i!\n", name, addr, len);
@@ -187,7 +180,11 @@ bool STMemory_SafeCopy(uint32_t addr, uint8_t *src, unsigned int len, const char
 	for (end = addr + len; addr < end; addr++)
 	{
 		if ( STMemory_CheckAreaType ( addr, 1, ABFLAG_RAM ) )
+		{
 			put_byte(addr, *src++);
+			/* We modify the memory, so we flush the instr/data caches if needed */
+			M68000_Flush_All_Caches ( addr , 1 );
+		}
 	}
 	return false;
 }
@@ -886,7 +883,7 @@ static int	STMemory_MMU_Size_TT ( uint8_t MMU_conf )
 
 
 /**
- * Read the MMU banks configuration at $FF80001
+ * Read the MMU banks configuration at $FF8001
  */
 void	STMemory_MMU_Config_ReadByte ( void )
 {
@@ -903,7 +900,7 @@ void	STMemory_MMU_Config_ReadByte ( void )
 
 
 /**
- * Write to the MMU banks configuration at $FF80001
+ * Write to the MMU banks configuration at $FF8001
  * When value is changed, we remap the RAM bank into our STRam[] buffer
  * and enable addresses translation if necessary
  */

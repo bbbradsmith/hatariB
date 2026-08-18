@@ -15,8 +15,162 @@ Following features are deprecated and will be removed in a future release:
   - "hatari-shortcut warmreset"  (use "hatari-debug reset hard")
   - "hatari-shortcut savemem"    (use "hatari-debug statesave <file>")
   - "hatari-shortcut quit"       (use "hatari-debug quit [exit value]")
-- The "--disable-small-mem" configuration option (small mem is enabled
-  by default already and will be the only option soon)
+
+
+ Version 2.6.1 (2025-08-15)
+ --------------------------
+
+Emulation improvements:
+- MegaSTE:
+  - When using cache, only compare 24 lowest bits of address
+  - Don't update cache after a bus/address error
+- Falcon:
+  - Create a fast ram buffer (_FRB) cookie when running with TT RAM
+    to fix a problem with floppy disk access
+- Video:
+  - Add support for STE 224 bytes overscan in medium resolution
+  - Set correct resolution in Shifter when accessing $FF8260 as word
+    (fix regression in Hatari 2.6.0)
+- VME for MegaSTE / TT:
+  - VME memory regions should return bus error when no VME board is present
+
+Emulator improvements:
+- Windows:
+  - Fix: late locale init messes debugger readline history handling
+- GEMDOS HD:
+  - Fix: caches were no always flushed on writing to emulated memory
+- Debugger:
+  - Fix: show DEL character as non-printable in memdumps
+- CPU/FPU settings:
+  - Disallow 68881/68882 FPU in 040/060 mode
+- Config / SDL GUI:
+  - Default screenshot save directory override option
+  - SDL GUI asks for file name when starting AVI recording
+  - Fit Hatari screen dialog to smallest required size and
+    log errors on invalid dialog sizes
+- CLI options:
+  - GEMDOS HD & screenshot dir options accept only existing directories
+
+Fixed demos:
+ - A Letter To Sommarhack by Effect (write word at $FF8260)
+ - Partial fix for Double Rez Trouble by DHS (med res overscan lines)
+
+Fixed programs:
+- Spectre 3.0 (Hatari v2.6 regression, MegaSTE cache)
+
+
+ Version 2.6.0 (2025-06-22)
+ --------------------------
+
+Option changes:
+- "--trace" option "vme" item renamed to "scu"
+- "--vme none/dummy" option removed as (now) redundant
+
+Emulation improvements:
+- 030+MMU:
+  - Workaround to correct prefetch data after bus errors
+- DSP:
+  - Fix: JMP can also form a long interrupt instruction
+- VME/SCU:
+  - TT / MegaSTE SCU registers and interrupts implemented
+- Falcon Videl:
+  - Refresh rate of monochrome monitor is now correctly detected with 71 Hz
+- MegaSTE:
+  - Add support for CPU Freq / Cache control at $FF8E21 when running
+    in cycle accurate mode. This gives cycle exact memory accesses
+    when running at 16 MHz, as well as emulation of the external 16 KB cache
+- SCSI:
+  - Fix REQUEST SENSE for SCSI v2
+- Serial Ports:
+  - Update values of DCD and CTS signals for the RS232 port connected
+    to the MFP (as reported by the underlying OS)
+  - Add support for using TCCLK as RTxCB clock for the Atari TT's SCC
+- Video:
+  - Improve support for 4 pixel hardscroll by stopping shifter with
+    $FF8260=3. Also handle $FF8261.
+- MFP:
+  - Fix counter when timer is stopped/restarted while counting from 1 to 0
+
+Emulator improvements:
+- SDL-GUI (and config options):
+  - Improvements to GUI font characters
+  - Add separate option for enabling/disabling >=030 CPU data cache
+  - Fix: file selector exit with keyboard
+- Windows:
+  - Open console window for error and help output, so that Windows
+    users can actually see them
+- Keyboard / TOS localization:
+  - Symbolic key mapping improved for different TOS language versions
+  - Made it possible to use a mapping file with fallback to scancode mapping
+  - New "--fast-forward-key-repeat" option for key repeat
+  - (EmuTOS v1.4) Catalan country code support
+- Memory snapshots:
+  - Fix: re/store all relevant YM2149 & MMU state variables
+- Joysticks:
+  - Fix: segfault with negative joystick indexes
+- GEMDOS HD:
+  - Fix: Fattrib() call on a directory
+  - Fix: Return correct attrib for volume labels in FsFirst()
+  - Fix: Fsnext() calls with DTAs having different attribs,
+    when DTA is not from preceding Fsfirst() but earlier one
+  - Fix: Handle additional '*' chars at end of file mask
+  - Fix: Dfree() total/free on really large disk, free on Mac/BSD
+- SCC:
+  - Fix: invalid channel B file close on uninit
+- SCSI:
+  - Add CLI + config file option for (per ID) SCSI version
+- Command FIFO:
+  - Fix crash when FIFO gets command right at Hatari start
+- Debugger:
+  - Fix: DSP RESET instruction tracing
+  - Similarly to Atari program symbols override, load TOS symbols on
+    TOS load, if autoloading is enabled and <tos>.sym file is present
+  - Add "find" command for searching CPU memory contents
+  - Add "struct" command to better show contents of program's structures
+  - Variable & debug symbol names can be given directly also to load,
+    save, memwrite and register commands in addition to numeric values
+  - File name completion for commands having optional file name args
+  - Symbol name completion for "loadbin", "savebin" & "dspsymbols" commands
+  - Align "memdump" character representation also when line is not full
+  - Show also non-ASCII Atari chars in debugger memory content output
+  - Add 'c' (character) argument type support for "memwrite" command
+  - CPU disassembly shows resulting relative branch addresses
+  - "dspreg" command shows also stack contents
+  - When disassembling, translate logical addresses to physical ones if MMU
+    is enabled
+- Tracing:
+  - GEMDOS Dsetpath() + Frename() calls included to "os_base" traces
+  - PC value added to more traces
+
+Build changes:
+- Get rid of and warn about VLAs (variable length arrays), as
+  VisualStudio does not support them
+- Removed the "--disable-small-mem" configure option (the small mem mode
+  is stable now, uses less memory and even still seems to be at least as
+  fast as the other mode, so it is the one and only default mode now)
+
+Tools:
+- gst2ascii:
+  - Fix: ignore configured types also with MINT+ELF symbols
+  - Fix: weak ELF BSS/DATA symbols were handled as weak TEXT symbols
+- Profile data post-processor:
+  - Fix: first costs assigned wrong when profile does not start on symbol
+- tos-tester:
+  - Improved support for testing Hatari bool options
+
+Fixed demos:
+- Little -ME- Demo by Overlanders : when running in MegaSTE mode the 3D parts
+  will switch to 16 MHz and use the MegaSTE's 16 KB external cache
+
+Fixed programs:
+- Voxx, both demo & free full version (DSP JMP instruction)
+- Ultimate Virus Killer (GEMDOS HD, "***.***" file mask)
+- JAM (stuttering sound with monochrome monitor in Falcon mode)
+- Linux, user-space program crashes (prefetch with 030 MMU)
+
+Fixed games:
+- Ready Steady Bang! (GEMDOS HD Fattrib())
+- STDOOM (MegaSTE 16Mhz cache tag bug)
 
 
  Version 2.5.0 (2024-04-18)

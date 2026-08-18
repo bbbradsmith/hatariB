@@ -1,7 +1,7 @@
 /*
  * Hatari - symbols-common.c
  *
- * Copyright (C) 2010-2023 by Eero Tamminen
+ * Copyright (C) 2010-2025 by Eero Tamminen
  * Copyright (C) 2017,2021,2023 by Thorsten Otto
  *
  * This file is distributed under the GNU General Public License, version 2
@@ -484,7 +484,7 @@ static int read_pc_debug_names(FILE *fp, symbol_list_t *list, uint32_t offset)
 
 	if (fseek(fp, 0, SEEK_END) < 0)
 		return 0;
-	if ((filesize = ftell(fp)) < 0)
+	if ((long)(filesize = ftell(fp)) < 0)
 		return 0;
 	if (fseek(fp, 0, SEEK_SET) < 0)
 		return 0;
@@ -867,7 +867,7 @@ static symbol_list_t* symbols_load_gnu(FILE *fp, const prg_section_t *sections, 
 	symbol_t *sym;
 	symtype_t symtype;
 	uint32_t address;
-	uint32_t nread;
+	size_t nread;
 	symbol_list_t *list;
 	unsigned char n_type;
 	unsigned char n_other;
@@ -1132,7 +1132,7 @@ static symbol_list_t* symbols_load_elf(FILE *fp, const prg_section_t *sections,
 	symbol_t *sym;
 	symtype_t symtype;
 	uint32_t address;
-	uint32_t nread;
+	size_t nread;
 	symbol_list_t *list;
 	uint32_t st_size;
 	unsigned char st_info;
@@ -1256,15 +1256,18 @@ static symbol_list_t* symbols_load_elf(FILE *fp, const prg_section_t *sections,
 					shdr = &headers[st_shndx];
 
 					if (shdr->sh_type == SHT_NOBITS) {
-						symtype = ELF_ST_BIND(st_info) == STB_WEAK ? SYMTYPE_WEAK : SYMTYPE_BSS;
+						symtype = SYMTYPE_BSS;
 						section = &(sections[2]);
 
 					} else if (shdr->sh_flags & SHF_EXECINSTR) {
+						/* symbol post-processing requirement:
+						 * only code symbols differentiated weak aliasing
+						 */
 						symtype = ELF_ST_BIND(st_info) == STB_WEAK ? SYMTYPE_WEAK : SYMTYPE_TEXT;
 						section = &(sections[0]);
 
 					} else {
-						symtype = ELF_ST_BIND(st_info) == STB_WEAK ? SYMTYPE_WEAK : SYMTYPE_DATA;
+						symtype = SYMTYPE_DATA;
 						section = &(sections[1]);
 					}
 				}
@@ -1281,6 +1284,11 @@ static symbol_list_t* symbols_load_elf(FILE *fp, const prg_section_t *sections,
 		default:
 			fprintf(stderr, "WARNING: ignoring symbol '%s' in slot %u of unknown type 0x%x.\n", name, (unsigned int)i, st_info);
 			ignore.invalid++;
+			continue;
+		}
+
+		/* whether to ignore symbol based on options and its name & type */
+		if (ignore_symbol(name, symtype, opts, &ignore)) {
 			continue;
 		}
 
@@ -1382,7 +1390,7 @@ static symbol_list_t* symbols_load_binary(FILE *fp, const symbol_opts_t *opts,
 {
 	uint32_t textlen, datalen, bsslen, tablesize, tabletype, prgflags;
 	prg_section_t sections[3];
-	int reads = 0;
+	size_t reads = 0;
 	uint16_t relocflag;
 	symbol_list_t* symbols;
 	uint32_t symoff = 0;

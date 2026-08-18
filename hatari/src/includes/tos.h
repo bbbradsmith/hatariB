@@ -10,10 +10,12 @@
 
 /*
  * List of language and keyboard layout country codes supported
- * by currently available TOS versions.  Subset of:
+ * by currently available TOS versions.  See:
+ * https://github.com/emutos/emutos/blob/master/include/ctrycodes.h
  * https://freemint.github.io/tos.hyp/en/bios_cookiejar.html#Cookie_2C_20_AKP
  */
-enum {
+enum
+{
       TOS_LANG_US = 0,
       TOS_LANG_DE = 1,
       TOS_LANG_FR = 2,
@@ -35,6 +37,7 @@ enum {
       TOS_LANG_RU = 19,
       TOS_LANG_RO = 24,
       TOS_LANG_GR = 31,
+      TOS_LANG_CA = 54,
       TOS_LANG_ALL = 127,
       TOS_LANG_UNKNOWN = -1
 };

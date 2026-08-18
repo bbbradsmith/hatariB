@@ -115,7 +115,7 @@ extern int core_rand(void);
 void	Hatari_srand ( unsigned int seed )
 {
 #ifndef __LIBRETRO__
-	return srand( seed );
+	srand(seed);
 #else
 	core_rand_seed = (uint32_t)seed;
 #endif

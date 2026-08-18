@@ -23,7 +23,7 @@ This is a new project in the initial testing phase. Eventually I would like to s
 
 **Bugs and Issues:** If you notice any problems or have feedback, please [create a Github issue](https://github.com/bbbradsmith/hatariB/issues). **Before creating an issue, please note:** except for user interface problems, issues are often caused by the underlying emulator Hatari. It would help *a lot* if you could first **test the problem in [Hatari's stand-alone emulator](https://hatari-emu.org/download.html)** to see if the problem exists there. If Hatari does the same thing as hatariB, the bug report should instead go directly to the [Hatari](https://hatari-emu.org/) project. [Atari-Forum's Hatari subforum](https://www.atari-forum.com/viewforum.php?f=51) might be the best place to ask about issues with Hatari.
 
-**Emulator:** [Hatari 2.5.0](https://framagit.org/hatari/hatari/-/releases/v2.5.0) 2024-04-18
+**Emulator:** [Hatari 2.6.1](https://framagit.org/hatari/hatari/-/releases/v2.6.1) 2025-08-15
 
 **Development notes:** [DEVELOP.md](DEVELOP.md)
 
@@ -312,6 +312,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Fixed `_stprintf` build issue with MinGW64 compiler update.
   * Strengthen user-requested cold boot, fixes unresponsive emulation after some crashes.
   * Cleanup of core logging code.
+  * Hatari 2.6.1 update.
 * [hatariB v0.3](https://github.com/bbbradsmith/hatariB/releases/tag/0.3) - 2024-04-15
   * On-screen keyboard improvements:
     * Can now hold the key continuously.
