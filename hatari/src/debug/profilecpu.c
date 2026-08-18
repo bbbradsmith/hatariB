@@ -30,11 +30,8 @@ const char Profilecpu_fileid[] = "Hatari profilecpu.c";
 
 
 /* cartridge area */
-#define CART_START	0xFA0000
-#define CART_END	0xFC0000
 #define CART_SIZE	(CART_END - CART_START)
 
-#define TTRAM_START	0x01000000
 
 /* if non-zero, output (more) warnings on suspicious:
  * - cycle/instruction counts
@@ -1180,7 +1177,7 @@ void Profile_CpuUpdate(void)
 		prev->cycles = MAX_CPU_PROFILE_VALUE;
 	}
 
-	/* only WinUAE CPU core provides cache information */
+	/* Cache informations are available for CPU>=68020 or for MegaSTE with 68000 in CE mode */
 	i_hits = CpuInstruction.I_Cache_hit;
 	d_hits = CpuInstruction.D_Cache_hit;
 	i_misses = CpuInstruction.I_Cache_miss;

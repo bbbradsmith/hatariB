@@ -13,6 +13,15 @@ const char Profile_fileid[] = "Hatari profile.c";
 #include <stdio.h>
 #include <assert.h>
 #include <inttypes.h>
+
+#include "config.h"
+
+#if HAVE_LIBREADLINE
+# include <readline/readline.h>
+#else
+# define rl_filename_completion_function(x,y) NULL
+#endif
+
 #include "main.h"
 #include "version.h"
 #include "debugui.h"
@@ -427,12 +436,14 @@ uint32_t Profile_CallEnd(callinfo_t *callinfo, counters_t *totalcost)
  *
  * Diagram of variables involved in 2 functions deep call stack:
  *
+ * <pre>
  *   (caller_addr 1)  bsr symbol1  -1->  symbol1     (callee_addr 1)
  *      (ret_addr 1)  <instr>     <-.    ...
  *                                  |    bsr symbol2 (caller_addr 2)  -2->  symbol2 (callee_addr 2)
  *                                  1    <instr>     (ret_addr 2)    <-.    ...
  *                                  |    ...                           2    ... (PC)
  *                                  '-   rts                           '-   rts
+ * </pre>
  *
  * When one wants to match callee_addr (= symbol) to caller_addr (= which
  * place in that function called further functions), it's best to traverse
@@ -611,11 +622,16 @@ void Profile_FreeCallinfo(callinfo_t *callinfo)
  */
 char *Profile_Match(const char *text, int state)
 {
-	static const char *names[] = {
+	static const char *subs[] = {
 		"addresses", "callers", "caches", "counts", "cycles", "d-hits", "i-misses",
 		"loops", "off", "on", "save", "stack", "stats", "symbols"
 	};
-	return DebugUI_MatchHelper(names, ARRAY_SIZE(names), text, state);
+
+	char *ret = DebugUI_MatchHelper(subs, ARRAY_SIZE(subs), text, state);
+	if (ret) {
+		return ret;
+	}
+	return rl_filename_completion_function(text, state);
 }
 
 const char Profile_Description[] =

@@ -15,8 +15,7 @@
 	GNU General Public License for more details.
 
 	You should have received a copy of the GNU General Public License
-	along with this program; if not, write to the Free Software Foundation,
-	51 Franklin Street, Fifth Floor, Boston, MA 02110-1335 USA
+	along with this program; if not, see <https://www.gnu.org/licenses/>.
 */
 
 #ifndef DSP_CORE_H
@@ -100,6 +99,13 @@ extern "C" {
 #define DSP_HOST_HSR_HF0	0x03
 #define DSP_HOST_HSR_HF1	0x04
 #define DSP_HOST_HSR_DMA	0x07
+
+#define DSP_SCI_SCR_TMIE	0xd	/* Timer interrupt enabled */
+
+#define DSP_SCI_SCCR_COD	0xc	/* Clock output divider */
+#define DSP_SCI_SCCR_SCP	0xd	/* Clock prescaler */
+#define DSP_SCI_SCCR_RCM	0xe	/* Receive clock source bit */
+#define DSP_SCI_SCCR_TCM	0xf	/* Transmit clock source bit */
 
 #define DSP_SSI_CRA_DC0		0x8
 #define DSP_SSI_CRA_DC1		0x9
@@ -268,8 +274,15 @@ struct dsp_core_s {
 	uint32_t interrupt_mask_level[3];
 	uint32_t interrupt_edgetriggered_mask;
 
-	/* AGU pipeline simulation for indirect move ea instructions */
-	uint16_t agu_move_indirect_instr;	/* is the current instruction an indirect move ? (LUA, MOVE, MOVEC, MOVEM, TCC) (0=no ; 1 = yes)*/
+	/* AGU pipeline for indirect move ea instructions
+	   Indirect move instructions are : LUA, MOVEC, MOVEP, Tcc, parallel MOVE
+	   Registers concerned are Rx, Nx, Mx
+	   [LS] The motorola documentation includes MOVEM as an indirect move, but all my tests
+	   seem to conclude that MOVEM is not affected by the 1 instruction delay of the AGU
+	*/
+	uint16_t agu_move_indirect_instr;	/* is the current instruction an indirect move ? (0=no ; 1 = yes)*/
+	uint16_t agu_pipeline_reg[2];		/* pipeline index description : 0 = current delayed register ; 1 = new register to delay */
+	uint16_t agu_pipeline_val[2];		/* register value */
 };
 
 

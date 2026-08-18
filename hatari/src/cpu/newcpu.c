@@ -64,14 +64,6 @@
 #include "scc.h"
 #endif
 
-#ifdef __LIBRETRO__
-// _stprintf has incompatibility in MSYS2 MINGW64 UCRT64 as of 2024-02-06 (GCC 14.2.0)
-#ifdef __MINGW64__
-#undef _stprintf
-#define _stprintf sprintf
-#endif
-#endif
-
 
 #ifdef JIT
 #include "jit/compemu.h"
@@ -524,8 +516,9 @@ static bool get_trace(uaecptr addr, int accessmode, int size, uae_u32 *data)
 		x_do_cycles(c);
 		return false;
 	}
-	if (cputrace.memoryoffset > 0 || cputrace.cyclecounter_pre) {
-		gui_message(_T("CPU trace: GET %08x %d %d NOT FOUND!\n"), addr, accessmode, size);
+	if ((cputrace.writecounter > 0 || cputrace.readcounter > 0) && cputrace.cyclecounter_pre) {
+		gui_message(_T("CPU trace: GET %08x %d %d (%d %d %d) NOT FOUND!\n"),
+			addr, accessmode, size, cputrace.readcounter, cputrace.writecounter, cputrace.cyclecounter_pre);
 	}
 	check_trace();
 	*data = 0;
@@ -841,7 +834,7 @@ static void cputracefunc2_x_do_cycles_post (int cycles, uae_u32 v)
 
 static void do_cycles_post (int cycles, uae_u32 v)
 {
-	do_cycles (cycles);
+	do_cycles(cycles);
 }
 static void do_cycles_ce_post (int cycles, uae_u32 v)
 {
@@ -958,12 +951,27 @@ static void trace_cpu_disasm(void)
 	m68k_disasm_file(TraceFile, m68k_getpc (), NULL, m68k_getpc (), 1);
 }
 
+static void trace_cpu_disasm_mmu030(void)
+{
+	uaecptr new_addr = mmu030_translate(m68k_getpc(), regs.s != 0, false, false);
+
+	if (LOG_TRACE_LEVEL(TRACE_CPU_VIDEO_CYCLES)) {
+		int FrameCycles, HblCounterVideo, LineCycles;
+		Video_GetPosition ( &FrameCycles, &HblCounterVideo, &LineCycles );
+		LOG_TRACE_DIRECT_INIT ();
+		LOG_TRACE_DIRECT ( "cpu video_cyc=%6d %3d@%3d %"PRIu64" : ",
+				   FrameCycles, LineCycles, HblCounterVideo,
+				   CyclesGlobalClockCounter );
+	}
+
+	if ( new_addr != m68k_getpc() )
+		f_out(TraceFile , "(%08x) " , m68k_getpc() );
+	m68k_disasm_file(TraceFile, new_addr, NULL, new_addr, 1);
+}
+
 void (*x_do_cycles_hatari_blitter_save)(int);
 void (*x_do_cycles_pre_hatari_blitter_save)(int);
 void (*x_do_cycles_post_hatari_blitter_save)(int, uae_u32);
-#ifdef __LIBRETRO__
-static bool blitter_x_funcs = false;
-#endif
 
 static void do_cycles_ce_post_hatari_blitter (int cycles, uae_u32 v)
 {
@@ -972,9 +980,6 @@ static void do_cycles_ce_post_hatari_blitter (int cycles, uae_u32 v)
 
 void set_x_funcs_hatari_blitter (int flag)
 {
-#ifdef __LIBRETRO__
-	blitter_x_funcs = (flag != 0);
-#endif
 	if ( flag == 0 )
 	{
 //fprintf ( stderr , "restore blitter x_funcs\n" );
@@ -1580,14 +1585,6 @@ static void set_x_funcs (void)
 			dcache_bput = put_byte030_cicheck;
 		}
 	}
-#ifdef __LIBRETRO__
-	// if blitter was active when a frame ended,
-	// the next frame's run loop will enter and overwrite the blitter's x_funcs override,
-	// so we are restoring them here if they were active.
-	// Note that restore_state may have the potential to call set_x_funcs_hatari_blitter before set_x_funcs,
-	// which may not yet have valid x_funcs for it to save. Doing it redundantly here ensures it saves the correct functions.
-	if (blitter_x_funcs) set_x_funcs_hatari_blitter(1);
-#endif
 }
 
 bool can_cpu_tracer (void)
@@ -2440,18 +2437,7 @@ void init_m68k (void)
 	}
 #endif
 
-#ifdef __LIBRETRO__
-	// don't rebuild this table unless the CPU has changed
-	// (saves huge amount of time during savestate restore)
-	static int table_model = -1;
-	if (currprefs.cpu_model != table_model || table68k == NULL)
-	{
-		table_model = currprefs.cpu_model;
-		init_table68k();
-	}
-#else
 	init_table68k();
-#endif
 
 	write_log (_T("%d CPU functions\n"), nr_cpuop_funcs);
 }
@@ -2951,7 +2937,7 @@ static int iack_cycle(int nr)
 			/* will never be processed. If there's no DSP IRQ, we clear level 6 pending bit now */
 			/* and if there's a lower MFP pending int, level 6 will be set again at the next instruction */
 			if ( DSP_GetHREQ() == 0 )
-				pendingInterrupts &= ~( 1 << 6 );
+				M68000_ClearIRQ ( 6 );
 		}
 	}
 	if ( nr == 29 )								/* SCC (level 5) */
@@ -2997,7 +2983,7 @@ static int iack_cycle(int nr)
 		CycInt_Process();
 		if ( MFP_UpdateNeeded == true )
 			MFP_UpdateIRQ_All ( 0 );				/* update MFP's state if some internal timers related to MFP expired */
-		pendingInterrupts &= ~( 1 << ( nr - 24 ) );			/* clear HBL or VBL pending bit (even if an MFP timer occurred during IACK) */
+		M68000_ClearIRQ ( nr - 24 );					/* clear HBL or VBL pending bit (even if an MFP timer occurred during IACK) */
 		CPU_IACK = false;
 
 		/* Add the cycles used by the IACK sequence (IACK to DTACK transition) */
@@ -3795,7 +3781,7 @@ static void ExceptionX (int nr, uaecptr address, uaecptr oldpc)
 #ifndef WINUAE_FOR_HATARI
 #ifdef DEBUGGER
 	if (debug_dma) {
-		record_dma_event_data(DMA_EVENT_CPUINS, current_hpos(), vpos, 0x20000);
+		record_dma_event_data(DMA_EVENT_CPUINS, 0x20000);
 	}
 #endif
 #endif
@@ -3917,7 +3903,7 @@ static void do_interrupt (int nr)
 #ifndef WINUAE_FOR_HATARI
 #ifdef DEBUGGER
 	if (debug_dma)
-		record_dma_event(DMA_EVENT_CPUIRQ, current_hpos (), vpos);
+		record_dma_event(DMA_EVENT_CPUIRQ);
 #endif
 	if (inputrecord_debug & 2) {
 		if (input_record > 0)
@@ -3949,6 +3935,17 @@ static void do_interrupt (int nr)
 void NMI (void)
 {
 	do_interrupt (7);
+}
+
+static void cpu_halt_clear(void)
+{
+	regs.halted = 0;
+#ifndef WINUAE_FOR_HATARI
+	if (gui_data.cpu_halted) {
+		gui_data.cpu_halted = 0;
+		gui_led(LED_CPU, 0, -1);
+	}
+#endif
 }
 
 static void maybe_disable_fpu(void)
@@ -3988,11 +3985,7 @@ static void m68k_reset2(bool hardreset)
 	uae_u32 v;
 
 //fprintf ( stderr,"m68k_reset2 hard=%d in pc=%x\n" , hardreset , regs.pc );
-	regs.halted = 0;
-#ifndef WINUAE_FOR_HATARI
-	gui_data.cpu_halted = 0;
-	gui_led(LED_CPU, 0, -1);
-#endif
+	cpu_halt_clear();
 
 	regs.spcflags = 0;
 	m68k_reset_delay = 0;
@@ -4808,8 +4801,6 @@ static bool haltloop_do(int vsynctimeline, frame_time_t rpt_end, int lines)
 			ppc_interrupt(intlev());
 			uae_ppc_execute_check();
 #endif
-			if (regs.spcflags & SPCFLAG_COPPER)
-				do_copper();
 			if (regs.spcflags & (SPCFLAG_BRK | SPCFLAG_MODE_CHANGE)) {
 				if (regs.spcflags & SPCFLAG_BRK) {
 					unset_special(SPCFLAG_BRK);
@@ -4868,8 +4859,6 @@ static bool haltloop(void)
 
 				event_wait = false;
 				for (i = 0; i < ev_max; i++) {
-					if (i == ev_hsync)
-						continue;
 					if (i == ev_audio)
 						continue;
 					if (!eventtab[i].active)
@@ -4911,9 +4900,6 @@ static bool haltloop(void)
 			if (vpos)
 				prevvpos = 1;
 			x_do_cycles(8 * CYCLE_UNIT);
-
-			if (regs.spcflags & SPCFLAG_COPPER)
-				do_copper();
 
 			if (regs.spcflags) {
 				if ((regs.spcflags & (SPCFLAG_BRK | SPCFLAG_MODE_CHANGE)))
@@ -5027,7 +5013,7 @@ static void update_ipl(int ipl)
 #ifndef WINUAE_FOR_HATARI
 #ifdef DEBUGGER
 	if (debug_dma) {
-		record_dma_ipl(current_hpos(), vpos);
+		record_dma_ipl();
 	}
 #endif
 #endif
@@ -5100,9 +5086,9 @@ static void debug_cpu_stop(void)
 {
 #ifndef WINUAE_FOR_HATARI
 #ifdef DEBUGGER
-	record_dma_event(DMA_EVENT_CPUSTOP, current_hpos(), vpos);
+	record_dma_event(DMA_EVENT_CPUSTOP);
 	if (time_for_interrupt()) {
-		record_dma_event(DMA_EVENT_CPUSTOPIPL, current_hpos(), vpos);
+		record_dma_event(DMA_EVENT_CPUSTOPIPL);
 	}
 #endif
 #endif
@@ -5116,7 +5102,16 @@ static int do_specialties (int cycles)
 	if (spcflags & SPCFLAG_MODE_CHANGE)
 		return 1;
 	
-#ifndef WINUAE_FOR_HATARI
+	while (spcflags & SPCFLAG_CPUINRESET) {
+		cpu_halt_clear();
+		x_do_cycles(4 * CYCLE_UNIT);
+		spcflags = regs.spcflags;
+		if (!(spcflags & SPCFLAG_CPUINRESET) || (spcflags & SPCFLAG_BRK) || (spcflags & SPCFLAG_MODE_CHANGE)) {
+			break;
+		}
+	}
+
+ #ifndef WINUAE_FOR_HATARI
 	if (spcflags & SPCFLAG_CHECK) {
 		if (regs.halted) {
 			if (regs.halted == CPU_HALT_ACCELERATOR_CPU_FALLBACK) {
@@ -5132,9 +5127,6 @@ static int do_specialties (int cycles)
 			while (vsynccnt > 0 && !quit_program) {
 				x_do_cycles(8 * CYCLE_UNIT);
 				spcflags = regs.spcflags;
-				if (spcflags & SPCFLAG_COPPER) {
-					do_copper();
-				}
 				if (vsync_counter != vsyncstate) {
 					vsyncstate = vsync_counter;
 					vsynccnt--;
@@ -5179,29 +5171,11 @@ static int do_specialties (int cycles)
 	}
 #endif
 
-#ifndef WINUAE_FOR_HATARI
-	if (spcflags & SPCFLAG_COPPER)
-		do_copper();
-#endif
-
 #ifdef JIT
 	if (spcflags & SPCFLAG_END_COMPILE) {
 		unset_special(SPCFLAG_END_COMPILE);
 	}
 #endif
-
-	while ((spcflags & SPCFLAG_CPUINRESET)) {
-		x_do_cycles(4 * CYCLE_UNIT);
-		spcflags = regs.spcflags;
-#ifndef WINUAE_FOR_HATARI
-		if (spcflags & SPCFLAG_COPPER) {
-			do_copper();
-		}
-#endif
-		if (!(spcflags & SPCFLAG_CPUINRESET) || (spcflags & SPCFLAG_BRK) || (spcflags & SPCFLAG_MODE_CHANGE)) {
-			break;
-		}
-	}
 
 #ifndef WINUAE_FOR_HATARI
 	while ((spcflags & SPCFLAG_BLTNASTY) && dmaen (DMA_BLITTER) && cycles > 0 && ((currprefs.waiting_blits && currprefs.cpu_model >= 68020) || !currprefs.blitter_cycle_exact)) {
@@ -5217,8 +5191,6 @@ static int do_specialties (int cycles)
 		}
 		x_do_cycles(c * CYCLE_UNIT);
 		spcflags = regs.spcflags;
-		if (spcflags & SPCFLAG_COPPER)
-			do_copper();
 #ifdef WITH_PPC
 		if (ppc_state)  {
 			if (uae_ppc_poll_check_halt())
@@ -5322,13 +5294,6 @@ static int do_specialties (int cycles)
 	return 0;
 }
 
-
-#ifndef WINUAE_FOR_HATARI
-uaecptr m68kpc(void)
-{
-	return m68k_getpc();
-}
-#endif
 
 //static uae_u32 pcs[1000];
 
@@ -5641,7 +5606,7 @@ static void m68k_run_1_ce (void)
 #ifndef WINUAE_FOR_HATARI
 #ifdef DEBUGGER
 				if (debug_dma) {
-					record_dma_event_data(DMA_EVENT_CPUINS, current_hpos(), vpos, r->opcode);
+					record_dma_event_data(DMA_EVENT_CPUINS, r->opcode);
 				}
 #endif
 #endif
@@ -5967,10 +5932,6 @@ static void run_cpu_thread(void (*f)(void *))
 
 			do_cycles((maxhpos / 2) * CYCLE_UNIT);
 
-			if (regs.spcflags & SPCFLAG_COPPER) {
-				do_copper();
-			}
-
 			check_uae_int_request();
 			if (regs.spcflags & (SPCFLAG_INT | SPCFLAG_DOINT)) {
 				int intr = intlev();
@@ -6006,7 +5967,7 @@ static void run_cpu_thread(void (*f)(void *))
 #endif
 
 #ifndef WINUAE_FOR_HATARI
-void custom_reset_cpu(bool hardreset, bool keyboardreset)
+static void custom_reset_cpu(bool hardreset, bool keyboardreset)
 {
 #ifdef WITH_THREADED_CPU
 	if (cpu_thread_tid != uae_thread_get_id()) {
@@ -6064,7 +6025,7 @@ void exec_nostats (void)
 		cpu_cycles = 4 * CYCLE_UNIT; // adjust_cycles(cpu_cycles);
 
 		if (!currprefs.cpu_thread) {
-			do_cycles (cpu_cycles);
+			do_cycles(cpu_cycles);
 
 #ifdef WITH_PPC
 			if (ppc_state)
@@ -6108,7 +6069,7 @@ void execute_normal(void)
 
 //		cpu_cycles = adjust_cycles(cpu_cycles);
 		if (!currprefs.cpu_thread) {
-			do_cycles (cpu_cycles);
+			do_cycles(cpu_cycles);
 		}
 		total_cycles += cpu_cycles;
 
@@ -6179,6 +6140,12 @@ static void m68k_run_jit(void)
 		return;
 	}
 #endif
+
+	if (regs.spcflags) {
+		if (do_specialties(0)) {
+			return;
+		}
+	}
 
 	for (;;) {
 #ifdef USE_STRUCTURED_EXCEPTION_HANDLING
@@ -6356,7 +6323,7 @@ static void m68k_run_mmu060 (void)
 				f.x = regflags.x;
 				regs.instruction_pc = m68k_getpc ();
 
-				do_cycles (cpu_cycles);
+				do_cycles(cpu_cycles);
 
 				mmu_opcode = -1;
 				mmu060_state = 0;
@@ -6446,7 +6413,7 @@ static void m68k_run_mmu040 (void)
 				mmu_restart = true;
 				regs.instruction_pc = m68k_getpc ();
 
-				do_cycles (cpu_cycles);
+				do_cycles(cpu_cycles);
 
 				mmu_opcode = -1;
 				mmu_opcode = regs.opcode = x_prefetch (0);
@@ -6581,7 +6548,7 @@ insretry:
 					//m68k_dumpstate_file(stderr, NULL, 0xffffffff);
 					if ((LOG_TRACE_LEVEL(TRACE_CPU_DISASM)) && (!regs.stopped))
 					{
-						trace_cpu_disasm();
+						trace_cpu_disasm_mmu030();
 					}
 #endif
 					regs.opcode = regs.irc = mmu030_opcode;
@@ -6592,7 +6559,7 @@ insretry:
 					if (!currprefs.cpu_cycle_exact) {
 
 						count_instr (regs.opcode);
-						do_cycles (cpu_cycles);
+						do_cycles(cpu_cycles);
 
 						cpu_cycles = (*cpufunctbl[regs.opcode])(regs.opcode);
 
@@ -7594,18 +7561,9 @@ static void warpmode_reset(void)
 }
 #endif
 
-#ifdef __LIBRETRO__
-static int hardboot;
-static int startup;
-void m68k_go (int may_quit)
-{
-	hardboot = 1;
-	blitter_x_funcs = false;
-#else
 void m68k_go (int may_quit)
 {
 	int hardboot = 1;
-#endif
 
 #ifdef WITH_THREADED_CPU
 	init_cpu_thread();
@@ -7625,14 +7583,7 @@ void m68k_go (int may_quit)
 
 	cpu_prefs_changed_flag = 0;
 	in_m68k_go++;
-#ifndef __LIBRETRO__
 	for (;;) {
-#else
-}
-void m68k_go_frame(bool run)
-{
-	for (int loop_count=1;loop_count;--loop_count) {
-#endif
 		int restored = 0;
 		void (*run_func)(void);
 
@@ -7646,7 +7597,7 @@ void m68k_go_frame(bool run)
 
 #ifndef WINUAE_FOR_HATARI
 		if (regs.halted == CPU_HALT_ACCELERATOR_CPU_FALLBACK) {
-			regs.halted = 0;
+			cpu_halt_clear();
 			cpu_do_fallback();
 		}
 
@@ -7670,9 +7621,6 @@ void m68k_go_frame(bool run)
 			hsync_counter = 0;
 			vsync_counter = 0;
 			quit_program = 0;
-#ifdef __LIBRETRO__
-			blitter_x_funcs = false;
-#endif
 
 #ifdef SAVESTATE
 			if (savestate_state == STATE_DORESTORE) {
@@ -7830,10 +7778,6 @@ void m68k_go_frame(bool run)
 		if (restored) {
 			restored = 0;
 			savestate_restore_final();
-		#ifdef __LIBRETRO__
-			// savestate restored, stop here so we can resume from this point in the next retro_run()
-			break;
-		#endif
 		}
 #endif
 
@@ -7894,9 +7838,6 @@ void m68k_go_frame(bool run)
 #if 0
 		}
 #endif
-#ifdef __LIBRETRO__
-		if (!run) break; // init-only if !run
-#endif
 		run_func();
 
 		if (quit_program < 0) {
@@ -7907,11 +7848,6 @@ void m68k_go_frame(bool run)
 
 		Log_Printf(LOG_DEBUG, "exit m68k_run\n");
 	}
-#ifdef __LIBRETRO__
-}
-void m68k_go_quit(void)
-{
-#endif
 #ifndef WINUAE_FOR_HATARI
 	protect_roms (false);
 	mman_set_barriers(false);
@@ -7961,14 +7897,28 @@ void m68k_disasm_file (FILE *f, uaecptr addr, uaecptr *nextpc, uaecptr lastpc, i
 		return;
 	console_out_FILE = f;
 	m68k_disasm_2(buf, MAX_LINEWIDTH * cnt, addr, NULL, 0, nextpc, cnt, NULL, NULL, lastpc, 0);
-#ifndef __LIBRETRO__
 	f_out (f, _T("%s"), buf);
-#else
-	LOG_TRACE_PRINT("%s",buf);
-#endif
 	xfree (buf);
 	console_out_FILE = NULL;
 }
+
+
+#ifdef WINUAE_FOR_HATARI
+/*
+ * Functions called from debug/68Disass.c, we need to check if MMU is enabled to do some address
+ * translations on 'addr' if needed, depending on the CPU/MMU family
+ */
+void m68k_disasm_file_wrapper (FILE *f, uaecptr addr, uaecptr *nextpc, uaecptr lastpc, int cnt)
+{
+	uaecptr new_addr = addr;
+
+	if ( currprefs.cpu_model == 68030 && currprefs.mmu_model )		/* 68030 with MMU */
+		new_addr = mmu030_translate(addr, regs.s != 0, false, false);
+
+	m68k_disasm_file(TraceFile, new_addr, nextpc, lastpc, cnt);
+}
+#endif
+
 
 void m68k_dumpstate(uaecptr *nextpc, uaecptr prevpc)
 {
@@ -8339,10 +8289,10 @@ uae_u8 *restore_cpu (uae_u8 *src)
 		regs.read_buffer = restore_u16();
 		regs.write_buffer = restore_u16();
 		if (v & 1) {
-			regs.ipl[0] = restore_u8();
-			regs.ipl[1] = restore_u8();
-			regs.ipl_pin = (uae_s32)restore_u8();
-			regs.ipl_pin_p = (uae_s32)restore_u8();
+			regs.ipl[0] = restore_s8();
+			regs.ipl[1] = restore_s8();
+			regs.ipl_pin = restore_s8();
+			regs.ipl_pin_p = restore_s8();
 			regs.ipl_evt = restore_u64();
 			regs.ipl_evt_pre = restore_u64();
 			regs.ipl_pin_change_evt = restore_u64();
@@ -8790,10 +8740,10 @@ uae_u8 *save_cpu(size_t *len, uae_u8 *dstptr)
 		save_u16(regs.ird);
 		save_u16(regs.read_buffer);
 		save_u16(regs.write_buffer);
-		save_u8(regs.ipl[0]);
-		save_u8(regs.ipl[1]);
-		save_u8(regs.ipl_pin);
-		save_u8(regs.ipl_pin_p);
+		save_s8(regs.ipl[0]);
+		save_s8(regs.ipl[1]);
+		save_s8(regs.ipl_pin);
+		save_s8(regs.ipl_pin_p);
 		save_u64(regs.ipl_evt);
 		save_u64(regs.ipl_evt_pre);
 		save_u64(regs.ipl_pin_change_evt);
@@ -8830,6 +8780,8 @@ uae_u8 *restore_mmu(uae_u8 *src)
 
 	changed_prefs.mmu_model = model = restore_u32 ();
 	flags = restore_u32 ();
+	if ( model == 68030 )
+		restore_mmu030_finish();
 	write_log (_T("MMU: %d\n"), model);
 	return src;
 }
@@ -8874,7 +8826,7 @@ static void exception3_read_special(uae_u32 opcode, uaecptr addr, int size, int 
 }
 
 // 68010 special prefetch handling
-void exception3_read_prefetch_only(uae_u32 opcode, uae_u32 addr)
+void exception3_read_prefetch_only(uae_u32 opcode, uaecptr addr)
 {
 	if (currprefs.cpu_model == 68010) {
 		uae_u16 prev = regs.read_buffer;
@@ -9091,7 +9043,7 @@ bool cpureset (void)
 		m68k_reset();
 		return true;
 	}
-	if ((currprefs.cpu_compatible || currprefs.cpu_memory_cycle_exact) && currprefs.cpu_model <= 68020) {
+	if (currprefs.cpu_compatible || currprefs.cpu_memory_cycle_exact) {
 		custom_reset_cpu(false, false);
 		return false;
 	}
@@ -9185,9 +9137,9 @@ void m68k_resumestopped(void)
 uae_u32 mem_access_delay_word_read (uaecptr addr)
 {
 	uae_u32 v;
-//#ifndef WINUAE_FOR_HATARI
+
 	if ( BlitterPhase )	Blitter_HOG_CPU_mem_access_before ( 1 );	// WINUAE_FOR_HATARI
-#if 1
+
 	switch (ce_banktype[addr >> 16])
 	{
 	case CE_MEMBANK_CHIP16:
@@ -9203,11 +9155,6 @@ uae_u32 mem_access_delay_word_read (uaecptr addr)
 		v = get_word (addr);
 		break;
 	}
-#else
-//fprintf ( stderr , "word read mis %lu %lu\n" , currcycle / cpucycleunit , currcycle );
-	v = get_word (addr);
-	x_do_cycles_post (4 * cpucycleunit, v);
-#endif
 	regs.db = v;
 	regs.read_buffer = v;
 	if ( BlitterPhase )	Blitter_HOG_CPU_mem_access_after ( 1 );		// WINUAE_FOR_HATARI
@@ -9216,9 +9163,9 @@ uae_u32 mem_access_delay_word_read (uaecptr addr)
 uae_u32 mem_access_delay_wordi_read (uaecptr addr)
 {
 	uae_u32 v;
-//#ifndef WINUAE_FOR_HATARI
+
 	if ( BlitterPhase )	Blitter_HOG_CPU_mem_access_before ( 1 );	// WINUAE_FOR_HATARI
-#if 1
+
 	switch (ce_banktype[addr >> 16])
 	{
 	case CE_MEMBANK_CHIP16:
@@ -9234,11 +9181,6 @@ uae_u32 mem_access_delay_wordi_read (uaecptr addr)
 		v = get_wordi (addr);
 		break;
 	}
-#else
-//fprintf ( stderr , "wordi read mis %lu %lu\n" , currcycle / cpucycleunit , currcycle );
-	v = get_wordi (addr);
-	x_do_cycles_post (4 * cpucycleunit, v);
-#endif
 	regs.db = v;
 	regs.read_buffer = v;
 	if ( BlitterPhase )	Blitter_HOG_CPU_mem_access_after ( 1 );		// WINUAE_FOR_HATARI
@@ -9248,9 +9190,9 @@ uae_u32 mem_access_delay_wordi_read (uaecptr addr)
 uae_u32 mem_access_delay_byte_read (uaecptr addr)
 {
 	uae_u32  v;
-//#ifndef WINUAE_FOR_HATARI
+
 	if ( BlitterPhase )	Blitter_HOG_CPU_mem_access_before ( 1 );	// WINUAE_FOR_HATARI
-#if 1
+
 	switch (ce_banktype[addr >> 16])
 	{
 	case CE_MEMBANK_CHIP16:
@@ -9266,11 +9208,6 @@ uae_u32 mem_access_delay_byte_read (uaecptr addr)
 		v = get_byte (addr);
 		break;
 	}
-#else
-//fprintf ( stderr , "byte read mis %lu %lu\n" , currcycle / cpucycleunit , currcycle );
-	v = get_byte (addr);
-	x_do_cycles_post (4 * cpucycleunit, v);
-#endif
 	regs.db = (v << 8) | v;
 	regs.read_buffer = v;
 	if ( BlitterPhase )	Blitter_HOG_CPU_mem_access_after ( 1 );		// WINUAE_FOR_HATARI
@@ -9280,9 +9217,9 @@ void mem_access_delay_byte_write (uaecptr addr, uae_u32 v)
 {
 	regs.db = (v << 8)  | v;
 	regs.write_buffer = v;
-//#ifndef WINUAE_FOR_HATARI
+
 	if ( BlitterPhase )	Blitter_HOG_CPU_mem_access_before ( 1 );	// WINUAE_FOR_HATARI
-#if 1
+
 	switch (ce_banktype[addr >> 16])
 	{
 	case CE_MEMBANK_CHIP16:
@@ -9298,16 +9235,12 @@ void mem_access_delay_byte_write (uaecptr addr, uae_u32 v)
 		return;
 	}
 	put_byte (addr, v);
-#else
-	put_byte (addr, v);
-	x_do_cycles_post (4 * cpucycleunit, v);
-#endif
 }
 void mem_access_delay_word_write (uaecptr addr, uae_u32 v)
 {
-//#ifndef WINUAE_FOR_HATARI
+
 	if ( BlitterPhase )	Blitter_HOG_CPU_mem_access_before ( 1 );	// WINUAE_FOR_HATARI
-#if 1
+
 	regs.db = v;
 	regs.write_buffer = v;
 	switch (ce_banktype[addr >> 16])
@@ -9325,10 +9258,6 @@ void mem_access_delay_word_write (uaecptr addr, uae_u32 v)
 		return;
 	}
 	put_word (addr, v);
-#else
-	put_word (addr, v);
-	x_do_cycles_post (4 * cpucycleunit, v);
-#endif
 }
 
 static void start_020_cycle(void)
@@ -10548,7 +10477,24 @@ uae_u32 get_word_ce030_prefetch_opcode (int o)
 	return get_word_ce030_prefetch_2(o);
 }
 
+// [HATARI] Define next line to check for 68030 prefetch mismatch
+//#define WINUAE_FOR_HATARI_DEBUG_PREFETCH_030
+#ifdef WINUAE_FOR_HATARI_DEBUG_PREFETCH_030
+uae_u32 get_word_030_prefetch_real (int o);
 uae_u32 get_word_030_prefetch (int o)
+{
+	uae_u32 v;
+
+	v = get_word_030_prefetch_real(o);
+	if ( ( v & 0xffff ) != ( get_iword_mmu030(o) & 0xffff ) )
+		fprintf ( stderr , "prefetch mismatch m68k_getpc=%x o=%d prefetch=%04x != mem=%04x, i-cache error ?\n" , m68k_getpc() , o , v&0xffff , get_iword_mmu030(o)&0xffff );
+
+	return v;
+}
+uae_u32 get_word_030_prefetch_real (int o)
+#else
+uae_u32 get_word_030_prefetch (int o)
+#endif
 {
 	uae_u32 pc = m68k_getpc () + o;
 	uae_u32 v;
@@ -11535,9 +11481,7 @@ void fill_prefetch (void)
 	}
 }
 
-#ifndef WINUAE_FOR_HATARI
-extern bool cpuboard_fc_check(uaecptr addr, uae_u32 *v, int size, bool write);
-#else
+#ifdef WINUAE_FOR_HATARI
 STATIC_INLINE bool cpuboard_fc_check(uaecptr addr, uae_u32 *v, int size, bool write)
 {
 	return false;

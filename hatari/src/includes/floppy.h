@@ -65,17 +65,5 @@ extern bool Floppy_EjectDiskFromDrive(int Drive);
 extern void Floppy_FindDiskDetails(const uint8_t *pBuffer, int nImageBytes, uint16_t *pnSectorsPerTrack, uint16_t *pnSides);
 extern bool Floppy_ReadSectors(int Drive, uint8_t **pBuffer, uint16_t Sector, uint16_t Track, uint16_t Side, short Count, int *pnSectorsPerTrack, int *pSectorSize);
 extern bool Floppy_WriteSectors(int Drive, uint8_t *pBuffer, uint16_t Sector, uint16_t Track, uint16_t Side, short Count, int *pnSectorsPerTrack, int *pSectorSize);
-#ifdef __LIBRETRO__
-extern bool core_floppy_file_extra(void);
-extern uint8_t* core_floppy_file_read(const char *pszFileName, long *pFileSize, bool extra);
-extern bool core_disk_save(const char* filename, uint8_t* data, unsigned int size, bool core_owns_data);
-extern corefile* core_disk_save_open(const char* filename);
-extern void core_disk_save_close_extra(corefile* file, bool success);
-extern bool core_disk_save_write(const uint8_t* data, unsigned int size, corefile* file);
-extern bool core_disk_save_exists(const char* filename);
-extern uint8_t* core_read_file_save(const char* filename, unsigned int* size_out);
-extern bool core_write_file_save(const char* filename, unsigned int size, const uint8_t* data);
-extern bool core_disk_enable_save;
-#endif
 
 #endif

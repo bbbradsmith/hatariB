@@ -24,7 +24,6 @@ const char IoMemTabSTE_fileid[] = "Hatari ioMemTabSTE.c";
 #include "rtc.h"
 #include "video.h"
 #include "blitter.h"
-#include "statusbar.h"
 #include "stMemory.h"
 
 
@@ -32,28 +31,24 @@ const char IoMemTabSTE_fileid[] = "Hatari ioMemTabSTE.c";
  * Take into account Mega STe Cache/Processor Control register $ff8e21.b
 	$FFFF8E21 Mega STe Cache/Processor Control
 		BIT 0 : Cache (0 - disabled, 1 - enabled)
-		BIT 1 : CPU Speed (0 - 8mhz, 1 - 16mhz)
+		BIT 1 : CPU Speed (0 - 8MHz, 1 - 16MHz)
 
-   We handle only bit 1, bit 0 is ignored (cache is not emulated)
+   Cache can only be enabled if CPU speed is 16 MHz. If CPU is set to 8 MHz then cache bit will be forced to 0 :
+     if we write $FD at $FF8E21 (8 MHz with cache) then reading $FF8E21 will return $FC (8 MHz no cache)
 */
 void IoMemTabMegaSTE_CacheCpuCtrl_WriteByte(void)
 {
-	uint8_t busCtrl = IoMem_ReadByte(0xff8e21);
+	uint8_t Ctrl = IoMem_ReadByte(0xff8e21);
 
-	/* 68000 Frequency changed ? We change freq only in 68000 mode for a
-	 * normal MegaSTE, if the user did not request a faster one manually */
-	if (ConfigureParams.System.nCpuLevel == 0 && ConfigureParams.System.nCpuFreq <= 16)
+	/* If cache is enabled at 8 MHz then disable cache */
+	if ( ( ( Ctrl & 0x2 ) == 0 ) && ( Ctrl & 0x1 ) )
 	{
-		if ((busCtrl & 0x2) != 0) {
-			/* 16 Mhz bus for 68000 */
-			Configuration_ChangeCpuFreq ( 16 );
-		}
-		else {
-			/* 8 Mhz bus for 68000 */
-			Configuration_ChangeCpuFreq ( 8 );
-		}
+	      LOG_TRACE ( TRACE_MEM, "cache : megaste cache can't be enabled at 8 MHz $ff8e21=0x%02x pc=%x\n" , Ctrl , M68000_GetPC() );
+	      Ctrl &= 0xFE;					/* clear bit 0 */
+	      IoMem_WriteByte ( 0xff8e21 , Ctrl );
 	}
-	Statusbar_UpdateInfo();			/* Update clock speed in the status bar */
+
+	MegaSTE_CPU_Cache_Update ( Ctrl );
 }
 
 
@@ -121,8 +116,9 @@ const INTERCEPT_ACCESS_FUNC IoMemTable_STE[] =
 	{ 0xff825a, SIZE_WORD, Video_Color13_ReadWord, Video_Color13_WriteWord },		/* COLOR 13 */
 	{ 0xff825c, SIZE_WORD, Video_Color14_ReadWord, Video_Color14_WriteWord },		/* COLOR 14 */
 	{ 0xff825e, SIZE_WORD, Video_Color15_ReadWord, Video_Color15_WriteWord },		/* COLOR 15 */
-	{ 0xff8260, SIZE_BYTE, Video_Res_ReadByte, Video_Res_WriteByte },
-	{ 0xff8261, 3,         IoMem_VoidRead_00, IoMem_VoidWrite },                            /* No bus errors here : return 0 not ff */
+	{ 0xff8260, SIZE_BYTE, Video_ResGlueShifter_ReadByte, Video_ResGlueShifter_WriteByte },	/* Resolution in GLUE-GSTMCU/Shifter */
+	{ 0xff8261, SIZE_BYTE, Video_ResShifter_ReadByte, Video_ResShifter_WriteByte },		/* Resolution in Shifter only */
+	{ 0xff8262, 2,         IoMem_VoidRead_00, IoMem_VoidWrite },                            /* No bus errors here : return 0 not ff */
 	{ 0xff8264, SIZE_BYTE, Video_HorScroll_Read_8264, Video_HorScroll_Write_8264 },		/* STE horizontal fine scrolling (no prefetch) */
 	{ 0xff8265, SIZE_BYTE, Video_HorScroll_Read_8265, Video_HorScroll_Write_8265 },		/* STE horizontal fine scrolling */
 	{ 0xff8266, 26,        IoMem_VoidRead_00, IoMem_VoidWrite },                            /* No bus errors here : return 0 not ff */
@@ -201,6 +197,8 @@ const INTERCEPT_ACCESS_FUNC IoMemTable_STE[] =
 	{ 0xff8a3c, SIZE_BYTE, Blitter_Control_ReadByte, Blitter_Control_WriteByte },
 	{ 0xff8a3d, SIZE_BYTE, Blitter_Skew_ReadByte, Blitter_Skew_WriteByte },
 	{ 0xff8a3e, SIZE_WORD, IoMem_VoidRead, IoMem_VoidWrite },                               /* No bus error here */
+
+	/* SCU 0xff8e01-0xff8e0f registers set at run-time in ioMem.c for MegaSTE */
 
 	{ 0xff9000, SIZE_WORD, IoMem_VoidRead, IoMem_VoidWrite },                               /* No bus error here */
 	{ 0xff9200, SIZE_WORD, Joy_StePadButtons_DIPSwitches_ReadWord, Joy_StePadButtons_DIPSwitches_WriteWord },    /* Joypad fire buttons + MegaSTE DIP Switches */

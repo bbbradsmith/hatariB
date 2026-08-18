@@ -6,7 +6,6 @@
 */
 const char DlgJoystick_fileid[] = "Hatari dlgJoystick.c";
 
-#ifndef __LIBRETRO__
 #include "main.h"
 #include "configuration.h"
 #include "dialog.h"
@@ -286,7 +285,7 @@ static void DlgJoystick_ReadValuesFromConf(int nActJoy)
 	int i;
 
 	/* Check if joystick ID is available */
-	if (SDL_NumJoysticks() == 0)
+	if (SDL_NumJoysticks() <= 0)
 	{
 		strcpy(sSdlStickName, "0: (none available)");
 	}
@@ -427,7 +426,7 @@ void Dialog_JoyDlg(void)
 	       && but != SDLGUI_ERROR && !bQuitProgram);
 
 	/* Tell ikbd to release joystick button 2 emulated
-	 * space bar in the theoritical case it has gotten stuck
+	 * space bar in the theoretical case it has gotten stuck
 	 * down, and to avoid that case, prevent it also going
 	 * down if user pressed the button when invoking GUI
 	 */
@@ -438,4 +437,3 @@ void Dialog_JoyDlg(void)
 
 	DlgJoystick_WriteValuesToConf(nActJoy);
 }
-#endif

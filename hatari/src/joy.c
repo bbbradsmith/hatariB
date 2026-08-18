@@ -74,26 +74,21 @@ static uint16_t nSteJoySelect;
  */
 const char *Joy_GetName(int id)
 {
-#ifndef __LIBRETRO__
 	return SDL_JoystickName(sdlJoystick[id]);
-#else
-	return "Retropad";
-#endif
 }
 
 /**
- * Return maximum available real joystick ID
+ * Return maximum available real joystick ID, or
+ * zero on error or no joystick (to avoid invalid array accesses)
  */
 int Joy_GetMaxId(void)
 {
-#ifndef __LIBRETRO__
 	int count = SDL_NumJoysticks();
 	if (count > JOYSTICK_COUNT)
 		count = JOYSTICK_COUNT;
-	return count - 1;
-#else
-	return 4;
-#endif
+	if (count > 0)
+		return count - 1;
+	return 0;
 }
 
 /**
@@ -101,11 +96,13 @@ int Joy_GetMaxId(void)
  */
 bool Joy_ValidateJoyId(int i)
 {
+	int joyid = ConfigureParams.Joysticks.Joy[i].nJoyId;
+
 	/* Unavailable joystick ID -> disable it if necessary */
 	if (ConfigureParams.Joysticks.Joy[i].nJoystickMode == JOYSTICK_REALSTICK &&
-	    !bJoystickWorking[ConfigureParams.Joysticks.Joy[i].nJoyId])
+	    !bJoystickWorking[joyid])
 	{
-		Log_Printf(LOG_WARN, "Selected real Joystick %d unavailable, disabling ST joystick %d\n", ConfigureParams.Joysticks.Joy[i].nJoyId, i);
+		Log_Printf(LOG_WARN, "Selected real Joystick %d unavailable, disabling ST joystick %d\n", joyid, i);
 		ConfigureParams.Joysticks.Joy[i].nJoystickMode = JOYSTICK_DISABLED;
 		ConfigureParams.Joysticks.Joy[i].nJoyId = 0;
 		return false;
@@ -119,7 +116,6 @@ bool Joy_ValidateJoyId(int i)
  */
 void Joy_Init(void)
 {
-#ifndef __LIBRETRO__
 	/* Joystick axis mapping table				*/
 	/* Matthias Arndt <marndt@asmsoftware.de>		*/
 	/* Somehow, not all SDL joysticks are created equal.	*/
@@ -178,9 +174,6 @@ void Joy_Init(void)
 		Joy_ValidateJoyId(i);
 
 	JoystickSpaceBar = JOYSTICK_SPACE_NULL;
-#else
-	(void)sdlJoystickMapping;
-#endif
 }
 
 
@@ -190,7 +183,6 @@ void Joy_Init(void)
  */
 void Joy_UnInit(void)
 {
-#ifndef __LIBRETRO__
 	int i, nPadsConnected;
 
 	nPadsConnected = SDL_NumJoysticks();
@@ -199,10 +191,12 @@ void Joy_UnInit(void)
 	{
 		if (bJoystickWorking[i] == true)
 		{
+			bJoystickWorking[i] = false;
 			SDL_JoystickClose(sdlJoystick[i]);
 		}
+		sdlJoystick[i] = NULL;
+		sdlJoystickMapping[i] = NULL;
 	}
-#endif
 }
 
 
@@ -319,7 +313,6 @@ static int Joy_ReadAxisConfig(int nStJoyId, JOYREADING *pJoyReading)
  */
 uint8_t Joy_GetStickData(int nStJoyId)
 {
-#ifndef __LIBRETRO__
 	uint8_t nData = 0;
 	JOYREADING JoyReading;
 
@@ -383,11 +376,6 @@ uint8_t Joy_GetStickData(int nStJoyId)
 		if ((nVBLs&0x7)<4)
 			nData &= ~ATARIJOY_BITMASK_FIRE;          /* Remove top bit! */
 	}
-#else
-	(void)Joy_ButtonSpaceJump;
-	(void)Joy_ReadJoystick;
-	Uint8 nData = (Uint8)core_poll_joy_stick(nStJoyId);
-#endif
 
 	return nData;
 }
@@ -401,7 +389,6 @@ uint8_t Joy_GetStickData(int nStJoyId)
  */
 static int Joy_GetFireButtons(int nStJoyId)
 {
-#ifndef __LIBRETRO__
 	int nButtons = 0;
 	int nSdlJoyId;
 	int i, nMaxButtons;
@@ -428,10 +415,6 @@ static int Joy_GetFireButtons(int nStJoyId)
 			}
 		}
 	}
-#else
-	(void)nJoyKeyEmu;
-	int nButtons = core_poll_joy_fire(nStJoyId);
-#endif
 
 	return nButtons;
 }
@@ -898,7 +881,7 @@ void Joy_SteLightpenY_ReadWord(void)
 
 /*-----------------------------------------------------------------------*/
 /**
- * Read PC joystick and return ST format analoge value byte
+ * Read PC joystick and return ST format analog value byte
  */
 static uint8_t Joy_GetStickAnalogData(int nStJoyId, bool isXAxis)
 {

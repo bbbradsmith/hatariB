@@ -421,6 +421,11 @@
 /* 2020/05/08	[NP]	Handle screen with no vertical DE activated when switching to 60 Hz	*/
 /*			between lines 34 and 62 on a 50 Hz screen (fix fullscreen part in demo	*/
 /*			'Hard As Ice' by ICE)							*/
+/* 2024/09/21	[NP]	Add Video_Set_Memcpy() to handle the case where physical RAM size	*/
+/*			doesn't match the MMU configuration at $FF8001 (fix intro part in demo	*/
+/*			'Ika I Compofylla' by Newline when running in MegaST mode with 4MB RAM)	*/
+/* 2025/07/17	[NP]	Add support for STE 224 bytes overscan in med res (fix some parts of	*/
+/*			Double Rez Trouble by DHS)						*/
 
 
 const char Video_fileid[] = "Hatari video.c";
@@ -463,7 +468,7 @@ const char Video_fileid[] = "Hatari video.c";
 /* The border's mask allows to keep track of all the border tricks		*/
 /* applied to one video line. The masks for all lines are stored in the array	*/
 /* ScreenBorderMask[].								*/
-/* - bits 0-15 are used to describe the border tricks.				*/
+/* - bits 0-19 are used to describe the border tricks.				*/
 /* - bits 20-23 are used to store the bytes offset to apply for some particular	*/
 /*   tricks (for example med res overscan can shift display by 0 or 2 bytes	*/
 /*   depending on when the switch to med res is done after removing the left	*/
@@ -488,6 +493,9 @@ const char Video_fileid[] = "Hatari video.c";
 #define BORDERMASK_NO_SYNC		0x4000
 #define BORDERMASK_SYNC_HIGH		0x8000
 
+#define BORDERMASK_LEFT_OFF_2_STE_MED	(1<<16)	/* Same as BORDERMASK_LEFT_OFF_2_STE with line in med res */
+
+
 //#define STF_SHORT_TOP
 
 int STRes = ST_LOW_RES;                         /* current ST resolution */
@@ -497,23 +505,23 @@ int nFrameSkips;                                /* speed up by skipping video fr
 bool bUseHighRes;                               /* Use hi-res (ie Mono monitor) */
 int VerticalOverscan;				/* V_OVERSCAN_xxxx for current display frame */
 int nScreenRefreshRate = VIDEO_50HZ;		/* 50 or 60 Hz in color, 71 Hz in mono */
-uint32_t VideoBase;                               /* Base address in ST Ram for screen (read on each VBL) */
+uint32_t VideoBase;				/* Base address in ST Ram for screen (read on each VBL) */
 
-int nVBLs;                                      /* VBL Counter */
-int nHBL;                                       /* HBL line */
-int nStartHBL;                                  /* Start HBL for visible screen */
-int nEndHBL;                                    /* End HBL for visible screen */
-int nScanlinesPerFrame = 313;                   /* Number of scan lines per frame */
-int nCyclesPerLine = 512;                       /* Cycles per horizontal line scan */
+int nVBLs;					/* VBL Counter */
+int nHBL;					/* HBL line */
+int nStartHBL;					/* Start HBL for visible screen */
+int nEndHBL;					/* End HBL for visible screen */
+int nScanlinesPerFrame = 313;			/* Number of scan lines per frame */
+int nCyclesPerLine = 512;			/* Cycles per horizontal line scan */
 static int nFirstVisibleHbl = FIRST_VISIBLE_HBL_50HZ;			/* The first line of the ST screen that is copied to the PC screen buffer */
 static int nLastVisibleHbl = FIRST_VISIBLE_HBL_50HZ+NUM_VISIBLE_LINES;	/* The last line of the ST screen that is copied to the PC screen buffer */
 static int CyclesPerVBL = 313*512;		/* Number of cycles per VBL */
 
 static uint8_t HWScrollCount;			/* HW scroll pixel offset, STE only (0...15) */
 static int NewHWScrollCount = -1;		/* Used in STE mode when writing to the scrolling registers $ff8264/65 */
-static uint8_t HWScrollPrefetch;			/* 0 when scrolling with $ff8264, 1 when scrolling with $ff8265 */
+static uint8_t HWScrollPrefetch;		/* 0 when scrolling with $ff8264, 1 when scrolling with $ff8265 */
 static int NewHWScrollPrefetch = -1;		/* Used in STE mode when writing to the scrolling registers $ff8264/65 */
-static uint8_t LineWidth;				/* Scan line width add, STe only (words, minus 1) */
+static uint8_t LineWidth;			/* Scan line width add, STe only (words, minus 1) */
 static int NewLineWidth = -1;			/* Used in STE mode when writing to the line width register $ff820f */
 static int VideoCounterDelayedOffset = 0;	/* Used in STE mode when changing video counter while display is on */
 static uint8_t *pVideoRasterDelayed = NULL;	/* Used in STE mode when changing video counter while display is off in the right border */
@@ -521,6 +529,7 @@ static uint8_t *pVideoRaster;			/* Pointer to Video raster, after VideoBase in P
 static bool bSteBorderFlag;			/* true when screen width has been switched to 336 (e.g. in Obsession) */
 static int NewSteBorderFlag = -1;		/* New value for next line */
 static bool bTTColorsSync;			/* whether TT colors need conversion to SDL */
+static int VideoRasterDelayedInc;		/* Number of bytes to add at the end of the current video line */
 
 int TTSpecialVideoMode;				/* TT special video mode */
 static int nPrevTTSpecialVideoMode;		/* TT special video mode */
@@ -538,25 +547,25 @@ static int	BlankLines = 0;			/* Number of empty line with no signal (by switchin
 
 typedef struct
 {
-	int	VBL;				/* VBL for this Pos (or -1 if Pos not defined for now) */
-	int	FrameCycles;			/* Number of cycles since this VBL */
-	int	HBL;				/* HBL in the VBL */
-	int	LineCycles;			/* cycles in the HBL */
+	int		VBL;			/* VBL for this Pos (or -1 if Pos not defined for now) */
+	int		FrameCycles;		/* Number of cycles since this VBL */
+	int		HBL;			/* HBL in the VBL */
+	int		LineCycles;		/* cycles in the HBL */
 } SHIFTER_POS;
 
 
 typedef struct 
 {
-	int	StartCycle;			/* first cycle of this line, as returned by Cycles_GetCounter */
+	int		StartCycle;		/* first cycle of this line, as returned by Cycles_GetCounter */
 
-	uint32_t	BorderMask;			/* borders' states for this line */
-	int	DisplayPixelShift;		/* number of pixels to shift the whole line (<0 shift to the left, >0 shift to the right) */
+	uint32_t 	BorderMask;		/* borders' states for this line */
+	int		DisplayPixelShift;	/* number of pixels to shift the whole line (<0 shift to the left, >0 shift to the right) */
 						/* On STF, this is obtained when switching hi/med for a variable number of cycles, */
 						/* but just removing left border will shift the line too. */
 
-	int	DisplayStartCycle;		/* cycle where display starts for this line (0-512) : 0, 52 or 56 */
-	int	DisplayEndCycle;		/* cycle where display ends for this line (0-512) : 0, 160, 372, 376, 460 or 512 */
-	int	DisplayBytes;			/* how many bytes to display for this line */
+	int		DisplayStartCycle;	/* cycle where display starts for this line (0-512) : 0, 52 or 56 */
+	int		DisplayEndCycle;	/* cycle where display ends for this line (0-512) : 0, 160, 372, 376, 460 or 512 */
+	int		DisplayBytes;		/* how many bytes to display for this line */
 
 } SHIFTER_LINE;
 
@@ -567,12 +576,20 @@ typedef struct
 	int	TimerB_CyclePos;		/* cycle position for the Timer B int (depends on freq/res) */
 
 	int	Freq;				/* value of ff820a & 2, or -1 if not set */
-	int	Res;				/* value of ff8260 & 3, or -1 if not set */
+	int	Res;				/* value of ff8260 & 3 (as seen by GLUE), or -1 if not set */
+	int	Res_Shifter;			/* value of ff8260/61 & 3 (as seen by Shifter), or -1 if not set */
+
 	SHIFTER_POS	FreqPos50;		/* position of latest freq change to 50 Hz*/
 	SHIFTER_POS	FreqPos60;		/* position of latest freq change to 60 Hz*/
-	SHIFTER_POS	ResPosLo;		/* position of latest change to low res */
-	SHIFTER_POS	ResPosMed;		/* position of latest change to med res */
-	SHIFTER_POS	ResPosHi;		/* position of latest change to high res */
+
+	SHIFTER_POS	ResPosLo;		/* position of latest change to low res in GLUE */
+	SHIFTER_POS	ResPosMed;		/* position of latest change to med res in GLUE */
+	SHIFTER_POS	ResPosHi;		/* position of latest change to high res in GLUE */
+
+	SHIFTER_POS	ResPosLo_Shifter;	/* position of latest change to low res in Shifter */
+	SHIFTER_POS	ResPosMed_Shifter;	/* position of latest change to med res in Shifter */
+	SHIFTER_POS	ResPosHi_Shifter;	/* position of latest change to high res in Shifter */
+	SHIFTER_POS	ResPosStop_Shifter;	/* position of latest change to stopped state in Shifter */
 
 	SHIFTER_POS	Scroll8264Pos;		/* position of latest write to $ff8264 */
 	SHIFTER_POS	Scroll8265Pos;		/* position of latest write to $ff8265 */
@@ -679,7 +696,6 @@ static uint64_t		VBL_ClockCounter;
 int	Video_GetPosition_ForceInc = 0;
 /* TEMP : to update CYCLES_COUNTER_VIDEO during an opcode */
 
-
 /*--------------------------------------------------------------*/
 /* Local functions prototypes                                   */
 /*--------------------------------------------------------------*/
@@ -688,7 +704,8 @@ static void	Video_InitTimings_Copy ( VIDEO_TIMING *pSrc , VIDEO_TIMING *pDest , 
 
 static uint32_t	Video_CalculateAddress ( void );
 static int	Video_GetMMUStartCycle ( int DisplayStartCycle );
-static void	Video_WriteToGlueShifterRes ( uint8_t Res );
+static void	Video_WriteToGlueRes ( uint8_t Res );
+static void	Video_WriteToShifterRes ( uint8_t Res );
 static void	Video_Update_Glue_State ( int FrameCycles , int HblCounterVideo , int LineCycles , bool WriteToRes );
 
 static int	Video_HBL_GetDefaultPos ( void );
@@ -714,10 +731,25 @@ static void	Video_ClearOnVBL(void);
 static void	Video_AddInterrupt ( int Line , int PosCycles , interrupt_id Handler );
 static void	Video_AddInterruptHBL ( int Line , int Pos );
 
+static void	Video_Res_WriteByte(void);
+static void	Video_Res_ReadByte(void);
 static void	Video_ColorReg_WriteWord(void);
 static void	Video_ColorReg_ReadWord(void);
 
 static void	Video_TT_RasterHBL(void);
+
+
+
+/*
+ * Special memcpy functions used by Video_CopyScreenLineColor and Video_CopyScreenLineMono
+ * On STF/STE when the physical RAM size doesn't match the configuration in the MMU at $FF8001,
+ * we must use some more complex memcpy function to get the correct address translation
+ * See Video_Set_Memcpy() to set the correct memcpy function
+ */
+
+static void*	video_memcpy_mmu ( uint8_t *dest , uint8_t *src , int n );
+static void*	video_memcpy_direct ( uint8_t *dest , uint8_t *src , int n );
+static void*	(*video_memcpy)( uint8_t *dest , uint8_t *src , int n ) = video_memcpy_direct;
 
 
 /**
@@ -790,11 +822,18 @@ void Video_Reset(void)
 	/* Reset shifter's state variables */
 	ShifterFrame.Freq = -1;
 	ShifterFrame.Res = -1;
+	ShifterFrame.Res_Shifter = -1;
 	ShifterFrame.FreqPos50.VBL = -1;
 	ShifterFrame.FreqPos60.VBL = -1;
+
 	ShifterFrame.ResPosLo.VBL = -1;
 	ShifterFrame.ResPosMed.VBL = -1;
 	ShifterFrame.ResPosHi.VBL = -1;
+	ShifterFrame.ResPosLo_Shifter.VBL = -1;
+	ShifterFrame.ResPosMed_Shifter.VBL = -1;
+	ShifterFrame.ResPosHi_Shifter.VBL = -1;
+	ShifterFrame.ResPosStop_Shifter.VBL = -1;
+
 	ShifterFrame.Scroll8264Pos.VBL = -1;
 	ShifterFrame.Scroll8265Pos.VBL = -1;
 	ShifterFrame.VBlank_signal = VBLANK_SIGNAL_OFF;
@@ -825,7 +864,30 @@ void Video_Reset(void)
 		Cycles_SetCounter(CYCLES_COUNTER_VIDEO, 2);
 	}
 	else
+	{
 		Cycles_SetCounter(CYCLES_COUNTER_VIDEO, 0);
+	}
+
+	VBL_ClockCounter = CyclesGlobalClockCounter;
+
+	/* shortcut keys are handled from Video_InterruptHandler_VBL, which can call
+	 * Video_Reset() from Video_InterruptHandler_VBL although the next VBL internal interrupt
+	 * is already set. This can create a 2 cycles desync that remains over all VBL,
+	 * which can break spec512 like images or overscan.
+	 * We compensate this desync if needed
+	 * TODO : shortcut keys should be handled in the main cpu loop, not directly in
+	 * Video_InterruptHandler_VBL. This should allow to remove this "resync"
+	 */
+	if ( ( CyclesGlobalClockCounter & 3 ) == 2 )
+	{
+//		fprintf ( stderr , "video reset cycle counter desync %lu\n" , CyclesGlobalClockCounter );
+		VBL_ClockCounter -= 2;
+	}
+	else
+	{
+//		fprintf ( stderr , "video reset cycle counter in sync %lu\n" , CyclesGlobalClockCounter );
+	}
+
 
 	/* Clear ready for new VBL */
 	Video_ClearOnVBL();
@@ -1181,10 +1243,85 @@ if ( *pLineCycles < 0 )
 }
 
 
+/*-----------------------------------------------------------------------*/
+/**
+ * Video_GetCyclesSinceVbl() is used to convert the global cycles counter
+ * into another cycle counter relative to the current VBL as a "frame cycles" counter.
+ * This frame cycles counter can then be used by Video_ConvertPosition()
+ * to get a position inside the VBL, consisting of an HBL number and a number
+ * of elapsed cycles into this HBL.
+ *
+ * For example, for a standard 50 Hz low resolution on STF/STE, a frame contains
+ * 160256 cycles, giving 313 HBL and 512 cycles per HBL
+ *
+ * As a convention we consider that when global cycles counters is 0 (or after a reset),
+ * then VBL 0 will also start at cycle 0.
+ * All following VBL will considered to start at cycle VblVideoCycleOffset
+ */
+
+#undef OLD_GET_POS
+//#define OLD_GET_POS
+#define OLD_GET_POS_FORCE_INC
+
+int	Video_GetCyclesSinceVbl ( void )
+{
+	int cycles_since_vbl;
+	int cycles_old;
+
+	cycles_old = Cycles_GetCounter(CYCLES_COUNTER_VIDEO);
+
+	cycles_since_vbl = CyclesGlobalClockCounter - VBL_ClockCounter;
+
+if ( cycles_since_vbl != cycles_old )
+  fprintf ( stderr , "cyc since vbl old %d != new %d\n" , cycles_old , cycles_since_vbl );
+
+	return cycles_since_vbl;
+}
+
+
+int	Video_GetCyclesSinceVbl_OnWriteAccess ( void )
+{
+	int cycles_since_vbl;
+	int cycles_old;
+
+	cycles_old = Cycles_GetCounterOnWriteAccess(CYCLES_COUNTER_VIDEO);
+
+	cycles_since_vbl = Video_GetCyclesSinceVbl() + Cycles_GetInternalCycleOnWriteAccess();
+
+if ( cycles_since_vbl != cycles_old )
+  fprintf ( stderr , "cyc since vbl write old %d != new %d\n" , cycles_old , cycles_since_vbl );
+
+	return cycles_since_vbl;
+}
+
+
+int	Video_GetCyclesSinceVbl_OnReadAccess ( void )
+{
+	int cycles_since_vbl;
+	int cycles_old;
+
+	cycles_old = Cycles_GetCounterOnReadAccess(CYCLES_COUNTER_VIDEO);
+
+	cycles_since_vbl = Video_GetCyclesSinceVbl() + Cycles_GetInternalCycleOnReadAccess();
+
+if ( cycles_since_vbl != cycles_old )
+  fprintf ( stderr , "cyc since vbl read old %d != new %d\n" , cycles_old , cycles_since_vbl );
+
+	return cycles_since_vbl;
+}
+
+
 void	Video_GetPosition ( int *pFrameCycles , int *pHBL , int *pLineCycles )
 {
+#ifdef OLD_GET_POS
 	*pFrameCycles = Cycles_GetCounter(CYCLES_COUNTER_VIDEO);
+#else
+	*pFrameCycles = Video_GetCyclesSinceVbl();
+#endif
+
+#ifdef OLD_GET_POS_FORCE_INC
 *pFrameCycles += Video_GetPosition_ForceInc;	/* TEMP : to update CYCLES_COUNTER_VIDEO during an opcode */
+#endif
 	Video_ConvertPosition ( *pFrameCycles , pHBL , pLineCycles );
 }
 
@@ -1196,24 +1333,40 @@ void	Video_GetPosition ( int *pFrameCycles , int *pHBL , int *pLineCycles )
 static void	Video_GetPosition_CE ( int *pFrameCycles , int *pHBL , int *pLineCycles )
 {
 	if ( !CpuRunCycleExact )
-		return Video_GetPosition ( pFrameCycles , pHBL , pLineCycles );
+	{
+		Video_GetPosition ( pFrameCycles , pHBL , pLineCycles );
+		return;
+	}
 
+#ifdef OLD_GET_POS
 	*pFrameCycles = Cycles_GetCounter(CYCLES_COUNTER_VIDEO);
 	*pFrameCycles += currcycle / 256;		/* TEMP : to update CYCLES_COUNTER_VIDEO with new cycInt code */
+#else
+	*pFrameCycles = Video_GetCyclesSinceVbl();
+	*pFrameCycles += currcycle / 256;		/* TEMP : to update CYCLES_COUNTER_VIDEO with new cycInt code */
+#endif
 	Video_ConvertPosition ( *pFrameCycles , pHBL , pLineCycles );
 }
 
 
 void	Video_GetPosition_OnWriteAccess ( int *pFrameCycles , int *pHBL , int *pLineCycles )
 {
+#ifdef OLD_GET_POS
 	*pFrameCycles = Cycles_GetCounterOnWriteAccess(CYCLES_COUNTER_VIDEO);
+#else
+	*pFrameCycles = Video_GetCyclesSinceVbl_OnWriteAccess();
+#endif
 	Video_ConvertPosition ( *pFrameCycles , pHBL , pLineCycles );
 }
 
 
 void	Video_GetPosition_OnReadAccess ( int *pFrameCycles , int *pHBL , int *pLineCycles )
 {
+#ifdef OLD_GET_POS
 	*pFrameCycles = Cycles_GetCounterOnReadAccess(CYCLES_COUNTER_VIDEO);
+#else
+	*pFrameCycles = Video_GetCyclesSinceVbl_OnReadAccess();
+#endif
 	Video_ConvertPosition ( *pFrameCycles , pHBL , pLineCycles );
 }
 
@@ -1236,7 +1389,11 @@ static uint32_t Video_CalculateAddress ( void )
 
 	/* Find number of cycles passed during frame */
 	/* We need to subtract '8' for correct video address calculation */
+#ifdef OLD_GET_POS
 	FrameCycles = Cycles_GetCounterOnReadAccess(CYCLES_COUNTER_VIDEO) - 8;
+#else
+	FrameCycles = Video_GetCyclesSinceVbl_OnReadAccess() - 8;
+#endif
 
 	/* Now find which pixel we are on (ignore left/right borders) */
 	Video_ConvertPosition ( FrameCycles , &HblCounterVideo , &LineCycles );
@@ -1355,6 +1512,8 @@ static uint32_t Video_CalculateAddress ( void )
 			CurSize += BORDERBYTES_LEFT;
 		else if (LineBorderMask & BORDERMASK_LEFT_OFF_2_STE)
 			CurSize += BORDERBYTES_LEFT_2_STE;
+		else if (LineBorderMask & BORDERMASK_LEFT_OFF_2_STE_MED)
+			CurSize += BORDERBYTES_LEFT_2_STE;
 		else if (LineBorderMask & BORDERMASK_LEFT_PLUS_2)
 			CurSize += 2;
 		else if (bSteBorderFlag)			/* bigger line by 8 bytes on the left (STE specific) */
@@ -1409,11 +1568,19 @@ static uint32_t Video_CalculateAddress ( void )
 			VideoAddress += PrevSize + NbBytes;
 	}
 
+#ifdef OLD_GET_POS
 	LOG_TRACE(TRACE_VIDEO_ADDR , "video base=%x raster=%x addr=%x video_cyc=%d "
 	          "line_cyc=%d/X=%d @ nHBL=%d/video_hbl=%d %d<->%d pc=%x instr_cyc=%d\n",
 	          VideoBase, (int)(pVideoRaster - STRam), VideoAddress,
 	          Cycles_GetCounter(CYCLES_COUNTER_VIDEO), LineCycles, X, nHBL,
 	          HblCounterVideo, LineStartCycle, LineEndCycle, M68000_GetPC(), CurrentInstrCycles);
+#else
+	LOG_TRACE(TRACE_VIDEO_ADDR , "video base=%x raster=%x addr=%x video_cyc=%d "
+	          "line_cyc=%d/X=%d @ nHBL=%d/video_hbl=%d %d<->%d pc=%x instr_cyc=%d\n",
+	          VideoBase, (int)(pVideoRaster - STRam), VideoAddress,
+	          Video_GetCyclesSinceVbl(), LineCycles, X, nHBL,
+	          HblCounterVideo, LineStartCycle, LineEndCycle, M68000_GetPC(), CurrentInstrCycles);
+#endif
 
 	return VideoAddress;
 }
@@ -1443,23 +1610,19 @@ static int Video_GetMMUStartCycle ( int DisplayStartCycle )
 
 /*-----------------------------------------------------------------------*/
 /**
- * Write to VideoShifter (0xff8260), resolution bits
- * Special case : when writing 3 to the shifter's res, the shifter will stop processing incoming words sent by the MMU,
- * on the GLUE side this will be seen as hi res being selected
+ * Write to resolution register in the GLUE (0xff8260)
+ * Depending on when the write is made, this will affect various video signals
+ * and allow to change borders' position (see Video_Update_Glue_State() )
  */
-static void Video_WriteToGlueShifterRes ( uint8_t Res )
+static void Video_WriteToGlueRes ( uint8_t Res )
 {
 	int FrameCycles, HblCounterVideo, LineCycles;
 
 	Video_GetPosition_OnWriteAccess ( &FrameCycles , &HblCounterVideo , &LineCycles );
 	LineCycles = VIDEO_CYCLE_TO_HPOS ( LineCycles );
 
-	LOG_TRACE(TRACE_VIDEO_RES ,"shifter=0x%2.2X video_cyc_w=%d line_cyc_w=%d @ nHBL=%d/video_hbl_w=%d pc=%x instr_cyc=%d\n",
+	LOG_TRACE(TRACE_VIDEO_RES ,"res_glue=0x%2.2X video_cyc_w=%d line_cyc_w=%d @ nHBL=%d/video_hbl_w=%d pc=%x instr_cyc=%d\n",
 	               Res, FrameCycles, LineCycles, nHBL, HblCounterVideo, M68000_GetPC(), CurrentInstrCycles );
-
-	if ( Res == 3 )
-		LOG_TRACE(TRACE_VIDEO_RES ,"shifter=0x%2.2X, shifter stopped video_cyc_w=%d line_cyc_w=%d @ nHBL=%d/video_hbl_w=%d pc=%x instr_cyc=%d\n",
-			Res, FrameCycles, LineCycles, nHBL, HblCounterVideo, M68000_GetPC(), CurrentInstrCycles );
 
 
 	/* Ignore consecutive writes of the same value */
@@ -1502,6 +1665,19 @@ static void Video_WriteToGlueShifterRes ( uint8_t Res )
 			LOG_TRACE ( TRACE_VIDEO_BORDER_H , "detect med res overscan offset 2 bytes\n" );
 			ShifterFrame.ShifterLines[ HblCounterVideo ].BorderMask |= BORDERMASK_OVERSCAN_MED_RES | ( 2 << 20 );
 		}
+	}
+
+	if ( ( ShifterFrame.ShifterLines[ HblCounterVideo ].BorderMask & BORDERMASK_LEFT_OFF_2_STE )
+	        && ( Res == 0x01 )
+		&& ( LineCycles == pVideoTiming->HDE_On_Hi ) )
+	{
+		ShifterFrame.ShifterLines[ HblCounterVideo ].BorderMask &= (~BORDERMASK_LEFT_OFF_2_STE);
+		ShifterFrame.ShifterLines[ HblCounterVideo ].BorderMask |= BORDERMASK_LEFT_OFF_2_STE_MED;
+		/* TODO : we use DisplayPixelShift=-16 here to get the exepected result */
+		/* but it's more likely to be a 0 pixel shift and a 4 bytes compensation */
+		/* elsewhere when rendering line on screen */
+		ShifterFrame.ShifterLines[ HblCounterVideo ].DisplayPixelShift = -16;		/* screen is shifted 16 pixels to the left */
+		LOG_TRACE ( TRACE_VIDEO_BORDER_H , "detect remove left 2 med ste\n" );
 	}
 
 	/* If left border was opened with a hi/med res switch we need to check */
@@ -1611,49 +1787,6 @@ static void Video_WriteToGlueShifterRes ( uint8_t Res )
 			ShifterFrame.ShifterLines[ i ].DisplayPixelShift = ShifterFrame.ShifterLines[ HblCounterVideo ].DisplayPixelShift;
 	}
 
-	/* Troed/Sync 4 pixel hardscroll on the whole screen, without removing border */
-	/* Switch to res=3 to stop the shifter, then switch back to low/med res */
-	/* All following lines will be shifted too, not just the one where the switch to res=3 is done */
-	/* The switch is supposed to last less than 20 cycles to get all 4 positions. If the switch last more */
-	/* then for every 16*n cycles we must compensante for 4*n MMU words that were not processed */
-	if ( ( ShifterFrame.Res == 0x03 ) && ( ShifterFrame.ResPosHi.LineCycles == 68 )		/* switched from stopped state at cycle 68 */
-		&& ( LineCycles >= 76 ) )				/* switch to res=3 during at least 8 cycles */
-	{
-		int	add_bytes;
-
-		add_bytes = ( ( LineCycles - 76 ) / 16 ) * 8;
-
-		if ( ( LineCycles - ShifterFrame.ResPosHi.LineCycles ) % 16 == 4 )		// 88 + 16n
-		{
-			LOG_TRACE(TRACE_VIDEO_BORDER_H , "detect 12 pixels right scroll with stopped shifter\n" );
-			ShifterFrame.ShifterLines[ HblCounterVideo ].DisplayPixelShift = 12;
-			pVideoRaster += 2 + add_bytes;
-		}
-		else if ( ( LineCycles - ShifterFrame.ResPosHi.LineCycles ) % 16 == 0 )		// 84 + 16n
-		{
-			LOG_TRACE(TRACE_VIDEO_BORDER_H , "detect 8 pixels right scroll with stopped shifter\n" );
-			ShifterFrame.ShifterLines[ HblCounterVideo ].DisplayPixelShift = 8;
-			pVideoRaster += 0 + add_bytes;
-		}
-		else if ( ( LineCycles - ShifterFrame.ResPosHi.LineCycles ) % 16 == 12 )	// 80 + 16n
-		{
-			LOG_TRACE(TRACE_VIDEO_BORDER_H , "detect 4 pixels right scroll with stopped shifter\n" );
-			ShifterFrame.ShifterLines[ HblCounterVideo ].DisplayPixelShift = 4;
-			pVideoRaster += -2 + add_bytes;
-		}
-		else if ( ( LineCycles - ShifterFrame.ResPosHi.LineCycles ) % 16 == 8 )		// 76 + 16n
-		{
-			LOG_TRACE(TRACE_VIDEO_BORDER_H , "detect 0 pixel right scroll with stopped shifter\n" );
-			ShifterFrame.ShifterLines[ HblCounterVideo ].DisplayPixelShift = 0;
-			pVideoRaster += -4 + add_bytes;
-		}
-
-		/* Mark all the following lines as shifted too */
-		int i;
-		for ( i=HblCounterVideo+1 ; i<MAX_SCANLINES_PER_FRAME ; i++ )
-			ShifterFrame.ShifterLines[ i ].DisplayPixelShift = ShifterFrame.ShifterLines[ HblCounterVideo ].DisplayPixelShift;
-	}
-
 	/* TEMP for 'closure' in WS2 */
 	/* -> stay in hi res for 16 cycles to do the stab (hi/50/lo at 4/12/20) */
 	if ( ( ShifterFrame.ShifterLines[ HblCounterVideo ].BorderMask & BORDERMASK_LEFT_OFF )
@@ -1700,7 +1833,7 @@ static void Video_WriteToGlueShifterRes ( uint8_t Res )
 	/* TEMP for 'death of the left border' by TNT */
 
 
-	/* Store cycle position of this change of resolution */
+	/* Store cycle position for this change of resolution */
 	ShifterFrame.Res = Res;
 	if ( Res & 0x02 )						/* high res */
 	{
@@ -1725,6 +1858,134 @@ static void Video_WriteToGlueShifterRes ( uint8_t Res )
 	}
 }
 
+
+
+
+/*-----------------------------------------------------------------------*/
+/**
+ * Write to resolution register in the Shifter (0xff8260 or 0xff8261)
+ * Special case : when writing 3 to the Shifter's res, the shifter will stop processing incoming words sent by the MMU,
+ * on the GLUE side this will be seen as hi res being selected
+ */
+static void Video_WriteToShifterRes ( uint8_t Res )
+{
+	int FrameCycles, HblCounterVideo, LineCycles;
+
+	Video_GetPosition_OnWriteAccess ( &FrameCycles , &HblCounterVideo , &LineCycles );
+	LineCycles = VIDEO_CYCLE_TO_HPOS ( LineCycles );
+
+	LOG_TRACE(TRACE_VIDEO_RES ,"res_shifter=0x%2.2X video_cyc_w=%d line_cyc_w=%d @ nHBL=%d/video_hbl_w=%d pc=%x instr_cyc=%d\n",
+	               Res, FrameCycles, LineCycles, nHBL, HblCounterVideo, M68000_GetPC(), CurrentInstrCycles );
+
+	if ( Res == 3 )
+		LOG_TRACE(TRACE_VIDEO_RES ,"res_shifter=0x%2.2X, shifter stopped video_cyc_w=%d line_cyc_w=%d @ nHBL=%d/video_hbl_w=%d pc=%x instr_cyc=%d\n",
+			Res, FrameCycles, LineCycles, nHBL, HblCounterVideo, M68000_GetPC(), CurrentInstrCycles );
+
+
+	/* Ignore consecutive writes of the same value */
+	if ( Res == ShifterFrame.Res_Shifter )
+		return;						/* do nothing */
+
+	/* Troed/Sync 4 pixels left hardscroll on the whole screen, without removing border */
+	/* Switch to res=3 to stop the shifter, then switch back to low/med res */
+	/* All following lines will be shifted but not the one where the switch to res=3 is done */
+	/* The switch is supposed to last less than 20 cycles to get all 4 positions */
+	/* Switch to res=3 is usually made at pos 68 to limit artifacts (all pixels will be black */
+	/* during the time when shifter is stopped), but it could be made anywhere on the line when DE is ON */
+
+	/* TODO : we shift the screen but we don't show the black pixels during stopped state */
+	/* TODO : shift should remain on all subsequent vbl's, not just the current one */
+
+	if ( ( ShifterFrame.Res_Shifter == 0x03 )
+		&& ( ShifterFrame.ResPosStop_Shifter.LineCycles >= 64 )		/* switched to stopped state when DE ON */
+		&& ( LineCycles >= 64+8 )					/* switch to res=3 during at least 8 cycles */
+		&& ( LineCycles - ShifterFrame.ResPosStop_Shifter.LineCycles <= 32 ) ) /* stopped for max 32 cycles */
+
+	{
+		int	shifter_res_pos_old;
+		int	shifter_res_pos_new;
+		int	shifter_stopped_cycles;
+		int	Shift , AddressInc;
+
+
+		/* Changes of resolution in the shifter are done on the next rounding to 4 cycles */
+		/* (also depending on the current bus access) */
+		/* TODO : use a common function like M68000_SyncCpuBus() */
+		shifter_res_pos_old = ( ShifterFrame.ResPosStop_Shifter.LineCycles + 3 ) & ~3;
+		shifter_res_pos_new = ( LineCycles + 3 ) & ~3;
+
+		shifter_stopped_cycles = shifter_res_pos_new - shifter_res_pos_old;
+
+		Shift = 0;
+		AddressInc = 0;
+
+		if ( shifter_stopped_cycles % 16 == 4 )			// 88 + 16n
+		{
+			LOG_TRACE(TRACE_VIDEO_BORDER_H , "detect 12 pixels left scroll with stopped shifter\n" );
+			AddressInc = -6;
+			Shift = -12;
+		}
+		else if ( shifter_stopped_cycles % 16 == 0 )		// 84 + 16n
+		{
+			LOG_TRACE(TRACE_VIDEO_BORDER_H , "detect 0 pixels left scroll with stopped shifter\n" );
+			AddressInc = 0;
+			Shift = 0;
+		}
+		else if ( shifter_stopped_cycles % 16 == 12 )		// 80 + 16n
+		{
+			LOG_TRACE(TRACE_VIDEO_BORDER_H , "detect 4 pixels left scroll with stopped shifter\n" );
+			AddressInc = -2;
+			Shift = -4;
+		}
+		else if ( shifter_stopped_cycles % 16 == 8 )		// 76 + 16n
+		{
+			LOG_TRACE(TRACE_VIDEO_BORDER_H , "detect 8 pixel left scroll with stopped shifter\n" );
+			AddressInc = -4;
+			Shift = -8;
+		}
+
+		/* Offset to be added at the end of the current line */
+		if ( AddressInc != 0 )
+			VideoRasterDelayedInc = AddressInc;
+
+		/* Mark all the following lines as shifted */
+		int i;
+		for ( i=HblCounterVideo+1 ; i<MAX_SCANLINES_PER_FRAME ; i++ )
+			ShifterFrame.ShifterLines[ i ].DisplayPixelShift = Shift;
+	}
+
+
+	/* Store cycle position for this change of resolution */
+	ShifterFrame.Res_Shifter = Res;
+	if ( Res == 0x03 )						/* stopped state */
+	{
+		ShifterFrame.ResPosStop_Shifter.VBL = nVBLs;
+		ShifterFrame.ResPosStop_Shifter.FrameCycles = FrameCycles;
+		ShifterFrame.ResPosStop_Shifter.HBL = HblCounterVideo;
+		ShifterFrame.ResPosStop_Shifter.LineCycles = LineCycles;
+	}
+	else if ( Res == 0x02 )						/* high res */
+	{
+		ShifterFrame.ResPosStop_Shifter.VBL = nVBLs;
+		ShifterFrame.ResPosStop_Shifter.FrameCycles = FrameCycles;
+		ShifterFrame.ResPosStop_Shifter.HBL = HblCounterVideo;
+		ShifterFrame.ResPosStop_Shifter.LineCycles = LineCycles;
+	}
+	else if ( Res == 0x01 )						/* med res */
+	{
+		ShifterFrame.ResPosStop_Shifter.VBL = nVBLs;
+		ShifterFrame.ResPosStop_Shifter.FrameCycles = FrameCycles;
+		ShifterFrame.ResPosStop_Shifter.HBL = HblCounterVideo;
+		ShifterFrame.ResPosStop_Shifter.LineCycles = LineCycles;
+	}
+	else								/* low res */
+	{
+		ShifterFrame.ResPosStop_Shifter.VBL = nVBLs;
+		ShifterFrame.ResPosStop_Shifter.FrameCycles = FrameCycles;
+		ShifterFrame.ResPosStop_Shifter.HBL = HblCounterVideo;
+		ShifterFrame.ResPosStop_Shifter.LineCycles = LineCycles;
+	}
+}
 
 
 
@@ -2978,15 +3239,15 @@ void Video_InterruptHandler_HBL ( void )
 	int FrameCycles , HblCounterVideo , LineCycles;
 	int PendingCyclesOver;
 	int NewHBLPos;
-#ifdef __LIBRETRO__
-	(void)PendingCyclesOver;
-#endif
 
+
+#ifdef OLD_GET_POS_FORCE_INC
 if ( CycInt_From_Opcode )		/* TEMP : to update CYCLES_COUNTER_VIDEO during an opcode */
 {
   Video_GetPosition_ForceInc = currcycle / 256;
 //  fprintf ( stderr , "Video_InterruptHandler_HBL from opcode currcycle=%d add=%d\n" , currcycle , Video_GetPosition_ForceInc );
 }
+#endif
 	Video_GetPosition ( &FrameCycles , &HblCounterVideo , &LineCycles );
 
 	/* How many cycle was this HBL delayed (>= 0) */
@@ -3119,7 +3380,9 @@ if ( CycInt_From_Opcode )		/* TEMP : to update CYCLES_COUNTER_VIDEO during an op
 			Video_AddInterruptHBL ( nHBL , pVideoTiming->RestartVideoCounter_Pos );
 		}
 	}
+#ifdef OLD_GET_POS_FORCE_INC
 Video_GetPosition_ForceInc = 0;		/* TEMP : to update CYCLES_COUNTER_VIDEO during an opcode */
+#endif
 }
 
 
@@ -3333,11 +3596,13 @@ void Video_InterruptHandler_EndLine(void)
 	int FrameCycles, HblCounterVideo, LineCycles;
 	int PendingCycles = -INT_CONVERT_FROM_INTERNAL ( PendingInterruptCount , INT_CPU_CYCLE );
 
+#ifdef OLD_GET_POS_FORCE_INC
 if ( CycInt_From_Opcode )		/* TEMP : to update CYCLES_COUNTER_VIDEO during an opcode */
 {
   Video_GetPosition_ForceInc = currcycle / 256;
 //  fprintf ( stderr , "Video_InterruptHandler_EndLine from opcode currcycle=%d add=%d\n" , currcycle , Video_GetPosition_ForceInc );
 }
+#endif
 	Video_GetPosition ( &FrameCycles , &HblCounterVideo , &LineCycles );
 
 	LOG_TRACE ( TRACE_VIDEO_HBL , "EndLine TB %d video_cyc=%d line_cyc=%d pending_int_cnt=%d\n" ,
@@ -3395,7 +3660,9 @@ if ( CycInt_From_Opcode )		/* TEMP : to update CYCLES_COUNTER_VIDEO during an op
 				MFP_TimerB_EventCount ( pMFP_TT , PendingCycles );	/* DE signal is also connected to timer B on the TT MFP */
 		}
 	}
+#ifdef OLD_GET_POS_FORCE_INC
 Video_GetPosition_ForceInc = 0;		/* TEMP : to update CYCLES_COUNTER_VIDEO during an opcode */
+#endif
 }
 
 
@@ -3458,7 +3725,8 @@ static void Video_StoreResolution(int y , bool start)
 			res = ( HBLPaletteMasks[y] >> 16 ) & 0x3;
 			Mask = ShifterFrame.ShifterLines[ y+nFirstVisibleHbl ].BorderMask;
 
-			if ( Mask & BORDERMASK_OVERSCAN_MED_RES )	/* special case for med res to render the overscan line */
+			if ( ( Mask & BORDERMASK_OVERSCAN_MED_RES )	/* special case for med res to render the overscan line */
+			  || ( Mask & BORDERMASK_LEFT_OFF_2_STE_MED ) )
 				res = 1;				/* med res instead of low res */
 			else if ( Mask != BORDERMASK_NONE )		/* border removal : assume low res for the whole line */
 				res = 0;
@@ -3472,6 +3740,56 @@ static void Video_StoreResolution(int y , bool start)
 }
 
 
+
+
+/*-----------------------------------------------------------------------*/
+/**
+ * To copy shifter data to the emulated screen, some cases require
+ * to use a more complex version than a simple memcpy.
+ *
+ * For example when the MMU configuration at $FF8001 doesn't match
+ * the physical RAM size on STF/STE we need to copy 1 word at a time
+ * after applying a translation on the address
+ *
+ * NOTE : these functions expect the number of bytes 'n' to copy to be even
+ * NOTE : very few programs require to use video_memcpy_mmu(), so the performance impact
+ *        on emulation will be minimal in most cases. So far, only demo known to need this
+ *        mode is 'Ika I Compofylla' by Newline
+ */
+
+void	Video_Set_Memcpy ( bool Force_MMU_Translation )
+{
+//fprintf ( stderr , "Video_Set_Memcpy Force_MMU_Translation=%d\n" , Force_MMU_Translation );
+
+	if ( Force_MMU_Translation )
+		video_memcpy = video_memcpy_mmu;
+	else
+		video_memcpy = video_memcpy_direct;
+}
+
+
+/* Use a slower/more accurate rendering where each word is dynamically read from memory */
+/* (this is used to apply MMU translation and when video address points after end of RAM) */
+static void*	video_memcpy_mmu ( uint8_t *dest , uint8_t *src , int n )
+{
+	int	i;
+
+	/* We must keep the src video address in a 22 or 24 bit space depending on the machine type */
+	uint32_t VideoMask = Video_GetAddrMask();
+
+	for ( i=0 ; i<n/2 ; i++ )
+		do_put_mem_word ( dest+i*2 , (uint16_t)get_word ( ( src-STRam+i*2 ) & VideoMask ) );
+	return dest;
+}
+
+
+static void*	video_memcpy_direct ( uint8_t *dest , uint8_t *src , int n )
+{
+	return memcpy ( dest , src, n );
+}
+
+
+
 /*-----------------------------------------------------------------------*/
 /**
  * Copy one line of monochrome screen into buffer for conversion later.
@@ -3483,7 +3801,7 @@ static void Video_CopyScreenLineMono(void)
 	uint32_t VideoMask = Video_GetAddrMask();
 
 	/* Copy one line - 80 bytes in ST high resolution */
-	memcpy(pSTScreen, pVideoRaster, SCREENBYTES_MONOLINE);
+	video_memcpy ( pSTScreen, pVideoRaster, SCREENBYTES_MONOLINE );
 	pVideoRaster += SCREENBYTES_MONOLINE;
 
 	/* Handle STE fine scrolling (HWScrollCount is zero on ST). */
@@ -3627,7 +3945,8 @@ static void Video_CopyScreenLineColor(void)
 		STF_PixelScroll -= ShiftPixels;
 	}
 
-	else if ( LineBorderMask & BORDERMASK_LEFT_OFF_2_STE )
+	else if ( ( LineBorderMask & BORDERMASK_LEFT_OFF_2_STE )
+	      || ( LineBorderMask & BORDERMASK_LEFT_OFF_2_STE_MED ) )
 		VideoOffset = -4;						/* 4 first bytes of the line are not shown */
 
 	/* Handle 4 pixels hardware scrolling ('ST Cnx' demo in 'Punish Your Machine') */
@@ -3676,18 +3995,19 @@ static void Video_CopyScreenLineColor(void)
 		if ( LineBorderMask & ( BORDERMASK_LEFT_OFF | BORDERMASK_LEFT_OFF_MED ) )	/* bigger line by 26 bytes on the left */
 		{
 			pVideoRaster += BORDERBYTES_LEFT-SCREENBYTES_LEFT+VideoOffset;
-			memcpy(pSTScreen, pVideoRaster, SCREENBYTES_LEFT);
+			video_memcpy ( pSTScreen, pVideoRaster, SCREENBYTES_LEFT );
 			pVideoRaster += SCREENBYTES_LEFT;
 		}
-		else if ( LineBorderMask & BORDERMASK_LEFT_OFF_2_STE )	/* bigger line by 20 bytes on the left (STE specific) */
+		else if ( ( LineBorderMask & BORDERMASK_LEFT_OFF_2_STE )	/* bigger line by 20 bytes on the left (STE specific) */
+			|| ( LineBorderMask & BORDERMASK_LEFT_OFF_2_STE_MED ) )
 		{							/* bytes 0-3 are not shown, only next 16 bytes (32 pixels, 4 bitplanes) */
 			if ( SCREENBYTES_LEFT > BORDERBYTES_LEFT_2_STE )
 			{
 				memset ( pSTScreen, 0, SCREENBYTES_LEFT-BORDERBYTES_LEFT_2_STE+4 );	/* clear unused pixels + bytes 0-3 */
-				memcpy ( pSTScreen+SCREENBYTES_LEFT-BORDERBYTES_LEFT_2_STE+4, pVideoRaster+VideoOffset+4, BORDERBYTES_LEFT_2_STE-4 );
+				video_memcpy ( pSTScreen+SCREENBYTES_LEFT-BORDERBYTES_LEFT_2_STE+4, pVideoRaster+VideoOffset+4, BORDERBYTES_LEFT_2_STE-4 );
 			}
 			else
-				memcpy ( pSTScreen, pVideoRaster+BORDERBYTES_LEFT_2_STE-SCREENBYTES_LEFT+VideoOffset, SCREENBYTES_LEFT );
+				video_memcpy ( pSTScreen, pVideoRaster+BORDERBYTES_LEFT_2_STE-SCREENBYTES_LEFT+VideoOffset, SCREENBYTES_LEFT );
 
 			pVideoRaster += BORDERBYTES_LEFT_2_STE+VideoOffset;
 		}
@@ -3695,8 +4015,8 @@ static void Video_CopyScreenLineColor(void)
 		{
 			if ( SCREENBYTES_LEFT > 2 )
 			{
-				memset(pSTScreen,0,SCREENBYTES_LEFT-2);		/* clear unused pixels */
-				memcpy(pSTScreen+SCREENBYTES_LEFT-2, pVideoRaster, 2);
+				memset ( pSTScreen,0,SCREENBYTES_LEFT-2 );	/* clear unused pixels */
+				video_memcpy ( pSTScreen+SCREENBYTES_LEFT-2, pVideoRaster, 2 );
 			}
 			else
 			{						/* nothing to copy, left border is not large enough */
@@ -3708,8 +4028,8 @@ static void Video_CopyScreenLineColor(void)
 		{
 			if ( SCREENBYTES_LEFT > 4*2 )
 			{
-				memset(pSTScreen,0,SCREENBYTES_LEFT-4*2);	/* clear unused pixels */
-				memcpy(pSTScreen+SCREENBYTES_LEFT-4*2, pVideoRaster, 4*2);
+				memset ( pSTScreen,0,SCREENBYTES_LEFT-4*2 );	/* clear unused pixels */
+				video_memcpy ( pSTScreen+SCREENBYTES_LEFT-4*2, pVideoRaster, 4*2 );
 			}
 			else
 			{						/* nothing to copy, left border is not large enough */
@@ -3724,29 +4044,21 @@ static void Video_CopyScreenLineColor(void)
 		if (LineBorderMask & BORDERMASK_STOP_MIDDLE)
 		{
 			/* 106 bytes less in the line */
-			memcpy(pSTScreen+SCREENBYTES_LEFT, pVideoRaster, SCREENBYTES_MIDDLE-106);
-			memset(pSTScreen+SCREENBYTES_LEFT+SCREENBYTES_MIDDLE-106, 0, 106);	/* clear unused pixels */
+			video_memcpy ( pSTScreen+SCREENBYTES_LEFT, pVideoRaster, SCREENBYTES_MIDDLE-106 );
+			memset ( pSTScreen+SCREENBYTES_LEFT+SCREENBYTES_MIDDLE-106, 0, 106 );	/* clear unused pixels */
 			pVideoRaster += (SCREENBYTES_MIDDLE-106);
 		}
 		else
 		{
 			/* normal middle part (160 bytes) */
-//#define MMU_TEST
-#ifndef MMU_TEST
-			memcpy(pSTScreen+SCREENBYTES_LEFT, pVideoRaster, SCREENBYTES_MIDDLE);
-#else
-			/* Use a slower/more accurate rendering where each word is dynamically read from memory */
-			/* (this is used to test MMU translation and when video address points after end of RAM) */
-			for ( i=0 ; i<80 ; i++ )
-				do_put_mem_word ( pSTScreen+SCREENBYTES_LEFT+i*2 , (uint16_t)get_word ( ( pVideoRaster-STRam+i*2 ) & VideoMask ) );
-#endif
+			video_memcpy ( pSTScreen+SCREENBYTES_LEFT, pVideoRaster, SCREENBYTES_MIDDLE );
 			pVideoRaster += SCREENBYTES_MIDDLE;
 		}
 
 		/* Does have right border ? */
 		if (LineBorderMask & BORDERMASK_RIGHT_OFF)
 		{
-			memcpy(pSTScreen+SCREENBYTES_LEFT+SCREENBYTES_MIDDLE, pVideoRaster, SCREENBYTES_RIGHT);
+			video_memcpy ( pSTScreen+SCREENBYTES_LEFT+SCREENBYTES_MIDDLE, pVideoRaster, SCREENBYTES_RIGHT );
 			pVideoRasterEndLine = pVideoRaster + SCREENBYTES_RIGHT;
 			pVideoRaster += BORDERBYTES_RIGHT;
 		}
@@ -3786,7 +4098,8 @@ static void Video_CopyScreenLineColor(void)
 			nNegScrollCnt = 16 - HWScrollCount;
 			if (LineBorderMask & BORDERMASK_LEFT_OFF)
 				pScrollAdj = (uint16_t *)pSTScreen;
-			else if (LineBorderMask & BORDERMASK_LEFT_OFF_2_STE)
+			else if ( (LineBorderMask & BORDERMASK_LEFT_OFF_2_STE)
+				|| (LineBorderMask & BORDERMASK_LEFT_OFF_2_STE_MED) )
 			{
 				if ( SCREENBYTES_LEFT > BORDERBYTES_LEFT_2_STE )
 					pScrollAdj = (uint16_t *)(pSTScreen+8);	/* don't scroll the 8 first bytes (keep color 0)*/
@@ -3986,7 +4299,8 @@ static void Video_CopyScreenLineColor(void)
 						| ( do_get_mem_word ( pScreenLineStart + 2 ) >> (16-STF_PixelScroll) ) ) );
 
 				/* Handle the last 16 pixels of the line */
-				if (LineBorderMask & BORDERMASK_LEFT_OFF_2_STE)
+				if ( (LineBorderMask & BORDERMASK_LEFT_OFF_2_STE)
+				    || (LineBorderMask & BORDERMASK_LEFT_OFF_2_STE_MED) )
 				{
 					for ( i=0 ; i<2 ; i++ )
 					{
@@ -4059,6 +4373,13 @@ static void Video_CopyScreenLineColor(void)
 		NewLineWidth = -1;
 	}
 
+	/* When stopping shifter for 4 pixel hardscroll the video address needs to be */
+	/* adjusted on the next line */
+	if ( VideoRasterDelayedInc != 0 )
+	{
+		pVideoRaster += VideoRasterDelayedInc;
+		VideoRasterDelayedInc = 0;
+	}
 
 	/* Each screen line copied to buffer is always same length */
 	pSTScreen += SCREENBYTES_LINE;
@@ -4097,7 +4418,11 @@ static void Video_SetHBLPaletteMaskPointers(void)
 	/* To correct this, we assume a delay of 8 cycles (should give a good approximation */
 	/* of a move.w or movem.l for example) */
 	//  FrameCycles = Cycles_GetCounterOnWriteAccess(CYCLES_COUNTER_VIDEO);
+#ifdef OLD_GET_POS
 	FrameCycles = Cycles_GetCounter(CYCLES_COUNTER_VIDEO) + 8;
+#else
+	FrameCycles = Video_GetCyclesSinceVbl() + 8;
+#endif
 
 	/* Find 'line' into palette - screen starts 63 lines down, less 29 for top overscan */
 	Video_ConvertPosition ( FrameCycles , &HblCounterVideo , &LineCycles );
@@ -4222,9 +4547,6 @@ static void Video_ResetShifterTimings(void)
 		ShifterFrame.VBLank_On_60_CheckFreq = VIDEO_60HZ;
 		ShifterFrame.VBLank_On_50_CheckFreq = VIDEO_60HZ;
 	}
-#ifdef __LIBRETRO__
-	core_set_fps(nScreenRefreshRate);
-#endif
 
 	nCyclesPerLine <<= nCpuFreqShift;
 
@@ -4615,6 +4937,7 @@ void Video_InterruptHandler_VBL ( void )
 {
 	int PendingCyclesOver;
 	int PendingInterruptCount_save;
+	uint64_t VBL_ClockCounter_prev;
 
 	PendingInterruptCount_save = PendingInterruptCount;
 
@@ -4636,6 +4959,11 @@ void Video_InterruptHandler_VBL ( void )
 
 	/* Set frame cycles, used for Video Address */
 	Cycles_SetCounter(CYCLES_COUNTER_VIDEO, PendingCyclesOver + ( pVideoTiming->VblVideoCycleOffset << nCpuFreqShift ) );
+
+	VBL_ClockCounter_prev = VBL_ClockCounter;
+	VBL_ClockCounter = CyclesGlobalClockCounter - PendingCyclesOver;
+	/* The VBL interrupt starts at "VblVideoCycleOffset" cycles since the start of the VBL */
+	VBL_ClockCounter -= pVideoTiming->VblVideoCycleOffset << nCpuFreqShift;
 
 	/* Clear any key presses which are due to be de-bounced (held for one ST frame) */
 	Keymap_DebounceAllKeys();
@@ -4666,7 +4994,7 @@ void Video_InterruptHandler_VBL ( void )
 	IKBD_UpdateClockOnVBL ();
 
 	/* Record video frame is necessary */
-	if ( bRecordingAvi )
+	if ( Avi_AreWeRecording() )
 		Avi_RecordVideoStream ();
 
 	/* Store off PSG registers for YM file, is enabled */
@@ -4675,26 +5003,42 @@ void Video_InterruptHandler_VBL ( void )
 	Sound_Update_VBL();
 
 	/* Update the blitter's stats for the previous VBL */
-	Blitter_StatsUpdateRate ( (int)( CyclesGlobalClockCounter - PendingCyclesOver - VBL_ClockCounter ) );
+	Blitter_StatsUpdateRate ( (int)( VBL_ClockCounter - VBL_ClockCounter_prev ) );
 
+#ifdef OLD_GET_POS
 	LOG_TRACE(TRACE_VIDEO_VBL , "VBL %d video_cyc=%d pending_cyc=%d vbl_cycles=%d\n" ,
 			nVBLs , Cycles_GetCounter(CYCLES_COUNTER_VIDEO) , PendingCyclesOver ,
 			(int)( CyclesGlobalClockCounter - PendingCyclesOver - VBL_ClockCounter ) );
+#else
+	LOG_TRACE(TRACE_VIDEO_VBL , "VBL %d video_cyc=%d pending_cyc=%d vbl_cycles=%d\n" ,
+			nVBLs , Video_GetCyclesSinceVbl() , PendingCyclesOver ,
+			(int)( CyclesGlobalClockCounter - PendingCyclesOver - VBL_ClockCounter ) );
+#endif
 
-	VBL_ClockCounter = CyclesGlobalClockCounter - PendingCyclesOver;
+//	VBL_ClockCounter = CyclesGlobalClockCounter - PendingCyclesOver;
 
 	/* Print traces if pending VBL bit changed just before IACK when VBL interrupt is allowed */
 	if ( ( CPU_IACK == true ) && ( regs.intmask < 4 ) )
 	{
 		if ( pendingInterrupts & ( 1 << 4 ) )
 		{
+#ifdef OLD_GET_POS
 			LOG_TRACE ( TRACE_VIDEO_VBL , "VBL %d, pending set again just before iack, skip one VBL interrupt video_cyc=%d pending_cyc=%d\n" ,
 				nVBLs , Cycles_GetCounter(CYCLES_COUNTER_VIDEO) , PendingCyclesOver );
+#else
+			LOG_TRACE ( TRACE_VIDEO_VBL , "VBL %d, pending set again just before iack, skip one VBL interrupt video_cyc=%d pending_cyc=%d\n" ,
+				nVBLs , Video_GetCyclesSinceVbl() , PendingCyclesOver );
+#endif
 		}
 		else
 		{
+#ifdef OLD_GET_POS
 			LOG_TRACE ( TRACE_VIDEO_VBL , "VBL %d, new pending VBL set just before iack video_cyc=%d pending_cyc=%d\n" ,
 				nVBLs , Cycles_GetCounter(CYCLES_COUNTER_VIDEO) , PendingCyclesOver );
+#else
+			LOG_TRACE ( TRACE_VIDEO_VBL , "VBL %d, new pending VBL set just before iack video_cyc=%d pending_cyc=%d\n" ,
+				nVBLs , Video_GetCyclesSinceVbl() , PendingCyclesOver );
+#endif
 		}
 	}
 
@@ -4813,11 +5157,8 @@ void Video_ScreenCounter_WriteByte(void)
 	uint32_t addr_cur;
 	uint32_t addr_new = 0;
 	int FrameCycles, HblCounterVideo, LineCycles;
-	int Delayed;
+	LOG_TRACE_VAR int Delayed;
 	int MMUStartCycle;
-#ifdef __LIBRETRO__
-	(void)Delayed;
-#endif
 
 	Video_GetPosition_OnWriteAccess ( &FrameCycles , &HblCounterVideo , &LineCycles );
 	LineCycles = VIDEO_CYCLE_TO_HPOS ( LineCycles );
@@ -4943,25 +5284,39 @@ void Video_LineWidth_ReadByte(void)
 
 /*-----------------------------------------------------------------------*/
 /**
- * Read video resolution register (0xff8260)
+ * Read video resolution register (0xff8260 or 0xff8261)
  * NOTE : resolution register is stored in both the GLUE and the SHIFTER
  * As the value is read from the SHIFTER, we need to round memory access to 4 cycle
  */
 void Video_Res_ReadByte(void)
 {
+	uint32_t addr;
+	addr = IoAccessCurrentAddress;
+
 	/* Access to shifter regs are on a 4 cycle boundary */
 	M68000_SyncCpuBus_OnReadAccess();
 
 	if (bUseHighRes)
-		IoMem[0xff8260] = 2;			/* If mono monitor, force to high resolution */
+		IoMem[addr] = 2;			/* If mono monitor, force to high resolution */
 
 	if (Config_IsMachineST())
-		IoMem[0xff8260] |= 0xfc;		/* On STF, set unused bits 2-7 to 1 */
+		IoMem[addr] |= 0xfc;			/* On STF, set unused bits 2-7 to 1 */
 	else if (Config_IsMachineTT())
-		IoMem[0xff8260] &= 0x07;		/* Only use bits 0, 1 and 2 */
+		IoMem[addr] &= 0x07;			/* Only use bits 0, 1 and 2 */
 	else
-		IoMem[0xff8260] &= 0x03;		/* Only use bits 0 and 1, unused bits 2-7 are set to 0 */
+		IoMem[addr] &= 0x03;			/* Only use bits 0 and 1, unused bits 2-7 are set to 0 */
 }
+
+void Video_ResGlueShifter_ReadByte(void)		/* Read from 0xff8260 */
+{
+	Video_Res_ReadByte();
+}
+
+void Video_ResShifter_ReadByte(void)			/* Read from 0xff8261 */
+{
+	Video_Res_ReadByte();
+}
+
 
 /*-----------------------------------------------------------------------*/
 /**
@@ -4982,10 +5337,7 @@ void Video_LineWidth_WriteByte(void)
 {
 	uint8_t NewWidth;
 	int FrameCycles, HblCounterVideo, LineCycles;
-	int Delayed;
-#ifdef __LIBRETRO__
-	(void)Delayed;
-#endif
+	LOG_TRACE_VAR int Delayed;
 
 	Video_GetPosition_OnWriteAccess ( &FrameCycles , &HblCounterVideo , &LineCycles );
 	LineCycles = VIDEO_CYCLE_TO_HPOS ( LineCycles );
@@ -5019,11 +5371,14 @@ void Video_LineWidth_WriteByte(void)
  * of the color reg (instead of writing 16 bits at once with .W/.L).
  * In that case, the byte written to address x is automatically written
  * to address x+1 too (but we shouldn't copy x in x+1 after masking x ; we apply the mask at the end)
- * Similarly, when writing a byte to address x+1, it's also written to address x
- * So :	move.w #0,$ff8240	-> color 0 is now $000
+ * Similarly, when writing a byte to address x+1, it's also written to address x.
+ * So :
+ * <pre>
+ *	move.w #0,$ff8240	-> color 0 is now $000
  *	move.b #7,$ff8240	-> color 0 is now $707 !
  *	move.b #$55,$ff8241	-> color 0 is now $555 !
  *	move.b #$71,$ff8240	-> color 0 is now $171 (bytes are first copied, then masked)
+ * </pre>
  */
 static void Video_ColorReg_WriteWord(void)
 {
@@ -5314,8 +5669,14 @@ void Video_Color15_ReadWord(void)
 
 /*-----------------------------------------------------------------------*/
 /**
- * Write to video resolution register (0xff8260)
+ * Write to video resolution register (0xff8260 or 0xff8261)
  * NOTE : resolution register is stored in both the GLUE and the SHIFTER
+ *  - writing to 0xff8260 will write to the GLUE and the Shifter
+ *  - writing to 0xff8261 will write only to the Shifter
+ *
+ * Depending on the emulated machine, this function can be called
+ * for 0xff8260 only or also for 0xff8261
+ *
  * When writing to ff8260, the GLUE gets the new value immediately, before
  * rounding to 4 cycles. The rounding happens later, when the SHIFTER reads
  * the data from the bus, as explained by Ijor on atari-forum.com :
@@ -5324,16 +5685,35 @@ void Video_Color15_ReadWord(void)
  * - GLUE reads the value from the CPU data bus
  * - Possible wait states inserted here by MMU
  * - MMU connects the CPU data bus to the RAM data bus
- * - SHIFTER reads the value from the RAM data bus
+ * - SHIFTER reads the value from the RAM data bus using bits 8-9
  * - CPU finishes the bus cycle
+ *
  * Also value "3" is different for GLUE and SHIFTER
  * - GLUE will interpret "3" as high res (because bit 1 is set)
  * - SHIFTER will go to a stopped state and not process input words from MMU anymore !
  *   (this is used by Troed to create a 4 pixels hardscroll on STF)
+ *
+ * Data bus and writing to 0xff8261 (resolution in Shifter) :
+ *   As seen above, a write to 0xff8261 will write only to the Shifter
+ *   In that case the shifter always gets its value from data bus bits 8-9, whether
+ *   the access is byte or word (that's because shifter has no access to UDS and LDS signals)
+ *
+ * byte access :
+ *   move.b #xy,$ff8261
+ *   the CPU will put #xyxy on the 16 bit databus, as shifter reads bits 8-9 we get the correct
+ *   value in Shifter res
+ *
+ * word access :
+ *   move.w #xyab,$ff8260
+ *   the CPU will put #xyab on the 16 bit databus, as shifter reads bits 8-9 (and not 0-1 as with
+ *   normal RAM) we get the correct value in Shifter res. Value #xy is copied into GLUE and Shifter
+ *   and lower byte #ab is ignored
  */
+
 void Video_Res_WriteByte(void)
 {
-	uint8_t VideoShifterByte;
+	uint8_t Res, Res_Shifter;
+	uint32_t addr;
 
 	if (Config_IsMachineTT())
 	{
@@ -5341,25 +5721,59 @@ void Video_Res_WriteByte(void)
 		/* Copy to TT shifter mode register: */
 		IoMem_WriteByte(0xff8262, TTRes);
 	}
-	else if (!bUseVDIRes)	/* ST and STE mode */
+	else if (!bUseVDIRes)				/* ST and STE mode */
 	{
+		/* Acces through 0xff8260 or 0xff8261 */
+		addr = IoAccessCurrentAddress;
 		/* We only care for lower 2-bits */
-		VideoShifterByte = IoMem[0xff8260] & 3;
+		Res = IoMem[addr] & 3;
 
-		Video_WriteToGlueShifterRes(VideoShifterByte);
-		Video_SetHBLPaletteMaskPointers();
-		*pHBLPaletteMasks &= 0xff00ffff;
-		/* Store resolution after palette mask and set resolution write bit: */
-		*pHBLPaletteMasks |= (((uint32_t)VideoShifterByte|0x04)<<16);
+		if ( addr == 0xff8260 )			/* Write to GLUE first and then to Shifter */
+			Video_WriteToGlueRes ( Res );
+
+		/* TODO : possible rounding to 4 cycles should be added here */
+
+		/* Special case : shifter always reads resolution from bits 8-9 on the databus */
+		/*  - regs.db requires to run cpu in cycle exact mode */
+		/*  - for non-CE mode and non-byte access we use the value of ff8260 for shifter res */
+		if ( CpuRunCycleExact )
+			Res_Shifter = ( regs.db >> 8 ) & 3;
+		else if ( nIoMemAccessSize == SIZE_BYTE )
+			Res_Shifter = Res;
+		else
+			Res_Shifter = IoMem[0xff8260] & 3;
+
+		Video_WriteToShifterRes ( Res_Shifter );
+
+		/* We update resolution for the current line only when writing to ff8260, */
+		/* not when writing to ff8261 */
+		if ( addr == 0xff8260 )
+		{
+			Video_SetHBLPaletteMaskPointers();
+			*pHBLPaletteMasks &= 0xff00ffff;
+			/* Store resolution after palette mask and set resolution write bit: */
+			*pHBLPaletteMasks |= (((uint32_t)Res|0x04)<<16);
+		}
 	}
 
 	/* Access to shifter regs are on a 4 cycle boundary */
 	/* Rounding is added here, after the value was processed by Video_Update_Glue_State() */
+	/* TODO : this call should be made above */
 	M68000_SyncCpuBus_OnWriteAccess();
 }
 
-/*-----------------------------------------------------------------------*/
-/**
+void Video_ResGlueShifter_WriteByte(void)		/* Write to 0xff8260 */
+{
+	Video_Res_WriteByte();
+}
+
+void Video_ResShifter_WriteByte(void)			/* Write to 0xff8261 */
+{
+	Video_Res_WriteByte();
+}
+
+
+/*
  * Handle horizontal scrolling to the left.
  * On STE, there're 2 registers that can scroll the line :
  *  - $ff8264 : scroll without prefetch
@@ -5444,10 +5858,7 @@ void Video_HorScroll_Write(void)
 	int FrameCycles, HblCounterVideo, LineCycles;
 	bool Add16px = false;
 	static uint8_t LastVal8265 = 0;
-	int Delayed;
-#ifdef __LIBRETRO__
-	(void)Delayed;
-#endif
+	LOG_TRACE_VAR int Delayed;
 
 	Video_GetPosition_OnWriteAccess ( &FrameCycles , &HblCounterVideo , &LineCycles );
 	LineCycles = VIDEO_CYCLE_TO_HPOS ( LineCycles );

@@ -27,6 +27,7 @@ const char HatariGlue_fileid[] = "Hatari hatari-glue.c";
 #include "psg.h"
 #include "mfp.h"
 #include "fdc.h"
+#include "nf_scsidrv.h"
 #include "memorySnapShot.h"
 
 #include "sysdeps.h"
@@ -68,6 +69,11 @@ void customreset(void)
 
 	/* Reset the FDC */
 	FDC_Reset ( false );
+
+#if defined(__linux__)
+	/* Reset the native SCSI Driver */
+	nf_scsidrv_reset();
+#endif
 }
 
 
@@ -86,6 +92,8 @@ int intlev(void)
 		return 4;
 	else if ( pendingInterrupts & (1 << 2) )	/* HBL interrupt ? */
 		return 2;
+	else if ( pendingInterrupts & (1 << 1) )	/* SCU soft interrupt on MegaSTE/TT ? */
+		return 1;
 
 	return 0;
 }
@@ -152,70 +160,6 @@ bool savestate_restore_finish (void)
 //fprintf ( stderr , "savestate_restore_finish out %d\n" , quit_program );
 	return true;
 }
-
-
-#ifdef __LIBRETRO__
-extern int core_save_state(void);
-extern int core_restore_state(void);
-extern void core_flush_audio(void);
-extern int Reset_Cold(void);
-extern void Sound_Update( uint64_t CPU_Clock);
-extern bool bCaptureError;
-void core_flush_audio(void)
-{
-	// flush audio up until now
-	Sound_Update ( CyclesGlobalClockCounter );
-}
-int core_save_state(void)
-{
-	// when m68k_go_frame exits we are at approximately the same place save_state would be called normally
-	// calling save_state directly instead of using MemorySnapshot_Capture
-	return save_state(NULL, NULL);
-}
-int core_restore_state(void)
-{
-	int result = 0;
-	// set a flag to restore at the next loop and quit the loop
-	MemorySnapShot_Restore("[libretro]",false);
-	// sets:
-	//   quit_program = UAE_RESET
-	//   savestate_state = STATE_RESTORE
-	//   SPCFLAG_MODE_CHANGE
-	// restart the m68k loop
-	m68k_go_frame(true);
-	// runs:
-	//   restore_state
-	//     MemorySnapShot_Restore_Do
-	//        ResetCold
-	//        bCaptureError = 1 if error
-	//   savestate_restore_finish
-	//     restore_finish
-	//       savestate_state = 0
-	//       quit_program = 0
-	//       SPCFLAG_STOP
-	//     restored = 1
-	//   restored = 0
-	//   savestate_restore_final
-	//     (does nothing)
-	//   exits
-	m68k_go_quit(); // quit the loop
-	// in_m68k_go--
-	if (bCaptureError) // error: do a hard reset
-	{
-		result = 1;
-		Reset_Cold();
-		UAE_Set_Quit_Reset(true);
-	}
-	core_runflags &= ~CORE_RUNFLAG_RESET;
-	m68k_go(true); // restart the loop
-	// in_m68k_go++
-	// hardboot = 1
-	// startup = 1
-	m68k_go_frame(false); // init-only, no execution
-	core_flush_audio();
-	return result;
-}
-#endif
 
 
 /**

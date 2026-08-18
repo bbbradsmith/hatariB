@@ -115,7 +115,7 @@ int8_t floatx80_internal_mode = float_round_nearest_even;
  *----------------------------------------------------------------------------*/
 floatx80 roundSaveFloatx80Internal( int8_t roundingPrecision, flag zSign, int32_t zExp, uint64_t zSig0, uint64_t zSig1, float_status *status )
 {
-    int64_t roundMask, roundBits;
+    uint64_t roundMask, roundBits;
     uint64_t roundIncrement;
     flag increment;
     
@@ -227,7 +227,7 @@ static void saveFloat32Internal( flag zSign, int16_t zExp, uint32_t zSig, float_
 
 void getRoundedFloatInternal( int8_t roundingPrecision, flag *pzSign, int32_t *pzExp, uint64_t *pzSig )
 {
-    int64_t roundMask, roundBits;
+    uint64_t roundMask, roundBits;
     uint64_t roundIncrement;
     flag increment;
 
@@ -1350,7 +1350,7 @@ floatx80 roundAndPackFloatx80( int8_t roundingPrecision, flag zSign, int32_t zEx
 {
     int8_t roundingMode;
     flag roundNearestEven, increment;
-    int64_t roundMask, roundBits;
+    uint64_t roundMask, roundBits;
     uint64_t roundIncrement;
     int32_t expOffset;
     
@@ -1504,7 +1504,7 @@ floatx80 roundSigAndPackFloatx80( int8_t roundingPrecision, flag zSign, int32_t 
 {
     int8_t roundingMode;
     flag roundNearestEven, isTiny;
-    int64_t roundMask, roundBits;
+    uint64_t roundMask, roundBits;
     uint64_t roundIncrement;
     
     roundingMode = status->float_rounding_mode;
@@ -1781,7 +1781,7 @@ int32_t floatx80_to_int32(floatx80 a, float_status *status)
         return aSign ? (int32_t) 0x80000000 : 0x7FFFFFFF;
     }
 #else
- 	if ( ( aExp == 0x7FFF ) && (bits64) ( aSig<<1 ) ) aSign = 0;
+ 	if ( ( aExp == 0x7FFF ) && (uint64_t) ( aSig<<1 ) ) aSign = 0;
 #endif
     shiftCount = 0x4037 - aExp;
     if ( shiftCount <= 0 ) shiftCount = 1;
@@ -2163,10 +2163,8 @@ floatx80 floatx80_round_to_int(floatx80 a, float_status *status)
     flag aSign;
     int32_t aExp;
     uint64_t lastBitMask, roundBitsMask;
-	int8_t roundingMode;
 	floatx80 z;
 
-	roundingMode = status->float_rounding_mode;
 	aSign = extractFloatx80Sign(a);
     aExp = extractFloatx80Exp( a );
     if ( 0x403E <= aExp ) {
@@ -2984,7 +2982,7 @@ floatx80 floatx80_rem(floatx80 a, floatx80 b, uint64_t *q, flag *s, float_status
         aSig0 = alternateASig0;
         aSig1 = alternateASig1;
         zSign = !zSign;
-        ++* q;
+        ++*q;
     }
     return
         normalizeRoundAndPackFloatx80(status->floatx80_rounding_precision,

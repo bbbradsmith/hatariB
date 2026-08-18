@@ -47,11 +47,7 @@ static const res_value_t emutos_map[] = { 0, 0, 1, 2, 4, 6, 7 };
 
 
 static struct {
-#ifndef __LIBRETRO__
 	FILE *file;          /* file pointer to contents of INF file */
-#else
-	corefile* file;
-#endif
 	char *prgname;       /* TOS name of the program to auto start */
 	const char *infname; /* name of the INF file TOS will try to match */
 	res_value_t reso;    /* resolution setting value request for #E line */
@@ -215,10 +211,10 @@ bool INF_SetAutoStart(const char *name, int opt_id)
 			/* A:NAME.PRG -> A:\NAME.PRG */
 			prgname[offset] = '\\';
 			/* copy/upcase file part */
-			Str_Filename2TOSname(name+offset, prgname+offset+1);
+			Str_Filename_Host2Atari(name+offset, prgname+offset+1);
 		} else {
 			/* copy/upcase file part */
-			Str_Filename2TOSname(name+offset, prgname+offset);
+			Str_Filename_Host2Atari(name+offset, prgname+offset);
 		}
 	}
 	else if (strchr(name, '\\'))
@@ -232,7 +228,7 @@ bool INF_SetAutoStart(const char *name, int opt_id)
 		/* just program -> add path */
 		prgname = Str_Alloc(3 + len);
 		strcpy(prgname, "C:\\");
-		Str_Filename2TOSname(name, prgname+3);
+		Str_Filename_Host2Atari(name, prgname+3);
 	}
 	if (TosOverride.prgname)
 		free(TosOverride.prgname);
@@ -714,39 +710,18 @@ static const char *prg_format(const char *prgname)
 		return "#Z 01 %s@ \r\n"; /* GEM program */
 }
 
-#ifdef __LIBRETRO__
-static void core_file_printf(corefile* file, const char* fmt, ...)
-{
-	char temp[1024];
-	va_list args;
-	va_start(args, fmt);
-	vsnprintf(temp,sizeof(temp),fmt,args);
-	va_end(args);
-	core_file_write(temp,1,strlen(temp),file);
-}
-#endif
-
 /**
  * Create modified, temporary INF file that contains the required
  * autostart and resolution information.
  *
  * Return FILE* pointer to it.
  */
-#ifndef __LIBRETRO__
 static FILE* write_inf_file(const char *contents, int size, int res, int res_col)
-#else
-static corefile* write_inf_file(const char *contents, int size, int res, int res_col)
-#endif
 {
 	const char *infname, *prgname, *format = NULL;
 	int offset, off_prg, off_rez, endcheck;
-#ifndef __LIBRETRO__
 	FILE *fp;
-#else
-	corefile* fp;
-#endif
 
-#ifndef __LIBRETRO__
 #if INF_DEBUG
 	{
 		/* insecure file path + leaving it behind for debugging */
@@ -756,9 +731,6 @@ static corefile* write_inf_file(const char *contents, int size, int res, int res
 	}
 #else
 	fp = File_OpenTempFile(NULL);
-#endif
-#else
-	fp = core_file_open_system("hatarib.tmp",CORE_FILE_TRUNCATE);
 #endif
 
 	prgname = TosOverride.prgname;
@@ -787,18 +759,10 @@ static corefile* write_inf_file(const char *contents, int size, int res, int res
 		/* replace autostart line only when requested */
 		if (prgname && contents[offset+1] == 'Z')
 		{
-#ifndef __LIBRETRO__
 			fwrite(contents+off_prg, offset-off_prg, 1, fp);
-#else
-			core_file_write(contents+off_prg, offset-off_prg, 1, fp);
-#endif
 			/* write only first #Z line, skip rest */
 			if (!off_prg)
-#ifndef __LIBRETRO__
 				fprintf(fp, format, prgname);
-#else
-				core_file_printf(fp, format, prgname);
-#endif
 			offset = skip_line(contents, offset, size-1);
 			if (!offset)
 				break;
@@ -807,11 +771,7 @@ static corefile* write_inf_file(const char *contents, int size, int res, int res
 		/* resolution line always written */
 		if (contents[offset+1] == 'E')
 		{
-#ifndef __LIBRETRO__
 			fwrite(contents+off_prg, offset-off_prg, 1, fp);
-#else
-			core_file_write(contents+off_prg, offset-off_prg, 1, fp);
-#endif
 			/* INF file with autostart line missing?
 			 *
 			 * It's assumed that #Z is always before #E,
@@ -821,35 +781,19 @@ static corefile* write_inf_file(const char *contents, int size, int res, int res
 			if (prgname && !off_prg)
 			{
 				off_prg = offset;
-#ifndef __LIBRETRO__
 				fprintf(fp, format, prgname);
-#else
-				core_file_printf(fp, format, prgname);
-#endif
 			}
 			/* write #E line start */
-#ifndef __LIBRETRO__
 			fwrite(contents+offset, res_col, 1, fp);
-#else
-			core_file_write(contents+offset, res_col, 1, fp);
-#endif
 			/* write requested resolution, or default?
 			 * 
 			 * (TosOverride.reso tells if there's request,
 			 * 'res' tells the actual value to use)
 			 */
 			if (TosOverride.reso)
-#ifndef __LIBRETRO__
 				fprintf(fp, "%02x", res);
-#else
-				core_file_printf(fp, "%02x", res);
-#endif
 			else
-#ifndef __LIBRETRO__
 				fwrite(contents+offset+res_col, 2, 1, fp);
-#else
-			core_file_write(contents+offset+res_col, 2, 1, fp);
-#endif
 			/* set point to rest of #E */
 			offset += res_col + 2;
 			off_rez = offset;
@@ -858,26 +802,14 @@ static corefile* write_inf_file(const char *contents, int size, int res, int res
 	}
 	if (!off_rez)
 	{
-#ifndef __LIBRETRO__
 		fclose(fp);
-#else
-		core_file_close(fp);
-#endif
 		Log_Printf(LOG_ERROR, "'%s' not a valid INF file, #E resolution line missing -> autostarting / resolution overriding not possible!\n", infname);
 		return NULL;
 	}
 	/* write rest of INF file & seek back to start */
-#ifndef __LIBRETRO__
 	if (!(fwrite(contents+offset, size-offset-1, 1, fp) && fseek(fp, 0, SEEK_SET) == 0))
-#else
-	if (!(core_file_write(contents+offset, size-offset-1, 1, fp) && core_file_seek(fp, 0, SEEK_SET) == 0))
-#endif
 	{
-#ifndef __LIBRETRO__
 		fclose(fp);
-#else
-		core_file_close(fp);
-#endif
 		Log_Printf(LOG_ERROR, "Virtual '%s' INF file writing failed!\n", infname);
 		return NULL;
 	}
@@ -950,11 +882,7 @@ bool INF_Overriding(autostart_t t)
 /**
  * If given name matches virtual INF file name, return its handle, NULL otherwise
  */
-#ifndef __LIBRETRO__
 FILE *INF_OpenOverride(const char *filename)
-#else
-corefile* INF_OpenOverride(const char *filename)
-#endif
 {
 	if (TosOverride.file && strcmp(filename, TosOverride.infname) == 0)
 	{
@@ -975,11 +903,7 @@ corefile* INF_OpenOverride(const char *filename)
  * If given handle matches virtual INF file, close it and return true,
  * false otherwise.
  */
-#ifndef __LIBRETRO__
 bool INF_CloseOverride(FILE *fp)
-#else
-bool INF_CloseOverride(corefile* fp)
-#endif
 {
 	if (fp && fp == TosOverride.file)
 	{
@@ -988,11 +912,7 @@ bool INF_CloseOverride(corefile* fp)
 		 * Otherwise user may try change desktop settings
 		 * and save them, but they would be lost.
 		 */
-#ifndef __LIBRETRO__
 		fclose(TosOverride.file);
-#else
-		core_file_close(TosOverride.file);
-#endif
 		TosOverride.file = NULL;
 		Log_Printf(LOG_DEBUG, "Virtual INF file removed.\n");
 		return true;

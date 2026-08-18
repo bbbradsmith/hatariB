@@ -10,17 +10,11 @@
 
 #include "config.h"
 
-#if ENABLE_SMALL_MEM
-# include "sysdeps.h"
-# include "maccess.h"
-# include "main.h"
+#include "sysdeps.h"
+#include "maccess.h"
+#include "main.h"
 extern uae_u8 *IOmemory;
-# define IoMem (IOmemory-0xff0000)
-#else
-# include "stMemory.h"
-# define IoMem STRam
-#endif  /* ENABLE_SMALL_MEM */
-
+#define IoMem (IOmemory-0xff0000)
 
 extern int nIoMemAccessSize;
 extern uint32_t IoAccessFullAddress;
@@ -97,9 +91,10 @@ static inline void IoMem_WriteByte(uint32_t Address, uint8_t Var)
 	IoMem[Address] = Var;
 }
 
+extern void IoMem_Intercept ( uint32_t addr , void (*read_f)(void) , void (*write_f)(void) );
 
 extern void IoMem_Init(void);
-extern void IoMem_UnInit(void);
+extern void IoMem_UnInit (int MachineType);
 extern void IoMem_Reset(void);
 
 extern uint8_t IoMemTabMegaSTE_DIPSwitches_Read(void);

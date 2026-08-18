@@ -68,11 +68,7 @@ uint8_t *DIM_ReadDisk(int Drive, const char *pszFileName, long *pImageSize, int 
 	uint8_t *pDiskBuffer = NULL;
 
 	/* Load file into buffer */
-#ifndef __LIBRETRO__
 	pDimFile = File_Read(pszFileName, pImageSize, NULL);
-#else
-	pDimFile = core_floppy_file_read(pszFileName, pImageSize, false);
-#endif
 	if (pDimFile)
 	{
 		/* Check header for valid image: */
@@ -174,10 +170,6 @@ bool DIM_WriteDisk(int Drive, const char *pszFileName, uint8_t *pBuffer, int Ima
 	return bRet;
 
 #else   /*SAVE_TO_ST_IMAGES*/
-
-#ifdef __LIBRETRO__
-	core_signal_alert("DIM file saving is not supported by Hatari. Try converting to ST format.");
-#endif
 
 	/* Oops, cannot save */
 	return false;

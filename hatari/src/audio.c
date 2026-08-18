@@ -113,7 +113,6 @@ static void Audio_CallBack(void *userdata, Uint8 *stream, int len)
  */
 void Audio_Init(void)
 {
-#ifndef __LIBRETRO__
 	SDL_AudioSpec desiredAudioSpec;    /* We fill in the desired SDL audio options here */
 
 	/* Is enabled? */
@@ -177,9 +176,6 @@ void Audio_Init(void)
 		Log_Printf(LOG_WARN, "Soundbuffer size is too big (%d > %d)!\n",
 			   SoundBufferSize, AUDIOMIXBUFFER_SIZE/2);
 	}
-#else
-	(void)Audio_CallBack;
-#endif
 
 	/* All OK */
 	bSoundWorking = true;
@@ -199,9 +195,7 @@ void Audio_UnInit(void)
 		/* Stop */
 		Audio_EnableAudio(false);
 
-#ifndef __LIBRETRO__
 		SDL_CloseAudio();
-#endif
 
 		bSoundWorking = false;
 	}
@@ -214,9 +208,7 @@ void Audio_UnInit(void)
  */
 void Audio_Lock(void)
 {
-#ifndef __LIBRETRO__
 	SDL_LockAudio();
-#endif
 }
 
 
@@ -226,9 +218,7 @@ void Audio_Lock(void)
  */
 void Audio_Unlock(void)
 {
-#ifndef __LIBRETRO__
 	SDL_UnlockAudio();
-#endif
 }
 
 
@@ -238,9 +228,6 @@ void Audio_Unlock(void)
  */
 void Audio_SetOutputAudioFreq(int nNewFrequency)
 {
-#ifdef __LIBRETRO__
-	core_set_samplerate(nNewFrequency);
-#endif
 	/* Do not reset sound system if nothing has changed! */
 	if (nNewFrequency != nAudioFrequency)
 	{
@@ -266,7 +253,6 @@ void Audio_SetOutputAudioFreq(int nNewFrequency)
 		}
 	}
 
-#ifndef __LIBRETRO__
 	/* Apply YM2149 C10 low pass filter ? (except if forced to NONE) */
 	if ( YM2149_LPF_Filter != YM2149_LPF_FILTER_NONE )
 	{
@@ -275,7 +261,6 @@ void Audio_SetOutputAudioFreq(int nNewFrequency)
 		else
 			YM2149_LPF_Filter = YM2149_LPF_FILTER_PWM;
 	}
-#endif
 }
 
 
@@ -288,17 +273,13 @@ void Audio_EnableAudio(bool bEnable)
 	if (bEnable && !bPlayingBuffer)
 	{
 		/* Start playing */
-#ifndef __LIBRETRO__
 		SDL_PauseAudio(false);
-#endif
 		bPlayingBuffer = true;
 	}
 	else if (!bEnable && bPlayingBuffer)
 	{
 		/* Stop from playing */
-#ifndef __LIBRETRO__
 		SDL_PauseAudio(true);
-#endif
 		bPlayingBuffer = false;
 	}
 }

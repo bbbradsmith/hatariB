@@ -137,11 +137,11 @@ static bool File_IsRootFileName(const char *pszFileName)
 #endif
 
 #ifdef GEKKO
-	if (strlen(pszFileName) > 2 && pszFileName[2] == ':')	// sd:
+	if (strlen(pszFileName) > 2 && pszFileName[2] == ':')	/* sd: */
 		return true;
-	if (strlen(pszFileName) > 3 && pszFileName[3] == ':')	// fat:
+	if (strlen(pszFileName) > 3 && pszFileName[3] == ':')	/* fat: */
 		return true;
-	if (strlen(pszFileName) > 4 && pszFileName[4] == ':')	// fat3:
+	if (strlen(pszFileName) > 4 && pszFileName[4] == ':')	/* fat3: */
 		return true;
 #endif
 
@@ -453,7 +453,6 @@ bool File_QueryOverwrite(const char *pszFileName)
 	char *szString;
 	bool ret = true;
 
-#ifndef __LIBRETRO__
 	/* Try and find if file exists */
 	if (File_Exists(pszFileName))
 	{
@@ -467,11 +466,6 @@ bool File_QueryOverwrite(const char *pszFileName)
 		ret = DlgAlert_Query(szString);
 		free(szString);
 	}
-#else
-	(void)pszFileName;
-	(void)fmt;
-	(void)szString;
-#endif
 	return ret;
 }
 
@@ -688,7 +682,7 @@ FILE *File_Open(const char *path, const char *mode)
 	FILE *fp;
 
 	/* empty name signifies file that shouldn't be opened/enabled */
-	if (!*path)
+	if (!path || !*path)
 		return NULL;
 
 	/* special "stdout" and "stderr" files can be used

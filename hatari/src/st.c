@@ -62,11 +62,7 @@ uint8_t *ST_ReadDisk(int Drive, const char *pszFileName, long *pImageSize, int *
 	*pImageSize = 0;
 
 	/* Just load directly a buffer, and set ImageSize accordingly */
-#ifndef __LIBRETRO__
 	pStFile = File_Read(pszFileName, pImageSize, NULL);
-#else
-	pStFile = core_floppy_file_read(pszFileName, pImageSize, false);
-#endif
 	if (!pStFile)
 	{
 		*pImageSize = 0;
@@ -87,12 +83,7 @@ bool ST_WriteDisk(int Drive, const char *pszFileName, uint8_t *pBuffer, int Imag
 #ifdef SAVE_TO_ST_IMAGES
 
 	/* Just save buffer directly to file */
-#ifndef __LIBRETRO__
 	return File_Save(pszFileName, pBuffer, ImageSize, false);
-#else
-	return core_disk_save(pszFileName, pBuffer, ImageSize, false);
-	// core will memcpy this data if ImageSize has not changed
-#endif
 
 #else   /*SAVE_TO_ST_IMAGES*/
 

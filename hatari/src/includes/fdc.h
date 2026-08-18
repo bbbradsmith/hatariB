@@ -79,9 +79,6 @@ extern int	FDC_Get_Statusbar_Text ( char *text, size_t maxlen );
 extern void	FDC_Drive_Set_Enable ( int Drive , bool value );
 extern void	FDC_Drive_Set_NumberOfHeads ( int Drive , int NbrHeads );
 extern void	FDC_InsertFloppy ( int Drive );
-#ifdef __LIBRETRO__
-extern void	FDC_InsertFloppyRestore ( int Drive );
-#endif
 extern void	FDC_EjectFloppy ( int Drive );
 extern void	FDC_SetDriveSide ( uint8_t io_porta_old , uint8_t io_porta_new );
 extern int	FDC_GetBytesPerTrack ( uint8_t Drive , uint8_t Track , uint8_t Side );

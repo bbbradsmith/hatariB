@@ -2,9 +2,9 @@
 
                                     Hatari
 
-                             Version 2.5.0, April 2024
+                             Version 2.6.1, August 2025
 
-                            http://hatari.tuxfamily.org/
+                            https://www.hatari-emu.org/
 
 
 Contents:
@@ -37,10 +37,7 @@ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License along with
-this program; if not, write to the
- Free Software Foundation, Inc.,
- 51 Franklin Street, Fifth Floor, Boston,
- MA  02110-1301, USA
+this program; if not, see <https://www.gnu.org/licenses/>.
 
 Linking Hatari statically or dynamically with other modules is making a
 combined work based on Hatari. Thus, the terms and conditions of the GNU
@@ -208,17 +205,6 @@ Alternatively one could add a mime type for TOS binaries with xdg-mime:
 But registering handlers for mime-types seems desktop specific.
 
 
- 3.4.1) Known distro problems
-
-Old RHEL 5 and the derived CentOS v5.x Linux distributions ship
-with a broken readline library:
-	https://bugzilla.redhat.com/show_bug.cgi?id=499837
-
-To get CMake readline detection and linking working on them,
-you need to give these as extra arguments to the "cmake" command:
-   -DCMAKE_C_FLAGS=-lncurses -DCMAKE_EXE_LINKER_FLAGS=-lncurses
-
-
  4) Running Hatari
  -----------------
 
@@ -317,6 +303,6 @@ Their main run-time dependencies are:
 If you want to contact the authors of Hatari, please have a look at the file
 doc/authors.txt for the e-mail addresses or use the Hatari mailing list.
 
-Visit the website of Hatari on Tuxfamily.org for more details:
+Visit the website of Hatari for more details:
 
- http://hatari.tuxfamily.org/contact.html
+ https://www.hatari-emu.org/contact.html

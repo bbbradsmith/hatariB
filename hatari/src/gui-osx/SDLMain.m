@@ -31,7 +31,6 @@
 #import "video.h"
 #import "avi_record.h"
 #import "debugui.h"
-#import "clocks_timings.h"
 #import "change.h"
 
 extern void Main_RequestQuit(int exitval) ;
@@ -59,8 +58,6 @@ static BOOL		gCalledAppMainline = NO ;
 // The main class of the application, the application's delegate
 //
 @implementation HatariAppDelegate
-
-char szPath[FILENAME_MAX] ;											// for general use
 
 // Set the working directory to the .app's parent directory
 - (void) setupWorkingDirectory:(BOOL)shouldChdir
@@ -166,14 +163,14 @@ char szPath[FILENAME_MAX] ;											// for general use
 /*----------------------------------------------------------------------*/
 - (IBAction)warmReset:(id)sender
 {
-	if ([NSApp myAlerte:NSInformationalAlertStyle Txt:localize(@"Warm reset!") firstB:localize(@"OK") alternateB:localize(@"Cancel")
+	if ([NSApp myAlerte:NSAlertStyleInformational Txt:localize(@"Warm reset!") firstB:localize(@"OK") alternateB:localize(@"Cancel")
 			otherB:nil informativeTxt:localize(@"Really reset the emulator?")] == NSAlertFirstButtonReturn )
 		Reset_Warm();
 } 
 /*----------------------------------------------------------------------*/
 - (IBAction)coldReset:(id)sender
 {
-	if ([NSApp myAlerte:NSInformationalAlertStyle Txt:localize(@"Cold reset") firstB:localize(@"OK") alternateB:localize(@"Cancel")
+	if ([NSApp myAlerte:NSAlertStyleInformational Txt:localize(@"Cold reset") firstB:localize(@"OK") alternateB:localize(@"Cancel")
 			otherB:nil informativeTxt:localize(@"Really reset the emulator?")] == NSAlertFirstButtonReturn )
 		Reset_Cold();
 }
@@ -190,6 +187,7 @@ char szPath[FILENAME_MAX] ;											// for general use
 /*----------------------------------------------------------------------*/
 - (void)insertDisk:(int)disque 
 {
+	char		szPath[FILENAME_MAX] ;
 	NSString	*aDisk ;
 
 	aDisk = [NSApp hopenfile:NO defoDir:nil defoFile:@""] ;
@@ -283,12 +281,7 @@ char szPath[FILENAME_MAX] ;											// for general use
 
 		if(path) {
 			GuiOsx_ExportPathString(path, ConfigureParams.Video.AviRecordFile, sizeof(ConfigureParams.Video.AviRecordFile));
-			Avi_StartRecording ( ConfigureParams.Video.AviRecordFile , ConfigureParams.Screen.bCrop ,
-					ConfigureParams.Video.AviRecordFps == 0 ?
-					ClocksTimings_GetVBLPerSec ( ConfigureParams.System.nMachineType , nScreenRefreshRate ) :
-					ClocksTimings_GetVBLPerSec ( ConfigureParams.System.nMachineType , ConfigureParams.Video.AviRecordFps ) ,
-				1 << CLOCKS_TIMINGS_SHIFT_VBL ,
-				ConfigureParams.Video.AviRecordVcodec );
+			Avi_StartRecording_WithConfig ();
 		}
 	} else {
 		Avi_StopRecording();
@@ -416,6 +409,7 @@ char szPath[FILENAME_MAX] ;											// for general use
 - (IBAction)openConfig:(id)sender
 {
 	BOOL		applyChanges ;
+	char		szPath[FILENAME_MAX] ;
 	NSString	*ConfigFile, *newCfg ;
 	CNF_PARAMS	CurrentParams;
 
@@ -438,7 +432,7 @@ char szPath[FILENAME_MAX] ;											// for general use
 
 		// Refresh all the controls to match ConfigureParams
 		if (Change_DoNeedReset(&CurrentParams, &ConfigureParams))
-		 	applyChanges = [NSApp myAlerte:NSInformationalAlertStyle Txt:localize(@"Reset the emulator") firstB:localize(@"Don't reset")
+			applyChanges = [NSApp myAlerte:NSAlertStyleInformational Txt:localize(@"Reset the emulator") firstB:localize(@"Don't reset")
 				alternateB:localize(@"Reset") otherB:nil informativeTxt:@"" ] == NSAlertSecondButtonReturn ;
 		if (applyChanges)
 			Change_CopyChangedParamsToConfiguration(&CurrentParams, &ConfigureParams, true); 	// Ok with Reset

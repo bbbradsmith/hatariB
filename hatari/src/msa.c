@@ -248,11 +248,7 @@ uint8_t *MSA_ReadDisk(int Drive, const char *pszFileName, long *pImageSize, int 
 	*pImageSize = 0;
 
 	/* Read in file */
-#ifndef __LIBRETRO__
 	pMsaFile = File_Read(pszFileName, &nFileSize, NULL);
-#else
-	pMsaFile = core_floppy_file_read(pszFileName, &nFileSize, false);
-#endif
 	if (pMsaFile)
 	{
 		/* Uncompress into disk buffer */
@@ -408,15 +404,10 @@ bool MSA_WriteDisk(int Drive, const char *pszFileName, uint8_t *pBuffer, int Ima
 	}
 
 	/* And save to file! */
-#ifndef __LIBRETRO__
 	nRet = File_Save(pszFileName,pMSAImageBuffer, pMSABuffer-pMSAImageBuffer, false);
 
 	/* Free workspace */
 	free(pMSAImageBuffer);
-#else
-	nRet = core_disk_save(pszFileName, pMSAImageBuffer, pMSABuffer-pMSAImageBuffer, true);
-	// don't free it, core now owns data
-#endif
 
 	return nRet;
 

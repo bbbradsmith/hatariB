@@ -26,9 +26,7 @@ const char ShortCut_fileid[] = "Hatari shortcut.c";
 #include "debugui.h"
 #include "sound.h"
 #include "sdlgui.h"
-#include "video.h"
 #include "avi_record.h"
-#include "clocks_timings.h"
 #include "statusbar.h"
 
 static SHORTCUTKEYIDX ShortCutKey = SHORTCUT_NONE;  /* current shortcut key */
@@ -49,11 +47,7 @@ static void ShortCut_FullScreen(void)
 	 * To avoid that we're going back and forth between fullscreen mode and
 	 * windowed mode in this case, we have to ignore full screen shortcut
 	 * events that happen too often. */
-#ifndef __LIBRETRO__
 	cur_ticks = SDL_GetTicks();
-#else
-	cur_ticks = 0;
-#endif
 	if (cur_ticks - last_ticks < 200)
 		return;
 	last_ticks = cur_ticks;
@@ -89,9 +83,7 @@ static void ShortCut_MouseGrab(void)
 	/* If we are in windowed mode, toggle the mouse cursor mode now: */
 	if (!bInFullScreen)
 	{
-#ifndef __LIBRETRO__
 		SDL_SetRelativeMouseMode(bGrabMouse);
-#endif
 	}
 }
 
@@ -130,17 +122,12 @@ static void ShortCut_RecordAnimation(void)
 	if (Avi_AreWeRecording())
 	{
 		/* Stop */
-		Avi_StopRecording();
+		Avi_StopRecording_WithMsg();
 	}
 	else
 	{
-		/* Start animation */
-		Avi_StartRecording ( ConfigureParams.Video.AviRecordFile , ConfigureParams.Screen.bCrop ,
-			ConfigureParams.Video.AviRecordFps == 0 ?
-				ClocksTimings_GetVBLPerSec ( ConfigureParams.System.nMachineType , nScreenRefreshRate ) :
-				ClocksTimings_GetVBLPerSec ( ConfigureParams.System.nMachineType , ConfigureParams.Video.AviRecordFps ) ,
-			1 << CLOCKS_TIMINGS_SHIFT_VBL ,
-			ConfigureParams.Video.AviRecordVcodec );
+		/* Start recording */
+		Avi_StartRecording_WithConfig();
 	}
 }
 
@@ -191,9 +178,8 @@ static void ShortCut_FastForward(void)
 }
 
 
-/*-----------------------------------------------------------------------*/
 /**
- * Shortcut to 'Boss' key, ie minmize Window and switch to another application
+ * Shortcut to 'Boss' key, ie minimize Window and switch to another application
  */
 static void ShortCut_BossKey(void)
 {
@@ -202,23 +188,18 @@ static void ShortCut_BossKey(void)
 
 	if (bGrabMouse)
 	{
-#ifndef __LIBRETRO__
 		SDL_SetRelativeMouseMode(false);
-#endif
 		bGrabMouse = false;
 	}
 	Main_PauseEmulation(true);
 
 	/* Minimize Window and give up processing to next one! */
-#ifndef __LIBRETRO__
 	SDL_MinimizeWindow(sdlWindow);
-#endif
 }
 
 
-/*-----------------------------------------------------------------------*/
 /**
- * Shorcut to debug interface
+ * Shortcut to debug interface
  */
 static void ShortCut_Debug(void)
 {
@@ -232,9 +213,8 @@ static void ShortCut_Debug(void)
 }
 
 
-/*-----------------------------------------------------------------------*/
 /**
- * Shorcut to pausing
+ * Shortcut to pausing
  */
 static void ShortCut_Pause(void)
 {
@@ -242,8 +222,9 @@ static void ShortCut_Pause(void)
 		Main_PauseEmulation(true);
 }
 
+
 /**
- * Shorcut to load a disk image
+ * Shortcut to load a disk image
  */
 static void ShortCut_InsertDisk(int drive)
 {
@@ -251,9 +232,7 @@ static void ShortCut_InsertDisk(int drive)
 	const char *tmpname;
 	char FileNameB[ FILENAME_MAX ];
 
-#ifndef __LIBRETRO__
 	bool bOldMouseMode = SDL_GetRelativeMouseMode();
-#endif
 
 	if (SDLGui_SetScreen(sdlscrn))
 		return;
@@ -266,7 +245,6 @@ static void ShortCut_InsertDisk(int drive)
 	else
 		tmpname = ConfigureParams.DiskImage.szDiskImageDirectory;
 
-#ifndef __LIBRETRO__
 	Main_PauseEmulation(true);
 
 	SDL_SetRelativeMouseMode(SDL_FALSE);
@@ -292,11 +270,6 @@ static void ShortCut_InsertDisk(int drive)
 
 	}
 	Main_UnPauseEmulation();
-#else
-	(void)selname;
-	(void)zip_path;
-	(void)tmpname;
-#endif
 }
 
 

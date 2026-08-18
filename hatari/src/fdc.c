@@ -556,10 +556,6 @@ static uint8_t DMADiskWorkSpace[ FDC_TRACK_BYTES_STANDARD*4+1000 ];/* Workspace 
 								/* It should be large enough to contain a whole track */
 								/* We use a x4 factor when we need to simulate HD and ED too */
 
-#ifdef __LIBRETRO__
-static Uint64 restore_IndexPulse_Time[MAX_FLOPPYDRIVES];
-static Uint8 restore_DiskChange_signal[MAX_FLOPPYDRIVES];
-#endif
 
 
 /*--------------------------------------------------------------*/
@@ -650,18 +646,6 @@ void	FDC_MemorySnapShot_Capture(bool bSave)
 	MemorySnapShot_Store(&FDC_BUFFER, sizeof(FDC_BUFFER_STRUCT));
 
 	MemorySnapShot_Store(DMADiskWorkSpace, sizeof(DMADiskWorkSpace));
-
-#ifdef __LIBRETRO__
-	// store values which much be reapplied if disks are re-inserted
-	if (!bSave)
-	{
-		for (int i=0; i < MAX_FLOPPYDRIVES; ++i)
-		{
-			restore_IndexPulse_Time[i] = FDC_DRIVES[i].IndexPulse_Time;
-			restore_DiskChange_signal[i] = FDC_DRIVES[i].DiskChange_signal;
-		}
-	}
-#endif
 }
 
 
@@ -1072,6 +1056,9 @@ void	FDC_DMA_FIFO_Push ( uint8_t Byte )
 	FDC_DMA.FIFO_Size = 0;						/* FIFO is now empty again */
 	/* When the FIFO transfers data to RAM it takes 4 cycles per word and the CPU is stalled during this time */
 	M68000_AddCycles_CE ( 4 * FDC_DMA_FIFO_SIZE / 2 );		/* 32 cycles */
+	/* For the MegaSTE, using the FDC DMA will flush the external cache */
+	if ( ConfigureParams.System.nMachineType == MACHINE_MEGA_STE )
+		MegaSTE_Cache_Flush ();
 
 	/* Store the last word that was just transferred by the DMA */
 	FDC_DMA.ff8604_recent_val = ( FDC_DMA.FIFO [ FDC_DMA_FIFO_SIZE-2 ] << 8 ) | FDC_DMA.FIFO [ FDC_DMA_FIFO_SIZE-1 ];
@@ -1125,6 +1112,9 @@ uint8_t	FDC_DMA_FIFO_Pull ( void )
 		FDC_DMA.FIFO_Size = FDC_DMA_FIFO_SIZE - 1;			/* FIFO is now full again (minus the byte we will return below) */
 		/* When the FIFO reads data from RAM it takes 4 cycles per word and the CPU is stalled during this time */
 		M68000_AddCycles_CE ( 4 * FDC_DMA_FIFO_SIZE / 2 );		/* 32 cycles */
+		/* For the MegaSTE, using the FDC DMA will flush the external cache */
+		if ( ConfigureParams.System.nMachineType == MACHINE_MEGA_STE )
+			MegaSTE_Cache_Flush ();
 
 		/* Store the last word that was just transferred by the DMA */
 		FDC_DMA.ff8604_recent_val = ( FDC_DMA.FIFO [ FDC_DMA_FIFO_SIZE-2 ] << 8 ) | FDC_DMA.FIFO [ FDC_DMA_FIFO_SIZE-1 ];
@@ -1404,22 +1394,6 @@ void	FDC_InsertFloppy ( int Drive )
 	}
 }
 
-#ifdef __LIBRETRO__
-extern uint32_t core_rand_seed;
-void FDC_InsertFloppyRestore ( int Drive )
-{
-	uint32_t seed_temp = core_rand_seed; // InsertFloppy may modify core_rand_seed to set IndexPulse_Time. Prevent this from causing a divergence.
-	bool changed = EmulationDrives[ Drive ].bContentsChanged; // can be reset by Insert
-	FDC_InsertFloppy ( Drive );
-	if ( ( Drive >= 0 ) && ( Drive < MAX_FLOPPYDRIVES ) )
-	{
-		FDC_DRIVES[ Drive ].IndexPulse_Time = restore_IndexPulse_Time[ Drive ];
-		FDC_Drive_Set_DC_signal( Drive, restore_DiskChange_signal[ Drive ]);
-	}
-	EmulationDrives[ Drive ].bContentsChanged = changed;
-	core_rand_seed = seed_temp;
-}
-#endif
 
 /*-----------------------------------------------------------------------*/
 /**

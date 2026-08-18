@@ -31,18 +31,17 @@ const char Reset_fileid[] = "Hatari reset.c";
 #include "reset.h"
 #include "scc.h"
 #include "screen.h"
+#include "scu_vme.h"
 #include "sound.h"
 #include "stMemory.h"
 #include "tos.h"
 #include "vdi.h"
 #include "nvram.h"
 #include "video.h"
-#include "vme.h"
 #include "falcon/videl.h"
 #include "falcon/dsp.h"
 #include "debugcpu.h"
 #include "debugdsp.h"
-#include "nf_scsidrv.h"
 
 /*-----------------------------------------------------------------------*/
 /**
@@ -51,9 +50,6 @@ const char Reset_fileid[] = "Hatari reset.c";
  */
 static int Reset_ST(bool bCold)
 {
-#ifdef __LIBRETRO__
-	core_signal_reset(bCold);
-#endif	
 	/* Ensure MMU has default values before calling memory_init() later */
 	STMemory_Reset ( bCold );
 
@@ -93,7 +89,7 @@ static int Reset_ST(bool bCold)
 	}
 	if (Config_IsMachineTT() || Config_IsMachineMegaSTE())
 	{
-		VME_Reset();
+		SCU_Reset( bCold );
 	}
 	if (Config_IsMachineFalcon())
 	{
@@ -102,6 +98,9 @@ static int Reset_ST(bool bCold)
 	}
 	else
 		DmaSnd_Reset(bCold);          /* Reset DMA sound */
+
+	if (Config_IsMachineMegaSTE())
+		MegaSTE_CPU_Cache_Reset();
 
 	Blitter_Reset();			/* Reset Blitter */
 	PSG_Reset();                  /* Reset PSG */
@@ -120,10 +119,6 @@ static int Reset_ST(bool bCold)
 	DebugDsp_SetDebugging();
 
 	Midi_Reset();
-
-#if defined(__linux__)
-        nf_scsidrv_reset();
-#endif
 
 	/* Start HBL, Timer B and VBL interrupts with a 0 cycle delay */
 	Video_StartInterrupts( 0 );

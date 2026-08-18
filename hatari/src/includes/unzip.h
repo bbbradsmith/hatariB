@@ -57,10 +57,6 @@ extern "C" {
 #include <zlib.h>
 #endif
 
-#ifdef __LIBRETRO__
-#include <inttypes.h>
-#endif
-
 #if defined(STRICTUNZIP) || defined(STRICTZIPUNZIP)
 /* like the STRICT of WIN32, we define a pointer that cannot be converted
     from (void*) without cast */
@@ -136,11 +132,7 @@ extern int ZEXPORT unzStringFileNameCompare (const char* fileName1,
 */
 
 
-#ifndef __LIBRETRO__
 extern unzFile ZEXPORT unzOpen (const char *path);
-#else
-extern unzFile ZEXPORT unzOpen (const void* data, unsigned int size); // open from memory instead of from file
-#endif
 /*
   Open a Zip file. path contain the full pathname (by example,
      on a Windows NT computer "c:\\zlib\\zlib111.zip" or on an Unix computer

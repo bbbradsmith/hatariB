@@ -145,6 +145,8 @@ static flagname_t TraceFlags[] = {
 
 	{ TRACE_SCSIDRV		 , "scsidrv" },
 
+	{ TRACE_SCU		 , "scu" },
+
 	{ TRACE_OS_VDI  	 , "vdi" },
 
 	{ TRACE_VIDEL  	         , "videl" },
@@ -159,8 +161,6 @@ static flagname_t TraceFlags[] = {
 	{ TRACE_VIDEO_STE	 , "video_ste" },
 	{ TRACE_VIDEO_SYNC	 , "video_sync" },
 	{ TRACE_VIDEO_VBL	 , "video_vbl" },
-
-	{ TRACE_VME		 , "vme" },
 
 	{ TRACE_OS_XBIOS	 , "xbios" },
 };
@@ -201,9 +201,7 @@ static LOGTYPE AlertDlgLogLevel;
  */
 void Log_Default(void)
 {
-#ifndef __LIBRETRO__
 	hLogFile = stderr;
-#endif
 	TraceFile = stderr;
 	TextLogLevel = LOG_INFO;
 	MsgState.limit = REPEAT_LIMIT_INIT;
@@ -228,14 +226,12 @@ int Log_Init(void)
 {
 	Log_SetLevels();
 
-#ifndef __LIBRETRO__
 	/* Flush pending msg & drop cached prev msg FILE pointer
 	 * before default log & trace FILE pointers change
 	 */
 	Log_ResetMsgRepeat();
 
 	hLogFile = File_Open(ConfigureParams.Log.sLogFileName, "w");
-#endif
 	TraceFile = File_Open(ConfigureParams.Log.sTraceFileName, "w");
 
 	return (hLogFile && TraceFile);
@@ -260,42 +256,14 @@ int Log_SetAlertLevel(int level)
  */
 void Log_UnInit(void)
 {
-#ifndef __LIBRETRO__
 	/* Flush pending msg & drop cached prev msg FILE pointer
 	 * before log & trace FILE pointers change
 	 */
 	Log_ResetMsgRepeat();
 
 	hLogFile = File_Close(hLogFile);
-#endif
 	TraceFile = File_Close(TraceFile);
 }
-
-#ifdef __LIBRETRO__
-// libretro log redirections
-static char corelog[2048];
-static void corelog_prefix_va(LOGTYPE t, const char* fmt, va_list args)
-{
-	static const char* prefix[] = LOG_NAMES;
-	int o = snprintf(corelog,sizeof(corelog),"[%s] ",prefix[t]);
-	vsnprintf(corelog+o,sizeof(corelog)-o,fmt,args);
-	core_debug_hatari(t <= LOG_ERROR,corelog);
-}
-#if CORE_DEBUG
-static void corelog_trace_va(const char* fmt, va_list args)
-{
-	vsnprintf(corelog,sizeof(corelog),fmt,args);
-	core_debug_hatari(false,corelog);
-	// if countdown active, disables trace when it counts to 0
-	if (core_trace_countdown > 0)
-	{
-		--core_trace_countdown;
-		if (core_trace_countdown == 0)
-			LogTraceFlags = TRACE_NONE;
-	}
-}
-#endif
-#endif
 
 /*-----------------------------------------------------------------------
  * log/trace message repeat suppression handling
@@ -326,7 +294,6 @@ static bool printPendingMsgRepeat(FILE *fp)
  * Output pending and given messages when appropriate,
  * and cache given fp & message if it's not a repeat.
  */
-#ifndef __LIBRETRO__
 static void addMsgRepeat(FILE *fp, const char *line)
 {
 	/* repeated message? */
@@ -355,7 +322,6 @@ static void addMsgRepeat(FILE *fp, const char *line)
 	fputs(line, fp);
 	fflush(fp);
 }
-#endif
 
 /**
  * Output pending messages repeat info and reset repeat info.
@@ -389,16 +355,13 @@ void Log_ToggleMsgRepeat(void)
 		fprintf(stderr, "Message repeats will be suppressed\n");
 		MsgState.limit = REPEAT_LIMIT_INIT;
 	}
-#ifndef __LIBRETRO__
 	Log_ResetMsgRepeat();
-#endif
 }
 
 /*-----------------------------------------------------------------------*/
 /**
  * Add log prefix to given string and return its lenght
  */
-#ifndef __LIBRETRO__
 static int Log_AddPrefix(char *msg, int len, LOGTYPE idx)
 {
 	static const char* prefix[] = LOG_NAMES;
@@ -420,7 +383,6 @@ static void addMissingNewline(char *msg, int size)
 		msg[2] = '\0';
 	}
 }
-#endif
 
 
 /*-----------------------------------------------------------------------*/
@@ -429,15 +391,6 @@ static void addMissingNewline(char *msg, int size)
  */
 void Log_Printf(LOGTYPE nType, const char *psFormat, ...)
 {
-#ifdef __LIBRETRO__
-	va_list argptr;
-	if (nType <= TextLogLevel)
-	{
-		va_start(argptr, psFormat);
-		corelog_prefix_va(nType,psFormat,argptr);
-		va_end(argptr);
-	}
-#else
 	if (!(hLogFile && nType <= TextLogLevel))
 		return;
 
@@ -461,7 +414,6 @@ void Log_Printf(LOGTYPE nType, const char *psFormat, ...)
 		addMsgRepeat(hLogFile, line);
 	else
 		fputs(line, hLogFile);
-#endif
 }
 
 
@@ -473,25 +425,6 @@ void Log_AlertDlg(LOGTYPE nType, const char *psFormat, ...)
 {
 	va_list argptr;
 
-#ifdef __LIBRETRO__
-	if (nType <= TextLogLevel)
-	{
-		va_start(argptr, psFormat);
-		corelog_prefix_va(nType,psFormat,argptr);
-		va_end(argptr);
-	}
-	if (nType <= AlertDlgLogLevel)
-	{
-		char buf[MAX_MSG_LEN];
-		va_start(argptr, psFormat);
-		vsnprintf(buf, sizeof(buf), psFormat, argptr);
-		va_end(argptr);
-		// don't allow the blocking dialog box, but send the notifications
-		for (char* c = buf; *c != 0; ++c)
-			if (*c == '\n') *c = ' '; // remove newlines
-		core_signal_alert(buf);
-	}
-#else
 	/* Output to log file: */
 	if (hLogFile && nType <= TextLogLevel)
 	{
@@ -525,7 +458,6 @@ void Log_AlertDlg(LOGTYPE nType, const char *psFormat, ...)
 		va_end(argptr);
 		DlgAlert_Notice(buf);
 	}
-#endif
 }
 
 
@@ -732,16 +664,6 @@ char *Log_MatchTrace(const char *text, int state)
  */
 void Log_Trace(const char *format, ...)
 {
-#ifdef __LIBRETRO__
-#if CORE_DEBUG
-	va_list argptr;
-	va_start(argptr, format);
-	corelog_trace_va(format,argptr);
-	va_end(argptr);
-#else
-	(void)format;
-#endif
-#else
 	va_list argptr;
 	char line[sizeof(MsgState.prev)];
 
@@ -760,7 +682,6 @@ void Log_Trace(const char *format, ...)
 		fflush(TraceFile);
 	}
 	va_end(argptr);
-#endif
 }
 
 #else	/* !ENABLE_TRACING */

@@ -30,11 +30,16 @@ const char SDLGui_fileid[] = "Hatari sdlgui.c";
 # define Dprintf(a)
 #endif
 
-#ifndef __LIBRETRO__
+/* sanity check for minimum size */
+#define MIN_DIALOG_WIDTH  12
+#define MIN_DIALOG_HEIGHT  5
+/* Dialogs need to fit into Hatari window.  These are max sizes
+ * (with the current font) when both borders & statusbar are disabled.
+ */
+#define MAX_DIALOG_WIDTH  64
+#define MAX_DIALOG_HEIGHT 25
+
 static SDL_Surface *pSdlGuiScrn;            /* Pointer to the actual main SDL screen surface */
-#else
-SDL_Surface *pSdlGuiScrn; // make public
-#endif
 static SDL_Surface *pSmallFontGfx = NULL;   /* The small font graphics */
 static SDL_Surface *pBigFontGfx = NULL;     /* The big font graphics */
 static SDL_Surface *pFontGfx = NULL;        /* The actual font graphics */
@@ -69,11 +74,7 @@ static SDL_Surface *SDLGui_LoadXBM(int w, int h, const Uint8 *pXbmBits)
 	bitmap = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 8, 0, 0, 0, 0);
 	if (bitmap == NULL)
 	{
-#ifndef __LIBRETRO__
 		Log_Printf(LOG_ERROR, "SDLGui: failed to allocate bitmap: %s", SDL_GetError());
-#else
-		core_error_printf("SDLGui: failed to allocate bitmap (SDLGui_LoadXBM)\n");
-#endif
 		return NULL;
 	}
 
@@ -202,13 +203,6 @@ int SDLGui_SetScreen(SDL_Surface *pScrn)
 		colors.underline = SDL_MapRGB(pSdlGuiScrn->format,0,0,0);
 	colors.editfield = SDL_MapRGB(pSdlGuiScrn->format,160,160,160);
 
-#ifdef __LIBRETRO__
-	colors.focus     = SDL_MapRGB(pSdlGuiScrn->format,255,255,  0); // use yellow for more visible focus
-	colors.lightbar  = SDL_MapRGB(pSdlGuiScrn->format,200,140,  0); // dim orange for focus + selected
-	colors.darkgrey  = SDL_MapRGB(pSdlGuiScrn->format,100,100,100); // darken darkgrey to stand out better against 128,128,128 background
-	colors.midbar    = SDL_MapRGB(pSdlGuiScrn->format, 90, 90, 90); // darken midbar too
-#endif
-
 	return 0;
 }
 
@@ -230,8 +224,19 @@ void SDLGui_GetFontSize(int *width, int *height)
  */
 void SDLGui_CenterDlg(SGOBJ *dlg)
 {
-	dlg[0].x = (pSdlGuiScrn->w/sdlgui_fontwidth-dlg[0].w)/2;
-	dlg[0].y = (pSdlGuiScrn->h/sdlgui_fontheight-dlg[0].h)/2;
+	int w = dlg[0].w, h = dlg[0].h;
+	/* catch invalid changes to SDL GUI dialogs */
+	if (w < MIN_DIALOG_WIDTH || h < MIN_DIALOG_HEIGHT)
+	{
+		Log_Printf(LOG_ERROR, "invalid (too small) dialog size (%dx%d)!", w, h);
+	}
+	if (w > MAX_DIALOG_WIDTH || h > MAX_DIALOG_HEIGHT)
+	{
+		Log_Printf(LOG_ERROR, "dialog too large (%dx%d), max working size is %dx%d!",
+			w, h, MAX_DIALOG_WIDTH, MAX_DIALOG_HEIGHT);
+	}
+	dlg[0].x = (pSdlGuiScrn->w / sdlgui_fontwidth - w) / 2;
+	dlg[0].y = (pSdlGuiScrn->h / sdlgui_fontheight - h) / 2;
 }
 
 /*-----------------------------------------------------------------------*/
@@ -362,16 +367,12 @@ static void SDLGui_DrawEditField(const SGOBJ *edlg, int objnum)
 }
 
 
-#ifdef __LIBRETRO__
-extern void SDLGui_DirectBox(int x, int y, int w, int h, int offset, bool focused, bool selected);
-#endif
 /*-----------------------------------------------------------------------*/
 /**
  * Draw a dialog box object.
  */
 static void SDLGui_DrawBox(const SGOBJ *bdlg, int objnum)
 {
-#ifndef __LIBRETRO__
 	SDL_Rect rect;
 	int x, y, w, h, offset;
 	Uint32 color, upleftc, downrightc;
@@ -380,9 +381,6 @@ static void SDLGui_DrawBox(const SGOBJ *bdlg, int objnum)
 		color = colors.focus;
 	else
 		color = colors.midgrey;
-#else
-	int x, y, w, h, offset;
-#endif
 
 	x = bdlg[objnum].x*sdlgui_fontwidth;
 	y = bdlg[objnum].y*sdlgui_fontheight;
@@ -395,7 +393,6 @@ static void SDLGui_DrawBox(const SGOBJ *bdlg, int objnum)
 	w = bdlg[objnum].w*sdlgui_fontwidth;
 	h = bdlg[objnum].h*sdlgui_fontheight;
 
-#ifndef __LIBRETRO__
 	if (bdlg[objnum].state & SG_SELECTED)
 	{
 		upleftc = colors.darkgrey;
@@ -406,7 +403,6 @@ static void SDLGui_DrawBox(const SGOBJ *bdlg, int objnum)
 		upleftc = colors.lightgrey;
 		downrightc = colors.darkgrey;
 	}
-#endif
 
 	/* The root box should be bigger than the screen, so we disable the offset there: */
 	if (objnum != 0)
@@ -414,21 +410,6 @@ static void SDLGui_DrawBox(const SGOBJ *bdlg, int objnum)
 	else
 		offset = 0;
 
-#ifdef __LIBRETRO__
-	SDLGui_DirectBox(x,y,w,h,offset,bdlg[objnum].state & SG_FOCUSED,bdlg[objnum].state & SG_SELECTED);
-}
-
-// making the box draw more directly available
-void SDLGui_DirectBox(int x, int y, int w, int h, int offset, bool focused, bool selected)
-{
-	SDL_Rect rect;
-	Uint32 color = focused ? colors.focus : colors.midgrey;
-	Uint32 upleftc = selected ? colors.darkgrey : colors.lightgrey;
-	Uint32 downrightc = selected ? colors.lightgrey : colors.darkgrey;
-
-	// make selected color darker (midbar), repurposed lightbar for focused+selected
-	if (selected) color = focused ? colors.lightbar : colors.midbar;
-#endif
 	/* Draw background: */
 	rect.x = x;
 	rect.y = y;
@@ -627,10 +608,6 @@ static void SDLGui_DrawPopupButton(const SGOBJ *pdlg, int objnum)
  */
 static void SDLGui_EditField(SGOBJ *dlg, int objnum)
 {
-#ifdef __LIBRETRO__
-	(void)dlg;
-	(void)objnum;
-#else
 	size_t cursorPos;                   /* Position of the cursor in the edit field */
 	int blinkState = 0;                 /* Used for cursor blinking */
 	int bStopEditing = false;           /* true if user wants to exit the edit field */
@@ -736,7 +713,6 @@ static void SDLGui_EditField(SGOBJ *dlg, int objnum)
 	while (!bStopEditing);
 
 	SDL_StopTextInput();
-#endif
 }
 
 
@@ -1117,16 +1093,11 @@ static int SDLGui_HandleShortcut(SGOBJ *dlg, int key)
  */
 void SDLGui_ScaleMouseStateCoordinates(int *x, int *y)
 {
-#ifndef __LIBRETRO__
 	int win_width, win_height;
 	SDL_GetWindowSize(sdlWindow, &win_width, &win_height);
 
 	*x = *x * pSdlGuiScrn->w / win_width;
 	*y = *y * pSdlGuiScrn->h / win_height;
-#else
-	(void)x;
-	(void)y;
-#endif
 }
 
 /**
@@ -1134,16 +1105,12 @@ void SDLGui_ScaleMouseStateCoordinates(int *x, int *y)
  */
 static void SDLGui_ScaleMouseButtonCoordinates(SDL_MouseButtonEvent *bev)
 {
-#ifndef __LIBRETRO__
 	if (bInFullScreen)
 		return;
 
 	int x = bev->x, y = bev->y;
 	SDLGui_ScaleMouseStateCoordinates(&x, &y);
 	bev->x = x; bev->y = y;
-#else
-	(void)bev;
-#endif
 }
 
 /*-----------------------------------------------------------------------*/
@@ -1167,22 +1134,6 @@ static void SDLGui_ScaleMouseButtonCoordinates(SDL_MouseButtonEvent *bev)
  */
 int SDLGui_DoDialogExt(SGOBJ *dlg, bool (*isEventOut)(SDL_EventType), SDL_Event *pEventOut, int current_object)
 {
-#ifdef __LIBRETRO__
-	(void)dlg;
-	(void)isEventOut;
-	(void)pEventOut;
-	(void)current_object;
-	(void)SDLGui_ScaleMouseButtonCoordinates;
-	(void)SDLGui_HandleShortcut;
-	(void)SDLGui_FocusNext;
-	(void)SDLGui_RemoveFocus;
-	(void)SDLGui_SetShortcuts;
-	(void)SDLGui_DebugPrintDialog;
-	(void)SDLGui_SearchState;
-	(void)SDLGui_SearchFlags;
-	(void)SDLGui_FindObj;
-	return SDLGUI_QUIT;
-#else
 	int oldbutton = SDLGUI_NOTFOUND;
 	int retbutton = SDLGUI_NOTFOUND;
 	int b, x, y, value, obj;
@@ -1192,6 +1143,8 @@ int SDLGui_DoDialogExt(SGOBJ *dlg, bool (*isEventOut)(SDL_EventType), SDL_Event 
 	SDL_Surface *pBgSurface;
 	SDL_Rect dlgrect, bgrect;
 	SDL_Joystick *joy = NULL;
+	const Uint8 *keystates;
+	bool ignore_first_keyup;
 
 	/* either both, or neither of these should be present */
 	assert((isEventOut && pEventOut) || (!isEventOut && !pEventOut));
@@ -1214,13 +1167,13 @@ int SDLGui_DoDialogExt(SGOBJ *dlg, bool (*isEventOut)(SDL_EventType), SDL_Event 
 	/* Save background */
 	pBgSurface = SDL_CreateRGBSurface(SDL_SWSURFACE, dlgrect.w, dlgrect.h, pSdlGuiScrn->format->BitsPerPixel,
 	                                  pSdlGuiScrn->format->Rmask, pSdlGuiScrn->format->Gmask, pSdlGuiScrn->format->Bmask, pSdlGuiScrn->format->Amask);
-	if (pSdlGuiScrn->format->palette != NULL)
-	{
-		SDL_SetPaletteColors(pBgSurface->format->palette, pSdlGuiScrn->format->palette->colors, 0, pSdlGuiScrn->format->palette->ncolors-1);
-	}
 
 	if (pBgSurface != NULL)
 	{
+		if (pSdlGuiScrn->format->palette != NULL)
+		{
+			SDL_SetPaletteColors(pBgSurface->format->palette, pSdlGuiScrn->format->palette->colors, 0, pSdlGuiScrn->format->palette->ncolors-1);
+		}
 		SDL_BlitSurface(pSdlGuiScrn,  &dlgrect, pBgSurface, &bgrect);
 	}
 	else
@@ -1245,6 +1198,22 @@ int SDLGui_DoDialogExt(SGOBJ *dlg, bool (*isEventOut)(SDL_EventType), SDL_Event 
 
 	/* (Re-)draw the dialog */
 	SDLGui_DrawDialog(dlg);
+
+	/* If one of the keys that could exit the dialog is already held
+	 * before we start, then ignore the first keyup event since the
+	 * key press does not belong to the dialog, but rather to whatever
+	 * happened before the dialog.
+	 *
+	 * Cannot be used when asked to return already on key down
+	 * (e.g. with file selector).
+	 */
+	keystates = SDL_GetKeyboardState(NULL);
+	ignore_first_keyup = !(isEventOut && isEventOut(SDL_KEYDOWN)) && (
+	                     keystates[SDL_GetScancodeFromKey(SDLK_RETURN)] ||
+	                     keystates[SDL_GetScancodeFromKey(SDLK_KP_ENTER)] ||
+	                     keystates[SDL_GetScancodeFromKey(SDLK_SPACE)] ||
+	                     keystates[SDL_GetScancodeFromKey(SDLK_ESCAPE)]
+	);
 
 	/* Is the left mouse button still pressed? Yes -> Handle TOUCHEXIT objects here */
 	SDL_PumpEvents();
@@ -1405,6 +1374,7 @@ int SDLGui_DoDialogExt(SGOBJ *dlg, bool (*isEventOut)(SDL_EventType), SDL_Event 
 
 			 case SDL_JOYBALLMOTION:
 			 case SDL_MOUSEMOTION:
+			 case SDL_KEYMAPCHANGED:
 				break;
 
 			 case SDL_KEYDOWN:                     /* Key pressed */
@@ -1470,9 +1440,19 @@ int SDLGui_DoDialogExt(SGOBJ *dlg, bool (*isEventOut)(SDL_EventType), SDL_Event 
 				 case SDLK_SPACE:
 				 case SDLK_RETURN:
 				 case SDLK_KP_ENTER:
+					if (ignore_first_keyup)
+					{
+						ignore_first_keyup = false;
+						break;
+					}
 					retbutton = SDLGui_HandleSelection(dlg, focused, focused);
 					break;
 				 case SDLK_ESCAPE:
+					if (ignore_first_keyup)
+					{
+						ignore_first_keyup = false;
+						break;
+					}
 					retbutton = SDLGui_SearchFlags(dlg, SG_CANCEL);
 					break;
 				 default:
@@ -1524,7 +1504,6 @@ int SDLGui_DoDialogExt(SGOBJ *dlg, bool (*isEventOut)(SDL_EventType), SDL_Event 
 
 	Dprintf(("EXIT - ret: %d\n", retbutton));
 	return retbutton;
-#endif
 }
 
 /*-----------------------------------------------------------------------*/

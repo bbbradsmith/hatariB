@@ -575,12 +575,7 @@ static void raw_scsi_write_data(struct raw_scsi *rs, uae_u8 data)
 			if (ScsiBus.dmawrite_to_fh)
 			{
 				int r;
-#ifndef __LIBRETRO__
 				r = fwrite(ScsiBus.buffer, 1, ScsiBus.data_len, ScsiBus.dmawrite_to_fh);
-#else
-				r = 0;
-				if (core_hard_readonly != 1) r = core_file_write(ScsiBus.buffer, 1, ScsiBus.data_len, ScsiBus.dmawrite_to_fh);
-#endif
 				if (r != ScsiBus.data_len)
 				{
 					Log_Printf(LOG_ERROR, "Could not write bytes to HD image (%d/%d).\n",
@@ -1041,20 +1036,13 @@ bool Ncr5380_Init(void)
 	{
 		if (!ConfigureParams.Scsi[i].bUseDevice)
 			continue;
-		if (HDC_InitDevice("SCSI", &ScsiBus.devs[i], ConfigureParams.Scsi[i].sDeviceFile, ConfigureParams.Scsi[i].nBlockSize) == 0)
+		if (HDC_InitDevice("SCSI", &ScsiBus.devs[i], &ConfigureParams.Scsi[i]) == 0)
 		{
 			nScsiPartitions += HDC_PartitionCount(ScsiBus.devs[i].image_file, TRACE_SCSI_CMD, NULL);
 			bScsiEmuOn = true;
 		}
 		else
-#ifdef __LIBRETRO__
-		{
-			core_signal_error("Failed to open SCSI hard disk image: ",ConfigureParams.Scsi[i].sDeviceFile);
 			ConfigureParams.Scsi[i].bUseDevice = false;
-		}
-#else
-			ConfigureParams.Scsi[i].bUseDevice = false;
-#endif
 	}
 	nNumDrives += nScsiPartitions;
 #endif
@@ -1074,13 +1062,8 @@ void Ncr5380_UnInit(void)
 	{
 		if (!ScsiBus.devs[i].enabled)
 			continue;
-#ifndef __LIBRETRO__
 		File_UnLock(ScsiBus.devs[i].image_file);
 		fclose(ScsiBus.devs[i].image_file);
-#else
-		// file locking not available to libretro vfs
-		core_file_close(ScsiBus.devs[i].image_file);
-#endif
 		ScsiBus.devs[i].image_file = NULL;
 		ScsiBus.devs[i].enabled = false;
 	}

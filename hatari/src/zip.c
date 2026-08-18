@@ -99,11 +99,7 @@ zip_dir *ZIP_GetFiles(const char *pszFileName)
 	char filename_inzip[ZIP_PATH_MAX];
 	zip_dir *zd = NULL;
 
-#ifndef __LIBRETRO__
 	uf = unzOpen(pszFileName);
-#else
-	uf = NULL;
-#endif
 	if (uf == NULL)
 	{
 		Log_Printf(LOG_ERROR, "ZIP_GetFiles: Cannot open %s\n", pszFileName);
@@ -531,11 +527,7 @@ uint8_t *ZIP_ReadDisk(int Drive, const char *pszFileName, const char *pszZipPath
 	*pImageSize = 0;
 	*pImageType = FLOPPY_IMAGE_TYPE_NONE;
 
-#ifndef __LIBRETRO__
 	uf = unzOpen(pszFileName);
-#else
-	uf = NULL;
-#endif
 	if (uf == NULL)
 	{
 		Log_Printf(LOG_ERROR, "Cannot open %s\n", pszFileName);
@@ -642,11 +634,7 @@ uint8_t *ZIP_ReadFirstFile(const char *pszFileName, long *pImageSize, const char
 	*pImageSize = 0;
 
 	/* Open the ZIP file */
-#ifndef __LIBRETRO__
 	uf = unzOpen(pszFileName);
-#else
-	uf = NULL;
-#endif
 	if (uf == NULL)
 	{
 		Log_Printf(LOG_ERROR, "Cannot open '%s'\n", pszFileName);

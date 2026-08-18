@@ -1,0 +1,156 @@
+before_script:
+ - apt-get update -qq
+
+build-minimal:
+ script:
+ - apt-get install -y -qq cmake libsdl2-dev tidy
+ - rm -rf /usr/include/zlib.h /usr/include/png.h /usr/include/readline*
+ - CFLAGS="-D_FORTIFY_SOURCE=3"
+   ./configure --disable-dsp --enable-debug --disable-tracing --enable-werror
+ - make -j$(nproc)
+ - ctest -j$(nproc)
+
+build-32bit:
+ script:
+ - dpkg --add-architecture i386
+ - apt-get update -qq
+ - apt-get install -y cmake clang file gcc-multilib
+                      libgcc1:i386 libportmidi-dev:i386 libpng-dev:i386
+                      libglib2.0-dev:i386 zlib1g-dev:i386
+                      libsdl2-dev:i386 libudev-dev:i386 libreadline-dev:i386
+ - CC="clang" CFLAGS="-m32 -O3 -Werror -D_FORTIFY_SOURCE=3"
+   ./configure --enable-debug
+ - make -j$(nproc)
+ - file src/hatari | grep 32.bit
+ - ctest -j$(nproc)
+
+build-mingw:
+  image: fedora:41
+  variables:
+    GIT_DEPTH: 1000
+  cache:
+    paths:
+      - libs
+  before_script:
+    - dnf update -y
+    - dnf install -y autoconf cmake git make gawk gcc mingw64-gcc mingw64-gcc-c++
+                     mingw64-libstdc++ mingw64-SDL2 mingw64-zlib mingw64-libpng
+  script:
+    - if [ ! -d libs ]; then mkdir libs ; fi
+    - cd libs
+    # Prepare CAPS library
+    - MINGW_PREFIX=/usr/x86_64-w64-mingw32/sys-root/mingw
+    - if [ ! -d capsimg ]; then ../ci/build-mingw-capsimg.sh; fi
+    - cp capsimg/CAPSImg/capsimg.dll $MINGW_PREFIX/bin/
+    - cp capsimg/CAPSImg/capsimg.dll.a $MINGW_PREFIX/lib/
+    - mkdir -p $MINGW_PREFIX/include/caps
+    - cp capsimg/LibIPF/* capsimg/Core/CommonTypes.h $MINGW_PREFIX/include/caps
+    # Prepare PortMidi library
+    - if [ ! -d portmidi ]; then
+        git clone https://github.com/PortMidi/portmidi.git
+            --shallow-since=2025-01-01 -c advice.detachedHead=false &&
+        cd portmidi &&
+        git checkout 806aa16c7d3c &&
+        cmake -DCMAKE_TOOLCHAIN_FILE=../../cmake/Toolchain-mingw32-win64_64.cmake . &&
+        make -j$(nproc) &&
+        cd .. ;
+      fi
+    - cp portmidi/libportmidi.dll $MINGW_PREFIX/bin/
+    - cp portmidi/libportmidi.dll.a $MINGW_PREFIX/lib/
+    - cp -v portmidi/pm_common/*.h $MINGW_PREFIX/include/
+    # Now build Hatari
+    - mkdir ../build
+    - cd ../build
+    - VERSION=$(git describe)
+    - cmake -DCMAKE_TOOLCHAIN_FILE=cmake/Toolchain-mingw32-win64_64.cmake
+            -DENABLE_WERROR:BOOL=1 ..
+    - make -j$(nproc)
+    - cd ..
+    # And finally create the package
+    - mkdir hatari-$VERSION
+    - mv build/src/hatari.exe gpl.txt readme.txt hatari-$VERSION/
+    - cp -r doc hatari-$VERSION/
+    - cd hatari-$VERSION/doc
+    - rm CMakeLists.txt hatari.1 hatari-ui.html release-checklist.txt
+    - rm -r de fr doxygen
+    - cd ../..
+    - DLLS=(SDL2.dll capsimg.dll zlib1.dll libpng16-16.dll libwinpthread-1.dll
+            libportmidi.dll libstdc++-6.dll libgcc_s_seh-1.dll)
+    - cp ${DLLS[@]/#/\/usr\/x86_64-w64-mingw32\/sys-root\/mingw\/bin\//}
+         hatari-$VERSION/
+    - cp libs/capsimg/LICENCE.txt hatari-$VERSION/capsimg-license.txt
+    - cp libs/portmidi/license.txt hatari-$VERSION/portmidi-license.txt
+    - zip -r hatari-$VERSION-win64.zip hatari-$VERSION/
+  artifacts:
+    paths:
+      - ./*.zip
+
+build-fedora:
+  image: fedora:latest
+  variables:
+    GIT_DEPTH: 1000
+  before_script:
+    - dnf update -y
+    - dnf install -y cmake make gcc diffutils python-unversioned-command
+          capstone-devel GraphicsMagick SDL2-devel libpng-devel zlib-devel tidy
+          python3-gobject gtk3 readline-devel man git rpmdevtools
+  script:
+    - rpmdev-setuptree
+    - VERSION=$(git describe | sed -e s,-,^, -e s,-,.,)
+    - sed -i s/^\#define\ PROG_NAME\ .*/\#define\ PROG_NAME\ \"Hatari\ $VERSION\"/
+        src/includes/version.h
+    - git diff > ~/rpmbuild/SOURCES/hatari-version.patch
+    - echo Patch1\:\ hatari-version.patch > ~/rpmbuild/SPECS/hatari.spec
+    - sed s/^Version:.*/Version:\ $VERSION/ < hatari.spec >> ~/rpmbuild/SPECS/hatari.spec
+    - git archive --prefix=hatari-$VERSION/ -o
+        ~/rpmbuild/SOURCES/hatari-$VERSION.tar.bz2 HEAD
+    - rpmbuild -ba ~/rpmbuild/SPECS/hatari.spec
+    - cp ~/rpmbuild/SRPMS/hatari-v*.rpm ~/rpmbuild/RPMS/x86_64/hatari-v*.rpm .
+  artifacts:
+    paths:
+      - ./*.rpm
+
+build-emscripten:
+  image: emscripten/emsdk:4.0.4
+  cache:
+    paths:
+      - files
+  script:
+    - if [ ! -d files ]; then
+        wget -O emutos.zip https://sourceforge.net/projects/emutos/files/emutos/1.3/emutos-256k-1.3.zip/download ;
+        unzip emutos.zip ;
+        mkdir -p files/fs ;
+        mv emutos-256k-1.3/etos256us.img files/tos.img ;
+        cd files/fs ;
+        wget https://framagit.org/hatari/releases/-/raw/main/v1.9/hatari19.prg ;
+        wget https://framagit.org/hatari/releases/-/raw/main/v2.1/hatari21.prg ;
+        wget https://framagit.org/hatari/releases/-/raw/main/v2.2/hatari22.prg ;
+        cd ../.. ;
+      fi
+    - emcmake cmake .
+    - cmake --build . -j $(nproc)
+  artifacts:
+    when: on_success
+    expire_in: 2 days
+    paths:
+      - src/hatari.*
+
+pages:
+  stage: deploy
+  needs:
+    - job: build-emscripten
+      artifacts: true
+  script:
+    - mkdir -p public/doc
+    - cp doc/*.html doc/*.css doc/*.js doc/*.txt public/doc/
+    - cp -r doc/images public/doc/
+    - apt-get install -y -qq doxygen
+    - cd doc/doxygen/ ; doxygen ; cd ../..
+    - cp -r doc/doxygen/html public/doxygen/
+    - mkdir public/online
+    - cp src/hatari.* public/online/
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

@@ -31,35 +31,16 @@ const char TOS_fileid[] = "Hatari tos.c";
 #include "nvram.h"
 #include "stMemory.h"
 #include "str.h"
+#include "symbols.h"
 #include "tos.h"
 #include "lilo.h"
 #include "vdi.h"
 #include "falcon/dsp.h"
 #include "clocks_timings.h"
 #include "video.h"
+#include "keymap.h"
 
 #include "faketosData.c"
-
-#ifdef __LIBRETRO__
-// default TOS if none provided
-#include "../../emutos/etos1024k.h"
-#include "../../emutos/etos192uk.h"
-#include "../../emutos/etos192us.h"
-const uint8_t* const BUILTIN_TOS_ROM[] = {
-	NULL,
-	etos1024k,
-	etos192uk,
-	etos192us,
-};
-const int BUILTIN_TOS_LEN[] = {
-	0,
-	etos1024k_len,
-	etos192uk_len,
-	etos192us_len,
-};
-extern uint8_t* core_rom_mem_pointer;
-extern uint8_t* core_read_file_system(const char* filename, unsigned int* size_out);
-#endif
 
 #define TEST_PRG_BASEPAGE 0x1000
 #define TEST_PRG_START (TEST_PRG_BASEPAGE + 0x100)
@@ -204,15 +185,45 @@ static const uint8_t p060movep3_2[] = {		/* replace MOVEP $28(a2),d7 */
 static const uint8_t pFalconExtraRAM_1[] = {
 	0x4e, 0xb9, 0x00, 0xe7, 0xf1, 0x00	/* jsr       $e7f100 */
 };
-static const uint8_t pFalconExtraRAM_2[] = {	/* call maddalt() to declare the extra RAM */
+static const uint8_t pFalconExtraRAM_2[] = {
+	/* If we use fast RAM in Falcon mode, Hatari patched $05a4 already, so
+	 * we can use this value to check whether we have to do work here: */
 	0x20, 0x38, 0x05, 0xa4,			/* move.l    $05a4.w,d0 */
-	0x67, 0x18,				/* beq.s     $ba2d2 */
+	0x67, 0x58,				/* beq.s     extra_ram_end */
+	/* call maddalt() to declare the extra RAM */
 	0x04, 0x80, 0x01, 0x00, 0x00, 0x00,	/* subi.l    #$1000000,d0 */
 	0x2f, 0x00,				/* move.l    d0,-(sp) */
 	0x2f, 0x3c, 0x01, 0x00, 0x00, 0x00,	/* move.l    #$1000000,-(sp) */
 	0x3f, 0x3c, 0x00, 0x14,			/* move.w    #$14,-(sp) */
 	0x4e, 0x41,				/* trap      #1 */
 	0x4f, 0xef, 0x00, 0x0a,			/* lea       $a(sp),sp */
+	/* call Mxalloc() to get a buffer in ST RAM for the _FRB cookie: */
+	0x42, 0x67,				/* clr.w -(a7) */
+	0x2f, 0x3c, 0x00, 0x01, 0x02, 0x00,	/* move.l    #65536+512,-(sp) */
+	0x3f, 0x3c, 0x00, 0x44,			/* move.w    #$44,-(sp) */
+	0x4e, 0x41,				/* trap      #1    ; Mxalloc */
+	0x50, 0x8f,				/* addq.l    #8,sp */
+	0x4a, 0x80,				/* tst.l     d0 */
+	0x67, 0x2c,				/* beq.s     extra_ram_end */
+	/* Align the buffer to a 512 byte boundary: */
+	0xd0, 0xbc, 0x00, 0x00, 0x01, 0xff,	/* add.l     #511,d0 */
+	0xc0, 0xbc, 0xff, 0xff, 0xfe, 0x00,	/* and.l     #$fffffe00,d0 */
+	/* Get cookie jar pointer and search for the end. Since we run this
+	 * with TOS 4.x only, we can assume that the jar is available and
+	 * that there is at least one entry in the jar already */
+	0x20, 0x78, 0x05, 0xa0,			/* move.l    $5a0.s,a0 */
+	/* jar_loop: */
+	0x0c, 0x98, 0x5f, 0x46, 0x52, 0x42,	/* cmp.l     #'_FRB',(a0)+ */
+	0x67, 0x14,				/* beq.s     extra_ram_end */
+	0x58, 0x88,				/* addaq.l   #4,a0 */
+	0x4a, 0x90,				/* tst.l     (a0) */
+	0x66, 0xf2,				/* bne.s     cj_loop */
+	/* We reached the end of the jar, so install our _FRB cookie here: */
+	0x20, 0xfc, 0x5f, 0x46, 0x52, 0x42,	/* move.l    #'_FRB',(a0)+ */
+	0x21, 0x50, 0x00, 0x08,			/* move.l    (a0),8(a0) */
+	0x20, 0xc0,				/* move.l    d0,(a0)+ */
+	0x42, 0x98,				/* clr.      (a0)+ ; jar end */
+	/* extra_ram_end:       ; The code we replaced at address $E0096E */
 	0x70, 0x03,				/* moveq     #3,d0 */
 	0x4e, 0xf9, 0x00, 0xe0, 0x0b, 0xd2	/* jmp       $e00bd2 */
 };
@@ -834,44 +845,35 @@ static void TOS_CheckSysConfig(void)
 	    || (TosVersion == 0x0162 && ConfigureParams.System.nCpuLevel != 0))
 	{
 		Log_AlertDlg(LOG_ERROR, "TOS versions 1.06 and 1.62 are for Atari STE only.\n"
-#ifndef __LIBRETRO__
 		             " ==> Switching to STE mode now.\n");
-		IoMem_UnInit();
+		IoMem_UnInit(ConfigureParams.System.nMachineType);
 		ConfigureParams.System.nMachineType = MACHINE_STE;
 		ClocksTimings_InitMachine ( ConfigureParams.System.nMachineType );
 		Video_SetTimings ( ConfigureParams.System.nMachineType , ConfigureParams.System.VideoTimingMode );
 		IoMem_Init();
 		Configuration_ChangeCpuFreq ( 8 );
 		ConfigureParams.System.nCpuLevel = 0;
-#else
-		);
-#endif
 	}
 	else if ((TosVersion & 0x0f00) == 0x0300 && !Config_IsMachineTT())
 	{
 		Log_AlertDlg(LOG_ERROR, "TOS versions 3.0x are for Atari TT only.\n"
-#ifndef __LIBRETRO__
 		             " ==> Switching to TT mode now.\n");
-		IoMem_UnInit();
+		IoMem_UnInit(ConfigureParams.System.nMachineType);
 		ConfigureParams.System.nMachineType = MACHINE_TT;
 		ClocksTimings_InitMachine ( ConfigureParams.System.nMachineType );
 		Video_SetTimings ( ConfigureParams.System.nMachineType , ConfigureParams.System.VideoTimingMode );
 		IoMem_Init();
 		Configuration_ChangeCpuFreq ( 32 );
 		ConfigureParams.System.nCpuLevel = 3;
-#else
-		);
-#endif
 	}
 	else if (((TosVersion & 0x0f00) == 0x0400 || TosVersion == 0x0207)
 	         && !Config_IsMachineFalcon())
 	{
 		Log_AlertDlg(LOG_ERROR, "TOS version %x.%02x is for Atari Falcon only.\n"
-#ifndef __LIBRETRO__
 		             " ==> Switching to Falcon mode now.\n",
 		             TosVersion >> 8, TosVersion & 0xff);
 		Ide_UnInit();
-		IoMem_UnInit();
+		IoMem_UnInit(ConfigureParams.System.nMachineType);
 		ConfigureParams.System.nMachineType = MACHINE_FALCON;
 		ClocksTimings_InitMachine ( ConfigureParams.System.nMachineType );
 		Video_SetTimings ( ConfigureParams.System.nMachineType , ConfigureParams.System.VideoTimingMode );
@@ -883,67 +885,48 @@ static void TOS_CheckSysConfig(void)
 		Ide_Init();
 		Configuration_ChangeCpuFreq ( 16 );
 		ConfigureParams.System.nCpuLevel = 3;
-#else
-		, TosVersion >> 8, TosVersion & 0xff);
-#endif
 	}
 	else if (TosVersion <= 0x0104 &&
 	         (ConfigureParams.System.nCpuLevel > 0 || !Config_IsMachineST()))
 	{
 		Log_AlertDlg(LOG_ERROR, "TOS versions <= 1.4 work only in\n"
 		             "ST mode and with a 68000 CPU.\n"
-#ifndef __LIBRETRO__
 		             " ==> Switching to ST mode with 68000 now.\n");
-		IoMem_UnInit();
+		IoMem_UnInit(ConfigureParams.System.nMachineType);
 		ConfigureParams.System.nMachineType = MACHINE_ST;
 		ClocksTimings_InitMachine ( ConfigureParams.System.nMachineType );
 		Video_SetTimings ( ConfigureParams.System.nMachineType , ConfigureParams.System.VideoTimingMode );
 		IoMem_Init();
 		Configuration_ChangeCpuFreq ( 8 );
 		ConfigureParams.System.nCpuLevel = 0;
-#else
-		);
-#endif
 	}
 	else if (TosVersion < 0x0300 &&
 		 (Config_IsMachineTT() ||
 		  (Config_IsMachineFalcon() && TosVersion != 0x0207)))
 	{
 		Log_AlertDlg(LOG_ERROR, "This TOS version does not work in TT/Falcon mode.\n"
-#ifndef __LIBRETRO__
 		             " ==> Switching to STE mode now.\n");
-		IoMem_UnInit();
+		IoMem_UnInit(ConfigureParams.System.nMachineType);
 		ConfigureParams.System.nMachineType = MACHINE_STE;
 		ClocksTimings_InitMachine ( ConfigureParams.System.nMachineType );
 		Video_SetTimings ( ConfigureParams.System.nMachineType , ConfigureParams.System.VideoTimingMode );
 		IoMem_Init();
 		Configuration_ChangeCpuFreq ( 8 );
 		ConfigureParams.System.nCpuLevel = 0;
-#else
-		);
-#endif
 	}
 	else if ((TosVersion & 0x0f00) == 0x0400 && ConfigureParams.System.nCpuLevel < 2)
 	{
 		Log_AlertDlg(LOG_ERROR, "TOS versions 4.x require a CPU >= 68020.\n"
-#ifndef __LIBRETRO__
 		             " ==> Switching to 68020 mode now.\n");
 		ConfigureParams.System.nCpuLevel = 2;
-#else
-		);
-#endif
 	}
 	else if ((TosVersion & 0x0f00) == 0x0300 &&
 	         (ConfigureParams.System.nCpuLevel < 2 || ConfigureParams.System.n_FPUType == FPU_NONE))
 	{
 		Log_AlertDlg(LOG_ERROR, "TOS versions 3.0x require a CPU >= 68020 with FPU.\n"
-#ifndef __LIBRETRO__
 		             " ==> Switching to 68030 mode with FPU now.\n");
 		ConfigureParams.System.nCpuLevel = 3;
 		ConfigureParams.System.n_FPUType = FPU_68882;
-#else
-		);
-#endif
 	}
 
 	/* TOS version triggered changes? */
@@ -983,11 +966,6 @@ static void TOS_CheckSysConfig(void)
 	}
 }
 
-#ifdef __LIBRETRO__
-static uint8_t* TOSCache_Data = NULL;
-static long TOSCache_Size = 0;
-static char TOSCache_Filename[FILENAME_MAX] = "";
-#endif
 
 /**
  * Load TOS Rom image file and do some basic sanity checks.
@@ -1000,58 +978,11 @@ static uint8_t *TOS_LoadImage(void)
 
 	/* Load TOS image into memory so that we can check its version */
 	TosVersion = 0;
-
-#ifndef __LIBRETRO__
 	pTosFile = File_Read(ConfigureParams.Rom.szTosImageFileName, &nFileSize, pszTosNameExts);
-#else
-	(void)pszTosNameExts;
-	if (ConfigureParams.Rom.nBuiltinTos != 0)
-	{
-		const uint8_t* builtin_tos = BUILTIN_TOS_ROM[ConfigureParams.Rom.nBuiltinTos];
-		nFileSize = BUILTIN_TOS_LEN[ConfigureParams.Rom.nBuiltinTos];
-		pTosFile = malloc(nFileSize);
-		if (pTosFile)
-		{
-			memcpy(pTosFile,builtin_tos,nFileSize);
-		}
-	}
-	else if (TOSCache_Data != NULL && TOSCache_Size > 0 && !strcmp(TOSCache_Filename,ConfigureParams.Rom.szTosImageFileName))
-	{
-		// keep a cached copy of TOS so that it doesn't need to be re-read on savestate etc.
-		pTosFile = malloc(TOSCache_Size);
-		if (pTosFile)
-		{
-			memcpy(pTosFile,TOSCache_Data,TOSCache_Size);
-			nFileSize = TOSCache_Size;
-		}
-	}
-	else
-	{
-		unsigned int size;
-		nFileSize = 0;
-		pTosFile = core_read_file_system(ConfigureParams.Rom.szTosImageFileName,&size);
-		if (pTosFile)
-		{
-			nFileSize = size;
-			free(TOSCache_Data);
-			TOSCache_Data = malloc(nFileSize);
-			if (TOSCache_Data)
-			{
-				memcpy(TOSCache_Data,pTosFile,nFileSize);
-				TOSCache_Size = nFileSize;
-				strcpy(TOSCache_Filename,ConfigureParams.Rom.szTosImageFileName);
-			}
-		}
-	}
-#endif
 
 	if (!pTosFile || nFileSize < 0x40)
 	{
-	#ifdef __LIBRETRO__
-		core_signal_tos_fail();
-	#else
 		Log_AlertDlg(LOG_FATAL, "Can not load TOS file:\n'%s'", ConfigureParams.Rom.szTosImageFileName);
-	#endif
 		free(pTosFile);
 		return NULL;
 	}
@@ -1157,6 +1088,9 @@ static uint8_t *TOS_LoadImage(void)
 		}
 	}
 
+	/* try to load (Emu)TOS symbols from <tos>.sym */
+	Symbols_LoadTOS(ConfigureParams.Rom.szTosImageFileName, TosAddress+TosSize);
+
 	return pTosFile;
 }
 
@@ -1215,20 +1149,14 @@ int TOS_InitImage(void)
 	if (bUseTos)
 	{
 		pTosFile = TOS_LoadImage();
-#ifndef __LIBRETRO__
 		if (!pTosFile)
 			return -1;
-#else
-		// we want to keep going and just halt the CPU instead of cancelling setup
-#endif
 	}
 	else
 	{
 		pTosFile = TOS_FakeRomForTesting();
-#ifndef __LIBRETRO__
 		if (!pTosFile)
 			return -1;
-#endif
 	}
 
 	/* After TOS is loaded, and machine configuration adapted
@@ -1245,19 +1173,12 @@ int TOS_InitImage(void)
 	memset(&RomMem[0xe00000], 0, 0x200000);
 
 	/* Copy loaded image into memory */
-#ifdef __LIBRETRO__
-	core_rom_mem_pointer = RomMem; // tell core where the ROM resides
-	if (pTosFile) {
-#endif
 	if (bRamTosImage)
 		memcpy(&STRam[TosAddress], pTosFile, TosSize);
 	else
 		memcpy(&RomMem[TosAddress], pTosFile, TosSize);
 	free(pTosFile);
 	pTosFile = NULL;
-#ifdef __LIBRETRO__
-	}
-#endif
 
 	Log_Printf(LOG_DEBUG, "Loaded TOS version %i.%c%c, starting at $%x, "
 	           "country code = %i, %s\n", TosVersion>>8, '0'+((TosVersion>>4)&0x0f),
@@ -1272,9 +1193,7 @@ int TOS_InitImage(void)
 			/* Warn user */
 			Log_AlertDlg(LOG_ERROR, "To use extended VDI resolutions, you must select a TOS >= 1.02.");
 			/* And select non VDI */
-#ifndef __LIBRETRO__
 			bUseVDIRes = ConfigureParams.Screen.bUseExtVdiResolutions = false;
-#endif
 		}
 		else
 		{
@@ -1311,23 +1230,7 @@ int TOS_InitImage(void)
 			   countrycode, TOS_LanguageName(countrycode),
 			   (osconf & 1) ? "PAL" : "NTSC");
 	}
-
-#ifdef __LIBRETRO__
-	// allowing more direct EmuTOS country/framerate override
-	if (bIsEmuTOS)
-	{
-		uint16_t newconf = osconf;
-		if (ConfigureParams.Rom.nEmuTosRegion >= 0)
-			newconf = (newconf & 0xFF01) | ((ConfigureParams.Rom.nEmuTosRegion << 1) & 0x00FE);
-		if (ConfigureParams.Rom.nEmuTosFramerate >= 0)
-			newconf = (newconf & 0xFFFE) | (ConfigureParams.Rom.nEmuTosFramerate     & 0x0001);
-		if (newconf != osconf)
-			STMemory_WriteWord(TosAddress+0x1C, newconf);
-		//core_debug_printf("EmuTOS region old: %04X\n",osconf);
-		//core_debug_printf("EmuTOS region new: %04X\n",newconf);
-		osconf = newconf;
-	}
-#endif
+	Keymap_SetCountry(countrycode);
 
 	/*
 	 * patch some values into the "Draw logo" patch.
@@ -1358,8 +1261,7 @@ int TOS_InitImage(void)
 			           psTestPrg, TEST_PRG_START);
 			if (GemDOS_LoadAndReloc(psTestPrg, TEST_PRG_BASEPAGE, true))
 			{
-				fprintf(stderr, "Failed to load '%s'\n", psTestPrg);
-				exit(1);
+				Main_ErrorExit("Failed to load:", psTestPrg, 1);
 			}
 		}
 		else
@@ -1399,6 +1301,7 @@ static const struct {
 	{ TOS_LANG_RU,    "ru",    "Russia" },
 	{ TOS_LANG_GR,    "gr",    "Greece" },
 	{ TOS_LANG_RO,    "ro",    "Romania" },
+	{ TOS_LANG_CA,    "ca",    "Catalan" },
 };
 
 /**
@@ -1423,6 +1326,8 @@ void TOS_ShowCountryCodes(void)
 			fprintf(stderr, "\nEmuTOS 1024k supports also:\n");
 		if (countries[i].value == TOS_LANG_RO)
 			fprintf(stderr, "\nEmuTOS 1024k >1.2.1 also:\n");
+		if (countries[i].value == TOS_LANG_CA)
+			fprintf(stderr, "\nEmuTOS 1024k >1.3.0 also:\n");
 		fprintf(stderr, "- %s : %s\n",
 			countries[i].code, countries[i].name);
 	}

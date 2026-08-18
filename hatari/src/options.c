@@ -46,6 +46,9 @@ const char Options_fileid[] = "Hatari options.c";
 #include "tos.h"
 #include "lilo.h"
 #include "screenSnapShot.h"
+#ifdef WIN32
+#include "gui-win/opencon.h"
+#endif
 
 
 bool bLoadAutoSave;        /* Load autosave memory snapshot at startup */
@@ -55,6 +58,13 @@ bool BenchmarkMode;	   /* Start in benchmark mode (try to run at maximum emulati
 			   /* speed allowed by the CPU). Disable audio/video for best results */
 
 static bool bBiosIntercept;
+
+typedef enum {
+	CHECK_NONE,
+	CHECK_FILE,
+	CHECK_DIR
+} fs_check_t;
+
 
 /*  List of supported options. */
 enum {
@@ -70,6 +80,7 @@ enum {
 	OPT_LANGUAGE,
 	OPT_FASTFORWARD,
 	OPT_AUTOSTART,
+	OPT_FF_KEY_REPEAT,
 
 	OPT_MONO,		/* common display options */
 	OPT_MONITOR,
@@ -150,6 +161,7 @@ enum {
 	OPT_GEMDOS_DRIVE,
 	OPT_ACSIHDIMAGE,
 	OPT_SCSIHDIMAGE,
+	OPT_SCSIVERSION,
 	OPT_IDEMASTERHDIMAGE,
 	OPT_IDESLAVEHDIMAGE,
 	OPT_IDEBYTESWAP,
@@ -165,6 +177,7 @@ enum {
 	OPT_CPULEVEL,		/* CPU options */
 	OPT_CPUCLOCK,
 	OPT_COMPATIBLE,
+	OPT_CPU_DATA_CACHE,
 	OPT_CPU_CYCLE_EXACT,
 	OPT_CPU_ADDR24,
 	OPT_FPU_TYPE,
@@ -175,7 +188,6 @@ enum {
 	OPT_MACHINE,		/* system options */
 	OPT_BLITTER,
 	OPT_DSP,
-	OPT_VME,
 	OPT_RTC_YEAR,
 	OPT_TIMERD,
 	OPT_FASTBOOT,
@@ -244,6 +256,8 @@ static const opt_t HatariOptions[] = {
 	  "<bool>", "Help skipping stuff on fast machine" },
 	{ OPT_AUTOSTART, NULL, "--auto",
 	  "<x>", "Atari program autostarting with Atari path" },
+	{ OPT_FF_KEY_REPEAT, NULL, "--fast-forward-key-repeat",
+	  "<bool>", "Use keyboard auto repeat in fast forward mode" },
 
 	{ OPT_HEADER, NULL, NULL, NULL, "Common display" },
 	{ OPT_MONO,      "-m", "--mono",
@@ -406,6 +420,8 @@ static const opt_t HatariOptions[] = {
 	  "<id>=<file>", "Emulate an ACSI harddrive (0-7) with an image <file>" },
 	{ OPT_SCSIHDIMAGE,   NULL, "--scsi",
 	  "<id>=<file>", "Emulate a SCSI harddrive (0-7) with an image <file>" },
+	{ OPT_SCSIVERSION,   NULL, "--scsi-ver",
+	  "<id>=<version>", "Which SCSI version (1-2) to emulate for given drive ID" },
 	{ OPT_IDEMASTERHDIMAGE,   NULL, "--ide-master",
 	  "<file>", "Emulate an IDE 0 (master) harddrive with an image <file>" },
 	{ OPT_IDESLAVEHDIMAGE,   NULL, "--ide-slave",
@@ -435,7 +451,9 @@ static const opt_t HatariOptions[] = {
 	{ OPT_CPUCLOCK,  NULL, "--cpuclock",
 	  "<x>", "Set the CPU clock (x = 8/16/32)" },
 	{ OPT_COMPATIBLE, NULL, "--compatible",
-	  "<bool>", "Use a more compatible (but slower) prefetch mode for CPU" },
+	  "<bool>", "Use (more compatible) prefetch mode for CPU" },
+	{ OPT_CPU_DATA_CACHE, NULL, "--data-cache",
+	  "<bool>", "Emulate (>=030) CPU data cache" },
 	{ OPT_CPU_CYCLE_EXACT, NULL, "--cpu-exact",
 	  "<bool>", "Use cycle exact CPU emulation" },
 	{ OPT_CPU_ADDR24, NULL, "--addr24",
@@ -456,8 +474,6 @@ static const opt_t HatariOptions[] = {
 	  "<bool>", "Use blitter emulation (ST only)" },
 	{ OPT_DSP,       NULL, "--dsp",
 	  "<x>", "DSP emulation (x = none/dummy/emu, Falcon only)" },
-	{ OPT_VME,	NULL, "--vme",
-	  "<x>", "VME mode (x = none/dummy, MegaSTE/TT only)" },
 	{ OPT_RTC_YEAR,   NULL, "--rtc-year",
 	  "<x>", "Set initial year for RTC (0, 1980 <= x < 2080)" },
 	{ OPT_TIMERD,    NULL, "--timer-d",
@@ -531,9 +547,16 @@ static const opt_t HatariOptions[] = {
  */
 static void Opt_ShowVersion(void)
 {
+#ifdef WIN32
+	/* Opt_ShowVersion() is called for all info exit paths,
+	 * so having this here should enable console for everything
+	 * relevant on Windows.
+	 */
+	Win_ForceCon();
+#endif
 	printf("\n" PROG_NAME
-	       " - the Atari ST, STE, TT and Falcon emulator.\n\n");
-	printf("Hatari is free software licensed under the GNU General"
+	       " - the Atari ST, STE, TT and Falcon emulator.\n\n"
+	       "Hatari is free software licensed under the GNU General"
 	       " Public License.\n\n");
 }
 
@@ -651,12 +674,12 @@ static void Opt_ShowHelp(void)
 		}
 		opt = Opt_ShowHelpSection(opt);
 	}
-	printf("\nSpecial option values:\n");
-	printf("<bool>\tDisable by using 'n', 'no', 'off', 'false', or '0'\n");
-	printf("\tEnable by using 'y', 'yes', 'on', 'true' or '1'\n");
-	printf("<file>\tDevices accept also special 'stdout' and 'stderr' file names\n");
-	printf("\t(if you use stdout for midi or printer, set log to stderr).\n");
-	printf("\tSetting the file to 'none', disables given device or disk\n");
+	printf("\nSpecial option values:\n"
+	       "<bool>\tDisable by using 'n', 'no', 'off', 'false', or '0'\n"
+	       "\tEnable by using 'y', 'yes', 'on', 'true' or '1'\n"
+	       "<file>\tDevices accept also special 'stdout' and 'stderr' file names\n"
+	       "\t(if you use stdout for midi or printer, set log to stderr).\n"
+	       "\tSetting the file to 'none', disables given device or disk\n");
 }
 
 
@@ -794,6 +817,23 @@ static bool Opt_CountryCode(const char *arg, int optid, int *conf)
 }
 
 /**
+ * Parse "<drive>=<value>". If single digit "<drive>" and/or '=' missing,
+ * assume drive ID 0, and interpret whole arg as "<value>".
+ * Return parsed "<value>", and set "<drive>".
+ */
+static const char *Opt_DriveValue(const char *arg, int *drive)
+{
+	if (strlen(arg) > 2 && isdigit((unsigned char)arg[0]) && arg[1] == '=')
+	{
+		*drive = arg[0] - '0';
+		return arg + 2;
+	}
+	*drive = 0;
+	return arg;
+}
+
+
+/**
  * checks str argument against options of type "--option<digit>".
  * If match is found, returns ID for that, otherwise OPT_CONTINUE
  * and OPT_ERROR for errors.
@@ -898,15 +938,14 @@ static int Opt_WhichOption(int argc, const char * const argv[], int idx)
 
 
 /**
- * If 'checkexits' is true, assume 'src' is a file and check whether it
- * exists before copying 'src' to 'dst'. Otherwise just copy option src
- * string to dst.
+ * When 'check' is set, check whether given 'src' exists before copying
+ * 'src' to 'dst'. Otherwise just copy option 'src' string to 'dst'.
  * If a pointer to (bool) 'option' is given, set that option to true.
  * - However, if src is "none", leave dst unmodified & set option to false.
  *   ("none" is used to disable options related to file arguments)
  * Return false if there were errors, otherwise true
  */
-static bool Opt_StrCpy(int optid, bool checkexist, char *dst, const char *src, size_t dstlen, bool *option)
+static bool Opt_StrCpy(int optid, fs_check_t check, char *dst, const char *src, size_t dstlen, bool *option)
 {
 	if (option)
 	{
@@ -918,12 +957,27 @@ static bool Opt_StrCpy(int optid, bool checkexist, char *dst, const char *src, s
 	}
 	if (strlen(src) >= dstlen)
 	{
-		return Opt_ShowError(optid, src, "File name too long!");
+		return Opt_ShowError(optid, src, "Path too long!");
 	}
-	if (checkexist && !File_Exists(src))
+
+	switch (check)
 	{
-		return Opt_ShowError(optid, src, "Given file doesn't exist or permissions prevent access to it!");
+	case CHECK_NONE:
+		break;
+	case CHECK_FILE:
+		if (!File_Exists(src))
+		{
+			return Opt_ShowError(optid, src, "Given file doesn't exist or permissions prevent access to it!");
+		}
+		break;
+	case CHECK_DIR:
+		if (!File_DirExists(src))
+		{
+			return Opt_ShowError(optid, src, "Given directory doesn't exist or permissions prevent access to it!");
+		}
+		break;
 	}
+
 	if (option)
 	{
 		*option = true;
@@ -973,29 +1027,6 @@ bool Opt_IsAtariProgram(const char *path)
 	return ret;
 }
 
-#ifdef __LIBRETRO__
-extern int Reset_Cold(void);
-extern bool core_first_reset;
-extern void core_auto_start(const char* path);
-extern void core_auto_res(const char* res);
-void core_auto_start(const char* path)
-{
-	if (core_first_reset) // only allowed at first boot
-	{
-		INF_SetAutoStart(path, OPT_AUTOSTART);
-		Reset_Cold(); // applies via Cart_ResetImage()
-	}
-}
-void core_auto_res(const char* res)
-{
-	if (core_first_reset) // only allowed at first boot
-	{
-		INF_SetResolution(res, OPT_TOS_RESOLUTION);
-		Reset_Cold(); // applies via Cart_ResetImage()
-	}
-}
-#endif
-
 /**
  * Handle last (non-option) argument.  It can be a path or filename.
  * Filename can be a disk image or Atari program.
@@ -1040,11 +1071,11 @@ static bool Opt_HandleArgument(const char *path)
 		path = dir;
 	}
 
-	/* GEMDOS HDD directory (as argument, or for the Atari program)? */
+	/* GEMDOS HDD directory (as path arg, or dir for the Atari program)? */
 	if (File_DirExists(path))
 	{
 		Log_Printf(LOG_DEBUG, "ARG = GEMDOS HD dir: %s\n", path);
-		if (Opt_StrCpy(OPT_HARDDRIVE, false, ConfigureParams.HardDisk.szHardDiskDirectories[0],
+		if (Opt_StrCpy(OPT_HARDDRIVE, CHECK_NONE, ConfigureParams.HardDisk.szHardDiskDirectories[0],
 			       path, sizeof(ConfigureParams.HardDisk.szHardDiskDirectories[0]),
 			       &ConfigureParams.HardDisk.bUseHardDiskDirectories)
 		    && ConfigureParams.HardDisk.bUseHardDiskDirectories)
@@ -1058,16 +1089,8 @@ static bool Opt_HandleArgument(const char *path)
 		}
 		return true;
 	}
-	else
-	{
-		if (dir)
-		{
-			/* if dir is set, it should be valid... */
-			Log_Printf(LOG_ERROR, "Given atari program path '%s' doesn't exist (anymore?)!\n", dir);
-			free(dir);
-			exit(1);
-		}
-	}
+	/* something wrong if path to an existing prg has no valid dir */
+	assert(!dir);
 
 	/* disk image? */
 	if (Floppy_SetDiskFileName(0, path, NULL))
@@ -1093,6 +1116,7 @@ bool Opt_ParseParameters(int argc, const char * const argv[])
 	int i, ok = true;
 	float zoom;
 	int val;
+	bool valid;
 
 	/* Defaults for loading initial memory snap-shots */
 	bLoadMemorySave = false;
@@ -1134,10 +1158,14 @@ bool Opt_ParseParameters(int argc, const char * const argv[])
 			}
 			break;
 
+		case OPT_FF_KEY_REPEAT:
+			ok = Opt_Bool(argv[++i], OPT_FF_KEY_REPEAT, &ConfigureParams.Keyboard.bFastForwardKeyRepeat);
+			break;
+
 		case OPT_CONFIGFILE:
 			i += 1;
 			/* true -> file needs to exist */
-			ok = Opt_StrCpy(OPT_CONFIGFILE, true, sConfigFileName,
+			ok = Opt_StrCpy(OPT_CONFIGFILE, CHECK_FILE, sConfigFileName,
 					argv[i], sizeof(sConfigFileName), NULL);
 			if (ok)
 			{
@@ -1357,13 +1385,14 @@ bool Opt_ParseParameters(int argc, const char * const argv[])
 		case OPT_AVIRECORD_FILE:
 			i += 1;
 			/* false -> file is created if it doesn't exist */
-			ok = Opt_StrCpy(OPT_AVIRECORD_FILE, false, ConfigureParams.Video.AviRecordFile,
+			ok = Opt_StrCpy(OPT_AVIRECORD_FILE, CHECK_NONE, ConfigureParams.Video.AviRecordFile,
 					argv[i], sizeof(ConfigureParams.Video.AviRecordFile), NULL);
 			break;
 
 		case OPT_SCRSHOT_DIR:
 			i += 1;
-			Paths_SetScreenShotDir(argv[i]);
+			ok = Opt_StrCpy(OPT_SCRSHOT_DIR, CHECK_DIR, ConfigureParams.Screen.szScreenShotDir,
+					argv[i], sizeof(ConfigureParams.Screen.szScreenShotDir), NULL);
 			break;
 
 		case OPT_SCRSHOT_FORMAT:
@@ -1474,7 +1503,7 @@ bool Opt_ParseParameters(int argc, const char * const argv[])
 		case OPT_PRINTER:
 			i += 1;
 			/* "none" can be used to disable printer */
-			ok = Opt_StrCpy(OPT_PRINTER, false, ConfigureParams.Printer.szPrintToFileName,
+			ok = Opt_StrCpy(OPT_PRINTER, CHECK_NONE, ConfigureParams.Printer.szPrintToFileName,
 					argv[i], sizeof(ConfigureParams.Printer.szPrintToFileName),
 					&ConfigureParams.Printer.bEnablePrinting);
 			break;
@@ -1486,14 +1515,14 @@ bool Opt_ParseParameters(int argc, const char * const argv[])
 #else
 		case OPT_MIDI_IN:
 			i += 1;
-			ok = Opt_StrCpy(OPT_MIDI_IN, true, ConfigureParams.Midi.sMidiInFileName,
+			ok = Opt_StrCpy(OPT_MIDI_IN, CHECK_FILE, ConfigureParams.Midi.sMidiInFileName,
 					argv[i], sizeof(ConfigureParams.Midi.sMidiInFileName),
 					&ConfigureParams.Midi.bEnableMidi);
 			break;
 
 		case OPT_MIDI_OUT:
 			i += 1;
-			ok = Opt_StrCpy(OPT_MIDI_OUT, false, ConfigureParams.Midi.sMidiOutFileName,
+			ok = Opt_StrCpy(OPT_MIDI_OUT, CHECK_NONE, ConfigureParams.Midi.sMidiOutFileName,
 					argv[i], sizeof(ConfigureParams.Midi.sMidiOutFileName),
 					&ConfigureParams.Midi.bEnableMidi);
 			break;
@@ -1501,51 +1530,51 @@ bool Opt_ParseParameters(int argc, const char * const argv[])
 
 		case OPT_RS232_IN:
 			i += 1;
-			ok = Opt_StrCpy(OPT_RS232_IN, true, ConfigureParams.RS232.szInFileName,
+			ok = Opt_StrCpy(OPT_RS232_IN, CHECK_FILE, ConfigureParams.RS232.szInFileName,
 					argv[i], sizeof(ConfigureParams.RS232.szInFileName),
 					&ConfigureParams.RS232.bEnableRS232);
 			break;
 
 		case OPT_RS232_OUT:
 			i += 1;
-			ok = Opt_StrCpy(OPT_RS232_OUT, false, ConfigureParams.RS232.szOutFileName,
+			ok = Opt_StrCpy(OPT_RS232_OUT, CHECK_NONE, ConfigureParams.RS232.szOutFileName,
 					argv[i], sizeof(ConfigureParams.RS232.szOutFileName),
 					&ConfigureParams.RS232.bEnableRS232);
 			break;
 
 		case OPT_SCCA_IN:
 			i += 1;
-			ok = Opt_StrCpy(OPT_SCCA_IN, true, ConfigureParams.RS232.SccInFileName[CNF_SCC_CHANNELS_A_SERIAL],
+			ok = Opt_StrCpy(OPT_SCCA_IN, CHECK_FILE, ConfigureParams.RS232.SccInFileName[CNF_SCC_CHANNELS_A_SERIAL],
 					argv[i], sizeof(ConfigureParams.RS232.SccInFileName[CNF_SCC_CHANNELS_A_SERIAL]),
 					&ConfigureParams.RS232.EnableScc[CNF_SCC_CHANNELS_A_SERIAL]);
 			break;
 		case OPT_SCCA_OUT:
 			i += 1;
-			ok = Opt_StrCpy(OPT_SCCA_OUT, false, ConfigureParams.RS232.SccOutFileName[CNF_SCC_CHANNELS_A_SERIAL],
+			ok = Opt_StrCpy(OPT_SCCA_OUT, CHECK_NONE, ConfigureParams.RS232.SccOutFileName[CNF_SCC_CHANNELS_A_SERIAL],
 					argv[i], sizeof(ConfigureParams.RS232.SccOutFileName[CNF_SCC_CHANNELS_A_SERIAL]),
 					&ConfigureParams.RS232.EnableScc[CNF_SCC_CHANNELS_A_SERIAL]);
 			break;
 		case OPT_SCCA_LAN_IN:
 			i += 1;
-			ok = Opt_StrCpy(OPT_SCCA_LAN_IN, true, ConfigureParams.RS232.SccInFileName[CNF_SCC_CHANNELS_A_LAN],
+			ok = Opt_StrCpy(OPT_SCCA_LAN_IN, CHECK_FILE, ConfigureParams.RS232.SccInFileName[CNF_SCC_CHANNELS_A_LAN],
 					argv[i], sizeof(ConfigureParams.RS232.SccInFileName[CNF_SCC_CHANNELS_A_LAN]),
 					&ConfigureParams.RS232.EnableScc[CNF_SCC_CHANNELS_A_LAN]);
 			break;
 		case OPT_SCCA_LAN_OUT:
 			i += 1;
-			ok = Opt_StrCpy(OPT_SCCA_LAN_OUT, false, ConfigureParams.RS232.SccOutFileName[CNF_SCC_CHANNELS_A_LAN],
+			ok = Opt_StrCpy(OPT_SCCA_LAN_OUT, CHECK_NONE, ConfigureParams.RS232.SccOutFileName[CNF_SCC_CHANNELS_A_LAN],
 					argv[i], sizeof(ConfigureParams.RS232.SccOutFileName[CNF_SCC_CHANNELS_A_LAN]),
 					&ConfigureParams.RS232.EnableScc[CNF_SCC_CHANNELS_A_LAN]);
 			break;
 		case OPT_SCCB_IN:
 			i += 1;
-			ok = Opt_StrCpy(OPT_SCCB_IN, true, ConfigureParams.RS232.SccInFileName[CNF_SCC_CHANNELS_B],
+			ok = Opt_StrCpy(OPT_SCCB_IN, CHECK_FILE, ConfigureParams.RS232.SccInFileName[CNF_SCC_CHANNELS_B],
 					argv[i], sizeof(ConfigureParams.RS232.SccInFileName[CNF_SCC_CHANNELS_B]),
 					&ConfigureParams.RS232.EnableScc[CNF_SCC_CHANNELS_B]);
 			break;
 		case OPT_SCCB_OUT:
 			i += 1;
-			ok = Opt_StrCpy(OPT_SCCB_OUT, false, ConfigureParams.RS232.SccOutFileName[CNF_SCC_CHANNELS_B],
+			ok = Opt_StrCpy(OPT_SCCB_OUT, CHECK_NONE, ConfigureParams.RS232.SccOutFileName[CNF_SCC_CHANNELS_B],
 					argv[i], sizeof(ConfigureParams.RS232.SccOutFileName[CNF_SCC_CHANNELS_B]),
 					&ConfigureParams.RS232.EnableScc[CNF_SCC_CHANNELS_B]);
 			break;
@@ -1671,7 +1700,7 @@ bool Opt_ParseParameters(int argc, const char * const argv[])
 
 		case OPT_HARDDRIVE:
 			i += 1;
-			ok = Opt_StrCpy(OPT_HARDDRIVE, false, ConfigureParams.HardDisk.szHardDiskDirectories[0],
+			ok = Opt_StrCpy(OPT_HARDDRIVE, CHECK_DIR, ConfigureParams.HardDisk.szHardDiskDirectories[0],
 					argv[i], sizeof(ConfigureParams.HardDisk.szHardDiskDirectories[0]),
 					&ConfigureParams.HardDisk.bUseHardDiskDirectories);
 			if (ok && ConfigureParams.HardDisk.bUseHardDiskDirectories &&
@@ -1689,19 +1718,11 @@ bool Opt_ParseParameters(int argc, const char * const argv[])
 
 		case OPT_ACSIHDIMAGE:
 			i += 1;
-			str = argv[i];
-			if (strlen(str) > 2 && isdigit((unsigned char)str[0]) && str[1] == '=')
-			{
-				drive = str[0] - '0';
-				if (drive < 0 || drive >= MAX_ACSI_DEVS)
-					return Opt_ShowError(OPT_ACSIHDIMAGE, str, "Invalid ACSI drive <id>, must be 0-7");
-				str += 2;
-			}
-			else
-			{
-				drive = 0;
-			}
-			ok = Opt_StrCpy(OPT_ACSIHDIMAGE, true, ConfigureParams.Acsi[drive].sDeviceFile,
+			str = Opt_DriveValue(argv[i], &drive);
+			if (drive < 0 || drive >= MAX_ACSI_DEVS)
+				return Opt_ShowError(OPT_ACSIHDIMAGE, str, "Invalid ACSI drive <id>, must be 0-7");
+
+			ok = Opt_StrCpy(OPT_ACSIHDIMAGE, CHECK_FILE, ConfigureParams.Acsi[drive].sDeviceFile,
 					str, sizeof(ConfigureParams.Acsi[drive].sDeviceFile),
 					&ConfigureParams.Acsi[drive].bUseDevice);
 			if (ok)
@@ -1712,19 +1733,11 @@ bool Opt_ParseParameters(int argc, const char * const argv[])
 
 		case OPT_SCSIHDIMAGE:
 			i += 1;
-			str = argv[i];
-			if (strlen(str) > 2 && isdigit((unsigned char)str[0]) && str[1] == '=')
-			{
-				drive = str[0] - '0';
-				if (drive < 0 || drive >= MAX_SCSI_DEVS)
-					return Opt_ShowError(OPT_SCSIHDIMAGE, str, "Invalid SCSI drive <id>, must be 0-7");
-				str += 2;
-			}
-			else
-			{
-				drive = 0;
-			}
-			ok = Opt_StrCpy(OPT_SCSIHDIMAGE, true, ConfigureParams.Scsi[drive].sDeviceFile,
+			str = Opt_DriveValue(argv[i], &drive);
+			if (drive < 0 || drive >= MAX_SCSI_DEVS)
+				return Opt_ShowError(OPT_SCSIHDIMAGE, str, "Invalid SCSI drive <id>, must be 0-7");
+
+			ok = Opt_StrCpy(OPT_SCSIHDIMAGE, CHECK_FILE, ConfigureParams.Scsi[drive].sDeviceFile,
 					str, sizeof(ConfigureParams.Scsi[drive].sDeviceFile),
 					&ConfigureParams.Scsi[drive].bUseDevice);
 			if (ok)
@@ -1733,9 +1746,23 @@ bool Opt_ParseParameters(int argc, const char * const argv[])
 			}
 			break;
 
+		case OPT_SCSIVERSION:
+			i += 1;
+			str = Opt_DriveValue(argv[i], &drive);
+			if (drive < 0 || drive >= MAX_SCSI_DEVS)
+				return Opt_ShowError(OPT_SCSIVERSION, str, "Invalid SCSI drive <id>, must be 0-7");
+
+			if (strcmp(str, "1") == 0)
+				ConfigureParams.Scsi[drive].nScsiVersion = 1;
+			else if (strcmp(str, "2") == 0)
+				ConfigureParams.Scsi[drive].nScsiVersion = 2;
+			else
+				return Opt_ShowError(OPT_SCSIVERSION, argv[i], "Invalid SCSI version");
+			break;
+
 		case OPT_IDEMASTERHDIMAGE:
 			i += 1;
-			ok = Opt_StrCpy(OPT_IDEMASTERHDIMAGE, true, ConfigureParams.Ide[0].sDeviceFile,
+			ok = Opt_StrCpy(OPT_IDEMASTERHDIMAGE, CHECK_FILE, ConfigureParams.Ide[0].sDeviceFile,
 					argv[i], sizeof(ConfigureParams.Ide[0].sDeviceFile),
 					&ConfigureParams.Ide[0].bUseDevice);
 			if (ok)
@@ -1746,7 +1773,7 @@ bool Opt_ParseParameters(int argc, const char * const argv[])
 
 		case OPT_IDESLAVEHDIMAGE:
 			i += 1;
-			ok = Opt_StrCpy(OPT_IDESLAVEHDIMAGE, true, ConfigureParams.Ide[1].sDeviceFile,
+			ok = Opt_StrCpy(OPT_IDESLAVEHDIMAGE, CHECK_FILE, ConfigureParams.Ide[1].sDeviceFile,
 					argv[i], sizeof(ConfigureParams.Ide[1].sDeviceFile),
 					&ConfigureParams.Ide[1].bUseDevice);
 			if (ok)
@@ -1757,18 +1784,10 @@ bool Opt_ParseParameters(int argc, const char * const argv[])
 
 		case OPT_IDEBYTESWAP:
 			i += 1;
-			str = argv[i];
-			if (strlen(str) > 2 && isdigit((unsigned char)str[0]) && str[1] == '=')
-			{
-				drive = str[0] - '0';
-				if (drive < 0 || drive > 1)
-					return Opt_ShowError(OPT_IDEBYTESWAP, str, "Invalid IDE drive <id>, must be 0/1");
-				str += 2;
-			}
-			else
-			{
-				drive = 0;
-			}
+			str = Opt_DriveValue(argv[i], &drive);
+			if (drive < 0 || drive > 1)
+				return Opt_ShowError(OPT_IDEBYTESWAP, str, "Invalid IDE drive <id>, must be 0/1");
+
 			if (strcasecmp(str, "off") == 0)
 				ConfigureParams.Ide[drive].nByteSwap = BYTESWAP_OFF;
 			else if (strcasecmp(str, "on") == 0)
@@ -1799,7 +1818,7 @@ bool Opt_ParseParameters(int argc, const char * const argv[])
 
 		case OPT_TOS:
 			i += 1;
-			ok = Opt_StrCpy(OPT_TOS, true, ConfigureParams.Rom.szTosImageFileName,
+			ok = Opt_StrCpy(OPT_TOS, CHECK_FILE, ConfigureParams.Rom.szTosImageFileName,
 					argv[i], sizeof(ConfigureParams.Rom.szTosImageFileName),
 					&bUseTos);
 			if (ok || !bUseTos)
@@ -1814,7 +1833,7 @@ bool Opt_ParseParameters(int argc, const char * const argv[])
 
 		case OPT_CARTRIDGE:
 			i += 1;
-			ok = Opt_StrCpy(OPT_CARTRIDGE, true, ConfigureParams.Rom.szCartridgeImageFileName,
+			ok = Opt_StrCpy(OPT_CARTRIDGE, CHECK_FILE, ConfigureParams.Rom.szCartridgeImageFileName,
 					argv[i], sizeof(ConfigureParams.Rom.szCartridgeImageFileName),
 					NULL);
 			if (ok)
@@ -1825,7 +1844,7 @@ bool Opt_ParseParameters(int argc, const char * const argv[])
 
 		case OPT_MEMSTATE:
 			i += 1;
-			ok = Opt_StrCpy(OPT_MEMSTATE, true, ConfigureParams.Memory.szMemoryCaptureFileName,
+			ok = Opt_StrCpy(OPT_MEMSTATE, CHECK_FILE, ConfigureParams.Memory.szMemoryCaptureFileName,
 					argv[i], sizeof(ConfigureParams.Memory.szMemoryCaptureFileName),
 					NULL);
 			if (ok)
@@ -1868,6 +1887,11 @@ bool Opt_ParseParameters(int argc, const char * const argv[])
 			break;
 		case OPT_CPU_ADDR24:
 			ok = Opt_Bool(argv[++i], OPT_CPU_ADDR24, &ConfigureParams.System.bAddressSpace24);
+			bLoadAutoSave = false;
+			break;
+
+		case OPT_CPU_DATA_CACHE:
+			ok = Opt_Bool(argv[++i], OPT_CPU_DATA_CACHE, &ConfigureParams.System.bCpuDataCache);
 			bLoadAutoSave = false;
 			break;
 
@@ -2018,23 +2042,6 @@ bool Opt_ParseParameters(int argc, const char * const argv[])
 			bLoadAutoSave = false;
 			break;
 
-		case OPT_VME:
-			i += 1;
-			if (strcasecmp(argv[i], "dummy") == 0)
-			{
-				ConfigureParams.System.nVMEType = VME_TYPE_DUMMY;
-			}
-			else if (strcasecmp(argv[i], "none") == 0 || strcasecmp(argv[i], "off") == 0)
-			{
-				ConfigureParams.System.nVMEType = VME_TYPE_NONE;
-			}
-			else
-			{
-				return Opt_ShowError(OPT_VME, argv[i], "Unknown VME type");
-			}
-			bLoadAutoSave = false; /* TODO: needed? */
-			break;
-
 		case OPT_RTC_YEAR:
 			year = atoi(argv[++i]);
 			if(year && (year < 1980 || year >= 2080))
@@ -2121,12 +2128,12 @@ bool Opt_ParseParameters(int argc, const char * const argv[])
 
 		case OPT_KEYMAPFILE:
 			i += 1;
-			ok = Opt_StrCpy(OPT_KEYMAPFILE, true, ConfigureParams.Keyboard.szMappingFileName,
+			ok = Opt_StrCpy(OPT_KEYMAPFILE, CHECK_FILE, ConfigureParams.Keyboard.szMappingFileName,
 					argv[i], sizeof(ConfigureParams.Keyboard.szMappingFileName),
-					NULL);
-			if (ok)
+					&valid);
+			if (ok && !valid)
 			{
-				ConfigureParams.Keyboard.nKeymapType = KEYMAP_LOADED;
+				ConfigureParams.Keyboard.szMappingFileName[0] = 0;
 			}
 			break;
 
@@ -2244,7 +2251,7 @@ bool Opt_ParseParameters(int argc, const char * const argv[])
 
 		case OPT_TRACEFILE:
 			i += 1;
-			ok = Opt_StrCpy(OPT_TRACEFILE, false, ConfigureParams.Log.sTraceFileName,
+			ok = Opt_StrCpy(OPT_TRACEFILE, CHECK_NONE, ConfigureParams.Log.sTraceFileName,
 					argv[i], sizeof(ConfigureParams.Log.sTraceFileName),
 					NULL);
 			break;
@@ -2273,7 +2280,7 @@ bool Opt_ParseParameters(int argc, const char * const argv[])
 
 		case OPT_LOGFILE:
 			i += 1;
-			ok = Opt_StrCpy(OPT_LOGFILE, false, ConfigureParams.Log.sLogFileName,
+			ok = Opt_StrCpy(OPT_LOGFILE, CHECK_NONE, ConfigureParams.Log.sLogFileName,
 					argv[i], sizeof(ConfigureParams.Log.sLogFileName),
 					NULL);
 			break;

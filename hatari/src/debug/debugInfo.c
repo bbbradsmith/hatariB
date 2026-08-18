@@ -38,12 +38,12 @@ const char DebugInfo_fileid[] = "Hatari debuginfo.c";
 #include "psg.h"
 #include "rtc.h"
 #include "stMemory.h"
+#include "scu_vme.h"
 #include "tos.h"
 #include "scc.h"
 #include "vdi.h"
 #include "video.h"
 #include "videl.h"
-#include "vme.h"
 #include "xbios.h"
 #include "newcpu.h"
 #include "68kDisass.h"
@@ -472,7 +472,7 @@ static uint32_t DebugInfo_DspMemArgs(int argc, char *argv[])
 		fprintf(stderr, "ERROR: invalid DSP address space '%s'!\n", argv[0]);
 		return 0;
 	}
-	if (!Eval_Number(argv[1], &value) || value > 0xffff) {
+	if (!Eval_Number(argv[1], &value, NUM_TYPE_DSP) || value > 0xffff) {
 		fprintf(stderr, "ERROR: invalid DSP address '%s'!\n", argv[1]);
 		return 0;
 	}
@@ -681,10 +681,10 @@ static const struct {
 	{ true, "registers", DebugInfo_CpuRegister,NULL, "Show CPU register contents" },
 	{ false,"rtc",       Rtc_Info,             NULL, "Show (Mega ST/STE) RTC register contents" },
 	{ false,"scc",       SCC_Info,             NULL, "Show SCC register contents" },
+	{ false,"scu",       SCU_Info,             NULL, "Show SCU/VME register information" },
 	{ false,"vdi",       VDI_Info,             NULL, "Show VDI vector contents (with <value>, show opcodes)" },
 	{ false,"videl",     Videl_Info,           NULL, "Show Falcon Videl register contents" },
 	{ false,"video",     Video_Info,           NULL, "Show Video information" },
-	{ false,"vme",       VME_Info,             NULL, "Show VME/SCU register information" },
 	{ false,"xbios",     XBios_Info,           NULL, "Show XBIOS opcodes" },
 	{ false,"ym",        PSG_Info,             NULL, "Show YM-2149 register contents" },
 };
@@ -780,7 +780,7 @@ int DebugInfo_Command(int nArgc, char *psArgs[])
 	} else {
 		if (nArgc > 2) {
 			/* value is normal number */
-			ok = Eval_Number(psArgs[2], &value);
+			ok = Eval_Number(psArgs[2], &value, NUM_TYPE_NORMAL);
 		} else {
 			value = 0;
 			ok = true;

@@ -25,6 +25,8 @@
 #include "stMemory.h"
 #include "sysdeps.h"
 
+uaecptr ide_addr = 0xf00000;
+
 int nIDEPartitions = 0;
 
 struct IDEState;
@@ -111,6 +113,11 @@ bool Ide_IsAvailable(void)
 	       (Config_IsMachineFalcon() && !ConfigureParams.System.bFastBoot);
 }
 
+bool Ide_IsValid(uaecptr address)
+{
+	return Ide_IsAvailable() && address >= ide_addr && address < ide_addr + 0x40;
+}
+
 /**
  * Convert Falcon IDE registers to "normal" IDE register numbers.
  * (taken from Aranym - cheers!)
@@ -156,7 +163,7 @@ uae_u32 REGPARAM3 Ide_Mem_bget(uaecptr addr)
 
 	addr &= 0x00ffffff;                           /* Use a 24 bit address */
 
-	if (addr >= 0xf00040 || !Ide_IsAvailable())
+	if (!Ide_IsValid(addr))
 	{
 		/* invalid memory addressing --> bus error */
 		M68000_BusError(addr_in, BUS_ERROR_READ, BUS_ERROR_SIZE_BYTE, BUS_ERROR_ACCESS_DATA, 0);
@@ -193,7 +200,7 @@ uae_u32 REGPARAM3 Ide_Mem_wget(uaecptr addr)
 
 	addr &= 0x00ffffff;                           /* Use a 24 bit address */
 
-	if (addr >= 0xf00040 || !Ide_IsAvailable())
+	if (!Ide_IsValid(addr))
 	{
 		/* invalid memory addressing --> bus error */
 		M68000_BusError(addr_in, BUS_ERROR_READ, BUS_ERROR_SIZE_WORD, BUS_ERROR_ACCESS_DATA, 0);
@@ -224,7 +231,7 @@ uae_u32 REGPARAM3 Ide_Mem_lget(uaecptr addr)
 
 	addr &= 0x00ffffff;                           /* Use a 24 bit address */
 
-	if (addr >= 0xf00040 || !Ide_IsAvailable())
+	if (!Ide_IsValid(addr))
 	{
 		/* invalid memory addressing --> bus error */
 		M68000_BusError(addr_in, BUS_ERROR_READ, BUS_ERROR_SIZE_LONG, BUS_ERROR_ACCESS_DATA, 0);
@@ -263,7 +270,7 @@ void REGPARAM3 Ide_Mem_bput(uaecptr addr, uae_u32 val)
 
 	LOG_TRACE(TRACE_IDE, "IDE: bput($%x, $%x)\n", addr, val);
 
-	if (addr >= 0xf00040 || !Ide_IsAvailable())
+	if (!Ide_IsValid(addr))
 	{
 		/* invalid memory addressing --> bus error */
 		M68000_BusError(addr_in, BUS_ERROR_WRITE, BUS_ERROR_SIZE_BYTE, BUS_ERROR_ACCESS_DATA, val);
@@ -295,7 +302,7 @@ void REGPARAM3 Ide_Mem_wput(uaecptr addr, uae_u32 val)
 
 	LOG_TRACE(TRACE_IDE, "IDE: wput($%x, $%x)\n", addr, val);
 
-	if (addr >= 0xf00040 || !Ide_IsAvailable())
+	if (!Ide_IsValid(addr))
 	{
 		/* invalid memory addressing --> bus error */
 		M68000_BusError(addr_in, BUS_ERROR_WRITE, BUS_ERROR_SIZE_WORD, BUS_ERROR_ACCESS_DATA, val);
@@ -320,7 +327,7 @@ void REGPARAM3 Ide_Mem_lput(uaecptr addr, uae_u32 val)
 
 	LOG_TRACE(TRACE_IDE, "IDE: lput($%x, $%x)\n", addr, val);
 
-	if (addr >= 0xf00040 || !Ide_IsAvailable())
+	if (!Ide_IsValid(addr))
 	{
 		/* invalid memory addressing --> bus error */
 		M68000_BusError(addr_in, BUS_ERROR_WRITE, BUS_ERROR_SIZE_LONG, BUS_ERROR_ACCESS_DATA, val);
@@ -393,11 +400,7 @@ struct BlockDriverState {
     void (*change_cb)(void *opaque);
     void *change_opaque;
 
-#ifndef __LIBRETRO__
     FILE *fhndl;
-#else
-    corefile* fhndl;
-#endif
     off_t file_size;
     int media_changed;
     int byteswap;
@@ -522,20 +525,12 @@ static int bdrv_read(BlockDriverState *bs, int64_t sector_num,
 
 	len = nb_sectors * bs->sector_size;
 
-#ifndef __LIBRETRO__
 	if (fseeko(bs->fhndl, sector_num * bs->sector_size, SEEK_SET) != 0)
-#else
-	if (core_file_seek(bs->fhndl, sector_num * bs->sector_size, SEEK_SET) != 0)
-#endif
 	{
 		perror("bdrv_read");
 		return -errno;
 	}
-#ifndef __LIBRETRO__
 	ret = fread(buf, 1, len, bs->fhndl);
-#else
-	ret = core_file_read(buf, 1, len, bs->fhndl);
-#endif
 	if (ret != len)
 	{
 		Log_Printf(LOG_ERROR, "IDE: bdrv_read error (%d != %d length) at sector %lu!\n",
@@ -579,11 +574,7 @@ static int bdrv_write(BlockDriverState *bs, int64_t sector_num,
 
 	len = nb_sectors * bs->sector_size;
 
-#ifndef __LIBRETRO__
 	if (fseeko(bs->fhndl, sector_num * bs->sector_size, SEEK_SET) != 0)
-#else
-	if (core_file_seek(bs->fhndl, sector_num * bs->sector_size, SEEK_SET) != 0)
-#endif
 	{
 		perror("bdrv_write");
 		return -errno;
@@ -591,12 +582,7 @@ static int bdrv_write(BlockDriverState *bs, int64_t sector_num,
 
 	if (!bs->byteswap)
 	{
-#ifndef __LIBRETRO__
 		ret = fwrite(buf, 1, len, bs->fhndl);
-#else
-		ret = 0;
-		if (core_hard_readonly != 1) ret = core_file_write(buf, 1, len, bs->fhndl);
-#endif
 	}
 	else
 	{
@@ -607,12 +593,7 @@ static int bdrv_write(BlockDriverState *bs, int64_t sector_num,
 		{
 			buf16[idx / 2] = SDL_Swap16(*(const uint16_t *)&buf[idx]);
 		}
-#ifndef __LIBRETRO__
 		ret = fwrite(buf16, 1, len, bs->fhndl);
-#else
-		ret = 0;
-		if (core_hard_readonly != 1) ret = core_file_write(buf16, 1, len, bs->fhndl);
-#endif
 		free(buf16);
 	}
 	if (ret != len)
@@ -645,19 +626,10 @@ static int bdrv_open(BlockDriverState *bs, const char *filename, unsigned long b
 		return -1;
 	}
 
-#ifndef __LIBRETRO__
 	bs->fhndl = fopen(filename, "rb+");
 	if (!bs->fhndl) {
 		/* Maybe the file is read-only? */
 		bs->fhndl = fopen(filename, "rb");
-#else
-	bs->fhndl = NULL;
-	if (core_hard_readonly != 1)
-		bs->fhndl = core_file_open_hard(filename, CORE_FILE_REVISE);
-	if (!bs->fhndl) {
-		/* Maybe the file is read-only? */
-		bs->fhndl = core_file_open_hard(filename, CORE_FILE_READ);
-#endif
 		if (!bs->fhndl)
 		{
 			perror("bdrv_open");
@@ -668,7 +640,6 @@ static int bdrv_open(BlockDriverState *bs, const char *filename, unsigned long b
 			     filename);
 		bs->read_only = 1;
 	}
-#ifndef __LIBRETRO__
 	else if (!File_Lock(bs->fhndl))
 	{
 		Log_AlertDlg(LOG_ERROR, "Locking IDE HD file for writing failed\n'%s'!\n", filename);
@@ -676,9 +647,6 @@ static int bdrv_open(BlockDriverState *bs, const char *filename, unsigned long b
 		bs->fhndl = NULL;
 		return -1;
 	}
-#else
-	// libretro does not have a file lock interface in its retro vfs
-#endif
 
 	/* call the change callback */
 	bs->media_changed = 1;
@@ -690,21 +658,13 @@ static int bdrv_open(BlockDriverState *bs, const char *filename, unsigned long b
 
 static void bdrv_flush(BlockDriverState *bs)
 {
-#ifndef __LIBRETRO__
 	fflush(bs->fhndl);
-#else
-	core_file_flush(bs->fhndl);
-#endif
 }
 
 static void bdrv_close(BlockDriverState *bs)
 {
-#ifndef __LIBRETRO__
 	File_UnLock(bs->fhndl);
 	fclose(bs->fhndl);
-#else
-	core_file_close(bs->fhndl);
-#endif
 	bs->fhndl = NULL;
 }
 
@@ -2822,9 +2782,6 @@ void Ide_Init(void)
 			int is_byteswap;
 			if (bdrv_open(hd_table[i], ConfigureParams.Ide[i].sDeviceFile, ConfigureParams.Ide[i].nBlockSize, 0) < 0)
 			{
-#ifdef __LIBRETRO__
-				core_signal_error("Failed to open IDE hard disk image: ",ConfigureParams.Ide[i].sDeviceFile);
-#endif
 				ConfigureParams.Ide[i].bUseDevice = false;
 				continue;
 			}

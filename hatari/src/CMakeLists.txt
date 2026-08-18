@@ -7,9 +7,9 @@ set(SOURCES
 	ioMem.c ioMemTabST.c ioMemTabSTE.c ioMemTabTT.c ioMemTabFalcon.c joy.c
 	keymap.c m68000.c main.c midi.c memorySnapShot.c mfp.c nf_scsidrv.c
 	ncr5380.c paths.c  psg.c printer.c resolution.c rs232.c reset.c rtc.c
-	scandir.c scc.c stMemory.c screen.c screenConvert.c screenSnapShot.c
+	scandir.c scc.c scu_vme.c stMemory.c screen.c screenConvert.c screenSnapShot.c
 	shortcut.c sound.c spec512.c statusbar.c str.c tos.c utils.c
-	vdi.c vme.c inffile.c video.c wavFormat.c xbios.c ymFormat.c lilo.c)
+	vdi.c inffile.c video.c wavFormat.c xbios.c ymFormat.c lilo.c)
 
 if(EMSCRIPTEN)
 	set(SOURCES ${SOURCES} emscripten.js emscripten_shell.html)
@@ -18,7 +18,7 @@ endif()
 # Disk image code is shared with the hmsa tool, so we put it into a library:
 add_library(Floppy createBlankImage.c dim.c msa.c st.c zip.c utils.c)
 
-if(0) # hatariB - remove platform specific gui code
+file(GLOB TOS_IMG_FILE tos.img LIST_DIRECTORIES false)
 
 # When building for macOS, define specific sources for gui and resources
 if(ENABLE_OSX_BUNDLE)
@@ -27,7 +27,8 @@ if(ENABLE_OSX_BUNDLE)
 	    gui-osx/CreateFloppyController.m gui-osx/SDLMain.m gui-osx/paths.m)
 	set_source_files_properties(${GUIOSX_SOURCES} PROPERTIES LANGUAGE C)
 	set(GUIOSX_RSRCS
-	    Hatari.icns gui-osx/stdisk.png gui-osx/en.lproj gui-osx/fr.lproj)
+	    Hatari.icns gui-osx/stdisk.png gui-osx/en.lproj gui-osx/fr.lproj
+	    ${TOS_IMG_FILE})
 	set(GUIOSX_DOCS
 	    ${CMAKE_SOURCE_DIR}/doc/manual.html ${CMAKE_SOURCE_DIR}/doc/images
 	    ${CMAKE_SOURCE_DIR}/doc/compatibility.html ${CMAKE_SOURCE_DIR}/doc/toc.js )
@@ -49,8 +50,6 @@ if(WIN32)
 		    "${CMAKE_EXE_LINKER_FLAGS} -mwindows -Wl,--as-needed -lssp")
 	endif(CMAKE_COMPILER_IS_GNUCC)
 endif(WIN32)
-
-endif(0) # hatariB - remove platform specific gui code
 
 include_directories(includes debug falcon
 		    ${CMAKE_BINARY_DIR} ${SDL2_INCLUDE_DIRS} cpu)
@@ -90,26 +89,29 @@ add_subdirectory(falcon)
 add_subdirectory(gui-sdl)
 add_subdirectory(cpu)
 
-if(0) # hatariB - remove platform specific gui code
-
 # When building for macOS, add specific sources
 if(ENABLE_OSX_BUNDLE)
-	set_source_files_properties(${FRAMEWORKS} PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
-	add_executable(${APP_NAME} MACOSX_BUNDLE ${GUIOSX_RSRCS} ${GUIOSX_DOCS} ${SOURCES} ${GUIOSX_SOURCES} ${FRAMEWORKS})
+	add_executable(${APP_NAME} MACOSX_BUNDLE ${GUIOSX_RSRCS} ${GUIOSX_DOCS} ${SOURCES} ${GUIOSX_SOURCES})
 	set_target_properties(${APP_NAME} PROPERTIES MACOSX_BUNDLE_INFO_PLIST
 			      ${CMAKE_CURRENT_SOURCE_DIR}/gui-osx/Info-Hatari.plist)
 	set_target_properties(${APP_NAME} PROPERTIES INSTALL_RPATH
 			      "@executable_path/../Frameworks")
 	set_target_properties(${APP_NAME} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
 	set(MACOSX_BUNDLE_ICON_FILE Hatari.icns)
-	set(MACOSX_BUNDLE_GUI_IDENTIFIER org.tuxfamily.Hatari)
+	set(MACOSX_BUNDLE_GUI_IDENTIFIER org.hatari-emu.Hatari)
 	if(CMAKE_GENERATOR MATCHES "Xcode")
+		set_target_properties(${APP_NAME} PROPERTIES
+				      XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER
+				      "org.hatari-emu.Hatari")
 		set(BUNDLE_CONTENTS ${CMAKE_CURRENT_BINARY_DIR}/\${CONFIGURATION}/${APP_NAME}.app/Contents)
 	else()
 		set(BUNDLE_CONTENTS ${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}.app/Contents)
 	endif()
 	if(PNG_FOUND)
 		set(COPY_PNG cp -R ${PNG_LIBRARY} ${BUNDLE_CONTENTS}/Frameworks/)
+	endif()
+	if(CapsImage_FOUND)
+		set(COPY_CAPSIMAGE cp -R ${CAPSIMAGE_LIBRARY} ${BUNDLE_CONTENTS}/Frameworks/)
 	endif()
 	# Create the Hatari.icns file
 	set(ICONSDIR ${CMAKE_SOURCE_DIR}/share/icons/hicolor/)
@@ -140,6 +142,9 @@ if(ENABLE_OSX_BUNDLE)
 	)
 	# Create Hatari.app bundle
 	add_custom_target(osx_bundle_dirs
+			COMMAND rm -rf ${BUNDLE_CONTENTS}/Resources
+			COMMAND rm -rf ${BUNDLE_CONTENTS}/Frameworks
+			COMMAND rm -rf ${BUNDLE_CONTENTS}/MacOS
 			COMMAND mkdir -p ${BUNDLE_CONTENTS}/Resources
 			COMMAND mkdir -p ${BUNDLE_CONTENTS}/Frameworks
 			COMMAND mkdir -p ${BUNDLE_CONTENTS}/MacOS
@@ -154,6 +159,7 @@ if(ENABLE_OSX_BUNDLE)
 			# Copy Frameworks to Bundle
 			COMMAND cp -R ${SDL2_LIBDIR} ${BUNDLE_CONTENTS}/Frameworks/
 			COMMAND ${COPY_PNG}
+			COMMAND ${COPY_CAPSIMAGE}
 			DEPENDS ${MACOSX_BUNDLE_ICON_FILE}
 	)
 	add_dependencies(${APP_NAME} osx_bundle_dirs)
@@ -268,13 +274,7 @@ if(ENABLE_OSX_BUNDLE)
 else()
 	install(TARGETS ${APP_NAME} RUNTIME DESTINATION ${BINDIR})
 	install(FILES hatari-icon.bmp DESTINATION ${DATADIR})
-	file(GLOB TOS_IMG_FILE tos.img)
 	if(TOS_IMG_FILE)
-		install(FILES tos.img DESTINATION ${DATADIR})
+		install(FILES ${TOS_IMG_FILE} DESTINATION ${DATADIR})
 	endif(TOS_IMG_FILE)
 endif(ENABLE_OSX_BUNDLE)
-
-endif(0) # hatariB - remove platform specific gui code
-
-# hatariB - removed exectuable build, addded core library target
-add_library(core ${SOURCES})

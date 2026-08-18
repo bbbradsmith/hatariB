@@ -19,6 +19,7 @@ const char HDC_fileid[] = "Hatari hdc.c";
 #include "hdc.h"
 #include "ioMem.h"
 #include "log.h"
+#include "m68000.h"
 #include "memorySnapShot.h"
 #include "mfp.h"
 #include "ncr5380.h"
@@ -187,11 +188,7 @@ static void HDC_Cmd_Seek(SCSI_CTRLR *ctr)
 	          HDC_CmdInfoStr(ctr), dev->nLastBlockAddr);
 
 	if (dev->nLastBlockAddr < dev->hdSize &&
-#ifndef __LIBRETRO__
 	    fseeko(dev->image_file, (off_t)dev->nLastBlockAddr * dev->blockSize, SEEK_SET) == 0)
-#else
-	    core_file_seek(dev->image_file, (off_t)dev->nLastBlockAddr * dev->blockSize, SEEK_SET) == 0)
-#endif
 	{
 		LOG_TRACE(TRACE_SCSI_CMD, " -> OK\n");
 		ctr->status = HD_STATUS_OK;
@@ -233,6 +230,7 @@ static void HDC_Cmd_Inquiry(SCSI_CTRLR *ctr)
 	 * Peripheral Device Type according to the SCSI standard */
 	buf[0] = HDC_GetLUN(ctr) == 0 ? 0 : 0x7F;
 
+	buf[2] = dev->scsi_version;
 	buf[4] = count - 5;
 
 	ctr->status = HD_STATUS_OK;
@@ -255,13 +253,13 @@ static void HDC_Cmd_RequestSense(SCSI_CTRLR *ctr)
 
 	LOG_TRACE(TRACE_SCSI_CMD, "HDC: REQUEST SENSE (%s).\n", HDC_CmdInfoStr(ctr));
 
-	if ((nRetLen < 4 && nRetLen != 0) || nRetLen > 22)
+	if ((nRetLen < 4 && nRetLen != 0) || nRetLen > 252)
 	{
 		Log_Printf(LOG_WARN, "HDC: *** Strange REQUEST SENSE ***!\n");
 	}
 
 	/* Limit to sane length */
-	if (nRetLen <= 0)
+	if (nRetLen == 0 && dev->scsi_version == 1)
 	{
 		nRetLen = 4;
 	}
@@ -405,6 +403,13 @@ static void HDC_Cmd_ModeSense(SCSI_CTRLR *ctr)
 
 	dev->bSetLastBlockAddr = false;
 
+	// Subpages are not supported
+	if(ctr->command[3]) {
+		ctr->status = HD_STATUS_ERROR;
+		dev->nLastError = HD_REQSENS_INVARG;
+		return;
+	}
+
 	switch(ctr->command[2])
 	{
 	 case 0x00:
@@ -425,7 +430,7 @@ static void HDC_Cmd_ModeSense(SCSI_CTRLR *ctr)
 		buf = HDC_PrepRespBuf(ctr, 44);
 		HDC_CmdModeSense0x04(dev, ctr, buf + 4);
 		HDC_CmdModeSense0x00(dev, ctr, buf + 28);
-		buf[0] = 44;
+		buf[0] = 43;
 		buf[1] = 0;
 		buf[2] = 0;
 		buf[3] = 0;
@@ -527,11 +532,7 @@ static void HDC_Cmd_WriteSector(SCSI_CTRLR *ctr)
 
 	/* seek to the position */
 	if (dev->nLastBlockAddr >= dev->hdSize ||
-#ifndef __LIBRETRO__
 	    fseeko(dev->image_file, (off_t)dev->nLastBlockAddr * dev->blockSize, SEEK_SET) != 0)
-#else
-	    core_file_seek(dev->image_file, (off_t)dev->nLastBlockAddr * dev->blockSize, SEEK_SET) != 0)
-#endif
 	{
 		ctr->status = HD_STATUS_ERROR;
 		dev->nLastError = HD_REQSENS_INVADDR;
@@ -576,11 +577,7 @@ static void HDC_Cmd_ReadSector(SCSI_CTRLR *ctr)
 
 	/* seek to the position */
 	if (dev->nLastBlockAddr >= dev->hdSize ||
-#ifndef __LIBRETRO__
 	    fseeko(dev->image_file, (off_t)dev->nLastBlockAddr * dev->blockSize, SEEK_SET) != 0)
-#else
-	    core_file_seek(dev->image_file, (off_t)dev->nLastBlockAddr * dev->blockSize, SEEK_SET) != 0)
-#endif
 	{
 		ctr->status = HD_STATUS_ERROR;
 		dev->nLastError = HD_REQSENS_INVADDR;
@@ -588,12 +585,7 @@ static void HDC_Cmd_ReadSector(SCSI_CTRLR *ctr)
 	else
 	{
 		buf = HDC_PrepRespBuf(ctr, dev->blockSize * HDC_GetCount(ctr));
-#ifndef __LIBRETRO__
 		n = fread(buf, dev->blockSize, HDC_GetCount(ctr), dev->image_file);
-#else
-		n = core_file_read(buf, dev->blockSize, HDC_GetCount(ctr), dev->image_file);
-		(void)HDC_CmdInfoStr; // unused function warning
-#endif
 		if (n == HDC_GetCount(ctr))
 		{
 			ctr->status = HD_STATUS_OK;
@@ -741,11 +733,7 @@ static void HDC_EmulateCommandPacket(SCSI_CTRLR *ctr)
  * Extended partition tables are described in AHDI release notes:
  *	https://www.dev-docs.org/docs/htm/search.php?find=AHDI
  */
-#ifndef __LIBRETRO__
 int HDC_PartitionCount(FILE *fp, const uint64_t tracelevel, int *pIsByteSwapped)
-#else
-int HDC_PartitionCount(corefile *fp, const uint64_t tracelevel, int *pIsByteSwapped)
-#endif
 {
 	unsigned char *pinfo, bootsector[512];
 	uint32_t start, sectors, total = 0;
@@ -754,23 +742,12 @@ int HDC_PartitionCount(corefile *fp, const uint64_t tracelevel, int *pIsByteSwap
 
 	if (!fp)
 		return 0;
-#ifndef __LIBRETRO__
 	offset = ftello(fp);
-#else
-	offset = (off_t)core_file_tell(fp);
-#endif
 
-#ifndef __LIBRETRO__
 	if (fseeko(fp, 0, SEEK_SET) != 0
 	    || fread(bootsector, sizeof(bootsector), 1, fp) != 1)
 	{
 		perror("HDC_PartitionCount");
-#else
-	if (core_file_seek(fp, 0, SEEK_SET) != 0
-	    || core_file_read(bootsector, sizeof(bootsector), 1, fp) != 1)
-	{
-		core_error_printf("HDC_PartitionCount failed.\n");
-#endif
 		return 0;
 	}
 
@@ -867,13 +844,8 @@ int HDC_PartitionCount(corefile *fp, const uint64_t tracelevel, int *pIsByteSwap
 		LOG_TRACE_DIRECT_FLUSH();
 	}
 
-#ifndef __LIBRETRO__
 	if (fseeko(fp, offset, SEEK_SET) != 0)
 		perror("HDC_PartitionCount");
-#else
-	if (core_file_seek(fp, offset, SEEK_SET) != 0)
-		core_error_printf("HDC_PartitionCount failed seek.\n");
-#endif
 	return parts;
 }
 
@@ -888,11 +860,7 @@ off_t HDC_CheckAndGetSize(const char *hdtype, const char *filename, unsigned lon
 
 	File_ShrinkName(shortname, filename, sizeof(shortname) - 1);
 
-#ifndef __LIBRETRO__
 	filesize = File_Length(filename);
-#else
-	filesize = core_file_size_hard(filename);
-#endif
 	if (filesize < 0)
 	{
 		Log_AlertDlg(LOG_ERROR, "Unable to get size of %s HD image file\n'%s'!",
@@ -926,32 +894,23 @@ off_t HDC_CheckAndGetSize(const char *hdtype, const char *filename, unsigned lon
 /**
  * Open a disk image file
  */
-int HDC_InitDevice(const char *hdtype, SCSI_DEV *dev, char *filename, unsigned long blockSize)
+int HDC_InitDevice(const char *hdtype, SCSI_DEV *dev, CNF_SCSIDEV *conf)
 {
+	const char *filename = conf->sDeviceFile;
 	off_t filesize;
-#ifndef __LIBRETRO__
 	FILE *fp;
-#else
-	corefile* fp;
-#endif
 
 	dev->enabled = false;
 	Log_Printf(LOG_INFO, "Mounting %s HD image '%s'\n", hdtype, filename);
 
 	/* Check size for sanity */
-	filesize = HDC_CheckAndGetSize(hdtype, filename, blockSize);
+	filesize = HDC_CheckAndGetSize(hdtype, filename, conf->nBlockSize);
 	if (filesize < 0)
 		return filesize;
 
-#ifndef __LIBRETRO__
 	if (!(fp = fopen(filename, "rb+")))
 	{
 		if (!(fp = fopen(filename, "rb")))
-#else
-	if (core_hard_readonly==1 || !(fp = core_file_open_hard(filename, CORE_FILE_REVISE)))
-	{
-		if (!(fp = core_file_open_hard(filename, CORE_FILE_READ)))
-#endif
 		{
 			Log_AlertDlg(LOG_ERROR, "Cannot open %s HD file for reading\n'%s'!\n",
 				     hdtype, filename);
@@ -960,7 +919,6 @@ int HDC_InitDevice(const char *hdtype, SCSI_DEV *dev, char *filename, unsigned l
 		Log_AlertDlg(LOG_WARN, "%s HD file is read-only, no writes will go through\n'%s'.\n",
 			     hdtype, filename);
 	}
-#ifndef __LIBRETRO__
 	else if (!File_Lock(fp))
 	{
 		Log_AlertDlg(LOG_ERROR, "Locking %s HD file for writing failed\n'%s'!\n",
@@ -968,11 +926,9 @@ int HDC_InitDevice(const char *hdtype, SCSI_DEV *dev, char *filename, unsigned l
 		fclose(fp);
 		return -ENOLCK;
 	}
-#else
-	// no file lock available to libretro vfs
-#endif
 
-	dev->blockSize = blockSize;
+	dev->scsi_version = conf->nScsiVersion;
+	dev->blockSize = conf->nBlockSize;
 	dev->hdSize = filesize / dev->blockSize;
 	dev->image_file = fp;
 	dev->enabled = true;
@@ -1003,20 +959,13 @@ bool HDC_Init(void)
 	{
 		if (!ConfigureParams.Acsi[i].bUseDevice)
 			continue;
-		if (HDC_InitDevice("ACSI", &AcsiBus.devs[i], ConfigureParams.Acsi[i].sDeviceFile, ConfigureParams.Acsi[i].nBlockSize) == 0)
+		if (HDC_InitDevice("ACSI", &AcsiBus.devs[i], &ConfigureParams.Acsi[i]) == 0)
 		{
 			nAcsiPartitions += HDC_PartitionCount(AcsiBus.devs[i].image_file, TRACE_SCSI_CMD, NULL);
 			bAcsiEmuOn = true;
 		}
 		else
-#ifdef __LIBRETRO__
-		{
-			core_signal_error("Failed to open ACSI hard disk image: ",ConfigureParams.Acsi[i].sDeviceFile);
 			ConfigureParams.Acsi[i].bUseDevice = false;
-		}
-#else
-			ConfigureParams.Acsi[i].bUseDevice = false;
-#endif
 	}
 	/* set total number of partitions */
 	nNumDrives += nAcsiPartitions;
@@ -1037,12 +986,8 @@ void HDC_UnInit(void)
 	{
 		if (!AcsiBus.devs[i].enabled)
 			continue;
-#ifndef __LIBRETRO__
 		File_UnLock(AcsiBus.devs[i].image_file);
 		fclose(AcsiBus.devs[i].image_file);
-#else
-		core_file_close(AcsiBus.devs[i].image_file);
-#endif
 		AcsiBus.devs[i].image_file = NULL;
 		AcsiBus.devs[i].enabled = false;
 	}
@@ -1167,12 +1112,7 @@ static void Acsi_DmaTransfer(void)
 		if (STMemory_CheckAreaType(nDmaAddr, AcsiBus.data_len, ABFLAG_RAM | ABFLAG_ROM))
 		{
 #ifndef DISALLOW_HDC_WRITE
-#ifndef __LIBRETRO__
 			int wlen = fwrite(&STRam[nDmaAddr], 1, AcsiBus.data_len, AcsiBus.dmawrite_to_fh);
-#else
-			int wlen = 0;
-			if (core_hard_readonly != 1) wlen = core_file_write(&STRam[nDmaAddr], 1, AcsiBus.data_len, AcsiBus.dmawrite_to_fh);
-#endif
 			if (wlen != AcsiBus.data_len)
 			{
 				Log_Printf(LOG_ERROR, "Could not write all bytes to ACSI HD image.\n");
@@ -1199,6 +1139,10 @@ static void Acsi_DmaTransfer(void)
 
 	FDC_SetDMAStatus(AcsiBus.bDmaError);	/* Mark DMA error */
 	FDC_SetIRQ(FDC_IRQ_SOURCE_HDC);
+
+	/* For the MegaSTE, using the HDC DMA will flush the external cache */
+	if ( ConfigureParams.System.nMachineType == MACHINE_MEGA_STE )
+		MegaSTE_Cache_Flush ();
 }
 
 static void Acsi_WriteCommandByte(int addr, uint8_t byte)

@@ -343,9 +343,6 @@ static CLOCKS_CYCLES_STRUCT	YM2149_ConvertCycles_250;
 
 static ymsample	LowPassFilter		(ymsample x0);
 static ymsample	PWMaliasFilter		(ymsample x0);
-#ifdef __LIBRETRO__
-static ymsample	IIRLowPassFilter	(ymsample x0);
-#endif
 
 static void	interpolate_volumetable	(ymu16 volumetable[32][32][32]);
 
@@ -389,8 +386,8 @@ ymsample	Subsonic_IIR_HPF_Left(ymsample x0)
 	if ( YM2149_HPF_Filter == YM2149_HPF_FILTER_NONE )
 		return x0;
 
-	y1 += ((x0 - x1)<<15) - (y0<<6);  /*  64*y0  */
-	y0 = y1>>15;
+	y1 += ((x0 - x1) * 32768) - (y0 * 64);
+	y0 = y1 / 32768;
 	x1 = x0;
 
 	return y0;
@@ -404,8 +401,8 @@ ymsample	Subsonic_IIR_HPF_Right(ymsample x0)
 	if ( YM2149_HPF_Filter == YM2149_HPF_FILTER_NONE )
 		return x0;
 
-	y1 += ((x0 - x1)<<15) - (y0<<6);  /*  64*y0  */
-	y0 = y1>>15;
+	y1 += ((x0 - x1) * 32768) - (y0 * 64);
+	y0 = y1 / 32768;
 	x1 = x0;
 
 	return y0;
@@ -494,17 +491,6 @@ static ymsample	PWMaliasFilter(ymsample x0)
 	return y0;
 }
 
-#ifdef __LIBRETRO__
-// A simpler IIR LPF filter which doesn't have the asymmterical
-// push-pull distortion of the filters above.
-static ymsample	IIRLowPassFilter(ymsample x0)
-{
-	static	yms32 y0 = 0, x1 = 0;
-	y0 = (3*(x0 + x1) + (y0<<1)) >> 3;
-	x1 = x0;
-	return y0;
-}
-#endif
 
 
 /*--------------------------------------------------------------*/
@@ -887,10 +873,6 @@ static void	YM2149_UpdateClock_250_int_new ( uint64_t CpuClock )
 
 
 //fprintf ( stderr , "update_250 clock_cpu=%ld -> ym_inc=%ld clock_250=%ld clock_250_cpu_clock=%ld\n" , CpuClock , YM2149_ConvertCycles_250.Cycles , YM2149_Clock_250 , YM2149_Clock_250_CpuClock );
-#ifdef __LIBRETRO__
-	// reset to 0 because these cycles have been processed, prevents savestate divergence when paused and not processing
-	YM2149_ConvertCycles_250.Cycles = 0;
-#endif
 }
 
 
@@ -1128,17 +1110,12 @@ static void	YM2149_DoSamples_250 ( int SamplesToGenerate_250 )
 
 		sample = ymout5[ Tone3Voices ];			/* 16 bits signed value */
 
-#ifndef __LIBRETRO__
 		/* Apply low pass filter ? */
 		if ( YM2149_LPF_Filter == YM2149_LPF_FILTER_LPF_STF )
 			sample = LowPassFilter ( sample );
 		else if ( YM2149_LPF_Filter == YM2149_LPF_FILTER_PWM )
 			sample = PWMaliasFilter ( sample );
-#else
-// this low pass filter is in the wrong place, these were designed for ~44100-48000 Hz but are being run here at 250000Hz!
-// moved to YM2149_NextSample_250 instead
-#endif
-	
+
 		/* Store sample */
 		YM_Buffer_250[ pos ] = sample;
 		pos = ( pos + 1 ) & YM_BUFFER_250_SIZE_MASK;
@@ -1409,7 +1386,6 @@ static ymsample	YM2149_Next_Resample_Weighted_Average_2 ( void )
 
 static ymsample	YM2149_NextSample_250 ( void )
 {
-#ifndef __LIBRETRO__
 	if ( YM2149_Resample_Method == YM2149_RESAMPLE_METHOD_WEIGHTED_AVERAGE_2 )
 		return YM2149_Next_Resample_Weighted_Average_2 ();
 
@@ -1421,26 +1397,6 @@ static ymsample	YM2149_NextSample_250 ( void )
 
 	else
 		return 0;
-#else
-	// filters were mistakenly applied at the wrong frequency above
-	ymsample sample = 0;
-	switch (YM2149_Resample_Method)
-	{
-		case YM2149_RESAMPLE_METHOD_NEAREST:            sample = YM2149_Next_Resample_Nearest();            break;
-		case YM2149_RESAMPLE_METHOD_WEIGHTED_AVERAGE_2: sample = YM2149_Next_Resample_Weighted_Average_2(); break;
-		case YM2149_RESAMPLE_METHOD_WEIGHTED_AVERAGE_N: sample = YM2149_Next_Resample_Weighted_Average_N(); break;
-		default: break;
-	}
-	switch (YM2149_LPF_Filter)
-	{
-		default:
-		case YM2149_LPF_FILTER_NONE:                                          break;
-		case YM2149_LPF_FILTER_LPF_STF: sample = LowPassFilter ( sample );    break;
-		case YM2149_LPF_FILTER_PWM:     sample = PWMaliasFilter ( sample );   break;
-		case YM2149_LPF_FILTER_IIR:     sample = IIRLowPassFilter ( sample ); break;
-	}
-	return sample;
-#endif
 }
 
 
@@ -1588,8 +1544,7 @@ void Sound_Reset(void)
 	/* Clear sound mixing buffer: */
 	memset(AudioMixBuffer, 0, sizeof(AudioMixBuffer));
 
-	/* Clear cycle counts, buffer index and register '13' flags */
-	Cycles_SetCounter(CYCLES_COUNTER_SOUND, 0);
+	/* Clear buffer index and register '13' flags */
 	bEnvelopeFreqFlag = false;
 
 	AudioMixBuffer_pos_read = 0;
@@ -1663,16 +1618,9 @@ void Sound_MemorySnapShot_Capture(bool bSave)
 
 	MemorySnapShot_Store(&YM2149_Clock_250, sizeof(YM2149_Clock_250));
 	MemorySnapShot_Store(&YM2149_Clock_250_CpuClock, sizeof(YM2149_Clock_250_CpuClock));
-#ifdef __LIBRETRO__
-	MemorySnapShot_Store(&YM2149_Freq_div_2, sizeof(YM2149_Freq_div_2)); // new state that wasn't in the savestate
-#endif
+	MemorySnapShot_Store(&YM2149_Freq_div_2, sizeof(YM2149_Freq_div_2));
 
 	MemorySnapShot_Store(&YmVolumeMixing, sizeof(YmVolumeMixing));
-
-#ifdef __LIBRETRO__
-	MemorySnapShot_Store(&YM2149_LPF_Filter, sizeof(YM2149_LPF_Filter)); // added filter options
-	MemorySnapShot_Store(&YM2149_HPF_Filter, sizeof(YM2149_HPF_Filter));
-#endif
 
 	MemorySnapShot_Store(&YM_Buffer_250, sizeof(YM_Buffer_250));
 	MemorySnapShot_Store(&YM_Buffer_250_pos_write, sizeof(YM_Buffer_250_pos_write));
@@ -1850,22 +1798,6 @@ void Sound_Update(uint64_t CPU_Clock)
 	/* Save to WAV file, if open */
 	if (bRecordingWav)
 		WAVFormat_Update(AudioMixBuffer, pos_write_prev, Samples_Nbr);
-
-#ifdef __LIBRETRO__
-	{
-		int remain = Samples_Nbr;
-		int pos = pos_write_prev;
-		while (remain > 0) { // split if wrapping over the end
-			int len = remain;
-			if ((pos + len) > AUDIOMIXBUFFER_SIZE) len = AUDIOMIXBUFFER_SIZE - pos;
-			core_audio_update(AudioMixBuffer, pos, len);
-			remain -= len;
-			pos = (pos + len) & AUDIOMIXBUFFER_SIZE_MASK;
-		}
-		nGeneratedSamples = 0;
-	}
-#endif
-
 }
 
 
@@ -1893,7 +1825,7 @@ void Sound_Update_VBL(void)
 	}
 	
 	/* Record AVI audio frame is necessary */
-	if ( bRecordingAvi )
+	if ( Avi_AreWeRecording() )
 	{
 		int Len;
 

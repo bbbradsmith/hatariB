@@ -36,10 +36,6 @@ const char Cart_fileid[] = "Hatari cart.c";
 
 #include "cartData.c"
 
-#ifdef __LIBRETRO__
-extern uint8_t* core_read_file_system(const char* filename, unsigned int* size_out);
-#endif
-
 
 /* Possible cartridge file extensions to scan for */
 static const char * const psCartNameExts[] =
@@ -61,14 +57,7 @@ static void Cart_LoadImage(void)
 	char *pCartFileName = ConfigureParams.Rom.szCartridgeImageFileName;
 
 	/* Try to load the image file: */
-#ifndef __LIBRETRO__
 	pCartData = File_Read(pCartFileName, &nCartSize, psCartNameExts);
-#else
-	unsigned int size;
-	pCartData = core_read_file_system(pCartFileName, &size);
-	nCartSize = size;
-	(void)psCartNameExts;
-#endif
 	if (!pCartData)
 	{
 		Log_Printf(LOG_ERROR, "Failed to load '%s'.\n", pCartFileName);

@@ -1,10 +1,4 @@
-cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
-
-if(POLICY CMP0148)
-	# Should be removed when we replaced FindPythonInterp with FindPython3
-	# and cmake_minimum_required has been bumped to 3.12
-	cmake_policy(SET CMP0148 OLD)
-endif(POLICY CMP0148)
+cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 
 # Set build type to "Release" if user did not specify any build type yet
 # Other possible values: Debug, Release, RelWithDebInfo and MinSizeRel
@@ -14,7 +8,7 @@ endif(NOT CMAKE_BUILD_TYPE)
 
 if(APPLE AND CMAKE_BUILD_TYPE STREQUAL "Release")
 	set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "Target architectures")
-	set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "Target minimum macOS version")
+	set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "Target minimum macOS version")
 endif(APPLE AND CMAKE_BUILD_TYPE STREQUAL "Release")
 
 project(Hatari C)
@@ -61,8 +55,6 @@ set(ENABLE_DSP_EMU 1
     CACHE BOOL "Enable DSP 56k emulator for Falcon mode")
 set(ENABLE_TRACING 1
     CACHE BOOL "Enable tracing messages for debugging")
-set(ENABLE_SMALL_MEM 1
-    CACHE BOOL "Enable to use less memory - at the expense of emulation speed")
 
 # Run-time checks with GCC / LLVM (Clang) AddressSanitizer:
 # - stack protection
@@ -86,6 +78,12 @@ if(ASAN_AVAILABLE)
 	    CACHE BOOL "Enable GCC/LLVM run-time stack/pointer debugging (~2x slowdown)")
 endif(ASAN_AVAILABLE)
 
+CHECK_C_COMPILER_FLAG("-fsanitize=undefined" UBSAN_AVAILABLE)
+if(UBSAN_AVAILABLE)
+	set(ENABLE_UBSAN 0
+	    CACHE BOOL "Enable GCC/LLVM run-time undefined behavior debugging")
+endif(UBSAN_AVAILABLE)
+
 find_program(GZIP gzip)
 if(UNIX AND GZIP)
 	set(ENABLE_MAN_PAGES 1 CACHE BOOL "Built and install man pages")
@@ -96,10 +94,7 @@ endif()
 if(APPLE)
 	set(ENABLE_OSX_BUNDLE 1
 	    CACHE BOOL "Built Hatari as macOS application bundle")
-	set(ADDITIONAL_INCLUDES ${FRAMEWORKS})
-	set_source_files_properties(${FRAMEWORKS} PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
 	set(CMAKE_XCODE_ATTRIBUTE_LD_RUNPATH_SEARCH_PATHS "@loader_path/../Frameworks")
-	# set(CMAKE_XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "--deep")
 else()
 	set(ENABLE_OSX_BUNDLE 0
 	    CACHE BOOL "Built Hatari as macOS application bundle")
@@ -195,14 +190,12 @@ if(PKG_CONFIG_FOUND)
 			ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif(PKG_CONFIG_FOUND)
 
-if (0) # hatariB -- ALERT_HOOKS are OS gui not needed by libretro core
 if(ENABLE_OSX_BUNDLE)
 	# Use OSX native alert windows
 	add_definitions(-DALERT_HOOKS=1)
 	# We still want to use our SDLMain.m with SDL2
 	add_definitions(-DSDL_MAIN_NEEDED=1)
 endif(ENABLE_OSX_BUNDLE)
-endif(0) # hatariB -- ALERT_HOOKS are OS gui not needed by libretro core
 
 if(MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
@@ -236,15 +229,11 @@ check_symbol_exists(gettimeofday "sys/time.h" HAVE_GETTIMEOFDAY)
 check_symbol_exists(nanosleep "time.h" HAVE_NANOSLEEP)
 check_symbol_exists(alphasort "dirent.h" HAVE_ALPHASORT)
 check_symbol_exists(scandir "dirent.h" HAVE_SCANDIR)
-# hatariB - Disable STATVFS because the libretro file system has its own virtualization
-#check_symbol_exists(statvfs "sys/statvfs.h" HAVE_STATVFS)
+check_symbol_exists(statvfs "sys/statvfs.h" HAVE_STATVFS)
 check_symbol_exists(fseeko "stdio.h" HAVE_FSEEKO)
 check_symbol_exists(ftello "stdio.h" HAVE_FTELLO)
 check_symbol_exists(flock "sys/file.h" HAVE_FLOCK)
 check_struct_has_member("struct dirent" d_type dirent.h HAVE_DIRENT_D_TYPE)
-
-# hatariB - look for dlopen for CAPS dynamic load
-check_symbol_exists(dlopen "dlfcn.h" HAVE_DLOPEN)
 
 # #############
 # Other CFLAGS:
@@ -260,6 +249,12 @@ if(ENABLE_ASAN)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fno-common")
 endif(ENABLE_ASAN)
 
+# GCC/Clang undefined behavior debugging
+if(ENABLE_UBSAN)
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=undefined")
+	add_definitions(-DENABLE_UBSAN=1)
+endif(ENABLE_UBSAN)
+
 # GCC/Clang specific flags:
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID MATCHES "Clang")
 	# We want to allow ‘for’-loop initial declarations a la for(int i=0; ...)
@@ -272,6 +267,11 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID MATCHES "Clang")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wformat-security")
 endif()
 
+if(APPLE AND CMAKE_C_COMPILER_ID MATCHES "Clang")
+	# Silence linker warning with AppleClang 17
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-common")
+endif()
+
 CHECK_C_COMPILER_FLAG("-Wimplicit-fallthrough=2" WARN_FALLTRHOUGH_AVAILABLE)
 if(WARN_FALLTRHOUGH_AVAILABLE)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wimplicit-fallthrough=2")
@@ -281,6 +281,11 @@ CHECK_C_COMPILER_FLAG("-Wshadow=local" WARN_SHADOW_LOCAL_AVAILABLE)
 if(WARN_SHADOW_LOCAL_AVAILABLE)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wshadow=local")
 endif(WARN_SHADOW_LOCAL_AVAILABLE)
+
+CHECK_C_COMPILER_FLAG("-Wvla" WARN_VARIABLE_LENGTH_ARRAY_AVAILABLE)
+if(WARN_VARIABLE_LENGTH_ARRAY_AVAILABLE)
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wvla")
+endif(WARN_VARIABLE_LENGTH_ARRAY_AVAILABLE)
 
 if(EMSCRIPTEN)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-rtti -fno-exceptions -O3 -s USE_SDL=2 -s USE_ZLIB=1")
@@ -370,19 +375,17 @@ add_subdirectory(doc)
 add_subdirectory(tools)
 
 if(NOT CMAKE_CROSSCOMPILING)
-# hatariB -- disabling tests which require the stand-alone executable to be built
-#	add_subdirectory(tests)
+	add_subdirectory(tests)
 endif(NOT CMAKE_CROSSCOMPILING)
 
-# hatariB -- disabling FindPythonInterp
-#include(FindPythonInterp)
-if(PYTHONINTERP_FOUND AND PYTHON_VERSION_MAJOR LESS 3)
+include(FindPython)
+if(Python_Interpreter_FOUND AND Python_VERSION_MAJOR LESS 3)
 	message("Note: Hatari needs at least Python 3 ... ignoring older version")
-	unset(PYTHONINTERP_FOUND)
+	unset(Python_Interpreter_FOUND)
 endif()
 set(PYTHON_GTK_FOUND 0)
-if(PYTHONINTERP_FOUND)
-	execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "\
+if(Python_Interpreter_FOUND)
+	execute_process(COMMAND ${Python_EXECUTABLE} -c "\
 import gi\n\
 gi.require_version('Gtk', '3.0')\n\
 from gi.repository import Gtk\n\
@@ -395,7 +398,7 @@ from gi.repository import GLib"
 		set(PYTHON_GTK_FOUND 1)
 		add_subdirectory(python-ui)
 	endif()
-endif(PYTHONINTERP_FOUND)
+endif(Python_Interpreter_FOUND)
 
 if(UNIX AND NOT ENABLE_OSX_BUNDLE)
 	add_subdirectory(share)

@@ -8,7 +8,6 @@
 */
 const char DlgFileSelect_fileid[] = "Hatari dlgFileSelect.c";
 
-#ifndef __LIBRETRO__
 #include <SDL.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -705,8 +704,7 @@ char* SDLGui_FileSelect(const char *title, const char *path_and_name, char **zip
 	fsdlg[SGFSDLG_TITLE].w = len;
 
 	/* Save mouse state and enable cursor */
-	bOldMouseVisibility = SDL_ShowCursor(SDL_QUERY);
-	SDL_ShowCursor(SDL_ENABLE);
+	bOldMouseVisibility = Main_ShowCursor(true);
 
 	SDLGui_CenterDlg(fsdlg);
 	if (bAllowNew)
@@ -800,7 +798,7 @@ char* SDLGui_FileSelect(const char *title, const char *path_and_name, char **zip
 		}
 		fsdlg[SGFSDLG_SCROLLBAR].w = yScrollbar_size;
 
-		/* Refresh scrolbar pos */
+		/* Refresh scrollbar pos */
 		ypos = (int) (scrollbar_Ypos * ((float)entries/(float)(SGFS_NUMENTRIES-2)) + 0.5);
 
 		if (ypos+SGFS_NUMENTRIES >= entries) {			/* Ensure Y pos is in the correct boundaries */
@@ -1081,7 +1079,7 @@ char* SDLGui_FileSelect(const char *title, const char *path_and_name, char **zip
 		retpath = NULL;
 
 clean_exit:
-	SDL_ShowCursor(bOldMouseVisibility);
+	Main_ShowCursor(bOldMouseVisibility);
 
 	if (browsingzip && zipfiles != NULL)
 	{
@@ -1152,4 +1150,3 @@ bool SDLGui_DirConfSelect(const char *title, char *dlgname, char *confname, int 
 	}
 	return false;
 }
-#endif

@@ -62,6 +62,7 @@ const char NvRam_fileid[] = "Hatari nvram.c";
 #include "paths.h"
 #include "tos.h"
 #include "vdi.h"
+#include "m68000.h"
 
 // Defs for NVRAM control register A (10) bits
 #define REG_BIT_UIP  0x80	/* update-in-progress */
@@ -104,18 +105,7 @@ static uint8_t nvram[64] = {
 
 
 static uint8_t nvram_index;
-#ifndef __LIBRETRO__
 static char nvram_filename[FILENAME_MAX];
-#else
-#define NVRAM_FILENAME   "hatarib.nvram"
-const char* nvram_filename = NVRAM_FILENAME;
-#define CORE_FILE_READ       0
-extern corefile* core_file_open_system(const char* path, int access);
-extern int64_t core_file_read(void* buf, int64_t size, int64_t count, corefile* file);
-extern void core_file_close(corefile* file);
-extern bool core_write_file_system(const char* filename, unsigned int size, const uint8_t* data);
-#endif
-
 static int year_offset;
 
 
@@ -126,7 +116,6 @@ static int year_offset;
 static bool NvRam_Load(void)
 {
 	bool ret = false;
-#ifndef __LIBRETRO__
 	FILE *f = fopen(nvram_filename, "rb");
 	if (f != NULL)
 	{
@@ -147,24 +136,6 @@ static bool NvRam_Load(void)
 	{
 		Log_Printf(LOG_INFO, "NVRAM not found at '%s'\n", nvram_filename);
 	}
-#else
-	if (!NvRam_Present()) return false;
-
-	corefile* f = core_file_open_system(nvram_filename,CORE_FILE_READ); // has to go in system/ because it is loaded before retro_game_load()
-	if (f != NULL)
-	{
-		uint8_t fnvram[NVRAM_LEN];
-		if (core_file_read(fnvram, 1, NVRAM_LEN, f) == NVRAM_LEN)
-		{
-			memcpy(nvram+NVRAM_START, fnvram, NVRAM_LEN);
-			core_info_printf("system/" NVRAM_FILENAME " loaded.\n");
-			ret = true;
-		}
-		core_file_close(f);
-	}
-	if (!ret)
-		core_error_printf("system/" NVRAM_FILENAME " not found.\n");
-#endif
 
 	return ret;
 }
@@ -176,7 +147,6 @@ static bool NvRam_Load(void)
  */
 static bool NvRam_Save(void)
 {
-#ifndef __LIBRETRO__
 	bool ret = false;
 	FILE *f = fopen(nvram_filename, "wb");
 	if (f != NULL)
@@ -198,10 +168,6 @@ static bool NvRam_Save(void)
 	}
 
 	return ret;
-#else
-	if (!NvRam_Present()) return false;
-	return core_write_file_system(nvram_filename, NVRAM_LEN, nvram+NVRAM_START);
-#endif
 }
 
 
@@ -315,7 +281,6 @@ void NvRam_Reset(void)
  */
 void NvRam_Init(void)
 {
-#ifndef __LIBRETRO__
 	const char sBaseName[] = "hatari.nvram";
 	const char *psHomeDir;
 
@@ -325,7 +290,6 @@ void NvRam_Init(void)
 		sprintf(nvram_filename, "%s%c%s", psHomeDir, PATHSEP, sBaseName);
 	else
 		strcpy(nvram_filename, sBaseName);
-#endif
 
 	if (!NvRam_Load())		// load NVRAM file automatically
 	{
@@ -526,7 +490,7 @@ void NvRam_Data_ReadByte(void)
 		break;
 	}
 
-	LOG_TRACE(TRACE_NVRAM, "NVRAM: read data at %d = %d ($%02x)\n", nvram_index, value, value);
+	LOG_TRACE(TRACE_NVRAM, "NVRAM: read data at %d = %d ($%02x) pc=%x\n", nvram_index, value, value, M68000_GetPC());
 	IoMem_WriteByte(0xff8963, value);
 }
 
@@ -576,7 +540,7 @@ void NvRam_Data_WriteByte(void)
 			   value, value, nvram_index);
 		return;
 	}
-	LOG_TRACE(TRACE_NVRAM, "NVRAM: write data at %d = %d ($%02x)\n", nvram_index, value, value);
+	LOG_TRACE(TRACE_NVRAM, "NVRAM: write data at %d = %d ($%02x) pc=%x\n", nvram_index, value, value, M68000_GetPC());
 	nvram[nvram_index] = value;
 }
 
@@ -601,4 +565,9 @@ void NvRam_Info(FILE *fp, uint32_t dummy)
 		nvram[28], nvram[29]);
 	fprintf(fp, "- SCSI ID: %d, bus arbitration: %s (30)\n",
 		nvram[30] & 0x7, nvram[30] & 128 ? "off" : "on");
+}
+
+int NvRam_GetKbdLayoutCode(void)
+{
+	return nvram[NVRAM_KEYBOARDLAYOUT];
 }

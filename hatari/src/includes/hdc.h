@@ -54,16 +54,13 @@
  */
 typedef struct scsi_data {
 	bool enabled;
-#ifndef __LIBRETRO__
 	FILE *image_file;
-#else
-	corefile* image_file;
-#endif
 	uint32_t nLastBlockAddr;      /* The specified sector number */
 	bool bSetLastBlockAddr;
 	uint8_t nLastError;
 	unsigned long hdSize;       /* Size of the hard disk in sectors */
 	unsigned long blockSize;    /* Size of a sector in bytes */
+	int scsi_version;
 	/* For NCR5380 emulation: */
 	int direction;
 	uint8_t msgout[4];
@@ -86,11 +83,7 @@ typedef struct {
 	int buffer_size;
 	int data_len;
 	int offset;                 /* Current offset into data buffer */
-#ifndef __LIBRETRO__
 	FILE *dmawrite_to_fh;
-#else
-	corefile* dmawrite_to_fh;
-#endif
 	SCSI_DEV devs[8];
 } SCSI_CTRLR;
 
@@ -103,15 +96,11 @@ extern bool bAcsiEmuOn;
  */
 extern bool HDC_Init(void);
 extern void HDC_UnInit(void);
-extern int HDC_InitDevice(const char *hdtype, SCSI_DEV *dev, char *filename, unsigned long blockSize);
+extern int HDC_InitDevice(const char *hdtype, SCSI_DEV *dev, CNF_SCSIDEV *conf);
 extern void HDC_ResetCommandStatus(void);
 extern short int HDC_ReadCommandByte(int addr);
 extern void HDC_WriteCommandByte(int addr, uint8_t byte);
-#ifndef __LIBRETRO__
 extern int HDC_PartitionCount(FILE *fp, const uint64_t tracelevel, int *pIsByteSwapped);
-#else
-extern int HDC_PartitionCount(corefile *fp, const uint64_t tracelevel, int *pIsByteSwapped);
-#endif
 extern off_t HDC_CheckAndGetSize(const char *hdtype, const char *filename, unsigned long blockSize);
 extern bool HDC_WriteCommandPacket(SCSI_CTRLR *ctr, uint8_t b);
 extern void HDC_DmaTransfer(void);

@@ -44,9 +44,6 @@ const char Change_fileid[] = "Hatari change.c";
 #if ENABLE_DSP_EMU
 # include "falcon/dsp.h"
 #endif
-#ifdef __LIBRETRO__
-#include "falcon/nvram.h"
-#endif
 
 #define DEBUG 0
 #if DEBUG
@@ -85,14 +82,6 @@ bool Change_DoNeedReset(CNF_PARAMS *current, CNF_PARAMS *changed)
 	/* Did change TOS ROM image? */
 	if (strcmp(changed->Rom.szTosImageFileName, current->Rom.szTosImageFileName))
 		return true;
-
-#ifdef __LIBRETRO__
-	// Did change other TOS configurations
-	if (current->Rom.nBuiltinTos != changed->Rom.nBuiltinTos
-	    || current->Rom.nEmuTosRegion != changed->Rom.nEmuTosRegion
-	    || current->Rom.nEmuTosFramerate != changed->Rom.nEmuTosFramerate)
-		return true;
-#endif
 
 	/* Did change ACSI hard disk image? */
 	for (i = 0; i < MAX_ACSI_DEVS; i++)
@@ -160,6 +149,10 @@ bool Change_DoNeedReset(CNF_PARAMS *current, CNF_PARAMS *changed)
 	if (changed->System.bCycleExactCpu != current->System.bCycleExactCpu)
 		return true;
 
+	/* Did change CPU data cache? */
+	if (changed->System.bCpuDataCache != current->System.bCpuDataCache)
+		return true;
+
 	/* Did change MMU? */
 	if (changed->System.bMMU != current->System.bMMU)
 		return true;
@@ -196,6 +189,7 @@ void Change_CopyChangedParamsToConfiguration(CNF_PARAMS *current, CNF_PARAMS *ch
 	bool bReInitHdcEmu = false;
 	bool bReInitIDEEmu = false;
 	bool bReInitIoMem = false;
+	bool bReInitKeymap = false;
 	bool bScreenModeChange = false;
 	bool bReInitMidi = false;
 	bool bReInitPrinter = false;
@@ -221,11 +215,6 @@ void Change_CopyChangedParamsToConfiguration(CNF_PARAMS *current, CNF_PARAMS *ch
 	     || changed->Screen.bUseSdlRenderer != current->Screen.bUseSdlRenderer
 	     || changed->Screen.bResizable != current->Screen.bResizable
 	     || changed->Screen.bUseVsync != current->Screen.bUseVsync
-#ifdef __LIBRETRO__
-	     || changed->Screen.bLowResolutionDouble != current->Screen.bLowResolutionDouble
-	     || changed->Screen.bMedResolutionDouble != current->Screen.bMedResolutionDouble
-	     || changed->Screen.nCropOverscan != current->Screen.nCropOverscan
-#endif
 	    ))
 	{
 		Dprintf("- screenmode>\n");
@@ -372,7 +361,7 @@ void Change_CopyChangedParamsToConfiguration(CNF_PARAMS *current, CNF_PARAMS *ch
 	    || changed->System.nMachineType != current->System.nMachineType)
 	{
 		Dprintf("- blitter/dsp/machine>\n");
-		IoMem_UnInit();
+		IoMem_UnInit(current->System.nMachineType);
 		bReInitIoMem = true;
 	}
 	
@@ -402,11 +391,8 @@ void Change_CopyChangedParamsToConfiguration(CNF_PARAMS *current, CNF_PARAMS *ch
 		bReInitMidi = true;
 	}
 
-#ifdef __LIBRETRO__
-	// a machine change should save/reload NVRam if relevant
-	// (NvRam was altered to only save or load when using the relevant machines)
-	if (NeedReset) NvRam_UnInit();
-#endif
+	bReInitKeymap = strcmp(changed->Keyboard.szMappingFileName,
+	                       current->Keyboard.szMappingFileName);
 
 	/* Copy details to configuration,
 	 * so it can be saved out or set on reset
@@ -415,10 +401,6 @@ void Change_CopyChangedParamsToConfiguration(CNF_PARAMS *current, CNF_PARAMS *ch
 	{
 		ConfigureParams = *changed;
 	}
-
-#ifdef __LIBRETRO__
-	if (NeedReset) NvRam_Init();
-#endif
 
 	/* Copy details to global, if we reset copy them all */
 	Configuration_Apply(NeedReset);
@@ -433,7 +415,7 @@ void Change_CopyChangedParamsToConfiguration(CNF_PARAMS *current, CNF_PARAMS *ch
 #endif
 
 	/* Set keyboard remap file */
-	if (ConfigureParams.Keyboard.nKeymapType == KEYMAP_LOADED)
+	if (bReInitKeymap)
 	{
 		Dprintf("- keymap<\n");
 		Keymap_LoadRemapFile(ConfigureParams.Keyboard.szMappingFileName);
@@ -565,7 +547,6 @@ static bool Change_Options(int argc, const char *argv[])
 	ConfigureParams.Screen.bFullScreen = bInFullScreen;
 	bOK = Opt_ParseParameters(argc, argv);
 
-#ifndef __LIBRETRO__
 	/* Check if reset is required and ask user if he really wants to continue */
 	if (bOK && Change_DoNeedReset(&current, &ConfigureParams)
 	    && current.Log.nAlertDlgLogLevel > LOG_FATAL) {
@@ -574,7 +555,6 @@ static bool Change_Options(int argc, const char *argv[])
 				     "Apply changes now and reset "
 				     "the emulator?");
 	}
-#endif
 	/* Copy details to configuration */
 	if (bOK) {
 		Change_CopyChangedParamsToConfiguration(&current, &ConfigureParams, false);

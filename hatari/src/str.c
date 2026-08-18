@@ -15,11 +15,9 @@ const char Str_fileid[] = "Hatari str.c";
 #include <stdlib.h>
 #include <locale.h>
 #include <assert.h>
+#include "main.h"
 #include "configuration.h"
 #include "str.h"
-
-/* Used only by Str_Filename2TOSname() */
-static void Str_HostToAtari(const char *source, char *dest, char replacementChar);
 
 
 /**
@@ -94,7 +92,7 @@ char *Str_ToLower(char *pString)
  * program in that case, since there is likely nothing we can do if we even
  * can not allocate small strings anymore).
  *
- * @len  Length of the string (without the trailing NUL character)
+ * @param len  Length of the string (without the trailing NUL character)
  */
 char *Str_Alloc(int len)
 {
@@ -167,10 +165,10 @@ long Str_Copy(char *pDest, const char *pSrc, long nBufLen)
 	return -E2BIG;
 }
 
+#if 0
 /**
  * truncate string at first unprintable char (e.g. newline).
  */
-#if 0
 char *Str_Trunc(char *pString)
 {
 	int i = 0;
@@ -188,10 +186,10 @@ char *Str_Trunc(char *pString)
 }
 #endif
 
+#if 0
 /**
  * check if string is valid hex number.
  */
-#if 0
 bool Str_IsHex(const char *str)
 {
 	int i = 0;
@@ -206,7 +204,7 @@ bool Str_IsHex(const char *str)
 #endif
 
 /**
- * Convert \e, \n, \t, \\ backslash escapes in given string to
+ * Convert "\e", "\n", "\t", "\\" backslash escapes in given string to
  * corresponding byte values, anything else as left as-is.
  */
 void Str_UnEscape(char *s1)
@@ -245,14 +243,15 @@ void Str_UnEscape(char *s1)
 
 /**
  * Convert potentially too long host filenames to 8.3 TOS filenames
- * by truncating extension and part before it, replacing invalid
- * GEMDOS file name characters with INVALID_CHAR + upcasing the result.
+ * by first converting host encoding to Atari one, truncating extension
+ * and part before it, replacing invalid GEMDOS file name characters
+ * with INVALID_CHAR + upcasing the result.
  * 
  * Matching them from the host file system should first try exact
  * case-insensitive match, and then with a pattern that takes into
  * account the conversion done in here.
  */
-void Str_Filename2TOSname(const char *source, char *dst)
+void Str_Filename_Host2Atari(const char *source, char *dst)
 {
 	char *dot, *tmp, *src;
 	int len;
@@ -260,7 +259,8 @@ void Str_Filename2TOSname(const char *source, char *dst)
 	src = strdup(source); /* dup so that it can be modified */
 
 	/* convert host string encoding to AtariST character set */
-	Str_HostToAtari(source, src, INVALID_CHAR);
+	if (ConfigureParams.HardDisk.bFilenameConversion)
+		Str_HostToAtari(source, src, INVALID_CHAR);
 	len = strlen(src);
 
 	/* does filename have an extension? */
@@ -346,21 +346,24 @@ static int mapAtariToUnicode[128] =
  * without collisions.
  */
 static char mapUnicodeToAtari[512];
-static bool characterMappingsInitialized = false;
 
 /**
- * This function initializes the mapUnicodeToAtari[] hashtable.
+ * Initializations needed for string conversions
  */
-static void initCharacterMappings(void)
+void Str_Init(void)
 {
 	int i;
 	for (i = 0; i < 128; i++)
 	{
 		mapUnicodeToAtari[mapAtariToUnicode[i] & 511] = i;
 	}
-	characterMappingsInitialized = true;
 
 #if defined(WIN32) || defined(USE_LOCALE_CHARSET)
+	/* Change libc from default "C" locale to one
+	 * specified by the program environment. Needed
+	 * only for Windows, as Unix based OSes (are
+	 * assumed to) use UTF-8 based locales nowadays.
+	 */
 	setlocale(LC_ALL, "");
 #endif
 }
@@ -370,10 +373,13 @@ static void initCharacterMappings(void)
  * Convert a 0-terminated string in the AtariST character set to a 0-terminated
  * UTF-8 encoded string. destLen is the number of available bytes in dest[].
  * A single character of the AtariST charset can consume up to 3 bytes in UTF-8.
+ * Returns true if any chars were mapped to UTF-8.
  */
-static void Str_AtariToUtf8(const char *source, char *dest, int destLen)
+static bool Str_AtariToUtf8(const char *source, char *dest, int destLen)
 {
+	bool mapped = false;
 	int c;
+
 	while (*source)
 	{
 		c = *source++ & 255;
@@ -399,20 +405,22 @@ static void Str_AtariToUtf8(const char *source, char *dest, int destLen)
 			*dest++ = (c & 63) | 128;           /* 10xxxxxx */
 			destLen -= 3;
 		}
+		mapped = true;
 	}
 	*dest = 0;
+	return mapped;
 }
 
 /**
  * Convert a 0-terminated utf-8 encoded string to a 0-terminated string
  * in the AtariST character set.
- * replacementChar is inserted when there is no mapping.
+ * when char has no mapping, replacementChar is used, and false returned.
  */
-static void Str_Utf8ToAtari(const char *source, char *dest, char replacementChar)
+static bool Str_Utf8ToAtari(const char *source, char *dest, char replacementChar)
 {
 	int c, c2, c3, i;
-	if (!characterMappingsInitialized) { initCharacterMappings(); }
 
+	bool mapped = (*source != 0);
 	while (*source)
 	{
 		c = *source++ & 255;
@@ -423,6 +431,7 @@ static void Str_Utf8ToAtari(const char *source, char *dest, char replacementChar
 		else if (c < 192)       /* invalid utf-8 encoding (10xxxxxx) */
 		{
 			*dest++ = replacementChar;
+			mapped = false;
 		}
 		else                    /* multi-byte utf-8 code */
 		{
@@ -440,24 +449,34 @@ static void Str_Utf8ToAtari(const char *source, char *dest, char replacementChar
 
 			/* find AtariST character code for unicode code point c */
 			i = mapUnicodeToAtari[c & 511];
-			*dest++ = (mapAtariToUnicode[i] == c ? i + 128 : replacementChar);
+			if (mapAtariToUnicode[i] == c)
+			{
+				*dest++ = i + 128;
+			}
+			else
+			{
+				*dest++ = replacementChar;
+				mapped = false;
+			}
 		}
 	}
 	*dest = 0;
+	return mapped;
 }
 
-#else
+#else /* WIN32 || USE_LOCALE_CHARSET */
 
 /**
  * Convert a string from the AtariST character set into the host representation as
- * defined by the current locale. Characters which do not exist in character set
- * of the host as defined by the locale will be replaced by replacementChar.
+ * defined by the current locale. If characters do not exist in character set
+ * of the host as defined by the locale, they're replaced by replacementChar,
+ * and false returned.
  */
-static void Str_AtariToLocal(const char *source, char *dest, int destLen, char replacementChar)
+static bool Str_AtariToLocal(const char *source, char *dest, int destLen, char replacementChar)
 {
 	int c, i;
-	if (!characterMappingsInitialized) { initCharacterMappings(); }
 
+	bool mapped = (*source != 0);
 	while (*source && destLen > (int)MB_CUR_MAX)
 	{
 		c = *source++ & 255;
@@ -468,25 +487,27 @@ static void Str_AtariToLocal(const char *source, char *dest, int destLen, char r
 		if (i < 0)
 		{
 			*dest = replacementChar;
+			mapped = false;
 			i = 1;
 		}
 		dest += i;
 		destLen -= i;
 	}
 	*dest = 0;
+	return mapped;
 }
 
 /**
  * Convert a string from the character set defined by current host locale into the
  * AtariST character set. Characters which do not exist in the AtariST character set
- * will be replaced by replacementChar.
+ * will be replaced by replacementChar, and false returned.
  */
-static void Str_LocalToAtari(const char *source, char *dest, char replacementChar)
+static bool Str_LocalToAtari(const char *source, char *dest, char replacementChar)
 {
 	int i;
 	wchar_t c;
-	if (!characterMappingsInitialized) { initCharacterMappings(); }
 
+	bool mapped = (*source != 0);
 	while (*source)
 	{
 		/* convert a character from the current locale into an unicode code point */
@@ -494,6 +515,7 @@ static void Str_LocalToAtari(const char *source, char *dest, char replacementCha
 		if (i < 0)
 		{
 			c = replacementChar;
+			mapped = false;
 			i = 1;
 		}
 		source += i;
@@ -501,40 +523,52 @@ static void Str_LocalToAtari(const char *source, char *dest, char replacementCha
 		{
 			/* find AtariST character code for unicode code point c */
 			i = mapUnicodeToAtari[c & 511];
-			c = (mapAtariToUnicode[i] == c ? i + 128 : replacementChar);
+			if (mapAtariToUnicode[i] == c)
+			{
+				c = i + 128;
+			}
+			else
+			{
+				c = replacementChar;
+				mapped = false;
+			}
 		}
 		*dest++ = c;
 	}
 	*dest = 0;
+	return mapped;
 }
 #endif
 
-
-void Str_AtariToHost(const char *source, char *dest, int destLen, char replacementChar)
+/**
+ * Convert given host 'source' file name to 'destLen' sized 'dest',
+ * in Atari encoding, if GEMDOS HD filename conversion is enabled.
+ */
+void Str_Filename_Atari2Host(const char *source, char *dest, int destLen, char replacementChar)
 {
 	if (!ConfigureParams.HardDisk.bFilenameConversion)
 	{
 		Str_Copy(dest, source, destLen);
 		return;
 	}
+	Str_AtariToHost(source, dest, destLen, replacementChar);
+}
+
+bool Str_AtariToHost(const char *source, char *dest, int destLen, char replacementChar)
+{
 #if defined(WIN32) || defined(USE_LOCALE_CHARSET)
-	Str_AtariToLocal(source, dest, destLen, replacementChar);
+	return Str_AtariToLocal(source, dest, destLen, replacementChar);
 #else
-	Str_AtariToUtf8(source, dest, destLen);
+	return Str_AtariToUtf8(source, dest, destLen);
 #endif
 }
 
-static void Str_HostToAtari(const char *source, char *dest, char replacementChar)
+bool Str_HostToAtari(const char *source, char *dest, char replacementChar)
 {
-	if (!ConfigureParams.HardDisk.bFilenameConversion)
-	{
-		strcpy(dest, source);
-		return;
-	}
 #if defined(WIN32) || defined(USE_LOCALE_CHARSET)
-	Str_LocalToAtari(source, dest, replacementChar);
+	return Str_LocalToAtari(source, dest, replacementChar);
 #else
-	Str_Utf8ToAtari(source, dest, replacementChar);
+	return Str_Utf8ToAtari(source, dest, replacementChar);
 #endif
 }
 

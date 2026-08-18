@@ -9,16 +9,17 @@ Contents:
 4.2 As EXT2 HD image, from klibc utils
 5. Building initrd
 6. Running Hatari
-7. Debugging and profiling
-8. Native bootstrap
+7. Native bootstrap
+8. Debugging and profiling
+8.1 Kernel debugging
+8.2 User-space debugging
 9. Debian m68k install
 9.1 Debian installer
 9.2 Running initrd as normal disk
 9.3 Bootstrapping Debian installation on PC
 10. Linux kernel issues
-10.1 Known issues
+10.1 Known issues with workarounds
 10.2 TODO / investigate more
-11 User-space issues with cache/prefetch enabled
 
 
 1. Introduction
@@ -57,7 +58,7 @@ version available in the given remote directory!
 
 - LILO reset code has not yet been updated from Aranym's Falcon
   AfterBurner behavior to normal Falcon (they use different reset
-  addresses), so resets fail with LILO
+  addresses), so "reboot" command fails with LILO
 
 - PC address points to ST-RAM in debugger even for emulated Linux
   code running in TT-RAM, because it is not MMU-translated
@@ -69,27 +70,26 @@ version available in the given remote directory!
   missing MMU-translation within Hatari?
   DEBUG: Your Atari program just did something terribly stupid: dummy_xlate($c00123ee)
 
-- Hatari does not implement VME/SCU interrupt handling although it by
-  default allows access to related registers, and as result Linux
-  freezes at boot on MegaSTE / TT
-  => workaround: use Hatari "--vme none" option with them
-
-- Incomplete TT / SCSI / 2nd MFP emulation:
-  => workaround: have TT root file system on IDE master or slave
+- Incomplete SCSI emulation:
+  => workaround: have root file system on IDE master or slave
 
   Rootfs mount from SCSI device fails after following debug output:
 ------------------------------------------------------------
 ...
+sd 0:0:0:0: [sda] Write Protect is off
+sd 0:0:0:0: [sda] Mode Sense: 2b 00 00 00
+DEBUG: raw_scsi: arbitration initiator id 7 (80)
+DEBUG: raw_scsi: arbitration
 DEBUG: raw_scsi: selected id 0
 DEBUG: raw_scsi_put_data got message c0 (1/1)
 DEBUG: raw_scsi_put_data got message c0 (1 bytes)
 DEBUG: raw_scsi: got command byte 1a (1/6)
 DEBUG: raw_scsi: got command byte 00 (2/6)
-DEBUG: raw_scsi: got command byte 3f (3/6)
+DEBUG: raw_scsi: got command byte 08 (3/6)
 DEBUG: raw_scsi: got command byte 00 (4/6)
 DEBUG: raw_scsi: got command byte 04 (5/6)
 DEBUG: raw_scsi: got command byte 00 (6/6)
-TODO : HDC: Unsupported MODE SENSE command
+TODO : HDC: Unsupported MODE SENSE mode page
 DEBUG: raw_scsi: no data, status = 2
 DEBUG: raw_scsi: status byte read 02. Next=1
 DEBUG: raw_scsi: message byte read 00. Next=1
@@ -107,11 +107,12 @@ DEBUG: raw_scsi: got command byte 00 (6/6)
 WARN : HDC: *** Strange REQUEST SENSE ***!
 DEBUG: raw_scsi: data in 22 bytes waiting
 DEBUG: raw_scsi: data in finished, 22 bytes: status phase
-DEBUG: DMA initiator recv PC=001ba66a
+DEBUG: DMA initiator recv PC=001c40ee
 DEBUG: SCSI BUS reset
 sd 0:0:0:0: Device offlined - not ready after error recovery
 sd 0:0:0:0: [sda] Asking for cache data failed
 sd 0:0:0:0: [sda] Assuming drive cache: write through
+sd 0:0:0:0: rejecting I/O to offline device
 sd 0:0:0:0: [sda] Attached SCSI disk
 VFS: Cannot open root device "/dev/sda" or unknown-block(8,0): error -6
 ------------------------------------------------------------
@@ -127,7 +128,7 @@ VFS: Cannot open root device "/dev/sda" or unknown-block(8,0): error -6
    $ sudo apt install gcc-m68k-linux-gnu
 
 2. Get latest upstream kernel release sources (without history):
-   $ git clone --depth 1 --branch v6.8 \
+   $ git clone --depth 1 --branch v6.15 \
      git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
    $ cd linux
 
@@ -145,8 +146,9 @@ Notes:
 - You can fine-tune kernel config for your requirements with:
    $ ARCH=m68k CROSS_COMPILE=m68k-linux-gnu- make -j4 menuconfig
 
-- Using "optimize for size" instead of "optimize for performance"
-  reduced (stripped) kernel image by ~15%
+- Use "optimize for size" instead of "optimize for performance".
+  Latter is 1/4th (1MB) larger, and does not currently work
+  properly, although it boots much faster
 
 - Normal Linux builds require 030 (or better) with MMU and FPU
   (only uCLinux would work on 68000 without MMU)
@@ -197,22 +199,17 @@ host).
    $ ar x busybox-static_*_m68k.deb
    $ tar xvf data.tar.xz --wildcards *bin/busybox
 
-6. Install host BusyBox and add symlinks for the m68k one to bin/
-   directory, based on what tools host one lists to be included:
-   $ sudo apt install busybox
+6. Install qemu user space emulation to query m68k busybox, so
+   that symlinks can be added for the tools it lists:
+   $ sudo apt install qemu-user
    $ /path/to/hatari/tools/linux/symlink-busybox.sh
 
 7. Cleanup directory content:
    $ rm *.tar.* debian-binary
-   $ cd ..
 
 8. Make 4MB EXT2 HD image out of it:
+   $ cd ..
    $ /sbin/mkfs.ext2 -t ext2 -L BUSYBOX -d disk/ rootfs.img 4M
-
-TODO:
-- After qemu-m68k user-space emulation is good enough, installation of
-  host BusyBox can be skipped and m68k BusyBox can itself be queried
-  for list of tools to symlink
 
 
 4.2 As EXT2 HD image, from klibc utils
@@ -294,8 +291,8 @@ Notes:
 1. Set suitable options in lilo.cfg, for example:
 -------------------------------------
 [LILO]
-Kernel = vmlinux-v6.8
-Symbols = System.map-v6.8
+Kernel = vmlinux-v6.15
+Symbols = System.map-v6.15
 Ramdisk =
 Args = video=atafb:sthigh console=tty
 KernelToFastRam = FALSE
@@ -305,8 +302,7 @@ KernelToFastRam = FALSE
 2. Start Hatari:
     $ hatari --log-level info \
       --fast-forward on --fastfdc on --timer-d on \
-      --machine falcon --dsp none --fpu 68882 \
-      --cpuclock 32 --cpu-exact off --compatible off \
+      --machine falcon --dsp off --fpu 68882 --cpuclock 32 \
       --mmu on -s 14 --ttram 64 --addr24 off \
       -c lilo.cfg --natfeats on \
 
@@ -328,12 +324,10 @@ Options explanation (these can also be set in lilo.cfg):
 - init=<path> -- run given executable / script as first process
 
 Other notes:
-- Hatari CPU cache/prefetch emulation is disabled as otherwise
-  there are random bus errors & failures on Linux system calls
 - Keep "init=" last on "--lilo" option kernel command line,
   otherwise kernel may give arguments after it also to init!
-- Kernel does not need DSP, and avoiding it is emulation with
-  "--dsp none" at least doubles "--fast-forward on" speed
+- Kernel does not need DSP, and avoiding its emulation with
+  "--dsp off" (about) doubles "--fast-forward on" speed
 
 
 7. Native bootstrap
@@ -357,16 +351,15 @@ shows easiest method to simulate that with Hatari.
    $ cp /path/to/m68k-kernel/vmlinux gemdos-hd/
 
 4. If you do not have a TOS ROM image, download latest EmuTOS release from:
-     https://sourceforge.net/projects/emutos/files/emutos/1.3/emutos-1024k-1.3.zip/download
+     https://sourceforge.net/projects/emutos/files/emutos/1.4/emutos-1024k-1.4.zip/download
    and extract it:
-   $ unzip emutos-1024k-1.3.zip
+   $ unzip emutos-1024k-1.4.zip
 
 5. Then run Hatari with them:
    $ hatari --trace os_base --log-level info \
-      --tos emutos-1024k-1.3/etos1024k.img \
+      --tos emutos-1024k-1.4/etos1024k.img \
       --fast-forward on --fastfdc on --timer-d on \
-      --machine falcon --dsp none --fpu 68882 \
-      --cpuclock 32 --cpu-exact off --compatible off \
+      --machine falcon --dsp off --fpu 68882 --cpuclock 32 \
       --mmu on -s 14 --ttram 64 --addr24 off \
       --natfeats on --ide-master rootfs.img \
       gemdos-hd/bootstra.tos
@@ -385,6 +378,9 @@ On real HW:
 
 8. Debugging and profiling
 --------------------------
+
+8.1 Kernel debugging
+--------------------
 
 There are few ways to investigate what happens at boot:
 - Asking kernel to give debug output for module initializations
@@ -490,68 +486,98 @@ Those are IDE write command opcodes.  Make sure your IDE image
 actually *is* writable and try again.
 
 
+8.1 User-space debugging
+------------------------
+
+Linux user-space is best debugged with Linux user-space tools.
+
+Some actions can be done with "Magic SysRq", for help, see:
+	echo h > /proc/sysrq-trigger
+
+To see what syscall and their arguments graphical program does,
+install "strace" and forward its output to Hatari NatFeats output
+device:
+  $ strace -f -e execve -o /dev/nfcon0 wserver
+
+To see what library calls programs dynamically linked to Glibc do,
+use "latrace".
+
+More indepth debugging is likely to require Gdb. Install "gdbserver"
+to emulated system:
+https://sourceware.org/gdb/current/onlinedocs/gdb.html/Server.html
+
+TODO (test): Tell server to communicate over one of the serial ports
+supported by Hatari, tell Gdb on host to attach to corresponding
+Hatari device file, and point it to matching m68k ELF binary and
+its debug symbols.
+
+(There are several UIs that can be used with Gdb.)
+
+
 9. Debian m68k install
 ----------------------
 
 9.1 Debian installer
 --------------------
 
-Note: this section is out of date.
-
 These are setup instructions for testing Debian installer in Hatari.
-You need matching kernel, initrd and installation ISO image files for
-this.
 
 0. Work directory:
    $ mkdir -p debian/installer
    $ cd debian/installer
 
-1. Get latest Debian installer initrd:
-   $ wget https://cdimage.debian.org/cdimage/ports/debian-installer/2022-03-17/m68k/debian-installer-images_2021XXXX_m68k.tar.gz
+1. Get latest Debian installer (kernel + initrd images):
+   $ wget https://cdimage.debian.org/cdimage/ports/debian-installer/2024-02-25/m68k/debian-installer-images_202306XX_m68k.tar.gz
    $ tar xvf debian-installer-images*.gz
-   $ cp installer-m68k/current/images/nativehd/initrd.gz ..
 
-2. get kernel files for version matching above tar output
-   (if it is still available):
-   $ wget http://ftp.ports.debian.org/debian-ports/pool-m68k/main/l/linux/linux-image-5.18.0-2-m68k_5.18.5-1_m68k.deb
-   $ ar x linux-image-*_m68k.deb
-   $ tar xvf data.tar.xz
-   $ cp -av boot/* ..
-
-3. get kernel debug symbols (from the huge debug package):
-   $ wget http://ftp.ports.debian.org/debian-ports/pool-m68k/main/l/linux/linux-image-5.18.0-2-m68k-dbg_5.18.5-1_m68k.deb
-   $ tar xvf data.tar.xz --wildcards '*/System.map-*'
-   $ cp -av cp -av usr/lib/debug/boot/System.map-* ..
-
-4. Set up lilo.cfg with a framebuffer mode supported by Debian installer
+2. Set up lilo.cfg with a framebuffer mode supported by Debian installer
    (it needs at least 16 colors to be usable):
-   $ cd ..
    $ cat > lilo.cfg
 [LILO]
-Kernel = vmlinux-5.18.5-1-m68k
-Symbols = System.map-5.18.5-1-m68k
+Kernel = installer-m68k/current/images/kernels/vmlinux
 Args = video=atafb:vga16 console=tty
-Ramdisk = initrd.gz
+Ramdisk = installer-m68k/current/images/nativehd/initrd.gz
 KernelToFastRam = FALSE
 RamdiskToFastRam = TRUE
 ^D
 
-5. Get ISO image release matching installer & kernel (checksum files are in same directory):
-   $ wget https://cdimage.debian.org/cdimage/ports/snapshots/2022-03-28/debian-11.0.0-m68k-NETINST-1.iso
+3. Get ISO image release matching installer & kernel (checksum files are in same directory):
+   $ wget https://cdimage.debian.org/cdimage/ports/snapshots/2024-02-25/debian-12.0.0-m68k-NETINST-1.iso
 
-6. Try running Hatari with them:
+4. Try running Hatari with them:
     $ hatari --log-level debug \
       --fast-forward on --fastfdc on --timer-d on \
-      --machine falcon --dsp none --fpu 68882 \
-      --cpuclock 32 --cpu-exact off --compatible off \
+      --machine falcon --dsp off --fpu 68882 --cpuclock 32 \
       --mmu on -s 14 --ttram 128 --addr24 off \
       --monitor vga -c lilo.cfg --natfeats on \
-      --ide-master debian-11.0.0-m68k-NETINST-1.iso \
+      --ide-master debian-12.0.0-m68k-NETINST-1.iso \
       --lilo "debug=nfcon root=/dev/ram init=/init"
 
 NOTE: Hatari does not support networking so network install obviously
-wo not work.  There are not any ready made images of pre-installed and
+does not work.  There are no ready made images of pre-installed and
 up to date m68k Debian installs either.
+
+TODO: kernel panics when init crashes:
+------------------------
+[   42.310000] Freeing initrd memory: 26768K
+[   42.370000] Instruction fault at 0x00222a40
+[   42.380000] BAD KERNEL BUSERR
+[   42.390000] Oops: 00000000
+[   42.400000] Modules linked in:
+[   42.420000] PC: [<00222a40>] strnlen_user+0x38/0xd0
+...
+[   42.590000] Call Trace: [<001623a0>] load_elf_binary+0x9ca/0xb0a
+[   42.610000]  [<00020000>] _FP_CALL_TOP+0x9596/0xd512
+[   42.620000]  [<0005fc02>] module_put+0x0/0x50
+[   42.630000]  [<0011f086>] bprm_execve+0x196/0x39c
+[   42.640000]  [<0011e7fe>] copy_strings_kernel+0x0/0x54
+[   42.660000]  [<0011e502>] count_strings_kernel+0x0/0x3c
+[   42.670000]  [<0011f63a>] kernel_execve+0x148/0x150
+[   42.680000]  [<0003920c>] call_usermodehelper_exec_async+0xec/0x100
+[   42.700000]  [<00039120>] call_usermodehelper_exec_async+0x0/0x100
+[   42.730000]  [<00002568>] ret_from_kernel_thread+0xc/0x14
+------------------------
+
 
 
 9.2 Running initrd as normal disk
@@ -566,10 +592,19 @@ fakeroot session to retain file properties requiring root rights:
    $ mkdir initrd
    $ fakeroot /bin/bash
    # cd initrd
-   # zcat ../initrd.gz | cpio -i
+   # zcat ../installer-m68k/current/images/nativehd/initrd.gz | cpio -i
    # cd ..
-   # /sbin/mkfs.ext2 -t ext2 -L INITRD -d initrd rootfs.img 32M
+   # /sbin/mkfs.ext2 -t ext2 -L INITRD -d initrd initrd.img 32M
    # exit
+
+Notes:
+* Before creating image image, move "proc" mount before "mount" call
+  in initrd "init" file. Otherwise "mount" warns "no /proc/mounts",
+  returns an error and init script fails, resulting in kernel panic
+* Use normal monolithic kernel because Debian's modular installer
+  kernel does not have built-in IDE supports
+
+TODO: freeze when "init" script calls "/bin/busybox init" at end.
 
 
 9.3 Bootstrapping Debian installation on PC
@@ -594,8 +629,8 @@ TODO: test again whether there are improvements to last status:
   debootstrap fails to kernel oops
 - m68k system-qemu:
   does not support required HW
-- m68k user-qemu (from Debian Stretch):
-  fails completely on any m68k Debian binary
+- m68k user-qemu (from Debian Bookworm):
+  does support m68k binaries
 - Aranym:
 ------------------------------------------------------------
 $ cat > linux.config
@@ -627,22 +662,41 @@ $ aranym-mmu -l linux.config
 10. Linux kernel issues
 -----------------------
 
-10.1 Known issues
------------------
+10.1 Known issues with workarounds
+----------------------------------
 
-- Linux barfs at ST-RAM memory range given after TT-RAM.  However,
-  if kernel is loaded to TT-RAM and ST-RAM range is given before
-  TT-RAM range, kernel crashes.  Based on mails from 2013, this
-  seems to be a known Linux/Atari issue
+- Builds configured for performance (-O2) instead of size (-Os),
+  and built with current Debian stable (cross) m68k GCC (12.2),
+  will Oops once boot reaches user-space
 
-  Workaround: Hatari lilo.c gives ST-RAM before TT-RAM in bootinfo
+  Workaround: kernel configured for size (in included kernel.config)
+
+- Old (4.x?) Linux versions do not work if kernel is loaded to TT-RAM
+
+  Workaround: Load kernel to ST-RAM or use more recent kernel version
 
 - Hatari debug output shows IDE and DSP reset messages on Falcon at
   2Hz (from floppy media change detection) if Linux is started with
   --lilo, instead of from TOS.  This is because TOS initializes PSG
   port-A register bits to sensible values and Linux does not.
 
-  Workaround: kernel patch
+  Workaround: included kernel patch
+
+- Atari TT boot freezes with constant "unexpected interrupt from 112"
+  messages, due to Linux SCU register setup regression.
+
+  Workaround: use >=6.11 kernel, or kernel patch:
+  https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit?id=f70065a9fd988983b2c693631b801f25a615fc04
+
+- Hatari prefetch was earlier working incorrectly on bus errors.  This
+  caused user-space program crashes if either (or both) cycle-exact or
+  prefetch emulation is enabled for 030 (with MMU).
+
+  This problem was very visible with the tools included to statically
+  linked Busybox, but those issues cannot be reproduced any more.
+
+  Fix: Use latest Hatari Git version, commit 06fc93b021c38 (Oct 20 2024),
+  or newer.
 
 
 10.2 TODO / investigate more
@@ -671,123 +725,19 @@ Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(0,0)
 ------------------------------------------------------------
   Only SCSI & IDE drives are recognized
 
-- with Hatari 2.5, Linux works again on 040 & 060, when both CPU cache
-  & prefetch are disabled (with few previous Hatari versions, there
-  was panic on reaching user-space).
+- with Hatari 2.5, Linux works again[1] on 040 & 060, when CPU data
+  cache emulation is disabled (--data-cache off).
 
-  If CPU cache or prefetch are enabled, 060 boot crashes to double bus
-  error, and 040 boot freezes early on.  Although screen is black, CPU
-  trace indicates latter being a panic.
+  However, when data cache is enabled, boots crash to double bus
+  error.  Although screen is black, CPU trace indicates a panic.
 
-  This did not happen with 2019 v2.3-dev Git version (and Linux
+  Note: when booting Linux with "bootstra.prg" instead directly with
+  LILO, kernel panics immediately even with cache emulation disabled.
+
+  [1] In previous Hatari versions, there was panic on reaching user-space.
+
+  These did not happen with 2019 v2.3-dev Git version (and Linux
   version of that time). Linux also boots fine on real 060 Falcon:
 	https://www.youtube.com/watch?v=8Sriz45Z4oM
 
-
-11. User-space issues with cache/prefetch enabled
---------------------------------------------------
-
-These problems happen only when CPU caching is enabled.
-
-On quick testing, klibc based (dynamically linked) tools do not have
-problems, but tools in (statically linked) BusyBox do have a lot of
-problems:
-http://ftp.ports.debian.org/debian-ports/pool-m68k/main/b/busybox/busybox-static_1.36.1-6_m68k.deb
-
-- following BusyBox commands segfault before outputting anything:
-
-  adjtimex, arch, awk, basename, blockdev, chgrp, chmod, chown,
-  chroot, chvt, clear, cp, date, df, dirname, dumpkmap, env, expr,
-  find, fold, free, getopt, head, hexdump, hostid, hostname, id,
-  ionice, ip, ipcalc, groups, killall, link, ln, logname, ls, lsmod,
-  md5sum, mkdir, mkfifo, mknod, mkpasswd, mktemp, modinfo, modprobe,
-  mv, nameif, nproc, ps, readlink, realpath, renice, reset, rm, rmdir,
-  seq, sha*sum, sort, start, stty, sync, sysctl, taskset, touch,
-  umount, which, uname, uptime, usleep, w, who, whoami, xargs, yes
-
-  And for example following do not segfault:
-
-  arping, arp, ascii, ash, bc, bzcat, cal, cat, cmp, dmesg, du, echo,
-  egrep, expand, factor, false, fdisk, fgrep, grep, gunzip, gzip,
-  halt, hwclock, ifconfig, kill, last, less, more, mount, netstat,
-  nologin, nsenter, nslookup, openvt, patch, pidof, ping, ping6,
-  poweroff, printf, pwd, uname, sed, set, setsid, sh, sleep, strings,
-  syslogd, tail, tee, telnet, test, top, traceroute, true, uniq, vi,
-  watch, wget
-
-- "sed" does not segfault, but does not work correctly either.
-
-- 'setsid cttyhack' (without "-c" option) freezes (shell or kernel?)
-
-----
-
-TODO: rest is old information for 5.x kernels and old Hatari versions
-that needs to be re-checked!
-
-- Some Busybox commands (e.g. 'setsid') randomly hang
-  kernel v5.2, with Hatari showing following:
-------------------------------------------------------------
-- 1. 0x048fe8: vprintk_func +0x4c
-- 2. 0x048cda: printk +0xc
-- 3. 0x004d08: show_registers +0x6c
-- 4. 0x004fae: die_if_kernel +0x38
-- 5. 0x0052e4: buserr_c +0x102
-- 6. 0x0027c2: show_registers -0x24da (buserr +0x1a)
-- 7. 0x004fae: die_if_kernel +0x38
-...
-- 38200. 0x004fae: die_if_kernel +0x38
-- 38201. 0x0052e4: buserr_c +0x102
-- 38202. 0x0027c2: show_registers -0x24da (buserr +0x1a)
-- 38203. 0x004fae: die_if_kernel +0x38
-------------------------------------------------------------
-
-- Tracing (just "strace -f -e execve") WWS window server
-  seems to fail every time:
-------------------------------------------------------------
-*** LINE 1111 ***   FORMAT=0
-Current process id is 37
-BAD KERNEL TRAP: 00000000
-PC: [<000029a0>] user_inthandler+0x4/0x20
-SR: 2c08  SP: 660bea93  a2: 00020370
-d0: c003dbec    d1: 00004b6c    d2: 00000649    d3: c003d2d8
-d4: c0035000    d5: c001ed3c    a0: c0035000    a1: c003c978
-Process wserver (pid: 37, task=8ce40330)
-Frame format=0
-Stack from 0098dff8:
-...
-Disabling lock debugging due to kernel taint
-Data read fault at 0xc09ca958 in Super Data (pc=0x2ecc)
-BAD KERNEL BUSERR
-Oops: 00000000
-PC: [<00002ecc>] user_disable_single_step+0x16/0x2a
-SR: 2200  SP: a4351113  a2: 00925590
-d0: 00000018    d1: 00000018    d2: 00000007    d3: 00000000
-d4: 00010000    d5: 00000018    a0: c09ca958    a1: 0098faa0
-Process strace (pid: 34, task=be6fd4ba)
-Frame format=B ssw=0365 isc=0004 isb=5c88 daddr=c09ca958 dobuf=0098faa0
-baddr=c09ca958 dibuf=c09ca958 ver=0
-Stack from 00977ee8:
-...
-Call Trace: [<0002cef2>] ptrace_resume+0x34/0xb6
- [<0002d830>] ptrace_request+0x76/0x4ce
- [<0025534c>] radix_tree_lookup+0x16/0x1c
- [<00002f9c>] arch_ptrace+0xa8/0x30a
- [<0002d638>] sys_ptrace+0x228/0x334
- [<000028c4>] syscall+0x8/0xc
-------------------------------------------------------------
-
-Whereas tracing a simpler program like "echo" fails only
-randomly:
-------------------------------------------------------------
-*** LINE 1111 ***   FORMAT=0
-Current process id is 50
-BAD KERNEL TRAP: 00000000
-PC: [<00002988>] user_inthandler+0x4/0x20
-SR: 2d08  SP: 2612bd53  a2: 000bc004
-d0: d0097d7a    d1: 00029db4    d2: 000037cf    d3: d002cac0
-d4: d0000000    d5: c001ed3c    a0: d0000000    a1: d001c104
-Process strace (pid: 50, task=80e4cce9)
-Frame format=0
-Stack from 00955ff8:
-...
-------------------------------------------------------------
+- Busybox "halt" & "reboot" do nothing, although klibc versions work fine

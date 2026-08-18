@@ -105,11 +105,6 @@ static bool bScreenContentsChanged;     /* true if buffer changed and requires b
 static bool bScrDoubleY;                /* true if double on Y */
 static int ScrUpdateFlag;               /* Bit mask of how to update screen */
 static bool bRGBTableInSync;            /* Is RGB table up to date? */
-#ifdef __LIBRETRO__
-static bool bLibretroDoubleYEnable = 1; // used to disable Y doubling for low/medium resolutions
-static int coreRes = 0; // STRes if using ST resolution, otherwise an assumed mode based on GenConv dimensions.
-extern int core_video_aspect_adjust;
-#endif
 
 /* These are used for the generic screen conversion functions */
 static int genconv_width_req, genconv_height_req;
@@ -117,17 +112,9 @@ static int genconv_width_req, genconv_height_req;
 
 static bool Screen_DrawFrame(bool bForceFlip);
 
-#ifdef __LIBRETRO__
-static void Screen_ClearScreen(void); // forward declaration
-// these should be initialized
-SDL_Window *sdlWindow = NULL;
-static SDL_Renderer *sdlRenderer = NULL;
-static SDL_Texture *sdlTexture = NULL;
-#else
 SDL_Window *sdlWindow;
 static SDL_Renderer *sdlRenderer;
 static SDL_Texture *sdlTexture;
-#endif
 static bool bUseSdlRenderer;            /* true when using SDL2 renderer */
 static bool bIsSoftwareRenderer;
 
@@ -135,23 +122,16 @@ void Screen_UpdateRects(SDL_Surface *screen, int numrects, SDL_Rect *rects)
 {
 	if (bUseSdlRenderer)
 	{
-#ifndef __LIBRETRO__
 		SDL_UpdateTexture(sdlTexture, NULL, screen->pixels, screen->pitch);
 		/* Need to clear the renderer context for certain accelerated cards */
 		if (!bIsSoftwareRenderer)
 			SDL_RenderClear(sdlRenderer);
 		SDL_RenderCopy(sdlRenderer, sdlTexture, NULL, NULL);
 		SDL_RenderPresent(sdlRenderer);
-#else
-		// screen is always sdlscrn
-		core_video_update(sdlscrn->pixels, sdlscrn->w, sdlscrn->h, sdlscrn->pitch, coreRes);
-#endif
 	}
 	else
 	{
-#ifndef __LIBRETRO__
 		SDL_UpdateWindowSurfaceRects(sdlWindow, rects, numrects);
-#endif
 	}
 }
 
@@ -268,139 +248,6 @@ static void Screen_SetBorderPixels(int leftX, int leftY)
 	}
 }
 
-#ifdef __LIBRETRO__
-extern void core_border_crop(int width, int height, int zoomX, int zoomY, int *top, int *bottom, int *left, int *right, int statusH);
-void core_border_crop(int width, int height, int zoomX, int zoomY, int *top, int *bottom, int *left, int *right, int statusH)
-{
-	int ctop = *top;
-	int cbottom = *bottom;
-	int cleft = *left;
-	int cright = *right;
-	bool symmetryX = true;
-	bool symmetryY = true;
-
-	if (ConfigureParams.Screen.nCropOverscan == 1) // Small
-	{
-		ctop = 16;
-		cbottom = 16;
-		cleft = 16;
-		cright = 16;
-	}
-	else if (ConfigureParams.Screen.nCropOverscan == 2) // Medium
-	{
-		ctop = 24;
-		cbottom = 24;
-		cleft = 32;
-		cright = 32;
-	}
-	else if (ConfigureParams.Screen.nCropOverscan == 3) // Large
-	{
-		ctop = 29;
-		cbottom = 29;
-		cleft = 48;
-		cright = 48;
-	}
-	else if (ConfigureParams.Screen.nCropOverscan == 4) // Maximum
-	{
-		// keep inputs, don't apply symmetry
-		symmetryX = false;
-		symmetryY = false;
-	}
-	else if (ConfigureParams.Screen.nCropOverscan >= 5) // 720p/1080p crops
-	{
-		// target cropped height for 720p (5) or 1080p (6) with convenient integer scale
-		int th = (ConfigureParams.Screen.nCropOverscan == 6) ? 270 : 240;
-		if (height >= 300) th *= 2;
-
-		// temporarily undo the zoom to count output pixels
-		(void)zoomX; // don't need to account for horizontal zoom
-		ctop *= zoomY;
-		cbottom *= zoomY;
-
-		// figure out how many lines we can remove
-		int overscan = th - height; // number of lines available for overscan
-		if (overscan < 0) overscan = 0;
-		int crop = (cbottom + ctop) - overscan; // total number of lines available to remove
-		if (crop < 0) crop = 0;
-
-		// try to make the border padding symmetrical
-		// if the bottom is longer, taket from it first to even things out
-		if (cbottom > ctop)
-		{
-			int c = cbottom - ctop;
-			if (c > crop) c = crop;
-			cbottom -= c;
-			crop -= c;
-		}
-		else // just in case the top is longer (shouldn't happen though)
-		{
-			int c = ctop - cbottom;
-			if (c > crop) c = crop;
-			ctop -= c;
-			crop -= c;
-		}
-
-		// next, take half of whats left away from the top first (rounding down)
-		{
-			int c = crop / 2;
-			if (c > ctop) c = ctop;
-			ctop -= c;
-			crop -= c;
-		}
-		// take whatever remains from the bottom
-		{
-			int c = crop;
-			if (c > cbottom) c = cbottom;
-			cbottom -= c;
-			crop -= c;
-		}
-
-		// finally, make room for the status bar, but try to place it all on the bottom if possible (as if an overlay)
-		crop += statusH;
-		{
-			int c = crop;
-			if (c > cbottom) c = cbottom;
-			cbottom -= c;
-			crop -= c;
-		}
-		// if we need to, take the rest from the top
-		{
-			int c = crop;
-			if (c > ctop) c = ctop;
-			ctop -= c;
-			crop -= c;
-		}
-
-		// if crop isn't 0 by now, there's nothing more we can remove!
-
-		// re-apply the zoom
-		int remain = ((ctop + cbottom) % zoomY) / zoomY; // if they don't divide evenly by zoom, compensate with an extra pixel on the bottom
-		ctop /= zoomY;
-		cbottom /= zoomY;
-		cbottom += remain;
-
-		// keep X symmetry, but not Y
-		symmetryY = false;
-	}
-	// symmetry
-	if (symmetryX)
-	{
-		if (cleft > cright) cleft = cright;
-		if (cright > cleft) cright = cleft;
-	}
-	if (symmetryY)
-	{
-		if (ctop > cbottom) ctop = cbottom;
-		if (cbottom > ctop) cbottom = ctop;
-	}
-	// apply
-	if (*top    >= ctop   ) *top    = ctop;
-	if (*bottom >= cbottom) *bottom = cbottom;
-	if (*left   >= cleft  ) *left   = cleft;
-	if (*right  >= cright ) *right  = cright;
-}
-#endif
-
 /*-----------------------------------------------------------------------*/
 /**
  * store Y offset for each horizontal line in our source ST screen for
@@ -433,9 +280,7 @@ static void Screen_FreeSDL2Resources(void)
 {
 	if (sdlTexture)
 	{
-#ifndef __LIBRETRO__
 		SDL_DestroyTexture(sdlTexture);
-#endif
 		sdlTexture = NULL;
 	}
 	if (sdlscrn)
@@ -443,15 +288,10 @@ static void Screen_FreeSDL2Resources(void)
 		if (bUseSdlRenderer)
 			SDL_FreeSurface(sdlscrn);
 		sdlscrn = NULL;
-	#ifdef __LIBRETRO__
-		core_video_update(NULL, 0, 0, 0, 0); // tell the core sdlscrn is no longer valid
-	#endif
 	}
 	if (sdlRenderer)
 	{
-#ifndef __LIBRETRO__
 		SDL_DestroyRenderer(sdlRenderer);
-#endif
 		sdlRenderer = NULL;
 	}
 }
@@ -507,7 +347,6 @@ void Screen_SetTextureScale(int width, int height, int win_width, int win_height
 	DEBUGPRINT(("%dx%d / %dx%d -> scale = %g, Render Scale Quality = %c\n",
 		    win_width, win_height, width, height, scale, quality));
 
-#ifndef __LIBRETRO__
 	if (bForce || quality != prev_quality)
 	{
 		char hint[2] = { quality, 0 };
@@ -532,16 +371,11 @@ void Screen_SetTextureScale(int width, int height, int win_width, int win_height
 					       width, height);
 		if (!sdlTexture)
 		{
-			fprintf(stderr, "ERROR: Failed to create %dx%d@%d texture!\n",
-			       width, height, sdlscrn->format->BitsPerPixel);
-			exit(-3);
+			fprintf(stderr, "%dx%d@%d texture\n",
+				width, height, sdlscrn->format->BitsPerPixel);
+			Main_ErrorExit("Failed to create texture:", SDL_GetError(), -3);
 		}
 	}
-#else
-	(void)pfmt;
-	(void)quality;
-	(void)prev_quality;
-#endif
 }
 
 
@@ -563,7 +397,6 @@ static bool Screen_SetSDLVideoSize(int width, int height, bool bForceChange)
 	if (sdlscrn != NULL && sdlscrn->w == width && sdlscrn->h == height && !bForceChange)
 		return false;
 
-#ifndef __LIBRETRO__
 	psSdlVideoDriver = SDL_getenv("SDL_VIDEODRIVER");
 	bUseDummyMode = psSdlVideoDriver && !strcmp(psSdlVideoDriver, "dummy");
 
@@ -574,14 +407,6 @@ static bool Screen_SetSDLVideoSize(int width, int height, bool bForceChange)
 	}
 
 	bUseSdlRenderer = ConfigureParams.Screen.bUseSdlRenderer && !bUseDummyMode;
-#else
-	psSdlVideoDriver = NULL;
-	bUseSdlRenderer = true;
-	bUseDummyMode = false;
-	(void)sdlVideoFlags;
-	(void)psSdlVideoDriver;
-	(void)bUseDummyMode;
-#endif
 
 	/* SDL Video attributes: */
 	win_width = width;
@@ -621,7 +446,6 @@ static bool Screen_SetSDLVideoSize(int width, int height, bool bForceChange)
 	}
 
 	Screen_FreeSDL2Resources();
-#ifndef __LIBRETRO__
 	if (sdlWindow &&
 	    ((bInFullScreen && !ConfigureParams.Screen.bKeepResolution) ||
 	     (bPrevInFullScreen != bInFullScreen) ||
@@ -657,31 +481,22 @@ static bool Screen_SetSDLVideoSize(int width, int height, bool bForceChange)
 		sdlWindow = SDL_CreateWindow("Hatari", SDL_WINDOWPOS_UNDEFINED,
 		                             SDL_WINDOWPOS_UNDEFINED,
 		                             win_width, win_height, sdlVideoFlags);
+		if (!sdlWindow)
+		{
+			fprintf(stderr, "%dx%d window\n", win_width, win_height);
+			Main_ErrorExit("Failed to create window:", SDL_GetError(), -1);
+		}
 	}
-	if (!sdlWindow)
-	{
-		fprintf(stderr, "ERROR: Failed to create %dx%d window!\n",
-		        win_width, win_height);
-		exit(-1);
-	}
-#else
-	(void)bPrevInFullScreen;
-	(void)bPrevUseVsync;
-#endif
 	if (bUseSdlRenderer)
 	{
 		int rm, bm, gm;
-
-	#ifndef __LIBRETRO__
-
 		SDL_RendererInfo sRenderInfo = { 0 };
 
 		sdlRenderer = SDL_CreateRenderer(sdlWindow, -1, 0);
 		if (!sdlRenderer)
 		{
-			fprintf(stderr, "ERROR: Failed to create %dx%d renderer!\n",
-			        win_width, win_height);
-			exit(1);
+			fprintf(stderr, "%dx%d renderer\n", win_width, win_height);
+			Main_ErrorExit("Failed to create renderer:", SDL_GetError(), 1);
 		}
 
 		if (bInFullScreen)
@@ -702,68 +517,23 @@ static bool Screen_SetSDLVideoSize(int width, int height, bool bForceChange)
 		bm = 0x000000FF;
 		sdlscrn = SDL_CreateRGBSurface(0, width, height, 32, rm, gm, bm, 0);
 
-	#else
-		// no renderer, no window, just a SWSURFACE buffer
-		int am, bitdepth;
-
-		// in Hatari 2.5.0 bitdepth is no longer supported, always 32
-		//switch (core_pixel_format)
-		//{
-		//default:
-		//case 0: // 0RGB1555
-		//	bitdepth = 16;
-		//	rm = 0x7C00;
-		//	gm = 0x03E0;
-		//	bm = 0x001F;
-		//	am = 0x8000;
-		//	break;
-		//case 1: // XRGB8888
-			bitdepth = 32;
-			rm = 0x00FF0000;
-			gm = 0x0000FF00;
-			bm = 0x000000FF;
-			am = 0xFF000000;
-		//	break;
-		//case 2: // RGB565
-		//	bitdepth = 16;
-		//	rm = 0xF800;
-		//	gm = 0x07E0;
-		//	bm = 0x001F;
-		//	am = 0x0000;
-		//	break;
-		//}
-		sdlscrn = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, bitdepth,
-		                               rm, gm, bm, am);
-		// make sure core has valid pointer to screen data (even if not yet initialized)
-		core_video_update(sdlscrn->pixels, sdlscrn->w, sdlscrn->h, sdlscrn->pitch, coreRes);
-		if (SDL_MUSTLOCK(sdlscrn))
-			core_error_printf("Screen display may fail: sdlscrn SWSURFACE has MUSTLOCK\n");
-	#endif
-
 		Screen_SetTextureScale(width, height, win_width, win_height, true);
 	}
 	else
 	{
-#ifndef __LIBRETRO__
 		sdlscrn = SDL_GetWindowSurface(sdlWindow);
-#endif
 		bIsSoftwareRenderer = true;
 	}
 
 	/* Exit if we can not open a screen */
 	if (!sdlscrn)
 	{
-#ifndef __LIBRETRO__
-		fprintf(stderr, "ERROR: Could not set video mode:\n %s\n", SDL_GetError() );
-		SDL_Quit();
-#endif
-		exit(-2);
+		Main_ErrorExit("Could not set video mode:", SDL_GetError(), -2);
 	}
 
 	DEBUGPRINT(("SDL screen granted: %d x %d @ %d\n", sdlscrn->w, sdlscrn->h,
 	            sdlscrn->format->BitsPerPixel));
 
-//#ifndef __LIBRETRO__
 	if (!bInFullScreen)
 	{
 		/* re-embed the new Hatari SDL window */
@@ -771,7 +541,6 @@ static bool Screen_SetSDLVideoSize(int width, int height, bool bForceChange)
 	}
 
 	Avi_SetSurface(sdlscrn);
-//#endif
 
 	bRGBTableInSync = false;
 
@@ -811,26 +580,6 @@ static void Screen_SetSTResolution(bool bForceChange)
 
 	Resolution_GetLimits(&maxW, &maxH, ConfigureParams.Screen.bKeepResolution);
 
-#ifdef __LIBRETRO__
-	int nZoomY = nZoom;
-	bLibretroDoubleYEnable = 1;
-	core_video_aspect_adjust = 0;
-	maxW = 2*NUM_VISIBLE_LINE_PIXELS;
-	maxH = 2*NUM_VISIBLE_LINES+STATUSBAR_MAX_HEIGHT;
-	if (!ConfigureParams.Screen.bLowResolutionDouble && STRes == ST_LOW_RES)
-	{
-		maxW /= 2;
-		maxH /= 2;
-	}
-	else if (!ConfigureParams.Screen.bMedResolutionDouble && STRes == ST_MEDIUM_RES)
-	{
-		maxH /= 2;
-		Height /= 2;
-		bLibretroDoubleYEnable = 0;
-	}
-	coreRes = STRes;
-#endif
-
 	/* Zoom if necessary, factors used for scaling mouse motions */
 	if (STRes == ST_LOW_RES &&
 	    2*Width <= maxW && 2*Height+SBarHeight <= maxH)
@@ -841,9 +590,6 @@ static void Screen_SetSTResolution(bool bForceChange)
 		nScreenZoomX = 2;
 		nScreenZoomY = 2;
 		bDoubleLowRes = true;
-#ifdef __LIBRETRO__
-		nZoomY = nZoom;
-#endif
 	}
 	else if (STRes == ST_MEDIUM_RES)
 	{
@@ -854,14 +600,6 @@ static void Screen_SetSTResolution(bool bForceChange)
 		 */
 		nScreenZoomX = 1;
 		nScreenZoomY = 2;
-#ifdef __LIBRETRO__
-		if (!ConfigureParams.Screen.bMedResolutionDouble)
-		{
-			nScreenZoomY = 1;
-			nZoomY = 1;
-			core_video_aspect_adjust = 1;
-		}
-#endif
 	}
 
 	/* Adjust width/height for overscan borders, if mono or VDI we have no overscan */
@@ -870,7 +608,6 @@ static void Screen_SetSTResolution(bool bForceChange)
 		int leftX = maxW - Width;
 		int leftY = maxH - (Height + Statusbar_GetHeightForSize(Width, Height));
 
-#ifndef __LIBRETRO__
 		Screen_SetBorderPixels(leftX/nZoom, leftY/nZoom);
 		DEBUGPRINT(("resolution limit:\n\t%d x %d\nlimited resolution:\n\t", maxW, maxH));
 		DEBUGPRINT(("%d * (%d + %d + %d) x (%d + %d + %d)\n", nZoom,
@@ -878,12 +615,6 @@ static void Screen_SetSTResolution(bool bForceChange)
 			    nBorderPixelsTop, Height/nZoom, nBorderPixelsBottom));
 		Width += (nBorderPixelsRight + nBorderPixelsLeft)*nZoom;
 		Height += (nBorderPixelsTop + nBorderPixelsBottom)*nZoom;
-#else
-		Screen_SetBorderPixels(leftX/nZoom, leftY/nZoomY);
-		core_border_crop(Width, Height, nZoom, nZoomY, &nBorderPixelsTop, &nBorderPixelsBottom, &nBorderPixelsLeft, &nBorderPixelsRight, Statusbar_GetHeightForSize(Width, Height));
-		Width += (nBorderPixelsRight + nBorderPixelsLeft)*nZoom;
-		Height += (nBorderPixelsTop + nBorderPixelsBottom)*nZoomY;
-#endif
 		DEBUGPRINT(("\t= %d x %d (+ statusbar)\n", Width, Height));
 	}
 
@@ -901,9 +632,6 @@ static void Screen_SetSTResolution(bool bForceChange)
 		STScreenRect.y = 0;
 		STScreenRect.w = sdlscrn->w;
 		STScreenRect.h = sdlscrn->h - Statusbar_GetHeight();
-#ifdef __LIBRETRO__
-		Screen_ClearScreen(); // refresh to palette 0 because that looks better than black when emulation is paused
-#endif
 	}
 
 	if (!bRGBTableInSync)
@@ -948,9 +676,7 @@ static void Screen_ChangeResolution(bool bForceChange)
 		Screen_SetSTResolution(bForceChange);
 	}
 
-#ifndef __LIBRETRO__
 	SDL_SetRelativeMouseMode(bInFullScreen || bGrabMouse);
-#endif
 }
 
 
@@ -983,8 +709,7 @@ void Screen_Init(void)
 	FrameBuffer.pSTScreenCopy = malloc(MAX_VDI_BYTES);
 	if (!FrameBuffer.pSTScreen || !FrameBuffer.pSTScreenCopy)
 	{
-		fprintf(stderr, "ERROR: Failed to allocate frame buffer memory.\n");
-		exit(-1);
+		Main_ErrorExit("Failed to allocate frame buffer memory", NULL, -1);
 	}
 	pFrameBuffer = &FrameBuffer;  /* TODO: Replace pFrameBuffer with FrameBuffer everywhere */
 
@@ -995,7 +720,6 @@ void Screen_Init(void)
 
 	Video_SetScreenRasters();                       /* Set rasters ready for first screen */
 
-#ifndef __LIBRETRO__
 	/* Load and set icon */
 	File_MakePathBuf(sIconFileName, sizeof(sIconFileName), Paths_GetDataDir(),
 	                 "hatari-icon", "bmp");
@@ -1008,11 +732,7 @@ void Screen_Init(void)
 	}
 
 	/* Configure some SDL stuff: */
-	SDL_ShowCursor(SDL_DISABLE);
-#else
-	(void)sIconFileName;
-	(void)pIconSurf;
-#endif
+	Main_ShowCursor(false);
 }
 
 
@@ -1029,13 +749,11 @@ void Screen_UnInit(void)
 	FrameBuffer.pSTScreenCopy = NULL;
 
 	Screen_FreeSDL2Resources();
-#ifndef __LIBRETRO__
 	if (sdlWindow)
 	{
 		SDL_DestroyWindow(sdlWindow);
 		sdlWindow = NULL;
 	}
-#endif
 }
 
 
@@ -1086,11 +804,7 @@ void Screen_SetFullUpdate(void)
  */
 static void Screen_ClearScreen(void)
 {
-#ifndef __LIBRETRO__
 	SDL_FillRect(sdlscrn, &STScreenRect, SDL_MapRGB(sdlscrn->format, 0, 0, 0));
-#else
-	SDL_FillRect(sdlscrn, &STScreenRect, STRGBPalette[0]); // use palette 0 because it looks better while emulation is paused
-#endif
 }
 
 
@@ -1128,7 +842,6 @@ static void Screen_Refresh(void)
  */
 void Screen_EnterFullScreen(void)
 {
-#ifndef __LIBRETRO__
 	bool bWasRunning;
 
 	if (!bInFullScreen)
@@ -1166,10 +879,6 @@ void Screen_EnterFullScreen(void)
 		}
 		SDL_SetRelativeMouseMode(true);  /* Grab mouse pointer in fullscreen */
 	}
-#else
-	(void)Screen_Refresh;
-	(void)Screen_UseGenConvScreen;
-#endif
 }
 
 
@@ -1179,7 +888,6 @@ void Screen_EnterFullScreen(void)
  */
 void Screen_ReturnFromFullScreen(void)
 {
-#ifndef __LIBRETRO__
 	bool bWasRunning;
 
 	if (bInFullScreen)
@@ -1221,7 +929,6 @@ void Screen_ReturnFromFullScreen(void)
 			SDL_SetRelativeMouseMode(false);
 		}
 	}
-#endif
 }
 
 
@@ -1615,7 +1322,6 @@ void Screen_SetGenConvSize(int width, int height, bool bForceChange)
 
 	nScreenZoomX = nScreenZoomY = 1;
 
-#ifndef __LIBRETRO__
 	if (ConfigureParams.Screen.bAspectCorrect) {
 		/* Falcon (and TT) pixel scaling factors seem to 2^x
 		 * (quarter/half pixel, interlace/double line), so
@@ -1650,38 +1356,6 @@ void Screen_SetGenConvSize(int width, int height, bool bForceChange)
 			nScreenZoomY *= scaley;
 		}
 	}
-#else
-	coreRes = ST_HIGH_RES;
-	core_video_aspect_adjust = 0;
-	if (2*width  <= maxw) nScreenZoomX = 2;
-	if (2*height <= maxh) nScreenZoomY = 2;
-	// if X is zoomed, use low resolution doubling setting
-	if (nScreenZoomX > 1)
-	{
-		coreRes = ST_LOW_RES;
-		if (!ConfigureParams.Screen.bLowResolutionDouble)
-		{
-			if (nScreenZoomX > 1 && nScreenZoomY <= 1) // TT/Falcon "tall" 320x400
-			{
-				core_video_aspect_adjust = 2;
-			}
-			nScreenZoomX = 1;
-			nScreenZoomY = 1;
-		}
-	}
-	// if only Y is zoomed, use medium resolution doubling setting
-	else if (nScreenZoomY > 1)
-	{
-		coreRes = ST_MEDIUM_RES;
-		if (!ConfigureParams.Screen.bMedResolutionDouble)
-		{
-			nScreenZoomY = 1;
-			core_video_aspect_adjust = 1;
-		}
-	}
-	(void)scalex;
-	(void)scaley;
-#endif
 
 	genconv_width_req = width;
 	genconv_height_req = height;
@@ -1841,11 +1515,6 @@ static Uint32* Double_ScreenLine32(Uint32 *line, int size)
 	int fmt_size = size/4;
 	Uint32 *next;
 	Uint32 mask;
-
-#ifdef __LIBRETRO__
-	if (!bLibretroDoubleYEnable)
-		return line + fmt_size;
-#endif
 
 	next = line + fmt_size;
 	/* copy as-is */

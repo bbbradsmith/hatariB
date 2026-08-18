@@ -19,12 +19,7 @@ extern void INF_SetVdiMode(int vdi_res);
 extern int INF_ValidateAutoStart(const char **val, const char **err);
 extern void INF_CreateOverride(void);
 extern bool INF_Overriding(autostart_t t);
-#ifndef __LIBRETRO__
 extern FILE *INF_OpenOverride(const char *filename);
 extern bool INF_CloseOverride(FILE *fp);
-#else
-extern corefile* INF_OpenOverride(const char *filename);
-extern bool INF_CloseOverride(corefile* fp);
-#endif
 
 #endif

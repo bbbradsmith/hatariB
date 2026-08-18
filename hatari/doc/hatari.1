@@ -106,6 +106,9 @@ be given with full path it will have under emulation, for
 example "C:\\DIR\\PROGRAM.PRG". This is implemented by providing
 TOS a virtual INF file for the boot drive (A: or C:), which
 tells TOS to start the given program
+.B \-\-fast-forward-key-repeat <bool>
+Use keyboard auto repeat when using fast forward mode (default true)
+.TP
 
 .SH "Common display options"
 .TP
@@ -295,7 +298,8 @@ Force AVI frame rate (x = 50/60/71/...)
 Use <file> to record AVI
 .TP
 .B \-\-screenshot\-dir <dir>
-Save screenshots in the directory <dir>
+Directory for saving screenshots (default Hatari directory for
+them is OS specific).
 
 .SH "Devices options"
 .TP
@@ -430,6 +434,10 @@ If just a filename is given, it is assigned to BUS ID 0
 Emulate a SCSI hard disk with given BUS ID (0-7) using image <file>.
 If just a filename is given, it is assigned to BUS ID 0
 .TP
+.B \-\-scsi\-ver <id>=<version>
+Emulate specified SCSI version (1-2) for given BUS ID (0-7).
+If just a version is given, it is applied to BUS ID 0
+.TP
 .B \-\-ide\-master <file>
 Emulate an IDE 0 (master) hard disk with an image <file>
 .TP
@@ -451,7 +459,7 @@ Other values are considered as a size in KiB.  While Hatari allows
 14 MiB for all machine types, on real HW, ST/STE can have up to 4 MiB,
 MegaSTE/TT up to 10 MiB, and Falcon up to 14 MiB RAM.
 .TP
-.B \-s, \-\-ttram <x>
+.B \-\-ttram <x>
 Set amount of emulated TT RAM, x = 0 to 1024 MiB (in 4MiB steps)
 
 .SH "ROM options"
@@ -480,7 +488,10 @@ Use a more compatible 68000 CPU mode with better prefetch accuracy and
 cycle counting
 .TP
 .B \-\-cpu\-exact <bool>
-Use cycle exact CPU emulation (cache emulation)
+Use cycle exact CPU emulation
+.TP
+.B \-\-data\-cache <bool>
+Emulate >= 030 CPU data cache
 .TP
 .B \-\-addr24 <bool>
 Use 24-bit instead of 32-bit addressing mode
@@ -505,17 +516,6 @@ Enable blitter emulation (ST only)
 .TP
 .B \-\-dsp <x>
 Falcon DSP emulation (x = none, dummy or emu, Falcon only)
-.TP
-.B \-\-vme <x>
-Hatari doesn't have proper MegaSTE/TT VME emulation yet, but this
-controls access to related SCU registers (MegaSTE/TT only).
-
-With "dummy", (no-op) access is allowed (=VME HW), otherwise TOS v2
-and v3 crash on bootup on MegaSTE and TT.  Supports VME tracing.
-
-With "none", register access causes errors (=no VME HW), which is
-needed for Linux to boot with TT emulation until there's full SCU
-interrupt support.  No VME tracing support.
 .TP
 .B \-\-rtc\-year <x>
 With the default value 0, RTC date and time are taken from the host.
@@ -662,15 +662,16 @@ Log output level (x=debug/todo/info/warn/error/fatal)
 Show dialog for log messages above given level
 .TP
 .B \-\-run\-vbls <x>
-Exit after X VBLs.  Often used with --benchmark option
+Exit after X VBLs.  Used with --benchmark mode
 .TP
 .B \-\-benchmark
-Start in benchmark mode.  Currently same as --fast-forward mode,
-except it can't be disabled at run-time. Allows better measuring for
-the speed of the emulation in frames per second.  Unless you're
-specifically measuring emulator audio and screen processing speed,
-disable them (--sound off/--disable-video on) to have as little OS
-overhead as possible
+Start in benchmark mode (use with --run-vbls). Same as --fast-forward
+mode, except it cannot be disabled at run-time, and FPS will be
+printed on emulation exit (and pausing) regardless of log level.
+Allows better measuring of emulation speed, in frames per second.
+Unless you're specifically measuring emulator audio and screen
+processing speed, disable them (--sound off/--disable-video on) to
+have as little OS overhead as possible
 
 .SH "INPUT HANDLING"
 Hatari provides special input handling for different purposes.
@@ -832,7 +833,7 @@ The main program documentation, usually in /usr/share/doc/.
 Among other things it contains an extensive usage manual,
 software compatibility list and release notes.
 .PP
-The homepage of Hatari: http://hatari.tuxfamily.org/
+The homepage of Hatari: https://www.hatari-emu.org/
 .PP
 Other Hatari programs and utilities:
 .br
