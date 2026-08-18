@@ -839,7 +839,7 @@ void GemDOS_InitDrives(void)
 			return;
 		}
 	}
-#ifndef __LIBRETRO__
+#ifdef __LIBRETRO__
 	core_debug_printf("GemDOS drives: %d\n",nMaxDrives);
 #endif
 
