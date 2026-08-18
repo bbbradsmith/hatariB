@@ -7,6 +7,8 @@
   Map SDL key events to ST scancodes and send them to IKBD as
   pressed/released keys.  Based on Hatari configuration options,
   several different ways can be used to map SDL key events.
+
+  See https://tho-otto.de/keyboards/ for the Atari ST keyboard layouts.
 */
 const char Keymap_fileid[] = "Hatari keymap.c";
 
@@ -16,27 +18,38 @@ const char Keymap_fileid[] = "Hatari keymap.c";
 #include "configuration.h"
 #include "file.h"
 #include "ikbd.h"
+#include "nvram.h"
 #include "joy.h"
 #include "shortcut.h"
 #include "str.h"
+#include "tos.h"
 #include "debugui.h"
 #include "log.h"
 
 /* if not able to map */
 #define ST_NO_SCANCODE 0xff
 
+/* Some ST keyboard scancodes */
+#define ST_ESC		0x01
+#define ST_CONTROL	0x1d
+#define ST_LSHIFT	0x2a
+#define ST_RSHIFT	0x36
+#define ST_ALTERNATE	0x38
+#define ST_CAPSLOCK	0x3a
+
 /* Table for loaded keys: */
 static int LoadedKeymap[KBD_MAX_SCANCODE][2];
+static bool keymap_loaded;
 
 /* List of ST scan codes to NOT de-bounce when running in maximum speed */
 static const uint8_t DebounceExtendedKeys[] =
 {
-	0x1d,  /* CTRL */
-	0x2a,  /* Left SHIFT */
-	0x01,  /* ESC */
-	0x38,  /* ALT */
-	0x36,  /* Right SHIFT */
-	0      /* term */
+	ST_CONTROL,
+	ST_LSHIFT,
+	ST_ESC,
+	ST_ALTERNATE,
+	ST_RSHIFT,
+	0  /* End of list */
 };
 
 
@@ -51,10 +64,11 @@ void Keymap_Init(void)
 }
 
 /**
- * Map SDL symbolic key to ST scan code.
- * This assumes a QWERTY ST keyboard.
+ * Default function for mapping SDL symbolic key to ST scan code.
+ * This contains the ST keycode used by the majority of TOS regions for
+ * that semantic symbol.
  */
-static uint8_t Keymap_SymbolicToStScanCode(const SDL_Keysym* pKeySym)
+static uint8_t Keymap_SymbolicToStScanCode_default(const SDL_Keysym* pKeySym)
 {
 	uint8_t code;
 
@@ -64,23 +78,31 @@ static uint8_t Keymap_SymbolicToStScanCode(const SDL_Keysym* pKeySym)
 	 case SDLK_TAB: code = 0x0F; break;
 	 case SDLK_CLEAR: code = 0x47; break;
 	 case SDLK_RETURN: code = 0x1C; break;
-	 case SDLK_ESCAPE: code = 0x01; break;
+	 case SDLK_ESCAPE: code = ST_ESC; break;
 	 case SDLK_SPACE: code = 0x39; break;
 	 case SDLK_EXCLAIM: code = 0x09; break;     /* on azerty? */
 	 case SDLK_QUOTEDBL: code = 0x04; break;    /* on azerty? */
-	 case SDLK_HASH: code = 0x29; break;
+#ifndef __LIBRETRO__
+	 case SDLK_HASH: code = 0x2B; break;        /* DE, UK host only, for FR/UK/DK/NL TOS */
+#else
+	 case SDLK_HASH: code = 0x29; break; // hatariB depends on old default
+#endif
 	 case SDLK_DOLLAR: code = 0x1b; break;      /* on azerty */
 	 case SDLK_AMPERSAND: code = 0x02; break;   /* on azerty? */
 	 case SDLK_QUOTE: code = 0x28; break;
 	 case SDLK_LEFTPAREN: code = 0x63; break;
 	 case SDLK_RIGHTPAREN: code = 0x64; break;
 	 case SDLK_ASTERISK: code = 0x66; break;
-	 case SDLK_PLUS: code = 0x1B; break;
+#ifndef __LIBRETRO__
+	 case SDLK_PLUS: code = 0x4e; break;
+#else
+	 case SDLK_PLUS: code = 0x1B; break; // hatariB depends on old default
+#endif
 	 case SDLK_COMMA: code = 0x33; break;
 #ifndef __LIBRETRO__
-	 case SDLK_MINUS: code = 0x35; break;
+	 case SDLK_MINUS: code = 0x35; break;       /* default for DE/IT/SE/CH/FI/NO/DK/CZ */
 #else
-	 case SDLK_MINUS: code = 0x0C; break; // hatari has this wrong?
+	 case SDLK_MINUS: code = 0x0C; break; // hatariB depends on US/UK mapping for this
 #endif
 	 case SDLK_PERIOD: code = 0x34; break;
 	 case SDLK_SLASH: code = 0x35; break;
@@ -102,7 +124,7 @@ static uint8_t Keymap_SymbolicToStScanCode(const SDL_Keysym* pKeySym)
 	 case SDLK_QUESTION: code = 0x35; break;
 	 case SDLK_AT: code = 0x28; break;
 	 case SDLK_LEFTBRACKET: code = 0x1A; break;
-	 case SDLK_BACKSLASH: code = 0x2B; break;     /* Might be 0x60 for UK keyboards */
+	 case SDLK_BACKSLASH: code = 0x2B; break;
 	 case SDLK_RIGHTBRACKET: code = 0x1B; break;
 	 case SDLK_CARET: code = 0x2B; break;
 	 case SDLK_UNDERSCORE: code = 0x0C; break;
@@ -135,11 +157,38 @@ static uint8_t Keymap_SymbolicToStScanCode(const SDL_Keysym* pKeySym)
 	 case SDLK_z: code = 0x2C; break;
 	 case SDLK_DELETE: code = 0x53; break;
 	 /* End of ASCII mapped keysyms */
-	 case 180: code = 0x0D; break;
-	 case 223: code = 0x0C; break;
-	 case 228: code = 0x28; break;
-	 case 246: code = 0x27; break;
-	 case 252: code = 0x1A; break;
+	 case 167: code = 0x29; break;		/* Swiss § */
+	 case 168: code = 0x1B; break;		/* Swiss ¨ */
+	 case 176: code = 0x35; break;		/* Spanish ° */
+	 case 178: code = 0x29; break;		/* French ² */
+	 case 180: code = 0x0D; break;		/* German ' */
+	 case 223: code = 0x0C; break;		/* German ß */
+	 case 224: code = 0x0B; break;		/* French à */
+	 case 225: code = 0x09; break;		/* Czech á */
+	 case 228: code = 0x28; break;		/* German ä */
+	 case 229: code = 0x1A; break;		/* Swedish å */
+	 case 231: code = 0x0A; break;		/* French ç */
+	 case 232: code = 0x08; break;		/* French è */
+	 case 233: code = 0x03; break;		/* French é */
+	 case 236: code = 0x0D; break;		/* Italian ì */
+	 case 237: code = 0x0A; break;		/* Czech í */
+	 case 241: code = 0x27; break;		/* Spanish ñ */
+	 case 242: code = 0x27; break;		/* Italian ò */
+	 case 243: code = 0x02; break;		/* Czech ó */
+	 case 246: code = 0x27; break;		/* German ö */
+	 case 249: code = 0x28; break;		/* French ù */
+	 case 250: code = 0x1A; break;		/* Czech ú */
+	 case 252: code = 0x1A; break;		/* German ü */
+	 case 253: code = 0x08; break;		/* Czech ý */
+	 case 269: code = 0x05; break;		/* Czech č */
+	 case 271: code = 0x1B; break;		/* Czech ď */
+	 case 283: code = 0x03; break;		/* Czech ě */
+	 case 328: code = 0x2B; break;		/* Czech ň */
+	 case 345: code = 0x06; break;		/* Czech ř */
+	 case 353: code = 0x04; break;		/* Czech š */
+	 case 357: code = 0x28; break;		/* Czech ť */
+	 case 367: code = 0x27; break;		/* Czech ů */
+	 case 382: code = 0x07; break;		/* Czech ž */
 	 /* Numeric keypad: */
 	 case SDLK_KP_0: code = 0x70; break;
 	 case SDLK_KP_1: code = 0x6D; break;
@@ -167,9 +216,9 @@ static uint8_t Keymap_SymbolicToStScanCode(const SDL_Keysym* pKeySym)
 	 case SDLK_LEFT: code = 0x4B; break;
 	 case SDLK_INSERT: code = 0x52; break;
 	 case SDLK_HOME: code = 0x47; break;
-	 case SDLK_END: code = 0x61; break;
-	 case SDLK_PAGEUP: code = 0x63; break;
-	 case SDLK_PAGEDOWN: code = 0x64; break;
+	 case SDLK_END: code = 0x61; break;         /* ST Undo */
+	 case SDLK_PAGEUP: code = 0x63; break;      /* ST ( */
+	 case SDLK_PAGEDOWN: code = 0x64; break;    /* ST ) */
 	 /* Function keys */
 	 case SDLK_F1: code = 0x3B; break;
 	 case SDLK_F2: code = 0x3C; break;
@@ -181,26 +230,184 @@ static uint8_t Keymap_SymbolicToStScanCode(const SDL_Keysym* pKeySym)
 	 case SDLK_F8: code = 0x42; break;
 	 case SDLK_F9: code = 0x43; break;
 	 case SDLK_F10: code = 0x44; break;
-	 case SDLK_F11: code = 0x62; break;
-	 case SDLK_F12: code = 0x61; break;
-	 case SDLK_F13: code = 0x62; break;
+	 case SDLK_F11: code = 0x62; break;         /* ST Help */
+	 case SDLK_F12: code = 0x61; break;         /* ST Undo */
+	 case SDLK_F13: code = 0x62; break;         /* ST Help */
 	 /* Key state modifier keys */
-	 case SDLK_CAPSLOCK: code = 0x3A; break;
-	 case SDLK_SCROLLLOCK: code = 0x61; break;
-	 case SDLK_RSHIFT: code = 0x36; break;
-	 case SDLK_LSHIFT: code = 0x2A; break;
-	 case SDLK_RCTRL: code = 0x1D; break;
-	 case SDLK_LCTRL: code = 0x1D; break;
-	 case SDLK_RALT: code = 0x38; break;
-	 case SDLK_LALT: code = 0x38; break;
+	 case SDLK_CAPSLOCK: code = ST_CAPSLOCK; break;
+	 case SDLK_SCROLLLOCK: code = 0x61; break;  /* ST Undo */
+	 case SDLK_RSHIFT: code = ST_RSHIFT; break;
+	 case SDLK_LSHIFT: code = ST_LSHIFT; break;
+	 case SDLK_RCTRL: code = ST_CONTROL; break;
+	 case SDLK_LCTRL: code = ST_CONTROL; break;
+	 case SDLK_RALT: code = ST_ALTERNATE; break;
+	 case SDLK_LALT: code = ST_ALTERNATE; break;
 	 /* Miscellaneous function keys */
 	 case SDLK_HELP: code = 0x62; break;
-	 case SDLK_PRINTSCREEN: code = 0x62; break;
+	 case SDLK_PRINTSCREEN: code = 0x62; break; /* ST Help */
 	 case SDLK_UNDO: code = 0x61; break;
 	 default: code = ST_NO_SCANCODE;
 	}
 
 	return code;
+}
+
+static uint8_t (*Keymap_SymbolicToStScanCode)(const SDL_Keysym* pKeySym) =
+		Keymap_SymbolicToStScanCode_default;
+
+static uint8_t Keymap_SymbolicToStScanCode_US(const SDL_Keysym* keysym)
+{
+	switch (keysym->sym)
+	{
+	 case SDLK_MINUS: return 0x0C;
+	 default: return Keymap_SymbolicToStScanCode_default(keysym);
+	}
+}
+
+static uint8_t Keymap_SymbolicToStScanCode_DE(const SDL_Keysym* keysym)
+{
+	switch (keysym->sym)
+	{
+	 case SDLK_HASH: return 0x29;
+	 case SDLK_PLUS: return 0x1B;
+	 case SDLK_SLASH: return 0x65;
+	 case SDLK_y: return 0x2C;
+	 case SDLK_z: return 0x15;
+	 default: return Keymap_SymbolicToStScanCode_default(keysym);
+	}
+}
+
+static uint8_t Keymap_SymbolicToStScanCode_FR(const SDL_Keysym* keysym)
+{
+	switch (keysym->sym)
+	{
+	 case SDLK_QUOTE: return 0x05;
+	 case SDLK_LEFTPAREN: return 0x06;
+	 case SDLK_RIGHTPAREN: return 0x0c;
+	 case SDLK_COMMA: return 0x32;
+	 case SDLK_MINUS: return 0x0D;
+	 case SDLK_SEMICOLON: return 0x33;
+	 case SDLK_EQUALS: return 0x35;
+	 case SDLK_CARET: return 0x1A;
+	 case SDLK_a: return 0x10;
+	 case SDLK_m: return 0x27;
+	 case SDLK_q: return 0x1E;
+	 case SDLK_w: return 0x2C;
+	 case SDLK_z: return 0x11;
+	 case 167: return 0x07;		/* French § */
+	 default: return Keymap_SymbolicToStScanCode_default(keysym);
+	}
+}
+
+static uint8_t Keymap_SymbolicToStScanCode_UK(const SDL_Keysym* keysym)
+{
+	switch (keysym->sym)
+	{
+	 case SDLK_MINUS: return 0x0C;
+	 case SDLK_BACKSLASH: return 0x60;
+	 default: return Keymap_SymbolicToStScanCode_default(keysym);
+	}
+}
+
+static uint8_t Keymap_SymbolicToStScanCode_ES(const SDL_Keysym* keysym)
+{
+	switch (keysym->sym)
+	{
+	 case SDLK_MINUS: return 0x0C;
+	 case SDLK_SEMICOLON: return 0x28;
+	 case SDLK_BACKQUOTE: return 0x1B;
+	 case 231: return 0x29;		/* Spanish ç */
+	 default: return Keymap_SymbolicToStScanCode_default(keysym);
+	}
+}
+
+static uint8_t Keymap_SymbolicToStScanCode_IT(const SDL_Keysym* keysym)
+{
+	switch (keysym->sym)
+	{
+	 case SDLK_QUOTE: return 0x0C;
+	 case SDLK_PLUS: return 0x1B;
+	 case 224: return 0x28;		/* Italian à */
+	 case 232: return 0x1A;		/* Italian è */
+	 case 249: return 0x29;		/* Italian ù */
+	 default: return Keymap_SymbolicToStScanCode_default(keysym);
+	}
+}
+
+static uint8_t Keymap_SymbolicToStScanCode_SE(const SDL_Keysym* keysym)
+{
+	switch (keysym->sym)
+	{
+	 case SDLK_QUOTE: return 0x29;
+	 case SDLK_PLUS: return 0x0C;
+	 case 252: return 0x1b;		/* ü */
+	 default: return Keymap_SymbolicToStScanCode_default(keysym);
+	}
+}
+
+/* Mapping for both, French and German variant of Swiss keyboard */
+static uint8_t Keymap_SymbolicToStScanCode_CH(const SDL_Keysym* keysym)
+{
+	switch (keysym->sym)
+	{
+	 case SDLK_CARET: return 0x0D;
+	 case 224: return 0x28;		/* à */
+	 case 232: return 0x1A;		/* è */
+	 case 233: return 0x27;		/* é */
+	 default: return Keymap_SymbolicToStScanCode_default(keysym);
+	}
+}
+
+static uint8_t Keymap_SymbolicToStScanCode_NO(const SDL_Keysym* keysym)
+{
+	switch (keysym->sym)
+	{
+	 case SDLK_QUOTE: return 0x29;
+	 case SDLK_PLUS: return 0x0C;
+	 case 230: return 0x28;		/* æ */
+	 case 233: return 0x0D;		/* é */
+	 case 248: return 0x27;		/* ø */
+	 case 252: return 0x1b;		/* ü */
+	 default: return Keymap_SymbolicToStScanCode_default(keysym);
+	}
+}
+
+static uint8_t Keymap_SymbolicToStScanCode_DK(const SDL_Keysym* keysym)
+{
+	switch (keysym->sym)
+	{
+	 case SDLK_QUOTE: return 0x0D;
+	 case SDLK_PLUS: return 0x0C;
+	 case SDLK_ASTERISK: return 0x1B;
+	 case 230: return 0x27;		/* æ */
+	 case 233: return 0x29;		/* é */
+	 case 248: return 0x28;		/* ø */
+	 default: return Keymap_SymbolicToStScanCode_default(keysym);
+	}
+}
+
+static uint8_t Keymap_SymbolicToStScanCode_NL(const SDL_Keysym* keysym)
+{
+	switch (keysym->sym)
+	{
+	 case SDLK_MINUS: return 0x0C;
+	 case SDLK_BACKSLASH: return 0x60;
+	 default: return Keymap_SymbolicToStScanCode_default(keysym);
+	}
+}
+
+static uint8_t Keymap_SymbolicToStScanCode_CZ(const SDL_Keysym* keysym)
+{
+	switch (keysym->sym)
+	{
+	 case SDLK_HASH: return 0x29;
+	 case SDLK_QUOTE: return 0x0D;
+	 case SDLK_EQUALS: return 0x0C;
+	 case SDLK_y: return 0x2C;
+	 case SDLK_z: return 0x15;
+	 case 233: return 0x0B;		/* é */
+	 default: return Keymap_SymbolicToStScanCode_default(keysym);
+	}
 }
 
 
@@ -248,7 +455,7 @@ static uint8_t Keymap_PcToStScanCode(const SDL_Keysym* pKeySym)
 	 case SDL_SCANCODE_9: return 0x0a;
 	 case SDL_SCANCODE_0: return 0x0b;
 	 case SDL_SCANCODE_RETURN: return 0x1c;
-	 case SDL_SCANCODE_ESCAPE: return 0x01;
+	 case SDL_SCANCODE_ESCAPE: return ST_ESC;
 	 case SDL_SCANCODE_BACKSPACE: return 0x0e;
 	 case SDL_SCANCODE_TAB: return 0x0f;
 	 case SDL_SCANCODE_SPACE: return 0x39;
@@ -264,7 +471,7 @@ static uint8_t Keymap_PcToStScanCode(const SDL_Keysym* pKeySym)
 	 case SDL_SCANCODE_COMMA: return 0x33;
 	 case SDL_SCANCODE_PERIOD: return 0x34;
 	 case SDL_SCANCODE_SLASH: return 0x35;
-	 case SDL_SCANCODE_CAPSLOCK: return 0x3a;
+	 case SDL_SCANCODE_CAPSLOCK: return ST_CAPSLOCK;
 	 case SDL_SCANCODE_F1: return 0x3b;
 	 case SDL_SCANCODE_F2: return 0x3c;
 	 case SDL_SCANCODE_F3: return 0x3d;
@@ -327,11 +534,11 @@ static uint8_t Keymap_PcToStScanCode(const SDL_Keysym* pKeySym)
 	 case SDL_SCANCODE_KP_HASH: return 0x0c;
 	 case SDL_SCANCODE_KP_SPACE: return 0x39;
 	 case SDL_SCANCODE_KP_CLEAR: return 0x47;
-	 case SDL_SCANCODE_LCTRL: return 0x1d;
-	 case SDL_SCANCODE_LSHIFT: return 0x2a;
-	 case SDL_SCANCODE_LALT: return 0x38;
-	 case SDL_SCANCODE_RCTRL: return 0x1d;
-	 case SDL_SCANCODE_RSHIFT: return 0x36;
+	 case SDL_SCANCODE_LCTRL: return ST_CONTROL;
+	 case SDL_SCANCODE_LSHIFT: return ST_LSHIFT;
+	 case SDL_SCANCODE_LALT: return ST_ALTERNATE;
+	 case SDL_SCANCODE_RCTRL: return ST_CONTROL;
+	 case SDL_SCANCODE_RSHIFT: return ST_RSHIFT;
 	 default:
 		if (!pKeySym->scancode && pKeySym->sym)
 		{
@@ -403,23 +610,8 @@ static uint8_t Keymap_GetKeyPadScanCode(const SDL_Keysym* pKeySym)
  */
 static uint8_t Keymap_RemapKeyToSTScanCode(const SDL_Keysym* pKeySym)
 {
-	/* Check for keypad first so we can handle numlock */
-	if (ConfigureParams.Keyboard.nKeymapType != KEYMAP_LOADED)
-	{
-		if (pKeySym->sym >= SDLK_KP_1 && pKeySym->sym <= SDLK_KP_9)
-		{
-			return Keymap_GetKeyPadScanCode(pKeySym);
-		}
-	}
-
-	/* Remap from PC scancodes? */
-	if (ConfigureParams.Keyboard.nKeymapType == KEYMAP_SCANCODE)
-	{
-		return Keymap_PcToStScanCode(pKeySym);
-	}
-
 	/* Use loaded keymap? */
-	if (ConfigureParams.Keyboard.nKeymapType == KEYMAP_LOADED)
+	if (keymap_loaded)
 	{
 		int i;
 		for (i = 0; i < KBD_MAX_SCANCODE && LoadedKeymap[i][1] != 0; i++)
@@ -429,24 +621,89 @@ static uint8_t Keymap_RemapKeyToSTScanCode(const SDL_Keysym* pKeySym)
 		}
 	}
 
+	/* Check for keypad first so we can handle numlock */
+	if (pKeySym->sym >= SDLK_KP_1 && pKeySym->sym <= SDLK_KP_9)
+	{
+		return Keymap_GetKeyPadScanCode(pKeySym);
+	}
+
+	/* Remap from PC scancodes? */
+	if (ConfigureParams.Keyboard.nKeymapType == KEYMAP_SCANCODE)
+	{
+		return Keymap_PcToStScanCode(pKeySym);
+	}
+
 	/* Use symbolic mapping */
 	return Keymap_SymbolicToStScanCode(pKeySym);
 }
 
 
-/*-----------------------------------------------------------------------*/
+/**
+ * Fill host (PC) key based on host "spec" string.
+ * Return true on success
+ */
+static bool Keymap_ParseHostSpec(const char *spec, int *scancode)
+{
+	int key;
+	if (!spec)
+		return false;
+
+	key = atoi(spec);    /* Direct key code? */
+	if (key < 10)
+	{
+		/* If it's not a valid number >= 10, then
+		 * assume we've got a symbolic key name
+		 */
+		int offset = 0;
+		/* quoted character (e.g. comment line char)? */
+		if (*spec == '\\' && strlen(spec) == 2)
+			offset = 1;
+		key = Keymap_GetKeyFromName(spec+offset);
+	}
+	if (key < 8)
+	{
+		Log_Printf(LOG_WARN, "Invalid PC key: '%s' (%d >= 8)\n",
+			   spec, key);
+		return false;
+	}
+	*scancode = key;
+	return true;
+}
+
+
+/**
+ * Fill guest (ST) key based on guest "spec" string.
+ * Return true on success
+ */
+static bool Keymap_ParseGuestSpec(const char *spec, int *scancode)
+{
+	int key;
+	if (!spec)
+		return false;
+
+	key = atoi(spec);
+	if (key <= 0 || key > KBD_MAX_SCANCODE)
+	{
+		Log_Printf(LOG_WARN, "Invalid ST scancode: '%s' (0 > %d < %d)\n",
+			   spec, key, KBD_MAX_SCANCODE);
+		return false;
+	}
+	*scancode = key;
+	return true;
+}
+
+
 /**
  * Load keyboard remap file
  */
 void Keymap_LoadRemapFile(const char *pszFileName)
 {
-	char szString[1024];
-	int STScanCode, PCKeyCode;
 	FILE *in;
-	int idx = 0;
+	int idx, linenro, fails;
 
 	/* Initialize table with default values */
 	memset(LoadedKeymap, 0, sizeof(LoadedKeymap));
+	keymap_loaded = false;
 
 	if (!*pszFileName)
 		return;
@@ -454,72 +711,75 @@ void Keymap_LoadRemapFile(const char *pszFileName)
 	/* Attempt to load file */
 	if (!File_Exists(pszFileName))
 	{
-		Log_Printf(LOG_DEBUG, "Keymap_LoadRemapFile: '%s' not a file\n", pszFileName);
+		Log_Printf(LOG_WARN, "The keymap file '%s' does not exist\n",
+		           pszFileName);
 		return;
 	}
 	in = fopen(pszFileName, "r");
 	if (!in)
 	{
-		Log_Printf(LOG_ERROR, "Keymap_LoadRemapFile: failed to "
-			   " open keymap file '%s'\n", pszFileName);
+		Log_Printf(LOG_ERROR, "Failed to open keymap file '%s'\n", pszFileName);
 		return;
 	}
 
-	while (!feof(in) && idx < KBD_MAX_SCANCODE)
+	idx = linenro = fails = 0;
+	while (!feof(in))
 	{
-		/* Read line from file */
-		if (fgets(szString, sizeof(szString), in) == NULL)
-			break;
-		/* Remove white-space from start of line */
-		Str_Trim(szString);
-		if (strlen(szString)>0)
-		{
-			char *p;
-			/* Is a comment? */
-			if (szString[0] == ';' || szString[0] == '#')
-				continue;
-			/* Cut out the values */
-			p = strtok(szString, ",");
-			if (!p)
-				continue;
-			Str_Trim(szString);
-			PCKeyCode = atoi(szString);    /* Direct key code? */
-			if (PCKeyCode < 10)
-			{
-				/* If it's not a valid number >= 10, then
-				 * assume we've got a symbolic key name
-				 */
-				int offset = 0;
-				/* quoted character (e.g. comment line char)? */
-				if (*szString == '\\' && strlen(szString) == 2)
-					offset = 1;
-				PCKeyCode = Keymap_GetKeyFromName(szString+offset);
-			}
-			p = strtok(NULL, "\n");
-			if (!p)
-				continue;
-			STScanCode = atoi(p);
-			/* Store into remap table, check both value within range */
-			if (STScanCode > 0 && STScanCode <= KBD_MAX_SCANCODE
-			    && PCKeyCode >= 8)
-			{
-				LOG_TRACE(TRACE_KEYMAP,
-				          "keymap from file: sym=%i --> scan=%i\n",
-				          PCKeyCode, STScanCode);
-				LoadedKeymap[idx][0] = PCKeyCode;
-				LoadedKeymap[idx][1] = STScanCode;
-				idx += 1;
-			}
-			else
-			{
-				Log_Printf(LOG_WARN, "Could not parse keymap file:"
-				           " '%s' (%d >= 8), '%s' (0 > %d <= %d)\n",
-					   szString, PCKeyCode, p, STScanCode, KBD_MAX_SCANCODE);
-			}
-		}
-	}
+		char *line, *saveptr, buf[1024];
+		const char *host, *guest;
 
+		if (idx >= ARRAY_SIZE(LoadedKeymap))
+		{
+			Log_Printf(LOG_WARN, "Mappings specified already for"
+				   "supported number (%d) of keys, skipping"
+				   "rest of '%s' at line %d\n",
+				   ARRAY_SIZE(LoadedKeymap), pszFileName, linenro);
+			fails++;
+			break;
+		}
+
+		/* Read line from file */
+		if (fgets(buf, sizeof(buf), in) == NULL)
+			break;
+		linenro++;
+
+		/* Remove white-space from start of line */
+		line = Str_Trim(buf);
+
+		/* Ignore empty line and comments */
+		if (strlen(line) == 0 || line[0] == ';' || line[0] == '#')
+			continue;
+
+		/* get the host (PC) key spec */
+		host = Str_Trim(strtok_r(line, ",", &saveptr));
+		if (!Keymap_ParseHostSpec(host, &LoadedKeymap[idx][0]))
+		{
+			Log_Printf(LOG_WARN, "Failed to parse host (PC/SDL) part '%s' of line %d in: %s\n",
+				   host, linenro, pszFileName);
+			fails++;
+			continue;
+		}
+
+		/* Get the guest (ST) key spec */
+		guest = Str_Trim(strtok_r(NULL, "\n", &saveptr));
+		if (!Keymap_ParseGuestSpec(guest, &LoadedKeymap[idx][1]))
+		{
+			Log_Printf(LOG_WARN, "Failed to parse guest (ST) part '%s' of line %d in: %s\n",
+				   guest, linenro, pszFileName);
+			fails++;
+			continue;
+		}
+		LOG_TRACE(TRACE_KEYMAP, "key mapping from file: host %s => guest %s\n",
+			  host, guest);
+		idx += 1;
+	}
 	fclose(in);
+
+	if (idx > 0)
+		keymap_loaded = true;
+
+	if (fails)
+		Log_AlertDlg(LOG_ERROR, "%d keymap file parsing failures\n(see console log for details)", fails);
 }
 
 
@@ -533,8 +793,8 @@ static bool Keymap_DebounceSTKey(uint8_t STScanCode)
 	int i=0;
 
 	/* Are we in fast forward, and have disabled key repeat? */
-	if ((ConfigureParams.System.bFastForward == true)
-	    && (ConfigureParams.Keyboard.bDisableKeyRepeat))
+	if (ConfigureParams.System.bFastForward
+	    && !ConfigureParams.Keyboard.bFastForwardKeyRepeat)
 	{
 		/* We should de-bounce all non extended keys,
 		 * e.g. leave ALT, SHIFT, CTRL etc... held */
@@ -565,8 +825,8 @@ void Keymap_DebounceAllKeys(void)
 	uint8_t nScanCode;
 
 	/* Return if we aren't in fast forward or have not disabled key repeat */
-	if ((ConfigureParams.System.bFastForward == false)
-	        || (!ConfigureParams.Keyboard.bDisableKeyRepeat))
+	if (!ConfigureParams.System.bFastForward
+	    || ConfigureParams.Keyboard.bFastForwardKeyRepeat)
 	{
 		return;
 	}
@@ -736,6 +996,9 @@ void Keymap_SimulateCharacter(char asckey, bool press)
 }
 
 
+/**
+ * Maps a key name to its SDL keycode
+ */
 int Keymap_GetKeyFromName(const char *name)
 {
 #ifndef __LIBRETRO__
@@ -745,6 +1008,10 @@ int Keymap_GetKeyFromName(const char *name)
 #endif
 }
 
+
+/**
+ * Maps an SDL keycode to a name
+ */
 const char *Keymap_GetKeyName(int keycode)
 {
 #ifndef __LIBRETRO__
@@ -755,4 +1022,57 @@ const char *Keymap_GetKeyName(int keycode)
 #else
 	return "";
 #endif
+}
+
+
+/**
+ * Informs symbolic keymap of loaded TOS country.
+ */
+void Keymap_SetCountry(int countrycode)
+{
+	uint8_t (*func)(const SDL_Keysym* pKeySym);
+
+	/* Prefer keyboard layout selected by user */
+	if (ConfigureParams.Keyboard.nKbdLayout >= 0 &&
+	    ConfigureParams.Keyboard.nKbdLayout <= 31)
+	{
+		countrycode = ConfigureParams.Keyboard.nKbdLayout;
+	}
+	else if (countrycode == TOS_LANG_ALL)
+	{
+		if (NvRam_Present())
+		{
+			countrycode = NvRam_GetKbdLayoutCode();
+		}
+		else if (ConfigureParams.Keyboard.nCountryCode >= 0 &&
+		         ConfigureParams.Keyboard.nCountryCode <= 31)
+		{
+			countrycode = ConfigureParams.Keyboard.nCountryCode;
+		}
+	}
+
+#ifndef __LIBRETRO___
+	switch (countrycode)
+	{
+	 case TOS_LANG_US:    func = Keymap_SymbolicToStScanCode_US; break;
+	 case TOS_LANG_DE:    func = Keymap_SymbolicToStScanCode_DE; break;
+	 case TOS_LANG_FR:    func = Keymap_SymbolicToStScanCode_FR; break;
+	 case TOS_LANG_UK:    func = Keymap_SymbolicToStScanCode_UK; break;
+	 case TOS_LANG_ES:    func = Keymap_SymbolicToStScanCode_ES; break;
+	 case TOS_LANG_IT:    func = Keymap_SymbolicToStScanCode_IT; break;
+	 case TOS_LANG_FI:    /* Finish seems to be the same as Swedish */
+	 case TOS_LANG_SE:    func = Keymap_SymbolicToStScanCode_SE; break;
+	 case TOS_LANG_CH_FR:
+	 case TOS_LANG_CH_DE: func = Keymap_SymbolicToStScanCode_CH; break;
+	 case TOS_LANG_NO:    func = Keymap_SymbolicToStScanCode_NO; break;
+	 case TOS_LANG_DK:    func = Keymap_SymbolicToStScanCode_DK; break;
+	 case TOS_LANG_NL:    func = Keymap_SymbolicToStScanCode_NL; break;
+	 case TOS_LANG_CS:    func = Keymap_SymbolicToStScanCode_CZ; break;
+	 default: func = Keymap_SymbolicToStScanCode_default; break;
+	}
+#else
+	func = Keymap_SymbolicToStScanCode_default; // hatariB relies on old mapping
+#endif
+
+	Keymap_SymbolicToStScanCode = func;
 }

@@ -33,6 +33,7 @@ const char IoMemTabTT_fileid[] = "Hatari ioMemTabTT.c";
 #include "rs232.h"
 #include "rtc.h"
 #include "scc.h"
+#include "scu_vme.h"
 #include "video.h"
 #include "stMemory.h"
 
@@ -79,8 +80,8 @@ const INTERCEPT_ACCESS_FUNC IoMemTable_TT[] =
 	{ 0xff820d, SIZE_BYTE, Video_BaseLow_ReadByte, Video_ScreenBase_WriteByte },
 	{ 0xff820e, SIZE_BYTE, IoMem_VoidRead, IoMem_VoidWrite },                               /* No bus error here */
 	{ 0xff820f, SIZE_BYTE, IoMem_VoidRead, IoMem_VoidWrite },                               /* No bus error here */
-	{ 0xff8240, 16*SIZE_WORD, IoMem_ReadWithoutInterception, Video_TTColorRegs_STRegWrite },        /* 16 TT ST-palette entries */
-	{ 0xff8260, SIZE_BYTE, Video_Res_ReadByte, Video_Res_WriteByte },
+	{ 0xff8240, 16*SIZE_WORD, IoMem_ReadWithoutInterception, Video_TTColorRegs_STRegWrite },/* 16 TT ST-palette entries */
+	{ 0xff8260, SIZE_BYTE, Video_ResGlueShifter_ReadByte, Video_ResGlueShifter_WriteByte },	/* Resolution */
 	{ 0xff8261, SIZE_BYTE, IoMem_VoidRead_00, IoMem_VoidWrite },                            /* No bus errors here : return 0 not ff */
 	{ 0xff8262, SIZE_WORD, IoMem_ReadWithoutInterception, Video_TTShiftMode_WriteWord },    /* TT screen mode */
 	{ 0xff8264, SIZE_BYTE, IoMem_ReadWithoutInterception, IoMem_WriteWithoutInterception },
@@ -179,7 +180,14 @@ const INTERCEPT_ACCESS_FUNC IoMemTable_TT[] =
 	{ 0xff8c80, 8, SCC_IoMem_ReadByte, SCC_IoMem_WriteByte },                               /* SCC */
 	{ 0xff8c88, 8, IoMem_VoidRead_00, IoMem_VoidWrite },                                    /* No bus error here */
 
-	/* VME/SCU 0xff8e01-0xff8e0f registers set at run-time in ioMem.c/vme.c for TT */
+	{ 0xff8e01, SIZE_BYTE, SCU_SysIntMask_ReadByte, SCU_SysIntMask_WriteByte },
+	{ 0xff8e03, SIZE_BYTE, SCU_SysIntState_ReadByte, SCU_SysIntState_WriteByte },
+	{ 0xff8e05, SIZE_BYTE, SCU_SysInterrupter_ReadByte, SCU_SysInterrupter_WriteByte },
+	{ 0xff8e07, SIZE_BYTE, SCU_VmeInterrupter_ReadByte, SCU_VmeInterrupter_WriteByte },
+	{ 0xff8e09, SIZE_BYTE, SCU_GPR1_ReadByte, SCU_GPR1_WriteByte },
+	{ 0xff8e0b, SIZE_BYTE, SCU_GPR2_ReadByte, SCU_GPR2_WriteByte },
+	{ 0xff8e0d, SIZE_BYTE, SCU_VmeIntMask_Readyte, SCU_VmeIntMask_WriteByte },
+	{ 0xff8e0f, SIZE_BYTE, SCU_VmeIntState_ReadByte, SCU_VmeIntState_WriteByte },
 
 	{ 0xff9000, SIZE_WORD, IoMem_VoidRead, IoMem_VoidWrite },                /* No bus error here */
 	{ 0xff9200, SIZE_WORD, IoMemTabTT_ReadDIPSwitches, IoMem_VoidWrite },    /* DIP switches */

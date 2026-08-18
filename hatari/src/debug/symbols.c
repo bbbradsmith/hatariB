@@ -1,7 +1,7 @@
 /*
  * Hatari - symbols.c
  * 
- * Copyright (C) 2010-2023 by Eero Tamminen
+ * Copyright (C) 2010-2024 by Eero Tamminen
  * 
  * This file is distributed under the GNU General Public License, version 2
  * or at your option any later version. Read the file gpl.txt for details.
@@ -23,6 +23,15 @@ const char Symbols_fileid[] = "Hatari symbols.c";
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+
+#include "config.h"
+
+#if HAVE_LIBREADLINE
+# include <readline/readline.h>
+#else
+# define rl_filename_completion_function(x,y) NULL
+#endif
+
 #include "main.h"
 #include "file.h"
 #include "options.h"
@@ -51,10 +60,19 @@ static symbol_list_t *DspSymbolsList;
 
 /* path for last loaded program (through GEMDOS HD emulation) */
 static char *CurrentProgramPath;
-/* whether current symbols were loaded from a program file */
-static bool SymbolsAreForProgram;
 /* prevent repeated failing on every debugger invocation */
 static bool AutoLoadFailed;
+
+typedef enum {
+	SYMBOLS_FOR_NONE,
+	SYMBOLS_FOR_USER,
+	/* autoload facilities */
+	SYMBOLS_FOR_TOS,
+	SYMBOLS_FOR_PROGRAM,
+} symbols_for_t;
+
+/* what triggered current CPU symbols to be loaded */
+static symbols_for_t CpuSymbolsAreFor = SYMBOLS_FOR_NONE;
 
 
 /**
@@ -324,12 +342,10 @@ static symbol_list_t* Symbols_Load(const char *filename, uint32_t *offsets, uint
 		fprintf(stderr, "Reading symbols from program '%s' symbol table...\n", filename);
 		fp = fopen(filename, "rb");
 		list = symbols_load_binary(fp, &opts, update_sections);
-		SymbolsAreForProgram = true;
 	} else {
 		fprintf(stderr, "Reading 'nm' style ASCII symbols from '%s'...\n", filename);
 		fp = fopen(filename, "r");
 		list = symbols_load_ascii(fp, offsets, maxaddr, gettype, &opts);
-		SymbolsAreForProgram = false;
 	}
 	fclose(fp);
 
@@ -411,6 +427,30 @@ void Symbols_FreeAll(void)
 	symbol_list_free(DspSymbolsList);
 }
 
+/**
+ * Change current CPU symbols to new ones with given type,
+ * free old ones
+ */
+static void Symbols_UpdateCpu(symbol_list_t* list, symbols_for_t symfor)
+{
+	if (CpuSymbolsList) {
+		symbol_list_free(CpuSymbolsList);
+	}
+	CpuSymbolsList = list;
+	CpuSymbolsAreFor = symfor;
+}
+
+/**
+ * Change current DSP symbols to new ones, free old ones
+ */
+static void Symbols_UpdateDsp(symbol_list_t* list)
+{
+	if (DspSymbolsList) {
+		symbol_list_free(DspSymbolsList);
+	}
+	DspSymbolsList = list;
+}
+
 /* ---------------- symbol name completion support ------------------ */
 
 /**
@@ -470,6 +510,20 @@ char* Symbols_MatchCpuDataAddress(const char *text, int state)
 	} else {
 		return Symbols_MatchByName(CpuSymbolsList, SYMTYPE_DATA|SYMTYPE_BSS, text, state);
 	}
+}
+
+/**
+ * Readline match callback to list matching CPU symbols & file names.
+ * STATE = 0 -> different text from previous one.
+ * Return next match or NULL if no matches.
+ */
+char *Symbols_MatchCpuAddrFile(const char *text, int state)
+{
+	char *ret = Symbols_MatchCpuAddress(text, state);
+	if (ret) {
+		return ret;
+	}
+	return rl_filename_completion_function(text, state);
 }
 
 /**
@@ -708,7 +762,6 @@ static void Symbols_Show(symbol_list_t* list, const char *sortcmd, const char *f
 	const char *symtype, *sorttype;
 	int i, row, rows, count, matches;
 	char symchar;
-	char line[80];
 	
 	if (!list) {
 		fprintf(stderr, "No symbols!\n");
@@ -747,11 +800,8 @@ static void Symbols_Show(symbol_list_t* list, const char *sortcmd, const char *f
 		row++;
 		if (row >= rows) {
 			row = 0;
-			fprintf(stderr, "--- q to exit listing, just enter to continue --- ");
-			if (fgets(line, sizeof(line), stdin) == NULL ||
-				toupper(line[0]) == 'Q') {
+			if (DebugUI_DoQuitQuery("symbol list"))
 				break;
-			}
 		}
 	}
 	fprintf(stderr, "%d %s%s symbols (of %d) sorted by %s.\n",
@@ -774,9 +824,11 @@ void Symbols_RemoveCurrentProgram(void)
 		free(CurrentProgramPath);
 		CurrentProgramPath = NULL;
 
-		if (CpuSymbolsList && SymbolsAreForProgram && ConfigureParams.Debugger.bSymbolsAutoLoad) {
+		if (CpuSymbolsList && CpuSymbolsAreFor == SYMBOLS_FOR_PROGRAM &&
+		    ConfigureParams.Debugger.bSymbolsAutoLoad) {
 			Symbols_Free(CpuSymbolsList);
 			fprintf(stderr, "Program exit, removing its symbols.\n");
+			CpuSymbolsAreFor = SYMBOLS_FOR_NONE;
 			CpuSymbolsList = NULL;
 		}
 	}
@@ -810,6 +862,34 @@ void Symbols_ShowCurrentProgramPath(FILE *fp)
 }
 
 /**
+ * Autoload helper.  Given the base file name with .XXX extension,
+ * if there's another file with .sym extension, load symbols from it,
+ * and return them.
+ *
+ * Assumes all (relevant) sections use the same load address.
+ */
+static symbol_list_t *loadSymFile(const char *path, symtype_t symtype,
+				  uint32_t loadaddr, uint32_t maxaddr)
+{
+	char symfile[PATH_MAX];
+	size_t len = strlen(path);
+
+	if (len <= 3 || path[len-4] != '.' || len >= sizeof(symfile)) {
+		return NULL;
+	}
+	strcpy(symfile, path);
+	strcpy(symfile + len - 3, "sym");
+
+	if (!File_Exists(symfile)) {
+		return NULL;
+	}
+	fprintf(stderr, "Loading sym file: %s\n", symfile);
+
+	uint32_t offsets[3] = { loadaddr, loadaddr, loadaddr };
+	return Symbols_Load(symfile, offsets, maxaddr, symtype);
+}
+
+/**
  * Load symbols for last opened program when symbol autoloading is enabled.
  *
  * If there's file with same name as the program, but with '.sym'
@@ -823,54 +903,69 @@ void Symbols_LoadCurrentProgram(void)
 	if (!ConfigureParams.Debugger.bSymbolsAutoLoad) {
 		return;
 	}
-	/* symbols already loaded, program path missing or previous load failed? */
-	if (CpuSymbolsList || !CurrentProgramPath || AutoLoadFailed) {
+	/* program path missing or previous load failed? */
+	if (!CurrentProgramPath || AutoLoadFailed) {
+		return;
+	}
+	/* do not override manually loaded symbols, or
+	 * load new symbols if previous program did not terminate.
+	 * Autoloaded TOS symbols could be overridden though
+	 */
+	if (CpuSymbolsList && CpuSymbolsAreFor != SYMBOLS_FOR_TOS) {
 		return;
 	}
 
-	symbol_list_t *symbols = NULL;
-	int len = strlen(CurrentProgramPath);
-	char *symfile = strdup(CurrentProgramPath);
-	assert(symfile);
+	uint32_t loadaddr = DebugInfo_GetTEXT();
+	uint32_t maxaddr = DebugInfo_GetTEXTEnd();
+	symbol_list_t *symbols;
 
-	/* if matching file with .sym extension exits, use
-	 * that for symbols, instead of the program itself
-	 */
-	if (len > 3 && symfile[len-4] == '.') {
-		strcpy(symfile + len - 3, "sym");
-		fprintf(stderr, "Checking: %s\n", symfile);
-		if (File_Exists(symfile)) {
-			fprintf(stderr, "Program symbols override file: %s\n", symfile);
-			uint32_t offsets[3];
-			offsets[2] = offsets[1] = 0;
-			offsets[0] = DebugInfo_GetTEXT();
-			const uint32_t maxaddr = DebugInfo_GetTEXTEnd();
-			symbols = Symbols_Load(symfile, offsets, maxaddr,
-					       SYMTYPE_CODE);
-		}
-	}
-	free(symfile);
-	if (!symbols) {
+	symbols = loadSymFile(CurrentProgramPath, SYMTYPE_CODE, loadaddr, maxaddr);
+	if (symbols) {
+		fprintf(stderr, "Symbols override loaded for: %s\n", CurrentProgramPath);
+	} else {
 		symbols = Symbols_Load(CurrentProgramPath, NULL, 0,
 				       SYMTYPE_CODE);
 	}
 	if (!symbols) {
 		AutoLoadFailed = true;
-	} else {
-		AutoLoadFailed = false;
+		return;
 	}
-	SymbolsAreForProgram = true;
-	CpuSymbolsList = symbols;
+
+	Symbols_UpdateCpu(symbols, SYMBOLS_FOR_PROGRAM);
+	AutoLoadFailed = false;
+}
+
+/**
+ * If autoloading enabled and no symbols are present, load symbols
+ * for "<tos>.img" file from "<tos>.sym" file, if one exists.
+ *
+ * Called whenever TOS is loaded.
+ */
+void Symbols_LoadTOS(const char *path, uint32_t maxaddr)
+{
+	if (!ConfigureParams.Debugger.bSymbolsAutoLoad) {
+		return;
+	}
+	/* do not override manually loaded symbols */
+	if (CpuSymbolsList && CpuSymbolsAreFor == SYMBOLS_FOR_USER) {
+		return;
+	}
+	symbol_list_t *symbols;
+	symbols = loadSymFile(path, SYMTYPE_ALL, 0, maxaddr);
+	if (symbols) {
+		fprintf(stderr, "Loaded symbols for TOS: %s\n", path);
+		Symbols_UpdateCpu(symbols, SYMBOLS_FOR_TOS);
+	}
 }
 
 /* ---------------- command parsing ------------------ */
 
 /**
- * Readline match callback to list symbols subcommands.
+ * Readline match callback for CPU symbols command.
  * STATE = 0 -> different text from previous one.
  * Return next match or NULL if no matches.
  */
-char *Symbols_MatchCommand(const char *text, int state)
+char *Symbols_MatchCpuCommand(const char *text, int state)
 {
 	static const char* subs[] = {
 		"autoload", "code", "data", "free", "match", "name", "prg"
@@ -879,7 +974,30 @@ char *Symbols_MatchCommand(const char *text, int state)
 	if (ret) {
 		return ret;
 	}
-	return Symbols_MatchCpuAddress(text, state);
+	if ((ret = Symbols_MatchCpuAddress(text, state))) {
+		return ret;
+	}
+	return rl_filename_completion_function(text, state);
+}
+
+/**
+ * Readline match callback to list DSP symbols command.
+ * STATE = 0 -> different text from previous one.
+ * Return next match or NULL if no matches.
+ */
+char *Symbols_MatchDspCommand(const char *text, int state)
+{
+	static const char* subs[] = {
+		"code", "data", "free", "match", "name"
+	};
+	char *ret = DebugUI_MatchHelper(subs, ARRAY_SIZE(subs), text, state);
+	if (ret) {
+		return ret;
+	}
+	if ((ret = Symbols_MatchDspAddress(text, state))) {
+		return ret;
+	}
+	return rl_filename_completion_function(text, state);
 }
 
 const char Symbols_Description[] =
@@ -953,7 +1071,7 @@ int Symbols_Command(int nArgc, char *psArgs[])
 	 * discard them when program terminates with GEMDOS HD,
 	 * or whether they need to be loaded manually.
 	 */
-	if (strcmp(file, "autoload") == 0) {
+	if (listtype == TYPE_CPU && strcmp(file, "autoload") == 0) {
 		bool value;
 		if (nArgc < 3) {
 			value = !ConfigureParams.Debugger.bSymbolsAutoLoad;
@@ -1015,7 +1133,7 @@ int Symbols_Command(int nArgc, char *psArgs[])
 	}
 
 	/* load symbols from GEMDOS HD program? */
-	if (strcmp(file, "prg") == 0) {
+	if (listtype == TYPE_CPU && strcmp(file, "prg") == 0) {
 		file = CurrentProgramPath;
 		if (!file) {
 			fprintf(stderr, "ERROR: no program loaded (through GEMDOS HD emu)!\n");
@@ -1027,11 +1145,9 @@ int Symbols_Command(int nArgc, char *psArgs[])
 	list = Symbols_Load(file, offsets, maxaddr, SYMTYPE_ALL);
 	if (list) {
 		if (listtype == TYPE_CPU) {
-			Symbols_Free(CpuSymbolsList);
-			CpuSymbolsList = list;
+			Symbols_UpdateCpu(list, SYMBOLS_FOR_USER);
 		} else {
-			Symbols_Free(DspSymbolsList);
-			DspSymbolsList = list;
+			Symbols_UpdateDsp(list);
 		}
 	} else {
 		DebugUI_PrintCmdHelp(psArgs[0]);

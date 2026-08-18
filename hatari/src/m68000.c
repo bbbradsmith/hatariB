@@ -88,12 +88,16 @@ const char M68000_fileid[] = "Hatari m68000.c";
 #include "options.h"
 #include "savestate.h"
 #include "stMemory.h"
+#include "statusbar.h"
 #include "tos.h"
 #include "falcon/crossbar.h"
 #include "cart.h"
 #include "cpu/cpummu.h"
 #include "cpu/cpummu030.h"
 #include "scc.h"
+#include "scu_vme.h"
+#include "blitter.h"
+#include "ioMem.h"
 
 #if ENABLE_DSP_EMU
 #include "dsp.h"
@@ -145,6 +149,42 @@ const char *OpcodeName[] = { "ILLG",
 	"CINVL","CINVP","CINVA","CPUSHL","CPUSHP","CPUSHA","MOVE16",
 	"MMUOP"
 };
+
+
+
+#define	MEGA_STE_CACHE_SIZE		8192		/* Size in 16-bits words */
+
+struct {
+	uint8_t		Valid[ MEGA_STE_CACHE_SIZE ];
+	uint16_t	Tag[ MEGA_STE_CACHE_SIZE ];
+	uint16_t	Value[ MEGA_STE_CACHE_SIZE ];
+} MegaSTE_Cache;
+
+
+static bool	MegaSTE_Cache_Is_Enabled ( void );
+static bool	MegaSTE_Cache_Addr_Cacheable ( uint32_t addr , int Size , int DoWrite );
+static void	MegaSTE_Cache_Addr_Convert ( uint32_t Addr , uint16_t *pLineNbr , uint16_t *pTag );
+static bool	MegaSTE_Cache_Update ( uint32_t Addr , int Size , uint16_t Val , int DoWrite );
+static bool	MegaSTE_Cache_Write ( uint32_t Addr , int Size , uint16_t Val );
+static bool	MegaSTE_Cache_Read ( uint32_t Addr , int Size , uint16_t *pVal );
+
+
+uae_u32 (*x_get_iword_megaste_save)(int);
+uae_u32 (*x_get_long_megaste_save)(uaecptr);
+uae_u32 (*x_get_word_megaste_save)(uaecptr);
+uae_u32 (*x_get_byte_megaste_save)(uaecptr);
+void (*x_put_long_megaste_save)(uaecptr,uae_u32);
+void (*x_put_word_megaste_save)(uaecptr,uae_u32);
+void (*x_put_byte_megaste_save)(uaecptr,uae_u32);
+
+
+uae_u32	mem_access_delay_word_read_megaste_16 (uaecptr addr);
+uae_u32	mem_access_delay_wordi_read_megaste_16 (uaecptr addr);
+uae_u32	mem_access_delay_byte_read_megaste_16 (uaecptr addr);
+void	mem_access_delay_byte_write_megaste_16 (uaecptr addr, uae_u32 v);
+void	mem_access_delay_word_write_megaste_16 (uaecptr addr, uae_u32 v);
+uae_u32	wait_cpu_cycle_read_megaste_16 (uaecptr addr, int mode);
+void	wait_cpu_cycle_write_megaste_16 (uaecptr addr, int mode, uae_u32 v);
 
 
 /*-----------------------------------------------------------------------*/
@@ -316,7 +356,7 @@ void M68000_Start(void)
  *	cpu_compatible : 0/false (no prefetch for 68000/20/30)  1/true (prefetch opcode for 68000/20/30)
  *	cpu_cycle_exact : 0/false   1/true (most accurate, implies cpu_compatible)
  *	cpu_memory_cycle_exact : 0/false   1/true (less accurate than cpu_cycle_exact)
- *	cpu_data_cache : 0/false (don't emulate caches)   1/true (emulate instr/data caches for 68020/30/40/60)
+ *	cpu_data_cache : 0/false (don't emulate data cache)   1/true (emulate data cache for 30/40/60)
  *	address_space_24 : 1 (68000/10 and 68030 LC for Falcon), 0 (68020/30/40/60)
  *	fpu_model : 0, 68881 (external), 68882 (external), 68040 (cpu) , 68060 (cpu)
  *	fpu_strict : true/false (more accurate rounding)
@@ -349,21 +389,31 @@ void M68000_CheckCpuSettings(void)
 		default: fprintf (stderr, "M68000_CheckCpuSettings() : Error, cpu_level %d unknown\n" , ConfigureParams.System.nCpuLevel);
 	}
 
-	/* Only 68040/60 can have 'internal' FPU */
-	if ( ( ConfigureParams.System.n_FPUType == FPU_CPU ) && ( changed_prefs.cpu_model < 68040 ) )
-	{
-		Log_Printf(LOG_WARN, "Internal FPU is supported only for 040/060, disabling FPU\n");
-		ConfigureParams.System.n_FPUType = FPU_NONE;
-	}
-	/* 68000/10 can't have an FPU */
-	if ( ( ConfigureParams.System.n_FPUType != FPU_NONE ) && ( changed_prefs.cpu_model < 68020 ) )
+	/* 68000/010 can't have any FPU */
+	if (changed_prefs.cpu_model < 68020 && ConfigureParams.System.n_FPUType != FPU_NONE)
 	{
 		Log_Printf(LOG_WARN, "FPU is not supported in 68000/010 configurations, disabling FPU\n");
 		ConfigureParams.System.n_FPUType = FPU_NONE;
 	}
+	/* 68020/030 can't have 'internal' FPU */
+	else if (changed_prefs.cpu_model < 68040 && ConfigureParams.System.n_FPUType == FPU_CPU)
+	{
+		Log_Printf(LOG_WARN, "Internal FPU is supported only for 040/060, "
+		                     "using 68882 FPU instead\n");
+		ConfigureParams.System.n_FPUType = FPU_68882;
+	}
+	/* 68040/060 can't have an external FPU */
+	else if (changed_prefs.cpu_model >= 68040 &&
+	         (ConfigureParams.System.n_FPUType == FPU_68881 || ConfigureParams.System.n_FPUType == FPU_68882))
+	{
+		Log_Printf(LOG_WARN, "68881/68882 FPU is only supported for 020/030 CPUs, "
+		                     "using internal FPU instead\n");
+		ConfigureParams.System.n_FPUType = FPU_CPU;
+	}
 
 	changed_prefs.int_no_unimplemented = true;
 	changed_prefs.fpu_no_unimplemented = true;
+	changed_prefs.cpu_data_cache = ConfigureParams.System.bCpuDataCache;
 	changed_prefs.cpu_compatible = ConfigureParams.System.bCompatibleCpu;
 	changed_prefs.cpu_cycle_exact = ConfigureParams.System.bCycleExactCpu;
 	changed_prefs.cpu_memory_cycle_exact = ConfigureParams.System.bCycleExactCpu;
@@ -386,10 +436,10 @@ void M68000_CheckCpuSettings(void)
 	/* We don't use JIT */
 	changed_prefs.cachesize = 0;
 
-	/* Always emulate instr/data caches for cpu >= 68020 */
-	/* Cache emulation requires cpu_compatible or cpu_cycle_exact mode */
-	if ( ( changed_prefs.cpu_model < 68020 ) ||
-	     ( ( changed_prefs.cpu_compatible == false ) && ( changed_prefs.cpu_cycle_exact == false ) ) )
+	/* while 020 had i-cache, only 030+ had also d-cache */
+	if (changed_prefs.cpu_model < 68030 ||
+	    !ConfigureParams.System.bCpuDataCache ||
+	    !(changed_prefs.cpu_compatible || changed_prefs.cpu_cycle_exact))
 		changed_prefs.cpu_data_cache = false;
 	else
 		changed_prefs.cpu_data_cache = true;
@@ -459,6 +509,7 @@ void M68000_MemorySnapShot_Capture(bool bSave)
 {
 	size_t len;
 	uae_u8 chunk[ 1000 ];
+	int i;
 
 	MemorySnapShot_Store(&pendingInterrupts, sizeof(pendingInterrupts));	/* for intlev() */
 
@@ -501,7 +552,16 @@ void M68000_MemorySnapShot_Capture(bool bSave)
 
 	/* From cpu/newcpu.c */
 	MemorySnapShot_Store(&BusCyclePenalty,sizeof(BusCyclePenalty));
+
+	/* Save/Restore MegaSTE's cache */
+	for ( i=0 ; i < MEGA_STE_CACHE_SIZE ; i++ )
+	{
+		MemorySnapShot_Store(&MegaSTE_Cache.Valid[ i ] , sizeof(MegaSTE_Cache.Valid[ i ]) );
+		MemorySnapShot_Store(&MegaSTE_Cache.Tag[ i ] , sizeof(MegaSTE_Cache.Tag[ i ]) );
+		MemorySnapShot_Store(&MegaSTE_Cache.Value[ i ] , sizeof(MegaSTE_Cache.Value[ i ]) );
+	}
 }
+
 
 /*-----------------------------------------------------------------------*/
 /**
@@ -572,6 +632,11 @@ void M68000_BusError ( uint32_t addr , int ReadWrite , int Size , int AccessType
 	LOG_TRACE(TRACE_CPU_EXCEPTION, "Bus error %s at address $%x PC=$%x.\n",
 	          ReadWrite ? "reading" : "writing", addr, M68000_InstrPC);
 
+	/* For the MegaSTE, a bus error will flush the external cache */
+	if ( ConfigureParams.System.nMachineType == MACHINE_MEGA_STE )
+		MegaSTE_Cache_Flush ();
+
+
 #define WINUAE_HANDLE_BUS_ERROR
 #ifdef WINUAE_HANDLE_BUS_ERROR
 
@@ -592,11 +657,43 @@ void M68000_BusError ( uint32_t addr , int ReadWrite , int Size , int AccessType
 }
 
 
+
+/*-----------------------------------------------------------------------*/
+/**
+ * Set/clear interrupt request for IntNr (between 1 and 7)
+ *  - For STF/STE/Falcon : we update the corresponding bits in "pendingInterrupts", which is
+ *    directly "connected" to the CPU core
+ *  - For MegaSTE/TT : interrupts are first handled by the SCU chip which include a dedicated mask
+ *    for every interrupt source. The masked result is then copied to "pendingInterrupts" and
+ *    only masked interrupts will be visible to the CPU core
+ */
+
+void	M68000_SetIRQ ( int IntNr )
+{
+	if ( !SCU_IsEnabled() )
+		pendingInterrupts |= ( 1 << IntNr );
+	else
+		SCU_SetIRQ_CPU ( IntNr );			/* MegaSTE / TT */
+}
+
+
+void	M68000_ClearIRQ ( int IntNr )
+{
+	if ( !SCU_IsEnabled() )
+		pendingInterrupts &= ~( 1 << IntNr );
+	else
+		SCU_ClearIRQ_CPU ( IntNr );			/* MegaSTE / TT */
+}
+
+
 /*-----------------------------------------------------------------------*/
 /**
  * Exception handler
+ * If ExceptionNr matches level 1-7 interrupts then we call M68000_SetIRQ
+ * Else we call Exception() in the CPU core in newcpu.c
  */
-void M68000_Exception(uint32_t ExceptionNr , int ExceptionSource)
+
+void	M68000_Exception(uint32_t ExceptionNr , int ExceptionSource)
 {
 	if ( ExceptionNr > 24 && ExceptionNr < 32 )		/* Level 1-7 interrupts */
 	{
@@ -604,7 +701,7 @@ void M68000_Exception(uint32_t ExceptionNr , int ExceptionSource)
 		/* For WinUAE CPU, we must call M68000_Update_intlev after changing pendingInterrupts */
 		/* (in order to call doint() and to update regs.ipl with regs.ipl_pin, else */
 		/* the exception might be delayed by one instruction in do_specialties()) */
-		pendingInterrupts |= (1 << ( ExceptionNr - 24 ));
+		M68000_SetIRQ ( ExceptionNr - 24 );
 		M68000_Update_intlev();
 	}
 
@@ -643,21 +740,21 @@ void	M68000_Update_intlev ( void )
 	Level6_IRQ = MFP_GetIRQ_CPU();
 #endif
 	if ( Level6_IRQ == 1 )
-		pendingInterrupts |= (1 << 6);
+		M68000_SetIRQ ( 6 );
 	else
-		pendingInterrupts &= ~(1 << 6);
+		M68000_ClearIRQ ( 6 );
 
 	if ( SCC_Get_Line_IRQ() == SCC_IRQ_ON )
-		pendingInterrupts |= (1 << 5);
+		M68000_SetIRQ ( 5 );
 	else
-		pendingInterrupts &= ~(1 << 5);
+		M68000_ClearIRQ ( 5 );
 
 	if ( pendingInterrupts )
 		doint();
 	else
 		M68000_UnsetSpecial ( SPCFLAG_INT | SPCFLAG_DOINT );
 
-	/* Temporary case for WinUAE CPU hanlding IPL in CE mode */
+	/* Temporary case for WinUAE CPU handling IPL in CE mode */
 	/* doint() will update regs.ipl_pin, so copy it into regs.ipl[0] */
 	/* TODO : see ipl_fetch_next / update_ipl, we should not reset currcycle */
 	/* (when counting Hatari's internal cycles) to have correct value */
@@ -781,6 +878,10 @@ void	M68000_Flush_All_Caches ( uaecptr addr , int size )
 //fprintf ( stderr , "M68000_Flush_All_Caches\n" );
 	flush_cpu_caches(true);
 	invalidate_cpu_data_caches();
+
+	/* For the MegaSTE, we also flush the external cache */
+	if ( ConfigureParams.System.nMachineType == MACHINE_MEGA_STE )
+		MegaSTE_Cache_Flush ();
 }
 
 
@@ -789,6 +890,10 @@ void	M68000_Flush_Instr_Cache ( uaecptr addr , int size )
 //fprintf ( stderr , "M68000_Flush_Instr_Cache\n" );
 	/* Instruction cache for cpu >= 68020 */
 	flush_cpu_caches(true);
+
+	/* For the MegaSTE, we also flush the external cache */
+	if ( ConfigureParams.System.nMachineType == MACHINE_MEGA_STE )
+		MegaSTE_Cache_Flush ();
 }
 
 
@@ -797,6 +902,10 @@ void	M68000_Flush_Data_Cache ( uaecptr addr , int size )
 //fprintf ( stderr , "M68000_Flush_Data_Cache\n" );
 	/* Data cache for cpu >= 68030 */
 	invalidate_cpu_data_caches();
+
+	/* For the MegaSTE, we also flush the external cache */
+	if ( ConfigureParams.System.nMachineType == MACHINE_MEGA_STE )
+		MegaSTE_Cache_Flush ();
 }
 
 
@@ -937,3 +1046,740 @@ void M68000_MMU_Info(FILE *fp, uint32_t flags)
 		/* TODO: Also call mmu_dump_tables() here? */
 	}
 }
+
+
+
+
+
+/*------------------------------------------------------------------------------*/
+/*										*/
+/*			MegaSTE 16MHz and cache					*/
+/*										*/
+/* Based on MegaSTE schematics as well as documentation by Christian Zietz	*/
+/*										*/
+/* The MegaSTE can change its CPU clock from 8 MHz to 16 MHz, but as the RAM	*/
+/* still have a "slow" speed that was designed for a 8 MHz CPU, the CPU will	*/
+/* have a lot of wait states to get a slot to access RAM (accesses are shared	*/
+/* between the CPU and the shifter						*/
+/* As such, when the CPU runs at 16 MHz the overall performance of the MegaSTE	*/
+/* is roughly the same as when the CPU runs at 8 MHz.				*/
+/*										*/
+/* To improve RAM accesses, an external 16 KB cache was added to the MegaSTE,	*/
+/* with	faster RAM that don't add wait states.					*/
+/*										*/
+/* As seen on the MegaSTE schematics, the cache is made of the following	*/
+/* components :									*/
+/*  - 2 8KB x 8 bits 35 ns TAG RAM chips, ref MK48S74N-25 (named u004 and u005)	*/
+/*  - 2 8KB x 8 bits 85 ns RAM chips, ref HM6265L (u008 and u009). One RAM chip	*/
+/*    will store lower bytes, the other the upper byte for the same cache entry	*/
+/*  - some PAL for additional logic on the various signals (u011, u012, ...)	*/
+/*										*/
+/* The cache is made of 8192 lines, each line is 1 word (2 bytes)		*/
+/* When a physical address is accessed, the following bits are used to select	*/
+/* an entry in the TAG RAM :							*/
+/*  - bits 15-24 : tag (10 bits)						*/
+/*  - bits 1-14 : line (0 to 8191)						*/
+/*  - bit 0 : ignored (because the cache stores 16 bit words)			*/
+/*										*/
+/* - Each time a word is accessed (read or write), the corresponding tag value	*/
+/*   is stored in the line entry and the 2 bytes are stored in each 8KB RAM chip*/
+/* - When bytes are read, the cache will also be updated as a word / 2 bytes,	*/
+/*   this is because in	the case of 8 bit accesses in RAM/ROM the bus will	*/
+/*   carry the 16 bits at this RAM/ROM address (not just the 8 bits of the byte)*/
+/* - When bytes are written, the cache will be updated only if it already stores*/
+/*   an entry with the same tag. In that case, upper or lower byte will be	*/
+/*   updated in the previously cached word.					*/
+/*										*/
+/* - RAM (up to 4 MB) and ROM regions can be cached				*/
+/* - IO or cartridge regions can't be cached					*/
+/*										*/
+/*------------------------------------------------------------------------------*/
+
+
+/* Uncomment the next line to check all entries after every cache update */
+//#define MEGA_STE_CACHE_DEBUG_CHECK_ENTRIES
+
+
+
+
+/* Update the CPU freq and cache status, depending on content of $ff8e21
+ *	$ff8e21 Mega STe Cache/Processor Control
+ *		BIT 0 : Cache (0 - disabled, 1 - enabled)
+ *		BIT 1 : CPU Speed (0 - 8MHz, 1 - 16MHz)
+ */
+
+void	MegaSTE_CPU_Cache_Update ( uint8_t val )
+{
+//fprintf ( stderr , "MegaSTE_CPU_Cache_Update 0x%x\n" , val );
+
+	/* If cache is disabled, flush all entries */
+	if ( ( val & 1 ) == 0 )
+		MegaSTE_Cache_Flush ();
+
+	/* 68000 Frequency changed ? We change freq only in 68000 mode for a
+	 * normal MegaSTE, if the user did not request a faster one manually */
+	if (ConfigureParams.System.nCpuLevel == 0 && ConfigureParams.System.nCpuFreq <= 16)
+	{
+		if ((val & 0x2) != 0) {
+			LOG_TRACE ( TRACE_MEM, "cpu : megaste set to 16 MHz pc=%x\n" , M68000_GetPC() );
+			/* 16 Mhz bus for 68000 */
+			Configuration_ChangeCpuFreq ( 16 );
+			MegaSTE_CPU_Set_16Mhz ( true );
+		}
+		else {
+			/* 8 Mhz bus for 68000 */
+			LOG_TRACE ( TRACE_MEM, "cpu : megaste set to 8 MHz pc=%x\n" , M68000_GetPC() );
+			Configuration_ChangeCpuFreq ( 8 );
+			MegaSTE_CPU_Set_16Mhz ( false );
+		}
+	}
+
+	Statusbar_UpdateInfo();			/* Update clock speed in the status bar */
+}
+
+
+void	MegaSTE_CPU_Cache_Reset ( void )
+{
+//fprintf ( stderr , "MegaSTE_CPU_Cache_Reset\n" );
+	IoMem_WriteByte ( 0xff8e21 , 0 );	/* 8 MHz, no cache */
+	MegaSTE_CPU_Cache_Update ( 0 );
+}
+
+
+void	MegaSTE_CPU_Set_16Mhz ( bool set_16 )
+{
+	if ( !currprefs.cpu_cycle_exact || ( currprefs.cpu_model != 68000 ) )
+		return;
+
+//fprintf ( stderr , "MegaSTE_CPU_Set_16Mhz %d\n" , set_16);
+
+	/* Enable 16 MHz mode for 68000 CE */
+	if ( set_16 && ( x_get_iword != get_wordi_ce000_megaste_16 ) )
+	{
+		/* save current functions */
+		x_get_iword_megaste_save = x_get_iword;
+		x_put_long_megaste_save = x_put_long;
+		x_put_word_megaste_save = x_put_word;
+		x_put_byte_megaste_save = x_put_byte;
+		x_get_long_megaste_save = x_get_long;
+		x_get_word_megaste_save = x_get_word;
+		x_get_byte_megaste_save = x_get_byte;
+
+		/* set mega ste specific functions */
+		x_get_iword = get_wordi_ce000_megaste_16;
+		x_put_long = put_long_ce000_megaste_16;
+		x_put_word = put_word_ce000_megaste_16;
+		x_put_byte = put_byte_ce000_megaste_16;
+		x_get_long = get_long_ce000_megaste_16;
+		x_get_word = get_word_ce000_megaste_16;
+		x_get_byte = get_byte_ce000_megaste_16;
+	}
+
+
+	/* Disable 16 MHz mode, restore functions if needed */
+	if ( !set_16 && ( x_get_iword == get_wordi_ce000_megaste_16 ) )
+	{
+		/* save current functions */
+		x_get_iword = x_get_iword_megaste_save;
+		x_put_long = x_put_long_megaste_save;
+		x_put_word = x_put_word_megaste_save;
+		x_put_byte = x_put_byte_megaste_save;
+		x_get_long = x_get_long_megaste_save;
+		x_get_word = x_get_word_megaste_save;
+		x_get_byte = x_get_byte_megaste_save;
+	}
+}
+
+
+/*
+ * Return true if the cache is enabled, else return false
+ */
+
+static bool	MegaSTE_Cache_Is_Enabled ( void )
+{
+	if ( IoMem_ReadByte(0xff8e21) & 0x1 )
+		return true;
+	return false;
+}
+
+
+
+/*
+ * Check cache consistency, useful to debug error in the cache
+ * For each valid cache entry, we compare the stored value with
+ * the content of the RAM for the same physical address.
+ * If there's a difference then something went wrong in the cache
+ */
+
+#ifdef MEGA_STE_CACHE_DEBUG_CHECK_ENTRIES
+static void	MegaSTE_Cache_Check_Entries ( const char *txt );
+
+static void	MegaSTE_Cache_Check_Entries ( const char *txt )
+{
+	uint16_t	Line;
+	uint16_t	Tag;
+	uint32_t	Addr;
+
+	for ( Line=0 ; Line < MEGA_STE_CACHE_SIZE ; Line++ )
+		if ( MegaSTE_Cache.Valid[ Line ] )
+		{
+			Tag = MegaSTE_Cache.Tag[ Line ];
+			Addr = ( Line << 1 ) | ( Tag << 14 );
+			if ( MegaSTE_Cache.Value[ Line ] != get_word(Addr) )
+				fprintf ( stderr , "mega ste cache bad %s : Line=0x%x Tag=0x%x Addr=%x Val=0x%x != 0x%x pc=%x\n" ,
+					txt , Line , Tag , Addr , MegaSTE_Cache.Value[ Line ] , get_word(Addr) , M68000_GetPC() );
+		}
+}
+
+#else
+/* Debugging OFF : use an empty inline function */
+static inline void	MegaSTE_Cache_Check_Entries ( const char *txt );
+
+static inline void	MegaSTE_Cache_Check_Entries ( const char *txt )
+{
+}
+#endif
+
+
+
+/*
+ * Return true if addr is part of a cacheable region, else false
+ *   - RAM (up to 4MB) and ROM regions can be cached
+ *   - IO or cartridge regions can't be cached
+ * On a 68000 MegaSTE, only the lowest 24 bits of the address should be used
+ * (except if the user forces a 32 bit setting)
+ *
+ * Accesses that would cause a bus error or an address error should not be cached
+ */
+
+static bool	MegaSTE_Cache_Addr_Cacheable ( uint32_t addr , int Size , int DoWrite )
+{
+	/* The MegaSTE uses a 68000 with only 24 bits of address, upper 8 bits */
+	/* should be ignored (except if user explicitely forces 32 bits addressing) */
+	if ( ConfigureParams.System.bAddressSpace24 )
+		addr &= 0xFFFFFF;
+
+	/* Word access on odd address will cause an address error */
+	if ( ( Size == 2 ) && ( addr & 1 ) )
+		return false;				/* no cache */
+
+	/* Writing to bytes 0-3 in RAM will cause a bus error */
+	if ( ( addr < 0x4 ) && DoWrite )
+		return false;				/* no cache */
+
+	/* Accessing RAM 0-0x7FF in user mode will cause a bus error */
+	if ( ( addr < 0x800 ) && !is_super_access ( DoWrite ? false : true ) )
+		return false;				/* no cache */
+
+	/* Available RAM can be cached (up to 4MB) */
+	if ( ( addr < STRamEnd ) && ( addr < 0x400000 ) )
+		return true;
+
+	/* TOS in ROM region can be cached only when reading (writing would cause a bus error) */
+	if ( ( addr >= 0xE00000 ) && ( addr < 0xF00000 ) && !DoWrite )
+		return true;
+
+	/* Other regions can't be cached */
+	return false;
+}
+
+
+
+/*
+ * Flush the cache by setting Valid[] to 0
+ *
+ * Cache will be flushed  / invalidated on the following conditions :
+ *   - clearing bit 0 at $ff8e21 to disable the cache
+ *   - reset
+ *   - use of BGACK (if DMA or Blitter are enabled)
+ *   - bus error
+ *
+ * For performance reason we do a global 'memset' instead of a 'for loop'
+ * on each individual entry
+ */
+
+void	MegaSTE_Cache_Flush ( void )
+{
+//fprintf ( stderr , "MegaSTE_Cache_Flush\n" );
+	memset ( MegaSTE_Cache.Valid , 0 , MEGA_STE_CACHE_SIZE );
+}
+
+
+
+/*
+ * Convert a cacheable address into a Line number in the cache and a Tag value
+ * Addr lowest 24 bits are split into :
+ *   - bits 14-23 : tag (10 bits)
+ *   - bits 1-13 : line (0 to 8191)
+ *   - bit 0 : ignored (because the cache stores 16 bit words)
+ */
+
+static void	MegaSTE_Cache_Addr_Convert ( uint32_t Addr , uint16_t *pLineNbr , uint16_t *pTag )
+{
+	*pLineNbr = ( Addr >> 1 ) & 0x1fff;
+	*pTag = ( Addr >> 14 ) & 0x3ff;
+}
+
+
+
+/*
+ * Update the cache for a word or byte access
+ *  - if Size==2 (read/write word access) the corresponding cache entry is replaced
+ *  - If Size==1 (write byte access) the corresponding cache entry is updated
+ *    only if it was already associated to the same Tag value. In that case
+ *    we update the lower or upper byte of the cached value depending
+ *    on Addr being even or odd.
+ *  - If Size==1 (read byte access) the corresponding cache entry is replaced by the
+ *    corresponding word at the same address (forced to even). This is because when RAM/ROM
+ *    is accessed as byte, the bus will in fact carry the whole word (16 bits) at this
+ *    address and the cpu will keep only the upper or lower byte (8 bits). The word
+ *    on the bus can be used to update the cache.
+ *
+ * Return true if value was added to the cache, else return false
+ */
+
+static bool	MegaSTE_Cache_Update ( uint32_t Addr , int Size , uint16_t Val , int DoWrite )
+{
+	uint16_t	Line;
+	uint16_t	Tag;
+
+	if ( !MegaSTE_Cache_Addr_Cacheable ( Addr , Size , DoWrite ) )
+		return false;					/* data not cacheable */
+
+	MegaSTE_Cache_Addr_Convert ( Addr , &Line , &Tag );
+
+	if ( Size == 2 )					/* word access : update cache */
+	{
+		MegaSTE_Cache.Valid[ Line ] = 1;
+		MegaSTE_Cache.Tag[ Line ] = Tag;
+		MegaSTE_Cache.Value[ Line ] = Val;
+//fprintf ( stderr , "update w %x %x %x : %x\n" , Addr , Line, Tag, Val );
+		MegaSTE_Cache_Check_Entries ( "update w out" );
+		return true;					/* cache updated */
+	}
+
+	else							/* byte access : update if already cached */
+	{
+		if ( MegaSTE_Cache.Valid[ Line ] && ( MegaSTE_Cache.Tag[ Line ] == Tag ) )
+		{
+//fprintf ( stderr , "update b %x %x %d : %x\n" , Addr , Line, Tag, Val );
+			Val &= 0xff;
+			if ( Addr & 1 )				/* update lower byte of cached value */
+				MegaSTE_Cache.Value[ Line ] = ( MegaSTE_Cache.Value[ Line ] & 0xff00 ) | Val;
+			else					/* update upper byte of cached value */
+				MegaSTE_Cache.Value[ Line ] = ( MegaSTE_Cache.Value[ Line ] & 0xff ) | ( Val << 8 );
+			MegaSTE_Cache_Check_Entries ( "update b out" );
+			return true;				/* cache updated */
+		}
+	}
+
+	return false;						/* not stored in cache */
+}
+
+
+
+static bool	MegaSTE_Cache_Write ( uint32_t Addr , int Size , uint16_t Val )
+{
+	return MegaSTE_Cache_Update ( Addr , Size , Val , 1 );
+}
+
+
+
+static bool	MegaSTE_Cache_Read ( uint32_t Addr , int Size , uint16_t *pVal )
+{
+	uint16_t	Line;
+	uint16_t	Tag;
+
+	if ( !MegaSTE_Cache_Addr_Cacheable ( Addr , Size , 0 ) )
+		return false;					/* cache miss, data not cacheable */
+
+	MegaSTE_Cache_Addr_Convert ( Addr , &Line , &Tag );
+	if ( MegaSTE_Cache.Valid[ Line ] && ( MegaSTE_Cache.Tag[ Line ] == Tag ) )
+	{
+		*pVal = MegaSTE_Cache.Value[ Line ];		/* get the cached word */
+//fprintf ( stderr , "read cache %x %x %d : %d %x\n" , Addr , Line, Tag, Size, *pVal );
+		if ( Size == 1 )				/* size is byte, not word */
+		{
+			if ( Addr & 1 )
+				*pVal = *pVal & 0xff;		/* get lower byte of word */
+			else
+				*pVal = ( *pVal >> 8 ) & 0xff;	/* get upper byte of word */
+		}
+		MegaSTE_Cache_Check_Entries ( "read out" );
+		return true;					/* cache hit */
+	}
+
+	return false;						/* data not in cache -> update cache */
+}
+
+
+/*
+ * Similar to mem_access_delay_xxx functions for 68000 CE in cpu/newcpu.c
+ * but we handle a faster CPU speed of 16 MHz instead of 8 MHz (compared to the RAM speed)
+ * as well as an external cache.
+ *
+ * When the CPU is set to 16 MHz other components are still running as if the CPU was at 8 MHz.
+ * - At 8 MHz word access to standard RAM takes a total of 4 cycles from the point of view
+ *   of the CPU (if there's no additional wait states)
+ * - At 16 MHz word access to standard RAM takes a total of 8 cycles from the point of view
+ *   of the CPU (if there's no additional wait states)
+ *
+ * - At 8 MHz the GSTMCU shares every 4 cycles between the CPU and the shifter
+ *   (2 cycles for the CPU and 2 cycles for the shifter). If the CPU requires an access
+ *   during the shifter's slot then the CPU will have to wait until its own slot.
+ * - At 16 MHz, the CPU runs faster but all other components are still running at the same speed.
+ *   This means that RAM accesses still require 4 cycles from the point of view of the GSTMCU,
+ *   which means 8 cycles from the point of view of the 16 MHz CPU.
+ *   The slots between CPU and shifter will last 4 cycles each (instead of 2) from the point
+ *   of view of the CPU. If the CPU tries to access memory outside of its slot then it will
+ *   have to wait.
+ *
+ * As can be seen from above, if the CPU runs at 16 MHz it will have nearly no benefit
+ * compared to 8 MHz because most of the time the CPU will be slowed down by memory wait states.
+ * This is why an external cache was added to the MegaSTE, with faster RAM that allows to take
+ * advantage of the CPU 16 MHz speed.
+ *
+ */
+
+uae_u32	mem_access_delay_word_read_megaste_16 (uaecptr addr)
+{
+	uint16_t v;
+	if ( BlitterPhase )	Blitter_HOG_CPU_mem_access_before ( 1 );
+
+	switch (ce_banktype[addr >> 16])
+	{
+	case CE_MEMBANK_CHIP16:
+	case CE_MEMBANK_CHIP32:
+		if ( !MegaSTE_Cache_Is_Enabled() )
+			v = wait_cpu_cycle_read_megaste_16 (addr, 1);
+		else
+		{
+			if ( MegaSTE_Cache_Read ( addr , 2 , &v ) )
+			{
+				x_do_cycles_post (4 * cpucycleunit, v);
+				CpuInstruction.D_Cache_hit++;
+			}
+			else
+			{
+				v = wait_cpu_cycle_read_megaste_16 (addr, 1);
+				MegaSTE_Cache_Update ( addr , 2 , v , 0 );
+				CpuInstruction.D_Cache_miss++;
+			}
+		}
+		break;
+	case CE_MEMBANK_FAST16:
+	case CE_MEMBANK_FAST32:
+		if ( !MegaSTE_Cache_Is_Enabled() )
+		{
+			v = get_word (addr);
+			x_do_cycles_post (4 * cpucycleunit, v);
+		}
+		else
+		{
+			if ( MegaSTE_Cache_Read ( addr , 2 , &v ) )
+			{
+				x_do_cycles_post (4 * cpucycleunit, v);
+				CpuInstruction.D_Cache_hit++;
+			}
+			else
+			{
+				v = get_word (addr);
+				x_do_cycles_post (4 * cpucycleunit, v);
+				MegaSTE_Cache_Update ( addr , 2 , v , 0 );
+				CpuInstruction.D_Cache_miss++;
+			}
+		}
+		break;
+	default:
+		v = get_word (addr);
+		break;
+	}
+
+	regs.db = v;
+	regs.read_buffer = v;
+	if ( BlitterPhase )	Blitter_HOG_CPU_mem_access_after ( 1 );
+	return v;
+}
+
+
+uae_u32	mem_access_delay_wordi_read_megaste_16 (uaecptr addr)
+{
+	uint16_t v;
+	if ( BlitterPhase )	Blitter_HOG_CPU_mem_access_before ( 1 );
+
+	switch (ce_banktype[addr >> 16])
+	{
+	case CE_MEMBANK_CHIP16:
+	case CE_MEMBANK_CHIP32:
+		if ( !MegaSTE_Cache_Is_Enabled() )
+			v = wait_cpu_cycle_read_megaste_16 (addr, 2);
+		else
+		{
+			if ( MegaSTE_Cache_Read ( addr , 2 , &v ) )
+			{
+				x_do_cycles_post (4 * cpucycleunit, v);
+				CpuInstruction.I_Cache_hit++;
+			}
+			else
+			{
+				v = wait_cpu_cycle_read_megaste_16 (addr, 2);
+				MegaSTE_Cache_Update ( addr , 2 , v , 0 );
+				CpuInstruction.I_Cache_miss++;
+			}
+		}
+		break;
+	case CE_MEMBANK_FAST16:
+	case CE_MEMBANK_FAST32:
+		if ( !MegaSTE_Cache_Is_Enabled() )
+		{
+			v = get_wordi (addr);
+			x_do_cycles_post (4 * cpucycleunit, v);
+		}
+		else
+		{
+			if ( MegaSTE_Cache_Read ( addr , 2 , &v ) )
+			{
+				x_do_cycles_post (4 * cpucycleunit, v);
+				CpuInstruction.I_Cache_hit++;
+			}
+			else
+			{
+				v = get_wordi (addr);
+				x_do_cycles_post (4 * cpucycleunit, v);
+				MegaSTE_Cache_Update ( addr , 2 , v , 0 );
+				CpuInstruction.I_Cache_miss++;
+			}
+		}
+		break;
+	default:
+		v = get_wordi (addr);
+		break;
+	}
+
+	regs.db = v;
+	regs.read_buffer = v;
+	if ( BlitterPhase )	Blitter_HOG_CPU_mem_access_after ( 1 );
+	return v;
+}
+
+
+uae_u32	mem_access_delay_byte_read_megaste_16 (uaecptr addr)
+{
+	uint16_t  v;
+	if ( BlitterPhase )	Blitter_HOG_CPU_mem_access_before ( 1 );
+
+	switch (ce_banktype[addr >> 16])
+	{
+	case CE_MEMBANK_CHIP16:
+	case CE_MEMBANK_CHIP32:
+		if ( !MegaSTE_Cache_Is_Enabled() )
+			v = wait_cpu_cycle_read_megaste_16 (addr, 0);
+		else
+		{
+			if ( MegaSTE_Cache_Read ( addr , 1 , &v ) )
+			{
+				x_do_cycles_post (4 * cpucycleunit, v);
+				CpuInstruction.D_Cache_hit++;
+			}
+			else
+			{
+				v = wait_cpu_cycle_read_megaste_16 (addr, 0);
+
+				/* Reading with get_word() could create a bus error, so we must first */
+				/* check if this address can be cached without bus error */
+				if ( MegaSTE_Cache_Addr_Cacheable ( addr & ~1 , 2 , 0 ) )
+					MegaSTE_Cache_Update ( addr , 2 , get_word(addr & ~1) , 0 );
+
+				CpuInstruction.D_Cache_miss++;
+			}
+		}
+		break;
+	case CE_MEMBANK_FAST16:
+	case CE_MEMBANK_FAST32:
+		if ( !MegaSTE_Cache_Is_Enabled() )
+		{
+			v = get_byte (addr);
+			x_do_cycles_post (4 * cpucycleunit, v);
+		}
+		else
+		{
+			if ( MegaSTE_Cache_Read ( addr , 1 , &v ) )
+			{
+				x_do_cycles_post (4 * cpucycleunit, v);
+				CpuInstruction.D_Cache_hit++;
+			}
+			else
+			{
+				v = get_byte (addr);
+				x_do_cycles_post (4 * cpucycleunit, v);
+				MegaSTE_Cache_Update ( addr , 1 , v , 0 );
+				CpuInstruction.D_Cache_miss++;
+			}
+		}
+		break;
+	default:
+		v = get_byte (addr);
+		break;
+	}
+
+	regs.db = (v << 8) | v;
+	regs.read_buffer = v;
+	if ( BlitterPhase )	Blitter_HOG_CPU_mem_access_after ( 1 );
+	return v;
+}
+
+
+void	mem_access_delay_byte_write_megaste_16 (uaecptr addr, uae_u32 v)
+{
+	regs.db = (v << 8)  | v;
+	regs.write_buffer = v;
+	if ( BlitterPhase )	Blitter_HOG_CPU_mem_access_before ( 1 );
+
+	switch (ce_banktype[addr >> 16])
+	{
+	case CE_MEMBANK_CHIP16:
+	case CE_MEMBANK_CHIP32:
+		wait_cpu_cycle_write_megaste_16 (addr, 0, v);
+		if ( MegaSTE_Cache_Is_Enabled() )
+			MegaSTE_Cache_Write ( addr , 1 , v );
+
+		if ( BlitterPhase )	Blitter_HOG_CPU_mem_access_after ( 1 );
+		return;
+	case CE_MEMBANK_FAST16:
+	case CE_MEMBANK_FAST32:
+		put_byte (addr, v);
+		x_do_cycles_post (4 * cpucycleunit, v);
+		if ( MegaSTE_Cache_Is_Enabled() )
+			MegaSTE_Cache_Write ( addr , 1 , v );
+
+		if ( BlitterPhase )	Blitter_HOG_CPU_mem_access_after ( 1 );
+		return;
+	}
+	put_byte (addr, v);
+}
+
+
+void	mem_access_delay_word_write_megaste_16 (uaecptr addr, uae_u32 v)
+{
+	if ( BlitterPhase )	Blitter_HOG_CPU_mem_access_before ( 1 );
+
+	regs.db = v;
+	regs.write_buffer = v;
+	switch (ce_banktype[addr >> 16])
+	{
+	case CE_MEMBANK_CHIP16:
+	case CE_MEMBANK_CHIP32:
+		wait_cpu_cycle_write_megaste_16 (addr, 1, v);
+		if ( MegaSTE_Cache_Is_Enabled() )
+			MegaSTE_Cache_Write ( addr , 2 , v );
+
+		if ( BlitterPhase )	Blitter_HOG_CPU_mem_access_after ( 1 );
+		return;
+	case CE_MEMBANK_FAST16:
+	case CE_MEMBANK_FAST32:
+		put_word (addr, v);
+		x_do_cycles_post (4 * cpucycleunit, v);
+		if ( MegaSTE_Cache_Is_Enabled() )
+			MegaSTE_Cache_Write ( addr , 2 , v );
+
+		if ( BlitterPhase )	Blitter_HOG_CPU_mem_access_after ( 1 );
+		return;
+	}
+	put_word (addr, v);
+}
+
+
+
+
+/*
+ * Similar to wait_cpu_cycle_read / _write functions for 68000 CE in cpu/custom.c
+ * but we handle a faster CPU speed of 16 MHz instead of 8 MHz (compared to the RAM speed)
+ */
+
+uae_u32	wait_cpu_cycle_read_megaste_16 (uaecptr addr, int mode)
+{
+	uae_u32 v = 0;
+	int ipl = regs.ipl[0];
+	evt_t now = get_cycles();
+	uint64_t cycle_slot;
+
+	cycle_slot = ( CyclesGlobalClockCounter + currcycle*2/CYCLE_UNIT ) & 7;
+//	fprintf ( stderr , "mem read ce %x %d %lu %lu\n" , addr , mode ,currcycle / cpucycleunit , currcycle );
+	if ( cycle_slot != 0 )
+	{
+//		fprintf ( stderr , "mem wait read %x %d %lu %lu\n" , addr , mode , currcycle / cpucycleunit , currcycle );
+		x_do_cycles ( ( 8 - cycle_slot ) * cpucycleunit);
+//		fprintf ( stderr , "mem wait read after %x %d %lu %lu\n" , addr , mode , currcycle / cpucycleunit , currcycle );
+	}
+
+	switch(mode)
+	{
+		case -1:
+		v = get_long(addr);
+		break;
+		case -2:
+		v = get_longi(addr);
+		break;
+		case 1:
+		v = get_word(addr);
+		break;
+		case 2:
+		v = get_wordi(addr);
+		break;
+		case 0:
+		v = get_byte(addr);
+		break;
+	}
+
+	x_do_cycles_post (4*CYCLE_UNIT, v);
+
+	// if IPL fetch was pending and CPU had wait states
+	// Use ipl_pin value from previous cycle
+	if (now == regs.ipl_evt && regs.ipl_pin_change_evt > now + cpuipldelay2) {
+		regs.ipl[0] = ipl;
+	}
+	return v;
+}
+
+
+void	wait_cpu_cycle_write_megaste_16 (uaecptr addr, int mode, uae_u32 v)
+{
+	int ipl = regs.ipl[0];
+	evt_t now = get_cycles();
+	uint64_t cycle_slot;
+
+	cycle_slot = ( CyclesGlobalClockCounter + currcycle*2/CYCLE_UNIT ) & 7;
+//	fprintf ( stderr , "mem write ce %x %d %lu %lu\n" , addr , mode ,currcycle / cpucycleunit , currcycle );
+	if ( cycle_slot != 0 )
+	{
+//		fprintf ( stderr , "mem wait write %x %d %lu %lu\n" , addr , mode , currcycle / cpucycleunit , currcycle );
+		x_do_cycles ( ( 8 - cycle_slot ) * cpucycleunit);
+//		fprintf ( stderr , "mem wait write after %x %d %lu %lu\n" , addr , mode , currcycle / cpucycleunit , currcycle );
+	}
+
+	if (mode > -2) {
+		if (mode < 0) {
+			put_long(addr, v);
+		} else if (mode > 0) {
+			put_word(addr, v);
+		} else if (mode == 0) {
+			put_byte(addr, v);
+		}
+	}
+
+	x_do_cycles_post (4*CYCLE_UNIT, v);
+
+	// if IPL fetch was pending and CPU had wait states:
+	// Use ipl_pin value from previous cycle
+	if (now == regs.ipl_evt) {
+		regs.ipl[0] = ipl;
+	}
+}
+
+
+
+/*----------------------------------------------------------------------*/
+/*			MegaSTE 16MHz and  cache			*/
+/*----------------------------------------------------------------------*/
+
+

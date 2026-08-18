@@ -145,6 +145,8 @@ static flagname_t TraceFlags[] = {
 
 	{ TRACE_SCSIDRV		 , "scsidrv" },
 
+	{ TRACE_SCU		 , "scu" },
+
 	{ TRACE_OS_VDI  	 , "vdi" },
 
 	{ TRACE_VIDEL  	         , "videl" },
@@ -159,8 +161,6 @@ static flagname_t TraceFlags[] = {
 	{ TRACE_VIDEO_STE	 , "video_ste" },
 	{ TRACE_VIDEO_SYNC	 , "video_sync" },
 	{ TRACE_VIDEO_VBL	 , "video_vbl" },
-
-	{ TRACE_VME		 , "vme" },
 
 	{ TRACE_OS_XBIOS	 , "xbios" },
 };
@@ -235,8 +235,8 @@ int Log_Init(void)
 	Log_ResetMsgRepeat();
 
 	hLogFile = File_Open(ConfigureParams.Log.sLogFileName, "w");
-#endif
 	TraceFile = File_Open(ConfigureParams.Log.sTraceFileName, "w");
+#endif
 
 	return (hLogFile && TraceFile);
 }

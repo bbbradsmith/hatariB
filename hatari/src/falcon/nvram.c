@@ -62,6 +62,7 @@ const char NvRam_fileid[] = "Hatari nvram.c";
 #include "paths.h"
 #include "tos.h"
 #include "vdi.h"
+#include "m68000.h"
 
 // Defs for NVRAM control register A (10) bits
 #define REG_BIT_UIP  0x80	/* update-in-progress */
@@ -526,7 +527,7 @@ void NvRam_Data_ReadByte(void)
 		break;
 	}
 
-	LOG_TRACE(TRACE_NVRAM, "NVRAM: read data at %d = %d ($%02x)\n", nvram_index, value, value);
+	LOG_TRACE(TRACE_NVRAM, "NVRAM: read data at %d = %d ($%02x) pc=%x\n", nvram_index, value, value, M68000_GetPC());
 	IoMem_WriteByte(0xff8963, value);
 }
 
@@ -576,7 +577,7 @@ void NvRam_Data_WriteByte(void)
 			   value, value, nvram_index);
 		return;
 	}
-	LOG_TRACE(TRACE_NVRAM, "NVRAM: write data at %d = %d ($%02x)\n", nvram_index, value, value);
+	LOG_TRACE(TRACE_NVRAM, "NVRAM: write data at %d = %d ($%02x) pc=%x\n", nvram_index, value, value, M68000_GetPC());
 	nvram[nvram_index] = value;
 }
 
@@ -601,4 +602,9 @@ void NvRam_Info(FILE *fp, uint32_t dummy)
 		nvram[28], nvram[29]);
 	fprintf(fp, "- SCSI ID: %d, bus arbitration: %s (30)\n",
 		nvram[30] & 0x7, nvram[30] & 128 ? "off" : "on");
+}
+
+int NvRam_GetKbdLayoutCode(void)
+{
+	return nvram[NVRAM_KEYBOARDLAYOUT];
 }

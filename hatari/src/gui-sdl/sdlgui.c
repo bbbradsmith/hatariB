@@ -30,6 +30,15 @@ const char SDLGui_fileid[] = "Hatari sdlgui.c";
 # define Dprintf(a)
 #endif
 
+/* sanity check for minimum size */
+#define MIN_DIALOG_WIDTH  12
+#define MIN_DIALOG_HEIGHT  5
+/* Dialogs need to fit into Hatari window.  These are max sizes
+ * (with the current font) when both borders & statusbar are disabled.
+ */
+#define MAX_DIALOG_WIDTH  64
+#define MAX_DIALOG_HEIGHT 25
+
 #ifndef __LIBRETRO__
 static SDL_Surface *pSdlGuiScrn;            /* Pointer to the actual main SDL screen surface */
 #else
@@ -230,8 +239,19 @@ void SDLGui_GetFontSize(int *width, int *height)
  */
 void SDLGui_CenterDlg(SGOBJ *dlg)
 {
-	dlg[0].x = (pSdlGuiScrn->w/sdlgui_fontwidth-dlg[0].w)/2;
-	dlg[0].y = (pSdlGuiScrn->h/sdlgui_fontheight-dlg[0].h)/2;
+	int w = dlg[0].w, h = dlg[0].h;
+	/* catch invalid changes to SDL GUI dialogs */
+	if (w < MIN_DIALOG_WIDTH || h < MIN_DIALOG_HEIGHT)
+	{
+		Log_Printf(LOG_ERROR, "invalid (too small) dialog size (%dx%d)!", w, h);
+	}
+	if (w > MAX_DIALOG_WIDTH || h > MAX_DIALOG_HEIGHT)
+	{
+		Log_Printf(LOG_ERROR, "dialog too large (%dx%d), max working size is %dx%d!",
+			w, h, MAX_DIALOG_WIDTH, MAX_DIALOG_HEIGHT);
+	}
+	dlg[0].x = (pSdlGuiScrn->w / sdlgui_fontwidth - w) / 2;
+	dlg[0].y = (pSdlGuiScrn->h / sdlgui_fontheight - h) / 2;
 }
 
 /*-----------------------------------------------------------------------*/
@@ -1192,6 +1212,8 @@ int SDLGui_DoDialogExt(SGOBJ *dlg, bool (*isEventOut)(SDL_EventType), SDL_Event 
 	SDL_Surface *pBgSurface;
 	SDL_Rect dlgrect, bgrect;
 	SDL_Joystick *joy = NULL;
+	const Uint8 *keystates;
+	bool ignore_first_keyup;
 
 	/* either both, or neither of these should be present */
 	assert((isEventOut && pEventOut) || (!isEventOut && !pEventOut));
@@ -1214,13 +1236,13 @@ int SDLGui_DoDialogExt(SGOBJ *dlg, bool (*isEventOut)(SDL_EventType), SDL_Event 
 	/* Save background */
 	pBgSurface = SDL_CreateRGBSurface(SDL_SWSURFACE, dlgrect.w, dlgrect.h, pSdlGuiScrn->format->BitsPerPixel,
 	                                  pSdlGuiScrn->format->Rmask, pSdlGuiScrn->format->Gmask, pSdlGuiScrn->format->Bmask, pSdlGuiScrn->format->Amask);
-	if (pSdlGuiScrn->format->palette != NULL)
-	{
-		SDL_SetPaletteColors(pBgSurface->format->palette, pSdlGuiScrn->format->palette->colors, 0, pSdlGuiScrn->format->palette->ncolors-1);
-	}
 
 	if (pBgSurface != NULL)
 	{
+		if (pSdlGuiScrn->format->palette != NULL)
+		{
+			SDL_SetPaletteColors(pBgSurface->format->palette, pSdlGuiScrn->format->palette->colors, 0, pSdlGuiScrn->format->palette->ncolors-1);
+		}
 		SDL_BlitSurface(pSdlGuiScrn,  &dlgrect, pBgSurface, &bgrect);
 	}
 	else
@@ -1245,6 +1267,22 @@ int SDLGui_DoDialogExt(SGOBJ *dlg, bool (*isEventOut)(SDL_EventType), SDL_Event 
 
 	/* (Re-)draw the dialog */
 	SDLGui_DrawDialog(dlg);
+
+	/* If one of the keys that could exit the dialog is already held
+	 * before we start, then ignore the first keyup event since the
+	 * key press does not belong to the dialog, but rather to whatever
+	 * happened before the dialog.
+	 *
+	 * Cannot be used when asked to return already on key down
+	 * (e.g. with file selector).
+	 */
+	keystates = SDL_GetKeyboardState(NULL);
+	ignore_first_keyup = !(isEventOut && isEventOut(SDL_KEYDOWN)) && (
+	                     keystates[SDL_GetScancodeFromKey(SDLK_RETURN)] ||
+	                     keystates[SDL_GetScancodeFromKey(SDLK_KP_ENTER)] ||
+	                     keystates[SDL_GetScancodeFromKey(SDLK_SPACE)] ||
+	                     keystates[SDL_GetScancodeFromKey(SDLK_ESCAPE)]
+	);
 
 	/* Is the left mouse button still pressed? Yes -> Handle TOUCHEXIT objects here */
 	SDL_PumpEvents();
@@ -1405,6 +1443,7 @@ int SDLGui_DoDialogExt(SGOBJ *dlg, bool (*isEventOut)(SDL_EventType), SDL_Event 
 
 			 case SDL_JOYBALLMOTION:
 			 case SDL_MOUSEMOTION:
+			 case SDL_KEYMAPCHANGED:
 				break;
 
 			 case SDL_KEYDOWN:                     /* Key pressed */
@@ -1470,9 +1509,19 @@ int SDLGui_DoDialogExt(SGOBJ *dlg, bool (*isEventOut)(SDL_EventType), SDL_Event 
 				 case SDLK_SPACE:
 				 case SDLK_RETURN:
 				 case SDLK_KP_ENTER:
+					if (ignore_first_keyup)
+					{
+						ignore_first_keyup = false;
+						break;
+					}
 					retbutton = SDLGui_HandleSelection(dlg, focused, focused);
 					break;
 				 case SDLK_ESCAPE:
+					if (ignore_first_keyup)
+					{
+						ignore_first_keyup = false;
+						break;
+					}
 					retbutton = SDLGui_SearchFlags(dlg, SG_CANCEL);
 					break;
 				 default:

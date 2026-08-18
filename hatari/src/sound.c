@@ -389,8 +389,8 @@ ymsample	Subsonic_IIR_HPF_Left(ymsample x0)
 	if ( YM2149_HPF_Filter == YM2149_HPF_FILTER_NONE )
 		return x0;
 
-	y1 += ((x0 - x1)<<15) - (y0<<6);  /*  64*y0  */
-	y0 = y1>>15;
+	y1 += ((x0 - x1) * 32768) - (y0 * 64);
+	y0 = y1 / 32768;
 	x1 = x0;
 
 	return y0;
@@ -404,8 +404,8 @@ ymsample	Subsonic_IIR_HPF_Right(ymsample x0)
 	if ( YM2149_HPF_Filter == YM2149_HPF_FILTER_NONE )
 		return x0;
 
-	y1 += ((x0 - x1)<<15) - (y0<<6);  /*  64*y0  */
-	y0 = y1>>15;
+	y1 += ((x0 - x1) * 32768) - (y0 * 64);
+	y0 = y1 / 32768;
 	x1 = x0;
 
 	return y0;
@@ -1588,8 +1588,7 @@ void Sound_Reset(void)
 	/* Clear sound mixing buffer: */
 	memset(AudioMixBuffer, 0, sizeof(AudioMixBuffer));
 
-	/* Clear cycle counts, buffer index and register '13' flags */
-	Cycles_SetCounter(CYCLES_COUNTER_SOUND, 0);
+	/* Clear buffer index and register '13' flags */
 	bEnvelopeFreqFlag = false;
 
 	AudioMixBuffer_pos_read = 0;
@@ -1663,9 +1662,7 @@ void Sound_MemorySnapShot_Capture(bool bSave)
 
 	MemorySnapShot_Store(&YM2149_Clock_250, sizeof(YM2149_Clock_250));
 	MemorySnapShot_Store(&YM2149_Clock_250_CpuClock, sizeof(YM2149_Clock_250_CpuClock));
-#ifdef __LIBRETRO__
-	MemorySnapShot_Store(&YM2149_Freq_div_2, sizeof(YM2149_Freq_div_2)); // new state that wasn't in the savestate
-#endif
+	MemorySnapShot_Store(&YM2149_Freq_div_2, sizeof(YM2149_Freq_div_2));
 
 	MemorySnapShot_Store(&YmVolumeMixing, sizeof(YmVolumeMixing));
 
@@ -1893,7 +1890,7 @@ void Sound_Update_VBL(void)
 	}
 	
 	/* Record AVI audio frame is necessary */
-	if ( bRecordingAvi )
+	if ( Avi_AreWeRecording() )
 	{
 		int Len;
 

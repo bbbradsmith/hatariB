@@ -1,19 +1,23 @@
-From 195ebb885ddf6d8c4d0ac737fd8f9bc35d54d0fe Mon Sep 17 00:00:00 2001
+From 2023fe8fda5fb4e3ddf39ecc547594c4ab6a14ab Mon Sep 17 00:00:00 2001
 From: Eero Tamminen <oak@helsinkinet.fi>
 Date: Sat, 25 Jun 2022 17:29:42 +0300
-Subject: [PATCH] Drop Atari EtherNAT support when it's not configured in
+Subject: [PATCH 1/2] m68k: Drop Atari EtherNAT support when it's not
+ configured in
 
-Not having it configured, but crashes happening in its IRQ handling
-code is confusing.
+Not having it configured, but crash backtraces going through its IRQ
+handling code, is confusing (found while debugging issues in Atari
+emulation).
+
+Signed-off-by: Eero Tamminen <oak@helsinkinet.fi>
 ---
  arch/m68k/atari/ataints.c | 5 ++++-
  1 file changed, 4 insertions(+), 1 deletion(-)
 
 diff --git a/arch/m68k/atari/ataints.c b/arch/m68k/atari/ataints.c
-index 56f02ea2c..0d267efe7 100644
+index 0465444ce..fa189eeb7 100644
 --- a/arch/m68k/atari/ataints.c
 +++ b/arch/m68k/atari/ataints.c
-@@ -180,6 +180,7 @@ static struct irq_chip atari_mfptimer_chip = {
+@@ -179,6 +179,7 @@ static struct irq_chip atari_mfptimer_chip = {
  };
  
  
@@ -21,7 +25,7 @@ index 56f02ea2c..0d267efe7 100644
  /*
   * EtherNAT CPLD interrupt handling
   * CPLD interrupt register is at phys. 0x80000023
-@@ -252,6 +253,7 @@ static struct irq_chip atari_ethernat_chip = {
+@@ -251,6 +252,7 @@ static struct irq_chip atari_ethernat_chip = {
  	.irq_enable	= atari_ethernat_enable,
  	.irq_disable	= atari_ethernat_disable,
  };
@@ -29,7 +33,7 @@ index 56f02ea2c..0d267efe7 100644
  
  /*
   * void atari_init_IRQ (void)
-@@ -348,12 +350,13 @@ void __init atari_init_IRQ(void)
+@@ -343,12 +345,13 @@ void __init atari_init_IRQ(void)
  			stmfp_base.name, &stmfp_base))
  		pr_err("Couldn't register %s interrupt\n", stmfp_base.name);
  
@@ -45,5 +49,5 @@ index 56f02ea2c..0d267efe7 100644
  
  
 -- 
-2.30.2
+2.39.5
 

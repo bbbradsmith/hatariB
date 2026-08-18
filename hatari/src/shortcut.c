@@ -26,9 +26,7 @@ const char ShortCut_fileid[] = "Hatari shortcut.c";
 #include "debugui.h"
 #include "sound.h"
 #include "sdlgui.h"
-#include "video.h"
 #include "avi_record.h"
-#include "clocks_timings.h"
 #include "statusbar.h"
 
 static SHORTCUTKEYIDX ShortCutKey = SHORTCUT_NONE;  /* current shortcut key */
@@ -130,17 +128,12 @@ static void ShortCut_RecordAnimation(void)
 	if (Avi_AreWeRecording())
 	{
 		/* Stop */
-		Avi_StopRecording();
+		Avi_StopRecording_WithMsg();
 	}
 	else
 	{
-		/* Start animation */
-		Avi_StartRecording ( ConfigureParams.Video.AviRecordFile , ConfigureParams.Screen.bCrop ,
-			ConfigureParams.Video.AviRecordFps == 0 ?
-				ClocksTimings_GetVBLPerSec ( ConfigureParams.System.nMachineType , nScreenRefreshRate ) :
-				ClocksTimings_GetVBLPerSec ( ConfigureParams.System.nMachineType , ConfigureParams.Video.AviRecordFps ) ,
-			1 << CLOCKS_TIMINGS_SHIFT_VBL ,
-			ConfigureParams.Video.AviRecordVcodec );
+		/* Start recording */
+		Avi_StartRecording_WithConfig();
 	}
 }
 
@@ -191,9 +184,8 @@ static void ShortCut_FastForward(void)
 }
 
 
-/*-----------------------------------------------------------------------*/
 /**
- * Shortcut to 'Boss' key, ie minmize Window and switch to another application
+ * Shortcut to 'Boss' key, ie minimize Window and switch to another application
  */
 static void ShortCut_BossKey(void)
 {
@@ -216,9 +208,8 @@ static void ShortCut_BossKey(void)
 }
 
 
-/*-----------------------------------------------------------------------*/
 /**
- * Shorcut to debug interface
+ * Shortcut to debug interface
  */
 static void ShortCut_Debug(void)
 {
@@ -232,9 +223,8 @@ static void ShortCut_Debug(void)
 }
 
 
-/*-----------------------------------------------------------------------*/
 /**
- * Shorcut to pausing
+ * Shortcut to pausing
  */
 static void ShortCut_Pause(void)
 {
@@ -242,8 +232,9 @@ static void ShortCut_Pause(void)
 		Main_PauseEmulation(true);
 }
 
+
 /**
- * Shorcut to load a disk image
+ * Shortcut to load a disk image
  */
 static void ShortCut_InsertDisk(int drive)
 {

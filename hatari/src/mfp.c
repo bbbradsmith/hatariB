@@ -78,6 +78,8 @@
 /*			with a counter of 256 ! (fix timer saving routine used by	*/
 /*			ST Cnx in the Punish Your Machine and the Froggies Over The	*/
 /*			Fence (although this routine is in fact buggy)).		*/
+/*			NOTE : this was wrong, fixed on 2025/05/07 and saving routine	*/
+/*			is not buggy.							*/
 /* 2008/09/13	[NP]	Add some traces when stopping a timer and changing data reg.	*/
 /*			Don't apply timer D patch if timer D ctrl reg is 0.		*/
 /* 2008/10/04	[NP]	In MFP_TimerBData_ReadByte, test for overlap only when nHBL	*/
@@ -86,7 +88,7 @@
 /*			data reg was 0 (which in fact means 256).			*/
 /* 2008/10/16	[NP]	No need to set data reg to 255 when decrementing a data reg that*/
 /*			was 0, this is already what is implicitly done, because data	*/
-/*			reg for timer A/B is uint8_t (revert 2008/10/04 changes).		*/
+/*			reg for timer A/B is uint8_t (revert 2008/10/04 changes).	*/
 /* 2008/12/11	[NP]	In MFP_CheckPendingInterrupts(), returns true or false instead	*/
 /*			of void, depending on whether at least one MFP interrupt was	*/
 /*			allowed or not.							*/
@@ -134,6 +136,10 @@
 /*			to clear Timer B ISR sometimes happens at the same time that	*/
 /*			Timer C expires, which used the wrong ISR value and gave	*/
 /*			flickering raster colors)					*/
+/* 2025/05/07	[NP]	Fix wrong behaviour from 2008/07/12 : when timer is stopped and	*/
+/*			restarted when counter is going from 1 to 0, then the timer	*/
+/*			will be restarted with the latest timer data register, not with	*/
+/*			data=0 (=256).							*/
 
 
 const char MFP_fileid[] = "Hatari mfp.c";
@@ -164,6 +170,7 @@ const char MFP_fileid[] = "Hatari mfp.c";
 #include "clocks_timings.h"
 #include "acia.h"
 #include "utils.h"
+#include "scc.h"
 
 
 /*
@@ -1315,6 +1322,29 @@ void	MFP_TimerB_EventCount ( MFP_STRUCT *pMFP , int Delayed_Cycles )
 }
 
 
+
+/*-----------------------------------------------------------------------*/
+/**
+ * Return the Timer C's frequency on the TT MFP
+ * This is used as "TCCLK" input signal in the Atari TT to provide the RTxCB clock
+ * on the SCC.
+ *
+ * Return the frequency in MHz or 0 if Timer C is disabled
+ */
+uint32_t	MFP_TT_TimerC_Get_Freq ( void )
+{
+	uint32_t	ClockCycles;
+
+	ClockCycles = pMFP_TT->TimerCClockCycles;
+
+	if ( ClockCycles == 0 )
+		return 0;
+
+	else
+		return MachineClocks.MFP_Timer_Freq / ClockCycles;
+}
+
+
 /*-----------------------------------------------------------------------*/
 /**
  * Start Timer A or B - EventCount mode is done in HBL handler to time correctly
@@ -1419,7 +1449,7 @@ static uint32_t MFP_StartTimer_AB ( MFP_STRUCT *pMFP , uint8_t TimerControl, uin
 		  || ( Handler == INTERRUPT_MFP_TT_TIMERB ) )
 		{
 			/* Store start cycle for handling interrupt in video.c */
-			TimerBEventCountCycleStart = Cycles_GetCounterOnWriteAccess(CYCLES_COUNTER_VIDEO);
+			TimerBEventCountCycleStart = Video_GetCyclesSinceVbl_OnWriteAccess();
 		}
 
 		if (LOG_TRACE_LEVEL(TRACE_MFP_START))
@@ -1504,6 +1534,13 @@ static uint32_t MFP_StartTimer_CD (  MFP_STRUCT *pMFP , uint8_t TimerControl, ui
 		CycInt_RemovePendingInterrupt(Handler);
 	}
 
+
+	/* If Timer C is changed on the MFP TT we must forward this to the TT SCC */
+	/* because Timer C output is connected to RTxCB input on the SCC */
+	if ( Handler == INTERRUPT_MFP_TT_TIMERC )
+		SCC_Update_TimerC_Clock ();
+
+
 	return TimerClockCycles;
 }
 
@@ -1524,15 +1561,18 @@ static uint8_t	MFP_ReadTimer_AB ( MFP_STRUCT *pMFP , uint8_t TimerControl, uint8
 	}
 
 	/* If the timer is stopped when the internal mfp data reg is already < 1 */
-	/* then the data reg will be 0 (=256) next time the timer will be restarted */
+	/* then the data reg will be the current TADR/TBDR next time the timer will be restarted */
 	/* if no write is made to the data reg before */
 	if ( TimerIsStopping )
 	{
 		if ( CycInt_FindCyclesRemaining ( Handler, INT_MFP_CYCLE ) < MFP_REG_TO_CYCLES ( 1 , TimerControl ) )
 		{
-			MainCounter = 0;			/* internal mfp counter becomes 0 (=256) */
-			LOG_TRACE(TRACE_MFP_READ , "mfp%s read AB handler=%d stopping timer while data reg between 1 and 0 : forcing data to 256\n" ,
-					pMFP->NameSuffix , Handler );
+			if ( ( Handler == INTERRUPT_MFP_MAIN_TIMERA ) || ( Handler == INTERRUPT_MFP_TT_TIMERA ) )
+				MainCounter = pMFP->TADR;
+			else
+				MainCounter = pMFP->TBDR;
+			LOG_TRACE(TRACE_MFP_READ , "mfp%s read AB handler=%d stopping timer while data reg between 1 and 0 : forcing data to %d\n" ,
+					pMFP->NameSuffix , Handler , MainCounter );
 		}
 	}
 
@@ -1564,15 +1604,19 @@ static uint8_t	MFP_ReadTimer_CD ( MFP_STRUCT *pMFP , uint8_t TimerControl, uint8
 	}
 
 	/* If the timer is stopped when the internal mfp data reg is already < 1 */
-	/* then the data reg will be 0 (=256) next time the timer will be restarted */
+	/* then the data reg will be the current TCDR/TDDR next time the timer will be restarted */
 	/* if no write is made to the data reg before */
 	if ( TimerIsStopping )
 	{
 		if ( CycInt_FindCyclesRemaining ( Handler, INT_MFP_CYCLE ) < MFP_REG_TO_CYCLES ( 1 , TimerControl ) )
 		{
-			MainCounter = 0;			/* internal mfp counter becomes 0 (=256) */
-			LOG_TRACE(TRACE_MFP_READ , "mfp%s read CD handler=%d stopping timer while data reg between 1 and 0 : forcing data to 256\n" ,
-					pMFP->NameSuffix , Handler );
+			if ( ( Handler == INTERRUPT_MFP_MAIN_TIMERC ) || ( Handler == INTERRUPT_MFP_TT_TIMERC ) )
+				MainCounter = pMFP->TCDR;
+			else
+				MainCounter = pMFP->TDDR;
+			LOG_TRACE(TRACE_MFP_READ , "mfp%s read CD handler=%d stopping timer while data reg between 1 and 0 : forcing data to %d\n" ,
+					pMFP->NameSuffix , Handler , MainCounter );
+
 		}
 	}
 
@@ -1898,12 +1942,12 @@ uint8_t    MFP_Main_Compute_GPIP_LINE_ACIA ( void )
  * - Bit 0 is the BUSY signal of the printer port, it is SET if no printer
  *   is connected or on BUSY. Therefore we should assume it to be 0 in Hatari
  *   when a printer is emulated.
- * - Bit 1 is used for RS232: DCD
- * - Bit 2 is used for RS232: CTS
+ * - Bit 1 is used for RS232: DCD (inverted, 0=DCD ON)
+ * - Bit 2 is used for RS232: CTS (inverted, 0=CTS ON)
  * - Bit 3 is used by the blitter (busy/idle state)
  * - Bit 4 is used by the ACIAs (keyboard and midi)
  * - Bit 5 is used by the FDC / HDC
- * - Bit 6 is used for RS232: RI
+ * - Bit 6 is used for RS232: RI (inverted, O=RI ON)
  * - Bit 7 is monochrome monitor detection signal and/or dma sound. On STE and TT it is
  *   also XORed with the DMA sound play bit. On Falcon it is only the DMA sound play bit
  *
@@ -1912,12 +1956,16 @@ uint8_t    MFP_Main_Compute_GPIP_LINE_ACIA ( void )
  */
 void	MFP_GPIP_ReadByte_Main ( MFP_STRUCT *pMFP )
 {
-	uint8_t	gpip_new;
+	uint8_t		gpip_new;
+	uint8_t		dcd,cts;
 
 	M68000_WaitState(4);
 
 	/* Update timers' state before reading the register */
 	MFP_UpdateTimers ( pMFP , Cycles_GetClockCounterImmediate() );
+
+	/* Get value of DCD/CTS signals in case RS232 emulation is enabled */
+	RS232_Get_DCD_CTS ( &dcd , &cts );
 
 	gpip_new = pMFP->GPIP;
 
@@ -1932,6 +1980,18 @@ void	MFP_GPIP_ReadByte_Main ( MFP_STRUCT *pMFP )
 		gpip_new |= 0x10;		/* set bit 4 */
 	else
 		gpip_new &= ~0x10;		/* clear bit 4 */
+
+	/* Bit 2 : CTS (inverted, 0=ON) */
+	if ( !cts )
+		gpip_new |= 0x04;		/* set bit 2 */
+	else
+		gpip_new &= ~0x04;		/* clear bit 2 */
+
+	/* Bit 1 : DCD (inverted, 0=ON) */
+	if ( !dcd )
+		gpip_new |= 0x02;		/* set bit 1 */
+	else
+		gpip_new &= ~0x02;		/* clear bit 1 */
 
 	/* Bit 0 */
 	if (ConfigureParams.Printer.bEnablePrinting)

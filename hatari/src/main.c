@@ -183,6 +183,37 @@ static void Time_Delay(int64_t ticks_micro)
 #endif
 }
 
+/*-----------------------------------------------------------------------*/
+/**
+ * Always print speeds in Benchmark mode, otherwise only
+ * if loglevel is "info" or higher (when time is recorded).
+ */
+static void Main_PrintSpeed(void)
+{
+	if (!nFirstMilliTick)
+		return;
+
+#ifndef __LIBRETRO__
+	int interval = Main_GetTicks() - nFirstMilliTick;
+#else
+	(void)Main_GetTicks;
+	int interval = 0;
+#endif
+	static float previous;
+	float current;
+	int level = LOG_INFO;
+
+	if (BenchmarkMode && ConfigureParams.Log.nTextLogLevel < level)
+		level = ConfigureParams.Log.nTextLogLevel;
+
+	current = (1000.0 * nVBLCount) / interval;
+	Log_Printf(level, "SPEED: %.1f VBL/s (%d/%.1fs), diff=%.1f%%\n",
+		   current, nVBLCount, interval/1000.0,
+		   previous>0.0 ? 100*(current-previous)/previous : 0.0);
+	nVBLCount = nFirstMilliTick = 0;
+	previous = current;
+}
+
 
 /*-----------------------------------------------------------------------*/
 /**
@@ -200,25 +231,8 @@ bool Main_PauseEmulation(bool visualize)
 	bEmulationActive = false;
 	if (visualize)
 	{
-		if (nFirstMilliTick)
-		{
-#ifndef __LIBRETRO__
-			int interval = Main_GetTicks() - nFirstMilliTick;
-#else
-			(void)Main_GetTicks;
-			int interval = 0;
-#endif
-			static float previous;
-			float current;
+		Main_PrintSpeed();
 
-			current = (1000.0 * nVBLCount) / interval;
-			Log_Printf(LOG_INFO, "SPEED: %.1f VBL/s (%d/%.1fs), diff=%.1f%%\n",
-			       current, nVBLCount, interval/1000.0,
-			       previous>0.0 ? 100*(current-previous)/previous : 0.0);
-			nVBLCount = nFirstMilliTick = 0;
-			previous = current;
-		}
-		
 		Statusbar_AddMessage("Emulation paused", 100);
 		/* make sure msg gets shown */
 		Statusbar_Update(sdlscrn, true);
@@ -515,11 +529,38 @@ void Main_WarpMouse(int x, int y, bool restore)
 
 /* ----------------------------------------------------------------------- */
 /**
+ * Set mouse cursor visibility and return if it was visible before.
+ */
+bool Main_ShowCursor(bool show)
+{
+#ifndef __LIBRETRO__
+	bool bOldVisibility;
+
+	bOldVisibility = SDL_ShowCursor(SDL_QUERY) == SDL_ENABLE;
+	if (bOldVisibility != show)
+	{
+		if (show)
+		{
+			SDL_ShowCursor(SDL_ENABLE);
+		}
+		else
+		{
+			SDL_ShowCursor(SDL_DISABLE);
+		}
+	}
+	return bOldVisibility;
+#else
+	return false;
+#endif
+}
+
+
+/* ----------------------------------------------------------------------- */
+/**
  * Handle mouse motion event.
  */
-static void Main_HandleMouseMotion(SDL_Event *pEvent)
+static void Main_HandleMouseMotion(int dx, int dy)
 {
-	int dx, dy;
 	static int ax = 0, ay = 0;
 
 	/* Ignore motion when position has changed right after a reset or TOS
@@ -529,9 +570,6 @@ static void Main_HandleMouseMotion(SDL_Event *pEvent)
 		bIgnoreNextMouseMotion = false;
 		return;
 	}
-
-	dx = pEvent->motion.xrel;
-	dy = pEvent->motion.yrel;
 
 	/* In zoomed low res mode, we divide dx and dy by the zoom factor so that
 	 * the ST mouse cursor stays in sync with the host mouse. However, we have
@@ -551,6 +589,29 @@ static void Main_HandleMouseMotion(SDL_Event *pEvent)
 		dy /= nScreenZoomY;
 	}
 
+#ifndef __LIBRETRO__
+	if (!bInFullScreen)			/* Consider window scaling? */
+	{
+		static int wx, wy;
+		int win_width, win_height, ndx, ndy;
+
+		SDL_GetWindowSize(sdlWindow, &win_width, &win_height);
+
+		if (sdlscrn->w != win_width)
+		{
+			ndx = dx * sdlscrn->w;
+			dx = (ndx + wx) / win_width;
+			wx = (ndx + wx) % win_width;
+		}
+		if (sdlscrn->h != win_height)
+		{
+			ndy = dy * sdlscrn->h;
+			dy = (ndy + wy) / win_height;
+			wy = (ndy + wy) % win_height;
+		}
+	}
+#endif
+
 	KeyboardProcessor.Mouse.dx += dx;
 	KeyboardProcessor.Mouse.dy += dy;
 }
@@ -568,6 +629,9 @@ void Main_EventHandler(void)
 	SDL_Event event;
 	int events;
 	int remotepause;
+#ifndef __LIBRETRO__
+	static int mleave_x = -1, mleave_y = -1;
+#endif
 
 	do
 	{
@@ -621,7 +685,7 @@ void Main_EventHandler(void)
 			break;
 
 		 case SDL_MOUSEMOTION:               /* Read/Update internal mouse position */
-			Main_HandleMouseMotion(&event);
+			Main_HandleMouseMotion(event.motion.xrel, event.motion.yrel);
 			bContinueProcessing = true;
 			break;
 
@@ -706,10 +770,21 @@ void Main_EventHandler(void)
 				break;
 				/* mouse & keyboard focus */
 			case SDL_WINDOWEVENT_ENTER:
+				if (mleave_x != -1)
+				{
+					int new_x, new_y;
+					SDL_GetMouseState(&new_x, &new_y);
+					Main_HandleMouseMotion(new_x - mleave_x,
+					                       new_y - mleave_y);
+					mleave_x = mleave_y = -1;
+				}
+				/* fall through */
 			case SDL_WINDOWEVENT_FOCUS_GAINED:
 				bAllowMouseWarp = true;
 				break;
 			case SDL_WINDOWEVENT_LEAVE:
+				SDL_GetMouseState(&mleave_x, &mleave_y);
+				/* fall through */
 			case SDL_WINDOWEVENT_FOCUS_LOST:
 				bAllowMouseWarp = false;
 				break;
@@ -768,8 +843,7 @@ static void Main_Init(void)
 	if (!Log_Init())
 	{
 #ifndef __LIBRETRO__
-		fprintf(stderr, "ERROR: logging/tracing initialization failed\n");
-		exit(-1);
+		Main_ErrorExit("Logging/tracing initialization failed", NULL, -1);
 #endif
 	}
 	Log_Printf(LOG_INFO, PROG_NAME ", compiled on:  " __DATE__ ", " __TIME__ "\n");
@@ -779,14 +853,12 @@ static void Main_Init(void)
 	   will be initialized later (failure not fatal). */
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 	{
-		fprintf(stderr, "ERROR: could not initialize the SDL library:\n %s\n", SDL_GetError() );
-		exit(-1);
+		Main_ErrorExit("Could not initialize the SDL library:", SDL_GetError(), -1);
 	}
 
 	if ( IPF_Init() != true )
 	{
-		fprintf(stderr, "ERROR: could not initialize the IPF support\n" );
-		exit(-1);
+		Main_ErrorExit("Could not initialize the IPF support", NULL, -1);
 	}
 #else
 	// core will instead call IPF_Init on first read of an IPF disk,
@@ -803,7 +875,6 @@ static void Main_Init(void)
 	RS232_Init();
 	SCC_Init();
 	Midi_Init();
-	Control_CheckUpdates();       /* enable window embedding? */
 	Videl_Init();
 	Screen_Init();
 	Main_SetTitle(NULL);
@@ -840,7 +911,9 @@ static void Main_Init(void)
 	if (!bTosImageLoaded || bQuitProgram)
 	{
 		if (!bTosImageLoaded)
-			fprintf(stderr, "ERROR: failed to load TOS image!\n");
+		{
+			Main_ErrorExit("Failed to load TOS image", NULL, -2);
+		}
 		SDL_Quit();
 		exit(-2);
 #else
@@ -873,7 +946,7 @@ static void Main_UnInit(void)
 	SCC_UnInit();
 	RS232_UnInit();
 	Printer_UnInit();
-	IoMem_UnInit();
+	IoMem_UnInit(ConfigureParams.System.nMachineType);
 	NvRam_UnInit();
 	GemDOS_UnInitDrives();
 	Ide_UnInit();
@@ -1003,6 +1076,44 @@ static void Main_StatusbarSetup(void)
 	Statusbar_UpdateInfo();
 }
 
+/**
+ * Error exit wrapper, to make sure user sees the error messages
+ * also on Windows.
+ *
+ * If message is given, Windows console is opened to show it,
+ * otherwise it's assumed to be already open and relevant
+ * messages shown before calling this.
+ *
+ * User input is waited on Windows, to make sure user sees
+ * the message before console closes.
+ *
+ * Value overrides nQuitValue as process exit/return value.
+ */
+void Main_ErrorExit(const char *msg1, const char *msg2, int errval)
+{
+	if (msg1)
+	{
+#ifndef __LIBRETRO__
+#ifdef WIN32
+		Win_ForceCon();
+#endif
+#endif
+		if (msg2)
+			fprintf(stderr, "ERROR: %s\n\t%s\n", msg1, msg2);
+		else
+			fprintf(stderr, "ERROR: %s!\n", msg1);
+	}
+
+#ifndef __LIBRETRO__
+	SDL_Quit();
+
+#ifdef WIN32
+	fputs("<press Enter to exit>\n", stderr);
+	(void)fgetc(stdin);
+#endif
+#endif // __LIBRETRO__
+	exit(errval);
+}
 
 /**
  * Main
@@ -1021,6 +1132,9 @@ int main_init(int argc, char *argv[])
 #else
 	Hatari_srand(1);
 #endif
+
+	/* Setup for string conversions */
+	Str_Init();
 
 	/* Logs default to stderr at start */
 	Log_Default();
@@ -1041,7 +1155,7 @@ int main_init(int argc, char *argv[])
 	if (!Opt_ParseParameters(argc, (const char * const *)argv))
 	{
 		Control_RemoveFifo();
-		return 1;
+		Main_ErrorExit(NULL, NULL, 1);
 	}
 	/* monitor type option might require "reset" -> true */
 	Configuration_Apply(true);
@@ -1055,9 +1169,6 @@ int main_init(int argc, char *argv[])
 	/* Needed on maemo but useful also with normal X11 window managers for
 	 * window grouping when you have multiple Hatari SDL windows open */
 	setenv("SDL_VIDEO_X11_WMCLASS", "hatari", 1);
-
-	/* Needed for proper behavior of Caps Lock on some systems */
-	setenv("SDL_DISABLE_LOCK_KEYS", "1", 1);
 #endif
 #endif // __LIBRETRO__
 
@@ -1070,13 +1181,9 @@ int main_init(int argc, char *argv[])
 	/* Check if SDL_Delay is accurate */
 	Main_CheckForAccurateDelays();
 
-	if ( AviRecordOnStartup )	/* Immediately starts avi recording ? */
-		Avi_StartRecording ( ConfigureParams.Video.AviRecordFile , ConfigureParams.Screen.bCrop ,
-			ConfigureParams.Video.AviRecordFps == 0 ?
-				ClocksTimings_GetVBLPerSec ( ConfigureParams.System.nMachineType , nScreenRefreshRate ) :
-				ClocksTimings_GetVBLPerSec ( ConfigureParams.System.nMachineType , ConfigureParams.Video.AviRecordFps ) ,
-			1 << CLOCKS_TIMINGS_SHIFT_VBL ,
-			ConfigureParams.Video.AviRecordVcodec );
+	/* Immediately start AVI recording ? */
+	if ( AviRecordOnStartup )
+		Avi_StartRecording_WithConfig();
 
 	/* Run emulation */
 	Main_UnPauseEmulation();
@@ -1089,13 +1196,8 @@ int main_deinit(void)
 #endif
 
 	Control_RemoveFifo();
-	if (bRecordingAvi)
-	{
-		/* cleanly close the avi file */
-		Statusbar_AddMessage("Finishing AVI file...", 100);
-		Statusbar_Update(sdlscrn, true);
-		Avi_StopRecording();
-	}
+	/* cleanly close the AVI file, if needed */
+	Avi_StopRecording_WithMsg();
 	/* Un-init emulation system */
 	Main_UnInit();
 

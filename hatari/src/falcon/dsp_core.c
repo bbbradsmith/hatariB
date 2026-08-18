@@ -15,8 +15,7 @@
 	GNU General Public License for more details.
 
 	You should have received a copy of the GNU General Public License
-	along with this program; if not, write to the Free Software Foundation,
-	51 Franklin Street, Fifth Floor, Boston, MA 02110-1335 USA
+	along with this program; if not, see <https://www.gnu.org/licenses/>.
 */
 
 #ifdef HAVE_CONFIG_H
@@ -646,6 +645,12 @@ void dsp_core_reset(void)
 	/* Other hardware registers */
 	dsp_core.periph[DSP_SPACE_X][DSP_IPR]=0;
 	dsp_core.periph[DSP_SPACE_X][DSP_BCR]=0xffff;
+
+	/* AGU pipeline reset */
+	for (i=0; i<2; i++) {
+		dsp_core.agu_pipeline_reg[i] = 0;
+		dsp_core.agu_pipeline_val[i] = 0;
+	}
 
 	/* Misc */
 	dsp_core.loop_rep = 0;

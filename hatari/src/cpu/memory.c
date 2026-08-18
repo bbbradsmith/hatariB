@@ -27,6 +27,7 @@ const char Memory_fileid[] = "Hatari memory.c";
 #include "stMemory.h"
 #include "m68000.h"
 #include "configuration.h"
+#include "video.h"
 
 #include "newcpu.h"
 
@@ -40,12 +41,16 @@ static uae_u32 STmem_size;
 uae_u32 TTmem_size = 0;
 static uae_u32 TTmem_mask;
 
-#define STmem_start  0x00000000
-#define ROMmem_start 0x00E00000
-#define IdeMem_start 0x00F00000
-#define IOmem_start  0x00FF0000
-#define TTmem_start  0x01000000			/* TOS 3 and TOS 4 always expect extra RAM at this address */
-#define TTmem_end    0x80000000			/* Max value for end of TT ram, which gives 2047 MB */
+#define STmem_start		0x00000000
+#define ROMmem_start		0x00E00000
+#define IdeMem_start		0x00F00000
+#define IOmem_start		0x00FF0000
+#define TTmem_start		0x01000000			/* TOS 3 and TOS 4 always expect extra RAM at this address */
+#define TTmem_end		0x80000000			/* Max value for end of TT ram, which gives 2047 MB */
+#define VMEmem_start_TT		0xFE000000			/* MegaSTE and TT support a VME bus. This returns a bus error */
+#define VMEmem_end_TT		0xFF000000			/* when no board is plugged. Regions are different between MegaSTE and TT */
+#define VMEmem_start_MegaSTE	0x00A00000
+#define VMEmem_end_MegaSTE	0x00E00000
 
 #define IdeMem_size  65536
 #define IOmem_size  65536
@@ -287,7 +292,6 @@ uae_u32 dummy_get (uaecptr addr, int size, bool inst, uae_u32 defvalue)
 		return currprefs.cpu_model > 68000 ? 0x0000 : 0xffff;
 	}
 	if (addr == 0xb0b000) {
-		extern bool isideint(void);
 		return isideint() ? 0xffff : 0x0000;
 	}
 #endif
@@ -1623,12 +1627,20 @@ void memory_map_Standard_RAM ( uint32_t MMU_Bank0_Size , uint32_t MMU_Bank1_Size
 		{
 			map_banks_ce(&VoidMem_bank, 0x40000 >> 16, 0x40000 >> 16, 0, CE_MEMBANK_CHIP16, CE_MEMBANK_NOT_CACHABLE);
 		}
+
+		/* When enabling MMU address translation in the memory banks for the CPU, we must */
+		/* also enable MMU address translation for the shifter, as fetching data words to display */
+		/* will depend on how the MMU is configured */
+		Video_Set_Memcpy ( true );
 	}
 	else
 	{
 		/* Don't enable MMU address translation */
 		map_banks_ce(&SysMem_bank, 0x00, 0x10000 >> 16, 0, CE_MEMBANK_CHIP16, CACHE_ENABLE_BOTH);
 		map_banks_ce(&STmem_bank, 0x10000 >> 16, ( STmem_size - 0x10000 ) >> 16, 0, CE_MEMBANK_CHIP16, CACHE_ENABLE_BOTH);
+
+		/* Use normal memcpy functions for video rendering */
+		Video_Set_Memcpy ( false );
 	}
 }
 
@@ -1649,8 +1661,6 @@ void memory_init(uae_u32 NewSTMemSize, uae_u32 NewTTMemSize, uae_u32 NewRomMemSt
 	//fprintf ( stderr , "memory_init: STmem_size=$%x, TTmem_size=$%x, ROM-Start=$%x,\n", STmem_size, TTmem_size, NewRomMemStart);
 	/*write_log("memory_init: STmem_size=$%x, TTmem_size=$%x, ROM-Start=$%x,\n",
 	            STmem_size, TTmem_size, NewRomMemStart);*/
-
-#if ENABLE_SMALL_MEM
 
 	/* Allocate memory for normal ST RAM. Note that we always allocate
 	 * either 4 MiB, 8 MiB or the full 16 MiB, since the functions that
@@ -1673,11 +1683,7 @@ void memory_init(uae_u32 NewSTMemSize, uae_u32 NewTTMemSize, uae_u32 NewRomMemSt
 	STmemory = malloc(alloc_size);
 	if (!STmemory)
 	{
-		write_log ("virtual memory exhausted (STmemory)!\n");
-#ifndef __LIBRETRO__
-		SDL_Quit();
-#endif
-		exit(1);
+		Main_ErrorExit("Virtual memory exhausted (STmemory)", NULL, 1);
 	}
 	memset(STmemory, 0, alloc_size);
 
@@ -1691,26 +1697,12 @@ void memory_init(uae_u32 NewSTMemSize, uae_u32 NewTTMemSize, uae_u32 NewRomMemSt
 		ROMmemory = malloc(2*1024*1024);
 		if (!ROMmemory)
 		{
-			fprintf(stderr, "Out of memory (ROM/IO mem)!\n");
-#ifndef __LIBRETRO__
-			SDL_Quit();
-#endif
-			exit(1);
+			Main_ErrorExit("Out of memory (ROM/IO mem)", NULL, 1);
 		}
 	}
 
 	IdeMemory = ROMmemory + 0x100000;
 	IOmemory  = ROMmemory + 0x1f0000;
-
-#else
-
-	/* STmemory points to the 16 MiB STRam array, we just have to set up
-	* the remaining pointers here: */
-	ROMmemory = STRam + ROMmem_start;
-	IdeMemory = STRam + IdeMem_start;
-	IOmemory = STRam + IOmem_start;
-
-#endif
 
 	init_mem_banks();
 	init_ce_banks();
@@ -1824,6 +1816,18 @@ void memory_init(uae_u32 NewSTMemSize, uae_u32 NewTTMemSize, uae_u32 NewRomMemSt
 		map_banks_ce(&BusErrMem_bank, IdeMem_start >> 16, 0x1, 0, CE_MEMBANK_CHIP16, CE_MEMBANK_NOT_CACHABLE);
 	}
 
+	/* VME regions on TT :      0xFE000000 to 0xFEFEFFFF (A24/D16) and 0xFEFF0000 to 0xFEFFFFFF (A16/D16) : total is 16 MB */
+	/* VME regions on MegaSTE : 0x00A00000 to 0x00DEFFFF (A24/D16) and 0x00DF0000 to 0x00DFFFFF (A16/D16) : total is 4 MB */
+	/* Hatari doesn't emulate VME for now, so these regions should return bus errors */
+	if ( Config_IsMachineTT() )
+	{
+		map_banks_ce(&BusErrMem_bank, VMEmem_start_TT >> 16, ( VMEmem_end_TT - VMEmem_start_TT ) >> 16 , 0, CE_MEMBANK_CHIP16, CE_MEMBANK_NOT_CACHABLE);
+	}
+	else if ( Config_IsMachineMegaSTE() )
+	{
+		map_banks_ce(&BusErrMem_bank, VMEmem_start_MegaSTE >> 16, ( VMEmem_end_MegaSTE - VMEmem_start_MegaSTE ) >> 16 , 0, CE_MEMBANK_CHIP16, CE_MEMBANK_NOT_CACHABLE);
+	}
+
 	/* Illegal memory regions cause a bus error on the ST: */
 	map_banks_ce(&BusErrMem_bank, 0xF10000 >> 16, 0x9, 0, CE_MEMBANK_CHIP16, CE_MEMBANK_NOT_CACHABLE);
 
@@ -1861,8 +1865,6 @@ void memory_uninit (void)
 		TTmemory = NULL;
 	}
 
-#if ENABLE_SMALL_MEM
-
 	if (STmemory) {
 		free(STmemory);
 		STmemory = NULL;
@@ -1872,8 +1874,6 @@ void memory_uninit (void)
 		free(ROMmemory);
 	}
 	ROMmemory = NULL;
-
-#endif  /* ENABLE_SMALL_MEM */
 }
 
 

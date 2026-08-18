@@ -34,6 +34,8 @@ const char DebugCpu_fileid[] = "Hatari debugcpu.c";
 #include "68kDisass.h"
 #include "console.h"
 #include "options.h"
+#include "tos.h"
+#include "str.h"
 #include "vars.h"
 
 
@@ -65,7 +67,7 @@ static int DebugCpu_LoadBin(int nArgc, char *psArgs[])
 		return DebugUI_PrintCmdHelp(psArgs[0]);
 	}
 
-	if (!Eval_Number(psArgs[2], &address))
+	if (!Eval_Number(psArgs[2], &address, NUM_TYPE_CPU))
 	{
 		fprintf(stderr, "Invalid address!\n");
 		return DEBUGGER_CMDDONE;
@@ -112,13 +114,13 @@ static int DebugCpu_SaveBin(int nArgc, char *psArgs[])
 		return DebugUI_PrintCmdHelp(psArgs[0]);
 	}
 
-	if (!Eval_Number(psArgs[2], &address))
+	if (!Eval_Number(psArgs[2], &address, NUM_TYPE_CPU))
 	{
 		fprintf(stderr, "  Invalid address!\n");
 		return DEBUGGER_CMDDONE;
 	}
 
-	if (!Eval_Number(psArgs[3], &bytes))
+	if (!Eval_Number(psArgs[3], &bytes, NUM_TYPE_NORMAL))
 	{
 		fprintf(stderr, "  Invalid length!\n");
 		return DEBUGGER_CMDDONE;
@@ -376,7 +378,7 @@ int DebugCpu_Register(int nArgc, char *psArgs[])
 	}
 
 	*assign++ = '\0';
-	if (!Eval_Number(Str_Trim(assign), &value))
+	if (!Eval_Number(Str_Trim(assign), &value, NUM_TYPE_CPU))
 	{
 		goto error_msg;
 	}
@@ -446,19 +448,107 @@ static int DebugCpu_Profile(int nArgc, char *psArgs[])
 	return Profile_Command(nArgc, psArgs, false);
 }
 
+/**
+ * helper: return type width (b/c=1, w=2, l=4)
+ */
+static unsigned get_type_width(char mode)
+{
+	switch(mode)
+	{
+	case 'b':	/* byte */
+	case 'c':	/* character */
+		return 1;
+	case 'w':	/* word */
+		return 2;
+	case 'l':	/* long */
+		return 4;
+	default:
+		return 0;
+	}
+}
+
+
+/**
+ * This is a helper function that prints `count` `size` sized memory items
+ * from `addr` in `base`.
+ * @param addr    the start address
+ * @param count   the amount of items that should be printed
+ * @param size    the size of one item
+ * @param base    the number base
+ */
+static void print_mem_values(uint32_t addr, int count, int size, int base)
+{
+	const char *separator = "";
+	for (int i = 0; i < count; i++)
+	{
+		uint32_t value;
+		switch (size)
+		{
+		case 4:
+			value = STMemory_ReadLong(addr);
+			break;
+		case 2:
+			value = STMemory_ReadWord(addr);
+			break;
+		case 1:
+		default:
+			value = STMemory_ReadByte(addr);
+			break;
+		}
+		switch (base)
+		{
+		case 1:
+			fputs(separator, debugOutput);
+			DebugUI_PrintBinary(debugOutput, 8*size, value);
+			break;
+		case 8:
+			fprintf(debugOutput, "%s%0*o", separator, 3*size, value);
+			break;
+		case 10:
+			fprintf(debugOutput, "%s%d", separator, value);
+			break;
+		case 16:
+		default:
+			fprintf(debugOutput, "%s%0*x", separator, 2*size, value);
+			break;
+		}
+		addr += size;
+		separator = " ";
+	}
+}
+
+/**
+ * This is a helper function that prints `count` bytes from Atari `addr`
+ * as host encoded chars.
+ * @param addr   The ST RAM start address
+ * @param count  the amount of bytes that should get printed
+ */
+static void print_mem_chars(uint32_t addr, uint8_t count)
+{
+	char host[4], st[2];
+	st[1] = '\0';
+
+	for (int i = 0; i < count; i++)
+	{
+		st[0] = STMemory_ReadByte(addr + i);
+		if ((unsigned)st[0] >= 32 && st[0] != 127 &&
+		    Str_AtariToHost(st, host, sizeof(host), NON_PRINT_CHAR))
+			fprintf(debugOutput,"%s", host);
+		else
+			fputc(NON_PRINT_CHAR, debugOutput);
+	}
+}
 
 /**
  * Do a memory dump, args = starting address.
  */
 int DebugCpu_MemDump(int nArgc, char *psArgs[])
 {
-	char c, mode;
-	int i, arg, size;
-	uint32_t value, memdump_upper = 0;
+	int arg = 1;
+	unsigned size;
+	char mode = 0;
+	uint32_t memdump_upper = 0;
 
-	arg = 1;
-	mode = 0;
-	size = 1;
 	if (nArgc > 1)
 		mode = tolower(psArgs[arg][0]);
 
@@ -466,20 +556,11 @@ int DebugCpu_MemDump(int nArgc, char *psArgs[])
 	{
 		/* no args, single digit or multiple chars -> default mode */
 		mode = 'b';
+		size = 1;
 	}
-	else if (mode == 'b')
+	else if ((size = get_type_width(mode)))
 	{
 		arg += 1;
-	}
-	else if (mode == 'w')
-	{
-		arg += 1;
-		size = 2;
-	}
-	else if (mode == 'l')
-	{
-		arg += 1;
-		size = 4;
 	}
 	else
 	{
@@ -523,49 +604,251 @@ int DebugCpu_MemDump(int nArgc, char *psArgs[])
 
 	while (memdump_addr < memdump_upper)
 	{
-		int cols;
+		unsigned all, cols, align;
 		uint32_t memdump_line = memdump_addr;
-		fprintf(debugOutput, "%08X: ", memdump_line);
-		
-		/* print HEX data */
-		cols = MEMDUMP_COLS/size;
-		for (i = 0; i < cols && memdump_addr < memdump_upper; i++)
-		{
-			switch (mode)
-			{
-			case 'l':
-				value = STMemory_ReadLong(memdump_addr);
-				break;
-			case 'w':
-				value = STMemory_ReadWord(memdump_addr);
-				break;
-			case 'b':
-			default:
-				value = STMemory_ReadByte(memdump_addr);
-				break;
-			}
-			fprintf(debugOutput, "%0*x ", 2*size, value);
-			memdump_addr += size;
-		}
 
-		/* print ASCII data */
-		fprintf(debugOutput, "  ");
+		/* how many colums to print */
+		all = MEMDUMP_COLS/size;
+		if (all*size > memdump_upper-memdump_addr)
+			cols = (memdump_upper - memdump_addr)/size;
+		else
+			cols = all;
 
-		cols = i*size;
-		for (i = 0; i < cols; i++)
-		{
-			c = STMemory_ReadByte(memdump_line + i);
-			if(!isprint((unsigned)c))
-				c = NON_PRINT_CHAR;             /* non-printable as dots */
-			fprintf(debugOutput,"%c", c);
-		}
+		/* print addr: HEX */
+		fprintf(debugOutput, "%08X: ", memdump_addr);
+		print_mem_values(memdump_addr, cols, size, 16);
+
+		/* print character data */
+		align = (all-cols)*(2*size+1);
+		fprintf(debugOutput, "%*c", align + 2, ' ');
+		print_mem_chars(memdump_line, cols*size);
 		fprintf(debugOutput, "\n");
+
+		memdump_addr += cols*size;
 	}
 	fflush(debugOutput);
 
 	return DEBUGGER_CMDCONT;
 }
 
+
+/**
+ * helper: return type base (b=1, o=8, d=10, h=16)
+ */
+static unsigned get_type_base(char mode)
+{
+	switch(mode)
+	{
+	case 'b':	/* binary */
+		return 1;
+	case 'o':	/* oct */
+		return 8;
+	case 'd':	/* dec */
+		return 10;
+	case 'h':	/* hex */
+		return 16;
+	default:
+		return 0;
+	}
+}
+
+/**
+ * Sructured memory output
+ */
+static int DebugCpu_Struct(int nArgc, char *psArgs[])
+{
+	uint32_t start, addr, count, split;
+	int maxlen, offlen;
+
+	if (nArgc < 4)
+	{
+		fprintf(stderr, "Not enough arguments!\n");
+		return DEBUGGER_CMDDONE;
+	}
+
+	if (!Eval_Number(psArgs[2], &start, NUM_TYPE_CPU)) {
+		fprintf(stderr, "Invalid structure address!\n");
+		return DEBUGGER_CMDDONE;
+	}
+
+	/* determine max header len for aligning and validate
+	 * argument content before it's split up.
+	 */
+	maxlen = 0;
+	addr = start;
+	for (int i = 3; i < nArgc; i++)
+	{
+		/* [name]:<type-char>[:count[/split]] */
+		const char *arg, *str, *str2;
+		int size, type;
+		char buf[5];
+
+		arg = psArgs[i];
+		str = strchr(arg, ':');
+		if (!str)
+		{
+			fprintf(stderr, "':' missing from arg: '%s'!\n", arg);
+			return DEBUGGER_CMDDONE;
+		}
+		/* lenght of longest title */
+		if (maxlen < str - arg)
+			maxlen = str - arg;
+
+		type = tolower(*++str);
+		size = get_type_width(type);
+		if (!size && type == 's')
+		    size = 1;
+		if (!size)
+		{
+			fprintf(stderr, "invalid type for arg: '%s'!\n", arg);
+			return DEBUGGER_CMDDONE;
+		}
+
+		/* type followed by base? */
+		if (get_type_base(tolower(*++str)))
+			str++;
+
+		/* done? */
+		if (!*str)
+		{
+			addr += size;
+			continue;
+		}
+		if (*str++ != ':')
+		{
+			fprintf(stderr, "invalid base for arg: '%s'!\n", arg);
+			return DEBUGGER_CMDDONE;
+		}
+
+		/* check split value that comes after count */
+		split = 0;
+		str2 = strchr(str, '/');
+		if (str2)
+		{
+			if (!Eval_Number(str2+1, &split, NUM_TYPE_NORMAL) || split > 127)
+			{
+				fprintf(stderr, "Invalid or too large split value for arg: '%s'!\n", arg);
+				return DEBUGGER_CMDDONE;
+			}
+			memcpy(buf, str, 3);
+			/* terminate count */
+			buf[str2-str] = '\0';
+			str = buf;
+		}
+
+		if (!Eval_Number(str, &count, NUM_TYPE_NORMAL) || count > 255)
+		{
+			fprintf(stderr, "Invalid or too large count for arg: '%s'!\n", arg);
+			return DEBUGGER_CMDDONE;
+		}
+		if (split >= count)
+		{
+			fprintf(stderr, "Invalid count/split, count<=split: '%s'!\n", arg);
+			return DEBUGGER_CMDDONE;
+		}
+		addr += count*size;
+	}
+
+	/* count of hex digits for last printed address */
+	offlen = 1;
+	count = addr - start;
+	while (count >>= 4)
+		offlen++;
+	if (offlen >= maxlen)
+		maxlen = offlen + 1; /* '$' prefix for numbers */
+
+	fprintf(debugOutput, "%s: $%x\n", psArgs[1], start);
+
+	addr = start;
+	for (int i = 3; i < nArgc; i++)
+	{
+		char *name, *str;
+		int size, type, base;
+
+		name = psArgs[i];
+		str = strchr(name, ':');
+		*str = '\0';
+
+		type = tolower(*++str);
+		size = get_type_width(type);
+		base = get_type_base(tolower(*++str));
+		if (!base)
+			base = 16;
+		else
+			str++;
+
+		count = 1;
+		split = 0;
+		if (*str++)  /* ':' count separator? */
+		{
+			char *str2 = strchr(str, '/');
+			if (str2)
+			{
+				*str2++ = '\0';
+				Eval_Number(str2, &split, NUM_TYPE_NORMAL);
+			}
+			Eval_Number(str, &count, NUM_TYPE_NORMAL);
+		}
+
+		if (type == 's') /* skip */
+		{
+			addr += count;
+			continue;
+		}
+
+		if (*name)
+			fprintf(debugOutput, "+ %-*s: ",
+				maxlen+1, name);
+		else
+			fprintf(debugOutput, "+ $%0*x%*c: ",
+				offlen, addr-start, maxlen-offlen, ' ');
+
+		if (split)
+			fprintf(debugOutput, "\n");
+
+		while (count > 0)
+		{
+			unsigned int cols = split;
+			if (!split || cols > count)
+				cols = count;
+			if (split)
+				fprintf(debugOutput, "  ");
+			if (type == 'c')
+				print_mem_chars(addr, cols);
+			else
+				print_mem_values(addr, cols, size, base);
+			fprintf(debugOutput, "\n");
+
+			addr += cols * size;
+			count -= cols;
+		}
+	}
+
+	return DEBUGGER_CMDCONT;
+}
+
+
+/* helper to convert argument from host to Atari encoding.
+ * returns false if argument could not be mapped completely,
+ * or it maps to more than one Atari character.
+ *
+ * dst size 3 should be enough.
+ */
+static bool hostCharToAtari(const char *src, char *dst, size_t size)
+{
+	/* atari string is smaller or same size as host enconded string */
+	if (strlen(src) > size-1)
+	{
+		fprintf(stderr, "'%s' is not a single char!\n", src);
+		return false;
+	}
+	if (!Str_HostToAtari(src, dst, '.') || strlen(dst) != 1)
+	{
+		fprintf(stderr, "Unable to map '%s' to a single Atari char => use 'b' type instead\n", src);
+		return false;
+	}
+	return true;
+}
 
 /**
  * Command: Write to memory, optional arg for value lengths,
@@ -596,7 +879,7 @@ static int DebugCpu_MemWrite(int nArgc, char *psArgs[])
 		/* no args, single digit or multiple chars -> default mode */
 		mode = 'b';
 	}
-	else if (mode == 'b')
+	else if (mode == 'b' || mode == 'c')
 	{
 		arg += 1;
 	}
@@ -616,7 +899,7 @@ static int DebugCpu_MemWrite(int nArgc, char *psArgs[])
 		return DEBUGGER_CMDDONE;
 	}
 	/* Read address */
-	if (!Eval_Number(psArgs[arg++], &write_addr))
+	if (!Eval_Number(psArgs[arg++], &write_addr, NUM_TYPE_CPU))
 	{
 		fprintf(stderr, "Bad address!\n");
 		return DEBUGGER_CMDDONE;
@@ -633,7 +916,17 @@ static int DebugCpu_MemWrite(int nArgc, char *psArgs[])
 	values = 0;
 	for (i = arg; i < nArgc; i++)
 	{
-		if (!Eval_Number(psArgs[i], &d))
+		if (mode == 'c')
+		{
+			char str[3];
+			if (!hostCharToAtari(psArgs[i], str, sizeof(str)))
+				return DEBUGGER_CMDDONE;
+			store.bytes[values] = str[0];
+			values++;
+			continue;
+		}
+
+		if (!Eval_Number(psArgs[i], &d, NUM_TYPE_NORMAL))
 		{
 			fprintf(stderr, "Bad value '%s'!\n", psArgs[i]);
 			return DEBUGGER_CMDDONE;
@@ -669,6 +962,7 @@ static int DebugCpu_MemWrite(int nArgc, char *psArgs[])
 		switch(mode)
 		{
 		case 'b':
+		case 'c':
 			STMemory_WriteByte(write_addr + i, store.bytes[i]);
 			break;
 		case 'w':
@@ -685,6 +979,206 @@ static int DebugCpu_MemWrite(int nArgc, char *psArgs[])
 			values, mode, write_addr);
 	}
 	return DEBUGGER_CMDDONE;
+}
+
+
+/* return end of memory area where given address is,
+ * or zero if address is invalid
+ */
+static uint32_t mem_end_for(uint32_t addr)
+{
+	if (addr < STRamEnd)
+		return STRamEnd;
+
+	uint32_t TosEnd = TosAddress + TosSize;
+	if (addr >= TosAddress && addr < TosEnd)
+		return TosEnd;
+
+	if (addr >= CART_START && addr < CART_END)
+		return CART_END;
+
+	uint32_t TTmemEnd = TTRAM_START + 1024*ConfigureParams.Memory.TTRamSize_KB;
+	if (TTmemory && addr >= TTRAM_START && addr < TTmemEnd)
+		return TTmemEnd;
+
+	return 0;
+}
+
+/**
+ * Do a memory find, args = mode, start-end, values
+ * (most of code is identical to MemWrite)
+ */
+static int DebugCpu_MemFind(int nArgc, char *psArgs[])
+{
+	int arg, max_values;
+	union {
+		uint8_t  bytes[256];
+		uint16_t words[128];
+		uint32_t longs[64];
+	} store;
+	char mode;
+
+	if (nArgc < 3)
+	{
+		return DebugUI_PrintCmdHelp(psArgs[0]);
+	}
+
+	arg = 1;
+	mode = tolower(psArgs[arg][0]);
+	max_values = ARRAY_SIZE(store.bytes);
+
+	if (!mode || isdigit((unsigned char)psArgs[arg][0]) || psArgs[arg][1])
+	{
+		/* no args, single digit or multiple chars -> default mode */
+		mode = 'b';
+	}
+	else if (mode == 'b' || mode == 'c')
+	{
+		arg += 1;
+	}
+	else if (mode == 'w')
+	{
+		max_values = ARRAY_SIZE(store.words);
+		arg += 1;
+	}
+	else if (mode == 'l')
+	{
+		max_values = ARRAY_SIZE(store.longs);
+		arg += 1;
+	}
+	else
+	{
+		fprintf(stderr, "Invalid width mode (not a|b|w|l)!\n");
+		return DEBUGGER_CMDDONE;
+	}
+
+	/* parse address range */
+
+	uint32_t find_addr, find_upper = 0;
+
+	switch (Eval_Range(psArgs[arg++], &find_addr, &find_upper, false))
+	{
+	case -1:
+		/* invalid value(s) */
+		return DEBUGGER_CMDDONE;
+	case 0:
+		/* single value */
+		break;
+	case 1:
+		/* range */
+		break;
+	}
+
+	if ((find_upper && find_upper <= find_addr) ||
+	    !(mem_end_for(find_addr) && mem_end_for(find_upper)))
+	{
+		fprintf(stderr, "Invalid address range: 0x%x[-0x%x]\n", find_addr, find_upper);
+		return DEBUGGER_CMDDONE;
+	}
+
+	if (!find_upper)
+		find_upper = mem_end_for(find_addr);
+
+	const int size = get_type_width(mode);
+
+	if (find_addr & (size-1)) {
+		fprintf(stderr, "Start address 0x%x not '%c' type aligned\n", find_addr, mode);
+		return DEBUGGER_CMDDONE;
+	}
+
+	/* parse values */
+
+	if (nArgc - arg > max_values)
+	{
+		fprintf(stderr, "Too many values (%d) given for mode '%c' (max %d)!\n",
+		       nArgc - arg, mode, max_values);
+		return DEBUGGER_CMDDONE;
+	}
+
+	uint32_t d;
+	int i, values;
+
+	for (values = 0, i = arg; i < nArgc; i++, values++)
+	{
+		if (mode == 'c')
+		{
+			char str[3];
+			if (!hostCharToAtari(psArgs[i], str, sizeof(str)))
+				return DEBUGGER_CMDDONE;
+			store.bytes[values] = str[0];
+			continue;
+		}
+
+		if (!Eval_Number(psArgs[i], &d, NUM_TYPE_NORMAL))
+		{
+			fprintf(stderr, "Bad value '%s'!\n", psArgs[i]);
+			return DEBUGGER_CMDDONE;
+		}
+
+		switch(mode)
+		{
+		case 'b':
+			if (d > 0xff)
+			{
+				fprintf(stderr, "Illegal byte argument: 0x%x!\n", d);
+				return DEBUGGER_CMDDONE;
+			}
+			store.bytes[values] = (uint8_t)d;
+			break;
+		case 'w':
+			if (d > 0xffff)
+			{
+				fprintf(stderr, "Illegal word argument: 0x%x!\n", d);
+				return DEBUGGER_CMDDONE;
+			}
+			store.words[values] = be_swap16(d);
+			break;
+		case 'l':
+			store.longs[values] = be_swap32(d);
+			break;
+		}
+	}
+
+	/* search given range for specified values & show them */
+
+	const int rows = DebugUI_GetPageLines(ConfigureParams.Debugger.nFindLines, 20);
+	const int count = nArgc - arg;
+	const int bytes = count*size;
+
+	int row = 0, matches = 0;
+	while (find_addr < find_upper - bytes)
+	{
+		for (i = 0; i < bytes; i++)
+		{
+			if (STMemory_ReadByte(find_addr+i) != store.bytes[i])
+				break;
+		}
+		if (i < bytes)
+		{
+			find_addr += size;
+			continue;
+		}
+
+		/* print <addr>: <hex> <chars> */
+		fprintf(debugOutput, "%08X: ", find_addr);
+		print_mem_values(find_addr, count, size, 16);
+		fprintf(debugOutput, "  ");
+		print_mem_chars(find_addr, count*size);
+		fprintf(debugOutput, "\n");
+
+		matches++;
+		if (++row >= rows) {
+			row = 0;
+			if (DebugUI_DoQuitQuery("find results"))
+				break;
+		}
+		find_addr += bytes;
+	}
+
+	fprintf(debugOutput, "%d matches.\n", matches);
+	fflush(debugOutput);
+
+	return DEBUGGER_CMDCONT;
 }
 
 
@@ -975,6 +1469,14 @@ static const dbgcommand_t cpucommands[] =
 	  "\tWhen no address is given, disassemble from the last disasm\n"
 	  "\taddress, or from current PC when debugger is (re-)entered.",
 	  false },
+	{ DebugCpu_MemFind, Symbols_MatchCpuAddress,
+	  "find", "",
+	  "find given value sequence from memory",
+	  "[b|c|w|l] <start address>[-<end address>] <values>\n"
+	  "\tBy default values are interpreted as bytes, with 'c', 'w'\n"
+	  "\tor 'l', they're interpreted as chars/words/longs instead,\n"
+	  "\tand find is done for correspondingly aligned addresses.",
+	  false },
 	{ DebugCpu_Profile, Profile_Match,
 	  "profile", "",
 	  "profile CPU code",
@@ -996,28 +1498,41 @@ static const dbgcommand_t cpucommands[] =
 	  "\toption, it will be done as words/longs instead.  Output amount\n"
 	  "\tcan be given either as a count or an address range.",
 	  false },
+	{ DebugCpu_Struct, Symbols_MatchCpuDataAddress,
+	  "struct", "",
+	  "structured memory output, e.g. for breakpoints",
+	  "<name> <address> [name]:<type>[base][:<count>[/<split>] ...]\n\n"
+	  "\tShow <name>d structure content at given <address>, with each\n"
+	  "\t[name]:<type>[base][:<count>] arg output on its own line, prefixed\n"
+	  "\twith offset from struct start address, if [name] is not given.\n"
+	  "\tOutput uses multiple lines when type count <split> is given.\n"
+	  "\tSupported <type>s are 'b|c|w|l|s' (byte|char|word|long|skip).\n"
+	  "\tOptional [base] can be 'b|o|d|h' (bin|oct|dec|hex).\n"
+	  "\tDefaults are hex [base], and [count] of 1.\n",
+	  false },
 	{ DebugCpu_MemWrite, Symbols_MatchCpuAddress,
 	  "memwrite", "w",
 	  "write bytes/words/longs to memory",
-	  "[b|w|l] address value1 [value2 ...]\n"
+	  "[b|c|w|l] <address> <values>\n"
 	  "\tWrite space separate values (in current number base) to given\n"
-	  "\tmemory address. By default writes are done as bytes, with\n"
-	  "\t'w' or 'l' option they will be done as words/longs instead",
+	  "\tmemory address. By default they are written as bytes, with\n"
+	  "\t'w' or 'l' they will be done as words/longs instead.\n"
+	  "\t'c' can be used to provide byte values as chars.",
 	  false },
-	{ DebugCpu_LoadBin, NULL,
+	{ DebugCpu_LoadBin, Symbols_MatchCpuAddrFile,
 	  "loadbin", "l",
 	  "load a file into memory",
 	  "<filename> <address>\n"
 	  "\tLoad the file <filename> into memory starting at <address>.",
 	  false },
-	{ DebugCpu_SaveBin, NULL,
+	{ DebugCpu_SaveBin, Symbols_MatchCpuAddrFile,
 	  "savebin", "",
 	  "save memory to a file",
 	  "<filename> <address> <length>\n"
 	  "\tSave the memory block at <address> with given <length> to\n"
 	  "\tthe file <filename>.",
 	  false },
-	{ Symbols_Command, Symbols_MatchCommand,
+	{ Symbols_Command, Symbols_MatchCpuCommand,
 	  "symbols", "",
 	  "load CPU symbols & their addresses",
 	  Symbols_Description,

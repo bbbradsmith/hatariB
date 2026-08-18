@@ -3,7 +3,7 @@
  *
  * Adaptions to Hatari:
  *
- * Copyright 2023-2024 Nicolas Pomarède, major rewrite of most of the code
+ * Copyright 2023-2025 Nicolas Pomarède, major rewrite of most of the code
  *
  * Copyright 2018 Thomas Huth
  *
@@ -23,8 +23,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with ARAnyM; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * along with this program; if not, see <https://www.gnu.org/licenses/>.
  */
 
 
@@ -94,6 +93,7 @@
 #include "cycInt.h"
 #include "video.h"
 #include "psg.h"
+#include "mfp.h"
 
 #ifndef O_NONBLOCK
 # ifdef O_NDELAY
@@ -418,6 +418,23 @@ void	SCC_Check_Lan_IsEnabled ( void )
 
 
 
+/*
+ * This function is called from mfp.c whenever Timer C frequency (TCCLK) is changed on the TT MFP
+ * TCCLK can be used as the main clock source for the RTxCB clock on channel B
+ *
+ * If RTxCB is enabled, we must update the SCC's baudrate
+ */
+void	SCC_Update_TimerC_Clock ( void )
+{
+	if ( Config_IsMachineTT() )
+	{
+		LOG_TRACE(TRACE_SCC, "scc update tcclk from tt mfp\n" );
+		SCC_Update_BaudRate ( 1 );		/* Update channel B baudrate if needed */
+	}
+}
+
+
+
 static void SCC_Init_Channel ( int Channel , bool *pConfEnableScc , char *InFileName , char *OutFileName ,
 			       int *pReadHandle , int *pWriteHandle , bool *pIsATTY )
 {
@@ -499,18 +516,16 @@ void SCC_Init ( void )
 	/* Connect Channel A to Serial or LAN port depending on the machine */
 	SCC_Check_Lan_IsEnabled();
 
-	/* Init filehandles for channel B */
+	/* Init filehandles for channel B Serial */
 	SCC_Init_Channel ( 1 , &ConfigureParams.RS232.EnableScc[CNF_SCC_CHANNELS_B] ,
 		ConfigureParams.RS232.SccInFileName[CNF_SCC_CHANNELS_B] , ConfigureParams.RS232.SccOutFileName[CNF_SCC_CHANNELS_B] ,
 		&SCC.Chn[1].ReadHandle_Serial , &SCC.Chn[1].WriteHandle_Serial , &SCC.Chn[1].FileHandle_Serial_IsATTY );
+
+	/* Channel B has only serial filehandle */
 	SCC.Chn[1].ReadHandle = SCC.Chn[1].ReadHandle_Serial;
 	SCC.Chn[1].WriteHandle = SCC.Chn[1].WriteHandle_Serial;
 	SCC.Chn[1].FileHandle_IsATTY = SCC.Chn[1].FileHandle_Serial_IsATTY;
-#ifdef __LIBRETRO__
-	// this was 0, causing a crash when you close the second game and SCC_UnInit does close(0)
-	// for the second time (but the first time is also a problem, just not a crash)
 	SCC.Chn[1].ReadHandle_Lan = SCC.Chn[1].WriteHandle_Lan = -1;
-#endif
 }
 
 
@@ -821,7 +836,7 @@ static uint16_t SCC_Serial_Get_DCD ( int Channel )
 	int	dcd = 1;
 	LOG_TRACE(TRACE_SCC, "scc get status for DCD %d\n" , Channel);
 
-	#if defined(HAVE_SYS_IOCTL_H) && defined(TIOCMGET)
+#if defined(HAVE_SYS_IOCTL_H) && defined(TIOCMGET)
 	int	status = 0;
 	if ( SCC.Chn[Channel].WriteHandle >= 0 && SCC.Chn[Channel].FileHandle_IsATTY )
 	{
@@ -958,8 +973,8 @@ static int SCC_Get_RTxC_Freq ( int chn )
 			ClockFreq = SCC_CLOCK_PCLK4;
 		else
 		{
-			/* TODO : clock is connected to timer C output on TT-MFP */
-			ClockFreq = SCC_CLOCK_PCLK4;	/* TODO : use TCCLK */
+			/* Clock is connected to timer C output on TT-MFP */
+			ClockFreq = MFP_TT_TimerC_Get_Freq();
 		}
 	}
 
@@ -1016,10 +1031,7 @@ static int SCC_Compute_BaudRate ( int chn , bool *pStartBRG , uint32_t *pBaudRat
 	int	ClockMult;
 	int	TransmitClock , ReceiveClock;
 	int	BaudRate;
-	const char	*ClockName;
-#ifdef __LIBRETRO__
-	(void)ClockName;
-#endif	
+	LOG_TRACE_VAR const char *ClockName;
 
 
 	/* WR4 gives Clock Mode Multiplier */
@@ -1045,7 +1057,15 @@ static int SCC_Compute_BaudRate ( int chn , bool *pStartBRG , uint32_t *pBaudRat
 		if ( SCC.Chn[chn].WR[14] & 2 )				/* source is PCLK */
 			ClockFreq_BRG = SCC_CLOCK_PCLK;
 		else							/* source is RTxC */
+		{
 			ClockFreq_BRG = SCC_Get_RTxC_Freq ( chn );
+			if ( ClockFreq_BRG == 0 )			/* If SCC_Get_RTxC_Freq() returns 0 then we consider serial interface is OFF */
+			{
+				LOG_TRACE(TRACE_SCC, "scc compute baud rate chn=%d, rtxc freq is 0 : disable serial\n" , chn );
+				*pStartBRG = false;
+				return -1;
+			}
+		}
 
 		*pBaudRate_BRG = round ( (float)ClockFreq_BRG / ( 2 * ClockMult * ( TimeConstant + 2 ) ) );
 

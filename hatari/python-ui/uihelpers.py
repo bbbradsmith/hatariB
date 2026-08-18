@@ -1,7 +1,7 @@
 #
 # Misc common helper classes and functions for the Hatari UI
 #
-# Copyright (C) 2008-2023 by Eero Tamminen
+# Copyright (C) 2008-2025 by Eero Tamminen
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,32 +31,34 @@ from gi.repository import GLib
 # Hatari UI information
 
 class UInfo:
-    """singleton constants for the UI windows,
-    one instance is needed to initialize these properly"""
+    "constants for the UI windows"
     version = "v1.4"
     name = "Hatari UI"
-    logo = "hatari-logo.png"
-    # TODO: use share/icons/hicolor/*/apps/hatari.png instead
-    icon = "hatari-icon.png"
-    copyright = "Python/Gtk UI copyright (C) 2008-2022 by Eero Tamminen"
-
-    # path to the directory where the called script resides
-    path = os.path.dirname(sys.argv[0])
+    copyright = "Python/Gtk UI copyright (C) 2008-2025 by Eero Tamminen"
 
     def __init__(self, path = None):
         "UIinfo([path]), set suitable paths for resources from CWD and path"
         if path:
             self.path = path
-        if not os.path.exists(UInfo.icon):
-            UInfo.icon = self._get_path(UInfo.icon)
-        if not os.path.exists(UInfo.logo):
-            UInfo.logo = self._get_path(UInfo.logo)
+        else:
+            # path to the directory where the called script resides
+            self.path = os.path.dirname(sys.argv[0])
+
+        # TODO: use share/icons/hicolor/*/apps/hatari.png instead
+        self.icon = "hatari-icon.png"
+        self.logo = "hatari-logo.png"
+
+        if not os.path.exists(self.icon):
+            self.icon = self._get_path(self.icon)
+        if not os.path.exists(self.logo):
+            self.logo = self._get_path(self.logo)
 
     def _get_path(self, filename):
         sep = os.path.sep
         testpath = "%s%s%s" % (self.path, sep, filename)
         if os.path.exists(testpath):
             return testpath
+        return ""
 
 
 # --------------------------------------------------------
@@ -87,9 +89,9 @@ class UIHelp:
         else:
             splitter = ':'
         for i in os.environ['PATH'].split(splitter):
-                fname = os.path.join(i, name)
-                if os.access(fname, os.X_OK) and not os.path.isdir(fname):
-                    return fname
+            fname = os.path.join(i, name)
+            if os.access(fname, os.X_OK) and not os.path.isdir(fname):
+                return fname
         return None
 
     def get_doc_path(self):
@@ -103,12 +105,12 @@ class UIHelp:
         docpath = path + "/share/doc/hatari/"
         if not os.path.exists(docpath + "manual.html"):
             print("WARNING: using Hatari website URLs, Hatari 'manual.html' not found in: %s" % docpath)
-            docpath = "https://hatari.tuxfamily.org/doc/"
+            docpath = "https://www.hatari-emu.org/doc/"
 
         uipath = path + "/share/doc/hatari/hatariui/"
         if not os.path.exists(uipath + "README"):
             print("WARNING: Using Hatari UI Git URLs, Hatari UI 'README' not found in: %s" % uipath)
-            uipath = "https://git.tuxfamily.org/hatari/hatari.git/plain/python-ui/"
+            uipath = "https://framagit.org/hatari/hatari/-/raw/main/python-ui/"
 
         return docpath, uipath
 
@@ -153,13 +155,13 @@ class UIHelp:
         self.view_url(self._path + "authors.txt", "Hatari authors")
 
     def view_hatari_mails(self, dummy=None):
-        self.view_url("http://hatari.tuxfamily.org/contact.html", "Hatari mailing lists")
+        self.view_url("https://www.hatari-emu.org/contact.html", "Hatari mailing lists")
 
     def view_hatari_repository(self, dummy=None):
-        self.view_url("https://git.tuxfamily.org/hatari/hatari.git/", "latest Hatari changes")
+        self.view_url("https://framagit.org/hatari/hatari/-/commits/main", "latest Hatari changes")
 
     def view_hatari_page(self, dummy=None):
-        self.view_url("http://hatari.tuxfamily.org/", "Hatari home page")
+        self.view_url("https://www.hatari-emu.org/", "Hatari home page")
 
 
 # --------------------------------------------------------

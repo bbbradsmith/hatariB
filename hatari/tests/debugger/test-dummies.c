@@ -2,8 +2,16 @@
  * Dummy stuff needed to compile debugger related test code
  */
 
-/* fake tracing flags */
 #include <stdio.h>
+
+#include "config.h"
+#if HAVE_LIBREADLINE
+/* fake readline function */
+#include <readline/readline.h>
+char *rl_filename_completion_function(const char *text, int state) { return NULL; }
+#endif
+
+/* fake tracing flags */
 #include "log.h"
 
 uint64_t LogTraceFlags = 0;
@@ -31,15 +39,16 @@ int Cycles_GetCounter(int nId) { return 0; }
 /* bring in gemdos defines (EMULATEDDRIVES) */
 #include "gemdos.h"
 
+/* fake TOS variables */
+uint32_t TosAddress = 0xe00000, TosSize = 256*1024;
+
 /* fake ST RAM, only 24-bit support */
 #include "stMemory.h"
-#if ENABLE_SMALL_MEM
+uae_u8 *TTmemory = NULL;
 static uint8_t _STRam[16*1024*1024];
 uint8_t *STRam = _STRam;
-#else
-uint8_t STRam[16*1024*1024];
-#endif
 uint32_t STRamEnd = 4*1024*1024;
+
 uint32_t STMemory_ReadLong(uint32_t addr) {
 	uint32_t val;
 	if (addr >= STRamEnd) return 0;
@@ -99,8 +108,10 @@ void m68k_dumpstate_file (FILE *f, uaecptr *nextpc, uaecptr prevpc) { }
 #include "debugui.h"
 FILE *debugOutput;
 void DebugUI(debug_reason_t reason) { }
+void DebugUI_PrintBinary(FILE *fp, int minwidth, uint32_t value) { }
 int DebugUI_PrintCmdHelp(const char *psCmd) { return DEBUGGER_CMDDONE; }
 int DebugUI_GetPageLines(int config, int defvalue) { return 25; }
+bool DebugUI_DoQuitQuery(const char *info) { return false; }
 char *DebugUI_MatchHelper(const char **strings, int items, const char *text, int state)
 {
 	return NULL;

@@ -9,6 +9,7 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h> /* For getting SDK version */
+#include <direct.h>  /* For rmdir(), mkdir(), etc. */
 
 // Stop Visual Studio complaining
 #pragma warning (disable:4018)	/* signed / unsigned mismatch */
@@ -17,6 +18,7 @@
 #pragma warning (disable:4102)	/* ignore unused label warning */
 #pragma warning (disable:4146)	/* unary minus operator applied to unsigned type */
 #pragma warning (disable:4244)	/* conversion with potential data loss */
+#pragma warning (disable:4267)	/* conversion from 'size_t' to 'int' */
 #pragma warning (disable:4761)	/* integral size mismatch in argument */
 #pragma warning (disable:4800)	/* Performance Warning on Conversion of bool to int */
 #pragma warning (disable:4996)	/* Unsafe functions */
@@ -29,5 +31,6 @@ typedef unsigned short mode_t;
 
 #define	strncasecmp	_strnicmp
 #define	strcasecmp	_stricmp
+#define strtok_r	strtok_s
 
 #endif

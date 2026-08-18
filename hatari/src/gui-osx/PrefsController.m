@@ -222,8 +222,6 @@ static const int nSoundFreqs[] =
 
 @implementation PrefsController
 
-char szPath[FILENAME_MAX];
-
 // not used
 - (IBAction)finished:(id)sender
 {
@@ -573,11 +571,9 @@ char szPath[FILENAME_MAX];
 	[midiOutPort addItemWithTitle:[NSString stringWithCString:szinPortName encoding:NSASCIIStringEncoding]];
 	
 #ifdef HAVE_PORTMIDI
-	int i = 0;
 	const char* portName = NULL;
 	while ((portName = Midi_Host_GetPortName(portName, MIDI_NAME_NEXT, MIDI_FOR_INPUT)))
 		[midiInPort addItemWithTitle:[NSString stringWithCString:portName encoding:NSASCIIStringEncoding]];
-	i = 0;
 	portName = NULL;
 	while ((portName = Midi_Host_GetPortName(portName, MIDI_NAME_NEXT, MIDI_FOR_OUTPUT)))
 		[midiOutPort addItemWithTitle:[NSString stringWithCString:portName encoding:NSASCIIStringEncoding]];
