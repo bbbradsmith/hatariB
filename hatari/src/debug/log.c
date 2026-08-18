@@ -235,8 +235,8 @@ int Log_Init(void)
 	Log_ResetMsgRepeat();
 
 	hLogFile = File_Open(ConfigureParams.Log.sLogFileName, "w");
-#endif
 	TraceFile = File_Open(ConfigureParams.Log.sTraceFileName, "w");
+#endif
 
 	return (hLogFile && TraceFile);
 }
