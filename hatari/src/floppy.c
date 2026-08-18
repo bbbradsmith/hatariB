@@ -788,7 +788,7 @@ bool Floppy_EjectDiskFromDrive(int Drive)
 	EmulationDrives[Drive].ImageType = FLOPPY_IMAGE_TYPE_NONE;
 	EmulationDrives[Drive].nImageBytes = 0;
 	EmulationDrives[Drive].bDiskInserted = false;
-#ifndef __LIBRETRO__
+#ifdef __LIBRETRO__
 	if (!core_prevent_eject_save)
 #endif
 	EmulationDrives[Drive].bContentsChanged = false;
