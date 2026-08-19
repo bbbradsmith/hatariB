@@ -295,6 +295,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * You can use *Load New Disk* or *M3U* playlists to load the same floppy multiple times, or multiple floppies with the same name. This mostly works okay, but a savestate restore might be unable to identify which of them was actually inserted.
   * If *IPF* support is enabled, an *M3U* playlist can also be used to load the *RAW* format supported by that library. I kept it out of the associated file types list because I have not yet encountered dumps in this format.
   * The *Advanced > CPU Clock Rate* core option is only applied at boot/reset, but you can *CPU Speed* to a gamepad button in the *RetroPad* core options to change it while running.
+  * *TT savestates are broken*. This [issue](https://github.com/bbbradsmith/hatariB/issues/63) affects Hatari as well, no known solution.
 
 ## History
 
