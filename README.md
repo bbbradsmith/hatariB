@@ -301,9 +301,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
 
 * hatariB v0.4 - Unreleased
   * EmuTOS 192uk chosen as default for best compatibility.
-  * EmuTOS 1.3 ROMs.
   * Fixed problems with IPF emulation.
-  * Hatari 2.5.0 update.
   * SDL2 2.30.2 update.
   * Raspberry Pi builds now have dlopen available for capsimg support.
   * Multi-file ZIP/ZST support, also with M3U playlist inside.
@@ -315,6 +313,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Cleanup of core logging code.
   * Hatari 2.6.1 update.
   * EmuTOS 1.4 ROMs.
+  * [Customized](https://github.com/bbbradsmith/emutos/tree/hatarib-custom-140) EmuTOS 1.4 ROMs allowing DESKTOP.INF to be loaded.
 * [hatariB v0.3](https://github.com/bbbradsmith/hatariB/releases/tag/0.3) - 2024-04-15
   * On-screen keyboard improvements:
     * Can now hold the key continuously.
