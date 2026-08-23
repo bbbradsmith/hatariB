@@ -9,7 +9,7 @@ A [Libretro](https://www.libretro.com/) core integrating the [Hatari](https://ww
   * Raspberry Pi OS 64-bit, 32-bit
   * Android 64-bit, 32-bit
 * Current Release:
-  * **[hatariB v0.3](https://github.com/bbbradsmith/hatariB/releases/tag/0.3)** - 2024-04-15
+  * **[hatariB v0.4](https://github.com/bbbradsmith/hatariB/releases/tag/0.4)** - 2026-08-23
 * Unstable Build:
   * [Download](https://nightly.link/bbbradsmith/hatariB/workflows/build/main)
 * Recent Builds:
@@ -299,10 +299,13 @@ See [DEVELOP.md](DEVELOP.md) for more details.
 
 ## History
 
-* hatariB v0.4 - Unreleased
+* [hatariB v0.4](https://github.com/bbbradsmith/hatariB/releases/tag/0.4) - 2026-08-23
+  * EmuTOS 1.4 ROMs.
+  * [Customized](https://github.com/bbbradsmith/emutos/tree/hatarib-custom-140) EmuTOS 1.4 ROMs allowing DESKTOP.INF to be loaded.
   * EmuTOS 192uk chosen as default for best compatibility.
-  * Fixed problems with IPF emulation.
   * SDL2 2.30.2 update.
+  * Hatari 2.6.1 update.
+  * Fixed problems with IPF emulation.
   * Raspberry Pi builds now have dlopen available for capsimg support.
   * Multi-file ZIP/ZST support, also with M3U playlist inside.
   * Fixed incorrect "Failed to set last used disc..." RetroArch notification.
@@ -311,9 +314,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Fixed `_stprintf` build issue with MinGW64 compiler update.
   * Strengthen user-requested cold boot, fixes unresponsive emulation after some crashes.
   * Cleanup of core logging code.
-  * Hatari 2.6.1 update.
-  * EmuTOS 1.4 ROMs.
-  * [Customized](https://github.com/bbbradsmith/emutos/tree/hatarib-custom-140) EmuTOS 1.4 ROMs allowing DESKTOP.INF to be loaded.
+  * Improved RNG fixes issue with Road Blasters.
 * [hatariB v0.3](https://github.com/bbbradsmith/hatariB/releases/tag/0.3) - 2024-04-15
   * On-screen keyboard improvements:
     * Can now hold the key continuously.
