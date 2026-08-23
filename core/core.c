@@ -794,7 +794,16 @@ int core_rand(void)
 {
 	core_rand_seed = ((core_rand_seed * 1103515245U) + 12345U) & 0x7fffffff;
 	//core_debug_printf("core_rand_seed: %08X\n",core_rand_seed);
-	return core_rand_seed;
+	return (core_rand_seed >> 16) & 0x7FFF;
+	// This LCG is based on GCC's rand() type 0,
+	// though the low 16 bits don't seem random "enough" for Roadblaster's copy protection?
+	// Using the better quality upper bits seems to alleviate the problem.
+}
+
+void core_srand(unsigned int seed)
+{
+	core_rand_seed = (uint32_t)seed;
+	if (core_rand_seed == 0) core_rand_seed = 1;
 }
 
 static void core_serialize_internal(void* x, size_t size)

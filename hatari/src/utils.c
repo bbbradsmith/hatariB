@@ -108,28 +108,27 @@ void	crc16_add_byte ( uint16_t *crc , uint8_t c )
 /* routines.								*/
 /************************************************************************/
 
-#ifdef __LIBRETRO__
-extern uint32_t core_rand_seed;
-extern int core_rand(void);
-#endif
+#ifndef __LIBRETRO__
 void	Hatari_srand ( unsigned int seed )
 {
-#ifndef __LIBRETRO__
 	srand(seed);
-#else
-	core_rand_seed = (uint32_t)seed;
-#endif
 }
 
 
 int	Hatari_rand ( void )
 {
-#ifndef __LIBRETRO__
 	return rand();
-#else
-	return core_rand();
-#endif
 }
-
-
+#else
+extern int core_rand(void);
+extern void core_srand(unsigned int seed);
+void	Hatari_srand ( unsigned int seed )
+{
+	core_srand(seed);
+}
+int	Hatari_rand ( void )
+{
+	return core_rand();
+}
+#endif
 
