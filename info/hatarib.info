@@ -28,7 +28,7 @@ notes = "Integrates the Hatari emulator: https://hatari-emu.org/"
 # Features
 savestate = "true"
 savestate_features = "deterministic"
-cheats = "false"
+cheats = "true"
 input_descriptors = "true"
 memory_descriptors = "true"
 libretro_saves = "true"
