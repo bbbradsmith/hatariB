@@ -1033,6 +1033,9 @@ RETRO_API void retro_set_environment(retro_environment_t cb)
 
 	// indicate serialization quirks
 	cb(RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS, (void*)&QUIRKS);
+
+	// allow RetroAchievements
+	cb(RETRO_ENVIRONMENT_SET_SUPPORT_ACHIEVEMENTS, (void*)&BOOL_TRUE);
 }
 
 RETRO_API void retro_set_video_refresh(retro_video_refresh_t cb)
