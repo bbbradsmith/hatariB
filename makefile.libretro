@@ -1,0 +1,8 @@
+CORENAME ?= hatarib
+
+.PHONY: default libretro
+
+default: libretro
+
+libretro:
+	$(MAKE) -f makefile COREFILE=$(CORENAME)_libretro COREDIR=.

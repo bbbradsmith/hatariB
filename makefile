@@ -1,8 +1,13 @@
 # BD = core build directory
 # HBD = hatari build subdirectory
+# ZLIB_BUILD = zlib build subdirectory
+# COREFILE = base filename for core object output
+# COREDIR = directory for core object output
 BD ?= build
 HBD ?= build
 ZLIB_BUILD ?= zlib_build
+COREFILE ?= hatarib
+COREDIR ?= $(BD)
 
 # enables debug symbols, CPU trace logging
 DEBUG ?= 0
@@ -79,7 +84,7 @@ else
 	LDFLAGS += -static-libgcc
 endif
 
-CORE=$(BD)/hatarib$(SO_SUFFIX)
+CORE=$(COREDIR)/$(COREFILE)$(SO_SUFFIX)
 SOURCES = \
 	core/core.c \
 	core/core_file.c \
