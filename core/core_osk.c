@@ -633,6 +633,10 @@ void core_osk_render(void* video_buffer, int w, int h, int pitch)
 		core_osk_restore(screen,w,h,pitch);
 	}
 
+	bool screen_changed =
+		(screen_w != (uint32_t)w) ||
+		(screen_h != (uint32_t)h) ||
+		(screen_p != (uint32_t)pitch);
 	screen_w = (uint32_t)w;
 	screen_h = (uint32_t)h;
 	screen_p = (uint32_t)pitch;
@@ -649,7 +653,7 @@ void core_osk_render(void* video_buffer, int w, int h, int pitch)
 		return;
 	}
 
-	if (pSdlGuiScrn != sdlscrn) // in case nothing has set it yet
+	if (pSdlGuiScrn != sdlscrn || screen_changed) // ensure GUI rendering is set up and up to date
 		SDLGui_SetScreen(sdlscrn);
 
 	if (core_osk_mode >= CORE_OSK_KEY)
