@@ -19,8 +19,6 @@ Other platforms may be possible. See [Manual Build](#Manual-Build) below.
 
 This is intended as an alternative or replacement for the older [Libretro Hatari Core](https://github.com/libretro/hatari).
 
-This is a new project in the initial testing phase. Eventually I would like to submit it to Libretro.
-
 **Bugs and Issues:** If you notice any problems or have feedback, please [create a Github issue](https://github.com/bbbradsmith/hatariB/issues). **Before creating an issue, please note:** except for user interface problems, issues are often caused by the underlying emulator Hatari. It would help *a lot* if you could first **test the problem in [Hatari's stand-alone emulator](https://hatari-emu.org/download.html)** to see if the problem exists there. If Hatari does the same thing as hatariB, the bug report should instead go directly to the [Hatari](https://hatari-emu.org/) project. [Atari-Forum's Hatari subforum](https://www.atari-forum.com/viewforum.php?f=51) might be the best place to ask about issues with Hatari.
 
 **Emulator:** [Hatari 2.6.1](https://framagit.org/hatari/hatari/-/releases/v2.6.1) 2025-08-15
@@ -373,11 +371,19 @@ This project includes [zlib](https://zlib.net/) under the [zlib license](https:/
 
 This Libretro core was begun by [Brad Smith](https://github.com/bbbradsmith).
 
-Other contributors:
-* [DJM75](https://github.com/DJM75) - [Android build](https://github.com/bbbradsmith/hatariB/issues/26).
+It is built on top of [Hatari](https://hatari-emu.org/), lead by Nicolas Pomarède, with many [code contributors](https://www.hatari-emu.org/doc/authors.txt) and [other assisting contributors](https://www.hatari-emu.org/doc/thanks.txt).
+
+Other code contributors to hatariB, this list may be incomplete:
+* [DJM75](https://github.com/DJM75) - Android build ([26](https://github.com/bbbradsmith/hatariB/issues/26)).
+* [NTxC](https://github.com/NTxC) - Drivesound branch ([33](https://github.com/bbbradsmith/hatariB/issues/33), [34](https://github.com/bbbradsmith/hatariB/pull/34), [40](https://github.com/bbbradsmith/hatariB/pull/40), [branch](https://github.com/bbbradsmith/hatariB/tree/ntxc-drivesound)).
+* [kangaroomadman](https://github.com/kangaroomadman) - HAVE_CAPSIMAGE redefine check ([53](https://github.com/bbbradsmith/hatariB/pull/53)).
+* [cscd98](https://github.com/cscd98) - Fix for save-prevent logic ([73](https://github.com/bbbradsmith/hatariB/pull/73)).
+
+It is difficult to keep track of all contributors who have helped in other ways, but I would like to thank anyone who has posted [issues](https://github.com/bbbradsmith/hatariB/issues), commented on [Atari-Forum](https://www.atari-forum.com/viewtopic.php?t=43008), [LibRetro Forum](https://forums.libretro.com/t/hatarib-atari-st-core/51029), or otherwise assisted me in improving this core.
+ 
 
 Incorporated works contributor documentation:
-* [Hatari](hatari/doc/authors.txt)
+* [Hatari authors](hatari/doc/authors.txt), [Hatari contributor thanks](hatari/doc/thanks.txt)
 * [EmuTOS](https://raw.githubusercontent.com/emutos/emutos/master/doc/authors.txt)
 * [libretro.h](https://github.com/libretro/libretro-common/blob/7edbfaf17baffa1b8a00231762aa7ead809711b5/include/libretro.h)
 * [libretro_sdl_keymap.h](https://github.com/libretro/RetroArch/blob/b4143882245edd737c7e7c522b25e32f8d1f64ad/input/input_keymaps.c#L607)
