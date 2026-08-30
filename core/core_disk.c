@@ -768,8 +768,8 @@ static bool replace_image_index(unsigned index, const struct retro_game_info* ga
 	}
 
 	// eject if currently inserted
-	if (image_insert[0] && (image_index[0] == index)) set_eject_state_drive(false,0);
-	if (image_insert[1] && (image_index[1] == index)) set_eject_state_drive(false,0);
+	if (image_insert[0] && (image_index[0] == index)) set_eject_state_drive(true,0);
+	if (image_insert[1] && (image_index[1] == index)) set_eject_state_drive(true,1);
 
 	free(disks[index].data);
 	free(disks[index].extra_data);
