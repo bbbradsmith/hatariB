@@ -110,10 +110,14 @@ endif(ENABLE_OSX_BUNDLE)
 # Check for libraries:
 # ####################
 
+if(0) # hatariB
 find_package(SDL2)
 if(NOT SDL2_FOUND)
 	message(FATAL_ERROR "SDL2 library not found!")
 endif(NOT SDL2_FOUND)
+else() # hatariB
+	set(SDL2_FOUND 1)
+endif() # hatariB
 
 find_package(Math)
 

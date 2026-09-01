@@ -3,6 +3,7 @@
 #include "../libretro/libretro.h"
 #include "core.h"
 #include "core_internal.h"
+#include <string.h>
 #include <SDL.h>
 
 //

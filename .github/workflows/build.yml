@@ -25,22 +25,19 @@ jobs:
       - name: Submodule Cache Key
         shell: pwsh
         run: |
-          echo "SDLHASH=$($(git submodule status SDL) -replace '\s','')" >> $env:GITHUB_ENV
           echo "ZLIBHASH=$($(git submodule status zlib) -replace '\s','')" >> $env:GITHUB_ENV
       - name: Cache Submodules
         id: cache-sub
         uses: actions/cache@v4
         with:
           path: |
-            SDL/build
             zlib_build
-          key: sub-win64-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
-      - name: Build SDL2 and zlib
+          key: sub-win64-${{ env.ZLIBHASH }}
+      - name: Build zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
         shell: msys2 {0}
         run: |
           make -f makefile.zlib
-          make -f makefile.sdl
       - name: Build hatariB
         shell: msys2 {0}
         run: make
@@ -74,22 +71,19 @@ jobs:
       - name: Submodule Cache Key
         shell: pwsh
         run: |
-          echo "SDLHASH=$($(git submodule status SDL) -replace '\s','')" >> $env:GITHUB_ENV
           echo "ZLIBHASH=$($(git submodule status zlib) -replace '\s','')" >> $env:GITHUB_ENV
       - name: Cache Submodules
         id: cache-sub
         uses: actions/cache@v4
         with:
           path: |
-            SDL/build
             zlib_build
-          key: sub-win32-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
-      - name: Build SDL2 and zlib
+          key: sub-win32-${{ env.ZLIBHASH }}
+      - name: Build zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
         shell: msys2 {0}
         run: |
           make -f makefile.zlib
-          make -f makefile.sdl
       - name: Build hatariB
         shell: msys2 {0}
         run: make
@@ -121,21 +115,18 @@ jobs:
           sudo apt-get install make gcc cmake
       - name: Submodule Cache Key
         run: |
-          echo "SDLHASH=$(git submodule status SDL | tr -d '[:blank:]')" >> $GITHUB_ENV
           echo "ZLIBHASH=$(git submodule status zlib | tr -d '[:blank:]')" >> $GITHUB_ENV
       - name: Cache Submodules
         id: cache-sub
         uses: actions/cache@v4
         with:
           path: |
-            SDL/build
             zlib_build
-          key: sub-ubuntu-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
-      - name: Build SDL2 and zlib
+          key: sub-ubuntu-${{ env.ZLIBHASH }}
+      - name: Build zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
         run: |
           make -f makefile.zlib
-          make -f makefile.sdl
       - name: Build hatariB
         run: make
       - name: Prepare Artifact
@@ -161,18 +152,16 @@ jobs:
         uses: actions/checkout@v4
       - name: Submodule Cache Key
         run: |
-          echo "SDLHASH=$(git submodule status SDL | tr -d '[:blank:]')" >> $GITHUB_ENV
           echo "ZLIBHASH=$(git submodule status zlib | tr -d '[:blank:]')" >> $GITHUB_ENV
       - name: Cache Submodules
         id: cache-sub
         uses: actions/cache@v4
         with:
           path: |
-            SDL/build
             zlib_build_arm
             zlib_build_intel
-          key: sub-macos-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
-      - name: Build SDL2 and zlib
+          key: sub-macos-${{ env.ZLIBHASH }}
+      - name: Build zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
         run: |
           export CC=clang
@@ -182,9 +171,6 @@ jobs:
           export CFLAGS="-target x86_64-apple-macos10.13"
           export ZLIB_BUILD=zlib_build_intel
           make -f makefile.zlib
-          export CFLAGS=
-          export CC=$(PWD)/SDL/build-scripts/clang-fat.sh
-          make -f makefile.sdl
       - name: Build hatariB
         run: |
           export CC_OLD=$CC
@@ -252,25 +238,20 @@ jobs:
           sudo apt-get install make gcc gcc-aarch64-linux-gnu cmake
       - name: Submodule Cache Key
         run: |
-          echo "SDLHASH=$(git submodule status SDL | tr -d '[:blank:]')" >> $GITHUB_ENV
           echo "ZLIBHASH=$(git submodule status zlib | tr -d '[:blank:]')" >> $GITHUB_ENV
       - name: Cache Submodules
         id: cache-sub
         uses: actions/cache@v4
         with:
           path: |
-            SDL/build
             zlib_build
-          key: sub-rpi64-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
-      - name: Build SDL2 and zlib
+          key: sub-rpi64-${{ env.ZLIBHASH }}
+      - name: Build zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
         run: |
           export CC=aarch64-linux-gnu-gcc
           export AR=aarch64-linux-gnu-gcc-ar
           make -f makefile.zlib
-          export RANLIB=aarch64-linux-gnu-gcc-ranlib
-          export CONFIGURE_FLAGS="--build=x86_64-linux --host=aarch64-linux-gnu --target=aarch64-linux-gnu-gcc"
-          make -f makefile.sdl
       - name: Build hatariB
         run: |
           export CC=aarch64-linux-gnu-gcc
@@ -305,25 +286,20 @@ jobs:
           sudo apt-get install make gcc gcc-arm-linux-gnueabihf cmake
       - name: Submodule Cache Key
         run: |
-          echo "SDLHASH=$(git submodule status SDL | tr -d '[:blank:]')" >> $GITHUB_ENV
           echo "ZLIBHASH=$(git submodule status zlib | tr -d '[:blank:]')" >> $GITHUB_ENV
       - name: Cache Submodules
         id: cache-sub
         uses: actions/cache@v4
         with:
           path: |
-            SDL/build
             zlib_build
-          key: sub-rpi32-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
-      - name: Build SDL2 and zlib
+          key: sub-rpi32-${{ env.ZLIBHASH }}
+      - name: Build zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
         run: |
           export CC=arm-linux-gnueabihf-gcc
           export AR=arm-linux-gnueabihf-gcc-ar
           make -f makefile.zlib
-          export RANLIB=arm-linux-gnueabihf-gcc-ranlib
-          export CONFIGURE_FLAGS="--build=x86_64-linux --host=arm-linux-gnueabihf --target=arm-linux-gnueabihf-gcc"
-          make -f makefile.sdl
       - name: Build hatariB
         run: |
           export CC=arm-linux-gnueabihf-gcc
@@ -363,17 +339,15 @@ jobs:
         uses: android-actions/setup-android@v3
       - name: Submodule Cache Key
         run: |
-          echo "SDLHASH=$(git submodule status SDL | tr -d '[:blank:]')" >> $GITHUB_ENV
           echo "ZLIBHASH=$(git submodule status zlib | tr -d '[:blank:]')" >> $GITHUB_ENV
       - name: Cache Submodules
         id: cache-sub
         uses: actions/cache@v4
         with:
           path: |
-            SDL/build
             zlib_build
-          key: sub-android64-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
-      - name: Build SDL2 and zlib
+          key: sub-android64-${{ env.ZLIBHASH }}
+      - name: Build zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
         run: |
           export API=26
@@ -381,11 +355,6 @@ jobs:
           export CC="$TOOLCHAIN/aarch64-linux-android$API-clang"
           export AR="$TOOLCHAIN/llvm-ar"
           make -f makefile.zlib
-          export RANLIB="$TOOLCHAIN/llvm-ranlib"
-          export CONFIGURE_FLAGS="--build=x86_64-linux --host=aarch64-linux-android --target=$CC"
-          export SDL_JOYSTICK_DISABLE=
-          export SDL_HAPTIC_DISABLE=
-          make -f makefile.sdl
       - name: Build hatariB
         run: |
           export API=26
@@ -427,17 +396,15 @@ jobs:
         uses: android-actions/setup-android@v3
       - name: Submodule Cache Key
         run: |
-          echo "SDLHASH=$(git submodule status SDL | tr -d '[:blank:]')" >> $GITHUB_ENV
           echo "ZLIBHASH=$(git submodule status zlib | tr -d '[:blank:]')" >> $GITHUB_ENV
       - name: Cache Submodules
         id: cache-sub
         uses: actions/cache@v4
         with:
           path: |
-            SDL/build
             zlib_build
-          key: sub-android32-${{ env.SDLHASH }}-${{ env.ZLIBHASH }}
-      - name: Build SDL2 and zlib
+          key: sub-android32-${{ env.ZLIBHASH }}
+      - name: Build zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
         run: |
           export API=26
@@ -445,11 +412,6 @@ jobs:
           export CC="$TOOLCHAIN/armv7a-linux-androideabi$API-clang"
           export AR="$TOOLCHAIN/llvm-ar"
           make -f makefile.zlib
-          export RANLIB="$TOOLCHAIN/llvm-ranlib"
-          export CONFIGURE_FLAGS="--build=x86_64-linux --host=armv7a-linux-androideabi --target=$CC"
-          export SDL_JOYSTICK_DISABLE=
-          export SDL_HAPTIC_DISABLE=
-          make -f makefile.sdl
       - name: Build hatariB
         run: |
           export API=26

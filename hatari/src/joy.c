@@ -48,10 +48,12 @@ typedef struct
     int XAxisID,YAxisID;           /* the IDs associated with a certain SDL joystick */
 } JOYAXISMAPPING;
 
+#ifndef __LIBRETRO__
 static SDL_Joystick *sdlJoystick[ JOYSTICK_COUNT ] =		/* SDL's joystick structures */
 {
 	NULL, NULL, NULL, NULL, NULL, NULL
 };
+#endif
 
 /* Further explanation see JoyInit() */
 static JOYAXISMAPPING const *sdlJoystickMapping[ JOYSTICK_COUNT ] =	/* references which axis are actually in use by the selected SDL joystick */
@@ -221,6 +223,7 @@ void Joy_UnInit(void)
  */
 static bool Joy_ReadJoystick(int nStJoyId, JOYREADING *pJoyReading)
 {
+#ifndef __LIBRETRO__
 	int nSdlJoyID = ConfigureParams.Joysticks.Joy[nStJoyId].nJoyId;
 	unsigned hat = SDL_JoystickGetHat(sdlJoystick[nSdlJoyID], 0);
 
@@ -246,6 +249,16 @@ static bool Joy_ReadJoystick(int nStJoyId, JOYREADING *pJoyReading)
 			pJoyReading->Buttons |= 1 << i;
 	}
 	return true;
+#else
+	// Joy_ReadJoystick is unused
+	(void)nStJoyId;
+	pJoyReading->XPos = 0;
+	pJoyReading->YPos = 0;
+	pJoyReading->XAxisID = 0;
+	pJoyReading->YAxisID = 0;
+	pJoyReading->Buttons = 0;
+	return false;
+#endif
 }
 
 
@@ -291,6 +304,7 @@ static uint8_t Joy_ButtonSpaceJump(int press, bool jump)
 /**
  * Read details from joystick using SDL calls.  Returns the SDL joystick ID or -1 if not found.
  */
+#ifndef __LIBRETRO__
 static int Joy_ReadAxisConfig(int nStJoyId, JOYREADING *pJoyReading)
 {
 	int nSdlJoyId = ConfigureParams.Joysticks.Joy[nStJoyId].nJoyId;
@@ -317,6 +331,7 @@ static int Joy_ReadAxisConfig(int nStJoyId, JOYREADING *pJoyReading)
 
 	return nSdlJoyId;
 }
+#endif
 
 /*-----------------------------------------------------------------------*/
 /**
@@ -910,6 +925,7 @@ void Joy_SteLightpenY_ReadWord(void)
  */
 static uint8_t Joy_GetStickAnalogData(int nStJoyId, bool isXAxis)
 {
+#ifndef __LIBRETRO__
 	/* Only makes sense to call this for STE pads */
 	assert(nStJoyId == 2 || nStJoyId == 3);
 
@@ -964,6 +980,12 @@ static uint8_t Joy_GetStickAnalogData(int nStJoyId, bool isXAxis)
 	}
 
 	return nData;
+#else
+	// STE analog stick interface unimplemented
+	(void)nStJoyId;
+	(void)isXAxis;
+	return 0;
+#endif
 }
 
 /**
