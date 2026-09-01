@@ -1,6 +1,7 @@
 #include "../libretro/libretro.h"
 #include "core.h"
 #include "core_internal.h"
+#include <stdlib.h>
 #include <string.h>
 #include <SDL.h>
 #include "../hatari/src/includes/sdlgui.h"
