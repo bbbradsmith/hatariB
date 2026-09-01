@@ -3,11 +3,13 @@
 # ZLIB_BUILD = zlib build subdirectory
 # COREFILE = base filename for core object output
 # COREDIR = directory for core object output
+# CORESTATIC = output file for static library output
 BD ?= build
 HBD ?= build
 ZLIB_BUILD ?= zlib_build
 COREFILE ?= hatarib
 COREDIR ?= $(BD)
+CORESTATIC ?= $(COREDIR)/$(COREFILE).a
 
 # enables debug symbols, CPU trace logging
 DEBUG ?= 0
@@ -31,6 +33,7 @@ ZLIB_LIB ?= $(PWD)/$(ZLIB_BUILD)/lib/libz.a
 ZLIB_LINK ?= $(ZLIB_LIB)
 
 CC ?= gcc
+AR ?= ar
 CFLAGS += \
 	-O3 $(WERROR) -fPIC \
 	-D__LIBRETRO__ -DSHORTHASH=\"$(SHORTHASH)\" \
@@ -96,11 +99,12 @@ HATARILIBS = \
 	hatari/$(HBD)/src/gui-sdl/libGuiSdl.a \
 	hatari/$(HBD)/src/libFloppy.a \
 	hatari/$(HBD)/src/debug/libDebug.a \
-	hatari/$(HBD)/src/libcore.a \
 	$(ZLIB_LINK)
 # note: libcore is linked twice to allow other hatari internal libraries to resolve references within it.
+HATARILIBS2 = \
+	hatari/$(HBD)/src/libcore.a
 
-.PHONY: default core full zlib directories hatarilib clean
+.PHONY: default core static full zlib directories hatarilib clean
 
 default: core
 
@@ -122,10 +126,21 @@ directories:
 	mkdir -p hatari/$(HBD)
 
 $(CORE): directories hatarilib $(OBJECTS)
-	$(CC) -o $(CORE) $(LDFLAGS) $(OBJECTS) $(HATARILIBS)
+	$(CC) -o $(CORE) $(LDFLAGS) $(OBJECTS) $(HATARILIBS) $(HATARILIBS2)
+
+# static target produces a single library $(CORESTATIC) instead of a shared object
+DUMP_HATARILIBS = $(foreach a,$(HATARILIBS),DUMP_$(a))
+phony: $(DUMP_HATARILIBS) dump_directories
+dump_directories:
+	mkdir -p $(BD)/libs
+$(DUMP_HATARILIBS): dump_directories hatarilib
+	$(AR) x $(patsubst DUMP_%,%,$@) --output $(BD)/libs
+$(CORESTATIC): $(DUMP_HATARILIBS) $(OBJECTS)
+	$(AR) r $@ $(BD)/libs/*.o $(BD)/libs/*.obj $(OBJECTS)
+static: directories $(CORESTATIC)
 
 $(BD)/core/%.o: core/%.c hatarilib
-	$(CC) -o $@ $(CFLAGS) -c $< 
+	$(CC) -o $@ $(CFLAGS) -c $<
 
 hatarilib: directories
 	(cd hatari/$(HBD) && export CFLAGS="$(CFLAGS)" && $(CMAKE) .. $(CMAKEFLAGS))

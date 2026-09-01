@@ -1,8 +1,38 @@
 CORENAME ?= hatarib
+platform ?= platform
+COREFILE ?= $(CORENAME)_libretro
+CORESTATIC ?= $(CORENAME)_libretro_$(platform)
+CORESTATIC_SUFFIX ?= .a
+MAKEACTION ?= core
+
+# platforms requiring a static library build
+ifeq ($(platform),ps2)
+	MAKEACTION := static
+else ifeq ($(platform),psl1ght)
+	MAKEACTION := static
+else ifeq ($(platform),psp1)
+	MAKEACTION := static
+else ifeq ($(platform),vita)
+	MAKEACTION := static
+else ifeq ($(platform),ctr)
+	MAKEACTION := static
+else ifeq ($(platform),ngc)
+	MAKEACTION := static
+else ifeq ($(platform),wii)
+	MAKEACTION := static
+else ifeq ($(platform),wiiu)
+	MAKEACTION := static
+else ifeq ($(platform),libnx)
+	MAKEACTION := static
+else ifeq ($(platform),emscripten)
+	MAKEACTION := static
+	CORESTATIC_SUFFIX := .bc
+endif
 
 .PHONY: default libretro
 
 default: libretro
 
 libretro:
-	$(MAKE) -f makefile COREFILE=$(CORENAME)_libretro COREDIR=.
+	$(MAKE) -f makefile zlib
+	$(MAKE) -f makefile $(MAKEACTION) COREFILE=$(COREFILE) COREDIR=. CORESTATIC=$(CORESTATIC)$(CORESTATIC_SUFFIX)
