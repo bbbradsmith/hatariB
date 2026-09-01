@@ -22,9 +22,8 @@ This has been built and tested with MSYS2 UCRT64. The following packages are req
 * gcc (mingw-w64-ucrt-x86_64-gcc)
 * cmake (mingw-w64-ucrt-x86_64-cmake)
 
-Before running make to build hatariB, build the static libraries for zlib and SDL2:
+Before running make to build hatariB, build the static library for zlib:
 * `make -f makefile.zlib`
-* `make -f makefile.sdl`
 
 With the static libraries prepared, the default make target will create `build/hatarib.dll`:
 * `make`
@@ -32,11 +31,9 @@ With the static libraries prepared, the default make target will create `build/h
 Other targets:
 * `make clean` - removes the build and all temporary files to start fresh.
 * `make full` - cleans and rebuilds both the static libraries and hatariB.
-* `make sdlreconfig` - for testing SDL2 configuration changes: cleans and rebuilds SDL2, then incrementally builds hatariB.
 * `make zlib` - shorthand for `make -f makefile.zlib`
-* `make sdl` - shorthand for `make -f makefile.sdl`
 
-By default SDL ant hatariB are built with the `-j` option to multithread the build process. You can disable this by adding `MULTITHREAD=` to the command line. This may be needed if the system runs out of memory, or otherwise can't handle the threading.
+By default hatariB is built with the `-j` option to multithread the build process. You can disable this by adding `MULTITHREAD=` to the command line. This may be needed if the system runs out of memory, or otherwise can't handle the threading.
 
 By default `-Wall -Werror` is used, but if spurious warnings are blocking compliation this can be disabled with `WERROR=` on the command line.
 
@@ -57,6 +54,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Disabled `tests` subdirectory, because we do not build the executable needed for these tests.
   * Disabled `FindPythonInterp`, because we don't need the python interpreter or GTK, which are used for Hatari's debugger.
   * Add `HAVE_DLOPEN` to use for dynamic loading of CAPSIMAGE library for IPF support.
+  * Force `SDL2_FOUND` to use our own minimal implementation of SDL2 instead.
 * **hatari/cmake/config-cmake.h**
   * Add `HAVE_DLOPEN` definition for dynamic loading of CAPSIMAGE.
 * **hatari/src/CMakeLists.txt**
@@ -72,7 +70,8 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
     * `__LIBRETRO__` define provides our primary means to contain our C code alterations.
     * `-fPIC` produces relocatable code necessary for a shared-object.
   * `CMAKEFLAGS` provides some command-line control to Hatari's cmake:
-    * Provide our static SDL2 and zlib libraries.
+    * Provide our static zlib library.
+    * Provide an include path to our included SDL2 header files.
     * Disable `Readline`, `X11`, `PNG`, `PortMidi` and `CapsImage` library dependencies.
     * `ENABLE_SMALL_MEM=0` allocates 16MB always instead of ST configured memory size (typically 1MB), allowing speed optimizations. If building for a platform with very limited RAM we might reconsider this.
   * `CMAKEBUILDFLAGS` provides -j` allowing faster parallel builds.
@@ -158,8 +157,9 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Use core's file system to provide INF-file support for GEMDOS hard drives.
   * Replace `FILE` with `corefile`.
 * **hatari/src/joy.c**
-  * Disable SDL joystick system use.
+  * Disable SDL joystick system use. Disable `Joy_ReadJoystick`, `Joy_ReadAxisConfig`, and remove `sdlJoystick`.
   * Assume 4 attached joysticks, named "Retropad", and poll input from core instead of SDL.
+  * Disable `Joy_GetStickAnalogData`, no interface is provided for an STE analog controller.
 * **hatari/src/keymap.c**
   * Disable handling of `SDLK_SCROLLLOCK`, which conflicts with game focus key (and isn't on ST keyboards).
   * Disable dispatch of keypresses to `ShortCut` system (Hatari's own GUI hotkeys).
@@ -223,8 +223,9 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Implement options to control pixel doubling for low and medium resolutions.
   * Use palette 0 to clear the screen after mode changes, because it looks more natural than black. (Needed if the resolution changes while emulation is paused.)
   * Provide border cropping options.
+  * Bypass `SDL_GetError` when calling `Main_ErrorExit`.
 * **hatari/src/screenSnapShot.c**
-  * Disable `SDL_SaveBMP`.
+  * Disable `ScreenSnapShot_SaveBMP`.
 * **hatari/src/shortcut.c**
   * Disable SDL uses.
   * Disable `ShortCut_InsertDisk` file dialog.
@@ -304,25 +305,4 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
 
 ## SDL2 Usage
 
-The SDL library is not initialized. Aside from some type definitions, it is mostly only needed to provide palette colour translations, and software-rendering the status bar + onscreen keyboard. Only the video subsystem is needed, though the events subsystem is also included because it cannot be disabled in SDL2's configuration. This is the short list of SDL functions used:
-* SDL_CreateRGBSurface
-* SDL_FreeSurface
-* SDL_LockSurface
-* SDL_UnlockSurface
-* SDL_MapRGB
-* SDL_SetPaletteColors
-* SDL_SetColorKey
-* SDL_UpperBlit
-* SDL_FillRect
-* SDL_strlcpy
-
-If direct replacements for these were provided, we could remove SDL entirely. Most have a simple function and not used in high-performance code, but `SDL_UpperBlit` and `SDL_FillRect` are both used extensively by the status bar and onscreen keyboard. A naive replacement of those would be simple, but they both have very intensive target-specific optimizations which seem worth keeping, despite the dependency overhead.
-
-You may provide your own SDL2 by overriding the `SDL2_INCLUDE`, `SDL2_LIB`, `SDL2_LINK` and `SDL2_DIR` variables found in `makefile`. A minimal static build was chosen instead because on some platforms the dependency was difficult to provide to the user, and it also appeared that it could cause conflicts with RetroArch's SDL2 drivers, if used. (These conflicts seemed to be resolved by removing any SDL initialization, but it seemed prudent to avoid using the global shared object altogether.)
-
-Notes for removing SDL2:
-* We probably need to keep the configure step of `makefile.sdl` to generate headers, but the make is no longer needed. Instead just `make install-hdrs` will copy the needed header files.
-* Disable the check for SDL2 in `CMakeLists.txt`, just set `SDL2_FOUND` instead.
-* Remove SDL2_LINK from `makefile`.
-* Implement the functions listed above in out own core implementation.
-* See [PR #16](https://github.com/bbbradsmith/hatariB/pull/16) for reference.
+Only SDL2's headers are used, with most uses of SDL functions defined out in Hatari's code, with a small handful of functions re-implemented in `core/core_sdl2.c`.

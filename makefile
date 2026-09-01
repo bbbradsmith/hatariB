@@ -26,14 +26,9 @@ SHORTHASH = "$(shell git rev-parse --short HEAD || unknown)"
 
 # static libraries
 ZLIB_INCLUDE ?= $(PWD)/$(ZLIB_BUILD)/include
-SDL2_INCLUDE ?= $(PWD)/SDL/build/include/SDL2
+SDL2_INCLUDE ?= $(PWD)/SDL2-include
 ZLIB_LIB ?= $(PWD)/$(ZLIB_BUILD)/lib/libz.a
-SDL2_LIB ?= $(PWD)/SDL/build/lib/libSDL2.a
-SDL2_LINK ?= $(shell $(PWD)/SDL/build/bin/sdl2-config --static-libs)
 ZLIB_LINK ?= $(ZLIB_LIB)
-SDL2_DIR ?= $(PWD)/SDL/build
-# sdl2-config is less than ideal, designed for EXE rather than DLL,
-# it adds -lSDLmain etc. but it seems the best way to get the mac dependencies right
 
 CC ?= gcc
 CFLAGS += \
@@ -47,7 +42,7 @@ CMAKE ?= cmake
 CMAKEFLAGS += \
 	-DZLIB_INCLUDE_DIR=$(ZLIB_INCLUDE) \
 	-DZLIB_LIBRARY=$(ZLIB_LIB) \
-	-DSDL2_DIR=$(SDL2_DIR)/lib/cmake/SDL2 \
+	-DSDL2_INCLUDE_DIRS=$(SDL2_INCLUDE) \
 	-DCMAKE_DISABLE_FIND_PACKAGE_Readline=1 \
 	-DCMAKE_DISABLE_FIND_PACKAGE_X11=1 \
 	-DCMAKE_DISABLE_FIND_PACKAGE_PNG=1 \
@@ -91,7 +86,8 @@ SOURCES = \
 	core/core_input.c \
 	core/core_disk.c \
 	core/core_config.c \
-	core/core_osk.c
+	core/core_osk.c \
+	core/core_sdl2.c
 OBJECTS = $(SOURCES:%.c=$(BD)/%.o)
 HATARILIBS = \
 	hatari/$(HBD)/src/libcore.a \
@@ -101,10 +97,10 @@ HATARILIBS = \
 	hatari/$(HBD)/src/libFloppy.a \
 	hatari/$(HBD)/src/debug/libDebug.a \
 	hatari/$(HBD)/src/libcore.a \
-	$(ZLIB_LINK) $(SDL2_LINK)
+	$(ZLIB_LINK)
 # note: libcore is linked twice to allow other hatari internal libraries to resolve references within it.
 
-.PHONY: default core full sdl zlib sdlreconfig directories hatarilib clean
+.PHONY: default core full zlib directories hatarilib clean
 
 default: core
 
@@ -113,24 +109,12 @@ core: $(CORE)
 # clean and rebuild everything (including static libs)
 full:
 	$(MAKE) -f makefile.zlib clean
-	$(MAKE) -f makefile.sdl clean
 	$(MAKE) clean
 	$(MAKE) -f makefile.zlib
-	$(MAKE) -f makefile.sdl MULTITHREAD=$(MULTITHREAD)
 	$(MAKE) default
-
-sdl:
-	$(MAKE) -f makefile.sdl MULTITHREAD=$(MULTITHREAD)
 
 zlib:
 	$(MAKE) -f makefile.zlib
-
-# to test a reconfiguration of SDL only
-sdlreconfig:
-	$(MAKE) -f makefile.sdl clean
-	$(MAKE) clean
-	$(MAKE) -f makefile.sdl MULTITHREAD=$(MULTITHREAD)
-	$(MAKE) default
 
 directories:
 	mkdir -p $(BD)

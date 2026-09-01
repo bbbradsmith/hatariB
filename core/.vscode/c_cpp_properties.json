@@ -4,6 +4,7 @@
             "name": "ucrt64",
             "includePath": [
                 "${workspaceFolder}/**",
+                "${workspaceFolder}/../SDL2-include",
                 "/msys64/ucrt64/include/**"
             ],
             "defines": [

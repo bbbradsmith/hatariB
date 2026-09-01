@@ -751,7 +751,11 @@ static bool Screen_SetSDLVideoSize(int width, int height, bool bForceChange)
 	/* Exit if we can not open a screen */
 	if (!sdlscrn)
 	{
+#ifndef __LIBRETRO__
 		Main_ErrorExit("Could not set video mode:", SDL_GetError(), -2);
+#else
+		Main_ErrorExit("Could not set video mode?", NULL, -2);
+#endif
 	}
 
 	DEBUGPRINT(("SDL screen granted: %d x %d @ %d\n", sdlscrn->w, sdlscrn->h,
