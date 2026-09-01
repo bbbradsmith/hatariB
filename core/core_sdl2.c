@@ -1,5 +1,7 @@
-#include <SDL.h>
+#include "../libretro/libretro.h"
 #include "core.h"
+#include "core_internal.h"
+#include <SDL.h>
 
 //
 // two allowed pixel formats, ARGB, and Indexed with a global palette
