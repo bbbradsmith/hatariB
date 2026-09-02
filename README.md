@@ -9,7 +9,7 @@ A [Libretro](https://www.libretro.com/) core integrating the [Hatari](https://ww
   * Raspberry Pi OS 64-bit, 32-bit
   * Android 64-bit, 32-bit
 * Current Release:
-  * **[hatariB v0.4](https://github.com/bbbradsmith/hatariB/releases/tag/0.4)** - 2026-08-23
+  * **[hatariB v0.5](https://github.com/bbbradsmith/hatariB/releases/tag/0.5)** - 2026-09-02
 * Unstable Build:
   * [Download](https://nightly.link/bbbradsmith/hatariB/workflows/build/main)
 * Recent Builds:
