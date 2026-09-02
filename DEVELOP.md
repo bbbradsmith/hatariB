@@ -73,7 +73,6 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
     * Provide our static zlib library.
     * Provide an include path to our included SDL2 header files.
     * Disable `Readline`, `X11`, `PNG`, `PortMidi` and `CapsImage` library dependencies.
-    * `ENABLE_SMALL_MEM=0` allocates 16MB always instead of ST configured memory size (typically 1MB), allowing speed optimizations. If building for a platform with very limited RAM we might reconsider this.
   * `CMAKEBUILDFLAGS` provides -j` allowing faster parallel builds.
   * `DEBUG=1` adds debug symbols, and also some debug core options in the Advanced category.
   * `VERBOSE_CMAKE=1` will show all the cmake build steps, `=2` will also show the cmake configuration trace.
