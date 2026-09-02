@@ -39,7 +39,8 @@ CFLAGS += \
 	-D__LIBRETRO__ -DSHORTHASH=\"$(SHORTHASH)\" \
 	-Ihatari/$(HBD) -I$(SDL2_INCLUDE)
 LDFLAGS += \
-	-shared $(WERROR)
+	-shared $(WERROR) \
+	-lm
 
 CMAKE ?= cmake
 CMAKEFLAGS += \
