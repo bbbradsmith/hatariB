@@ -206,7 +206,7 @@ jobs:
         run: echo $CERTIFICATE | base64 --decode -o certificate.p12
       - name: Sign Dylib
         if: github.event_name != 'pull_request'
-        uses: indygreg/apple-code-sign-action@v1.0
+        uses: indygreg/apple-code-sign-action@v1.2
         with:
           input_path: build/hatarib.dylib
           p12_file: certificate.p12
@@ -336,7 +336,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
       - name: Submodule Cache Key
         run: |
           echo "ZLIBHASH=$(git submodule status zlib | tr -d '[:blank:]')" >> $GITHUB_ENV
@@ -393,7 +393,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
       - name: Submodule Cache Key
         run: |
           echo "ZLIBHASH=$(git submodule status zlib | tr -d '[:blank:]')" >> $GITHUB_ENV
