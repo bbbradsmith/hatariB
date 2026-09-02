@@ -297,9 +297,10 @@ See [DEVELOP.md](DEVELOP.md) for more details.
 
 ## History
 
-* hatariB v0.5 - Unstable pre-release.
+* [hatariB v0.5](https://github.com/bbbradsmith/hatariB/releases/tag/0.5) - 2026-09-02
   * Fixed on-screen keyboard corruption/crash when status bar is hidden. ([74](https://github.com/bbbradsmith/hatariB/issues/74))
   * Remove SDL2 dependency with custom re-implementation of needed functions.
+  * Use all-lowercase `hatarib` internal name for library.
 * [hatariB v0.4](https://github.com/bbbradsmith/hatariB/releases/tag/0.4) - 2026-08-23
   * EmuTOS 1.4 ROMs.
   * [Customized](https://github.com/bbbradsmith/emutos/tree/hatarib-custom-140) EmuTOS 1.4 ROMs allowing DESKTOP.INF to be loaded.

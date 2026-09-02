@@ -31,7 +31,7 @@
 #define DEBUG_RETRO_SET_ENVIRONMENT   0
 
 // make sure this matches ../info/hatarib.info
-#define CORE_VERSION   "v0.5 unstable preview " SHORTHASH " " __DATE__ " " __TIME__;
+#define CORE_VERSION   "v0.5 " SHORTHASH " " __DATE__ " " __TIME__;
 
 // make sure this matches ../info/hatarib.info
 static const char* const CORE_FILE_EXTENSIONS = "st|msa|dim|stx|ipf|ctr|m3u|m3u8|zip|zst|gz|acsi|ahd|vhd|scsi|shd|ide|gem";
@@ -1131,7 +1131,7 @@ RETRO_API void retro_get_system_info(struct retro_system_info *info)
 {
 	core_info_printf("retro_get_system_info()\n");
 	memset(info, 0, sizeof(*info));
-	info->library_name = "hatariB";
+	info->library_name = "hatarib";
 	info->library_version = CORE_VERSION;
 	info->valid_extensions = CORE_FILE_EXTENSIONS;
 	info->need_fullpath = false;
