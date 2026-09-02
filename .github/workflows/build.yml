@@ -16,7 +16,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout Files
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Setup MSYS2
         uses: msys2/setup-msys2@v2
         with:
@@ -28,7 +28,7 @@ jobs:
           echo "ZLIBHASH=$($(git submodule status zlib) -replace '\s','')" >> $env:GITHUB_ENV
       - name: Cache Submodules
         id: cache-sub
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             zlib_build
@@ -52,7 +52,7 @@ jobs:
           copy info/*.* artifact/info
           echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $env:GITHUB_ENV
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: hatarib-win64--${{ env.BUILD_TAG }}
           path: artifact/
@@ -62,7 +62,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout Files
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Setup MSYS2
         uses: msys2/setup-msys2@v2
         with:
@@ -74,7 +74,7 @@ jobs:
           echo "ZLIBHASH=$($(git submodule status zlib) -replace '\s','')" >> $env:GITHUB_ENV
       - name: Cache Submodules
         id: cache-sub
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             zlib_build
@@ -98,7 +98,7 @@ jobs:
           copy info/*.* artifact/info
           echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $env:GITHUB_ENV
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: hatarib-win32--${{ env.BUILD_TAG }}
           path: artifact/
@@ -108,7 +108,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Files
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Setup Ubuntu
         run: |
           sudo apt-get update
@@ -118,7 +118,7 @@ jobs:
           echo "ZLIBHASH=$(git submodule status zlib | tr -d '[:blank:]')" >> $GITHUB_ENV
       - name: Cache Submodules
         id: cache-sub
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             zlib_build
@@ -139,7 +139,7 @@ jobs:
           cp info/*.* artifact/info
           echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $GITHUB_ENV
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: hatarib-ubuntu--${{ env.BUILD_TAG }}
           path: artifact/
@@ -149,13 +149,13 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout Files
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Submodule Cache Key
         run: |
           echo "ZLIBHASH=$(git submodule status zlib | tr -d '[:blank:]')" >> $GITHUB_ENV
       - name: Cache Submodules
         id: cache-sub
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             zlib_build_arm
@@ -221,7 +221,7 @@ jobs:
           cp info/*.* artifact/info
           echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $GITHUB_ENV
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: hatarib-macos--${{ env.BUILD_TAG }}
           path: artifact/
@@ -231,7 +231,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Files
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Setup Ubuntu
         run: |
           sudo apt-get update
@@ -241,7 +241,7 @@ jobs:
           echo "ZLIBHASH=$(git submodule status zlib | tr -d '[:blank:]')" >> $GITHUB_ENV
       - name: Cache Submodules
         id: cache-sub
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             zlib_build
@@ -269,7 +269,7 @@ jobs:
           cp info/*.* artifact/info
           echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $GITHUB_ENV
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: hatarib-rpi64--${{ env.BUILD_TAG }}
           path: artifact/
@@ -279,7 +279,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Files
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Setup Ubuntu
         run: |
           sudo apt-get update
@@ -289,7 +289,7 @@ jobs:
           echo "ZLIBHASH=$(git submodule status zlib | tr -d '[:blank:]')" >> $GITHUB_ENV
       - name: Cache Submodules
         id: cache-sub
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             zlib_build
@@ -315,7 +315,7 @@ jobs:
           cp info/*.* artifact/info
           echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $GITHUB_ENV
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: hatarib-rpi32--${{ env.BUILD_TAG }}
           path: artifact/
@@ -325,13 +325,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Files
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Setup Ubuntu
         run: |
           sudo apt-get update
           sudo apt-get install make gcc cmake
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -342,7 +342,7 @@ jobs:
           echo "ZLIBHASH=$(git submodule status zlib | tr -d '[:blank:]')" >> $GITHUB_ENV
       - name: Cache Submodules
         id: cache-sub
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             zlib_build
@@ -372,7 +372,7 @@ jobs:
           cp info/*.* artifact/info
           echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $GITHUB_ENV
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: hatarib-android64--${{ env.BUILD_TAG }}
           path: artifact/
@@ -382,13 +382,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Files
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Setup Ubuntu
         run: |
           sudo apt-get update
           sudo apt-get install make gcc cmake
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -399,7 +399,7 @@ jobs:
           echo "ZLIBHASH=$(git submodule status zlib | tr -d '[:blank:]')" >> $GITHUB_ENV
       - name: Cache Submodules
         id: cache-sub
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             zlib_build
@@ -429,7 +429,7 @@ jobs:
           cp info/*.* artifact/info
           echo "BUILD_TAG=$(git log -1 --format="%ad--%h" --date=format-local:"%Y-%m-%d-%H%M%S")" >> $GITHUB_ENV
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: hatarib-android32--${{ env.BUILD_TAG }}
           path: artifact/
