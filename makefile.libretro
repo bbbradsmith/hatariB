@@ -5,11 +5,14 @@ CORESTATIC ?= $(CORENAME)_libretro_$(platform)
 CORESTATIC_SUFFIX ?= .a
 MAKEACTION ?= core
 MAKEEXTRA ?=
+CMAKEFLAGS_EXTRA ?=
 
 ifeq ($(platform),win64)                        # windows-x64-mingw
-	MAKEEXTRA := "CMAKEFLAGS=-DCMAKE_SYSTEM_NAME=Windows" SO_SUFFIX=.dll
+	CMAKEFLAGS_EXTRA := -DCMAKE_SYSTEM_NAME=Windows
+	MAKEEXTRA := SO_SUFFIX=.dll
 else ifeq ($(platform),win32)                   # windows-i686-mingw
-	MAKEEXTRA := "CMAKEFLAGS=-DCMAKE_SYSTEM_NAME=Windows" SO_SUFFIX=.dll
+	CMAKEFLAGS_EXTRA := -DCMAKE_SYSTEM_NAME=Windows
+	MAKEEXTRA := SO_SUFFIX=.dll
 else ifeq ($(platform),unix)
 ifneq ($(ARCH),x86)                             # linux-x64, linux-aarch64
 else                                            # linux-i686
@@ -19,16 +22,16 @@ ifneq ($(ARCH),arm)                             # osx-x64
 else                                            # osx-arm64
 endif
 else ifeq ($(ANDROID_PLATFORM),android_arm)     # android-make: android-arm
-	MAKEEXTRA := "CMAKEFLAGS=-DCMAKE_TOOLCHAIN_FILE=$NDK_ROOT/build/cmake/android.toolchain.cmake"
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$NDK_ROOT/build/cmake/android.toolchain.cmake
 	COREFILE := $(CORENAME)_libretro_android
 else ifeq ($(ANDROID_PLATFORM),android_arm64)   # android-make: android-arm64
-	MAKEEXTRA := "CMAKEFLAGS=-DCMAKE_TOOLCHAIN_FILE=$NDK_ROOT/build/cmake/android.toolchain.cmake"
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$NDK_ROOT/build/cmake/android.toolchain.cmake
 	COREFILE := $(CORENAME)_libretro_android
 else ifeq ($(ANDROID_PLATFORM),android_x86)     # android-make: android-x86
-	MAKEEXTRA := "CMAKEFLAGS=-DCMAKE_TOOLCHAIN_FILE=$NDK_ROOT/build/cmake/android.toolchain.cmake"
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$NDK_ROOT/build/cmake/android.toolchain.cmake
 	COREFILE := $(CORENAME)_libretro_android
 else ifeq ($(ANDROID_PLATFORM),android_x86_64)  # android-make: android-x86_64
-	MAKEEXTRA := "CMAKEFLAGS=-DCMAKE_TOOLCHAIN_FILE=$NDK_ROOT/build/cmake/android.toolchain.cmake"
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$NDK_ROOT/build/cmake/android.toolchain.cmake
 	COREFILE := $(CORENAME)_libretro_android
 else ifeq ($(platform),ios-arm64)               # ios-arm64
 	COREFILE := $(CORENAME)_libretro_ios
@@ -65,4 +68,4 @@ default: libretro
 
 libretro:
 	$(MAKE) -f makefile zlib
-	$(MAKE) -f makefile $(MAKEACTION) COREFILE=$(COREFILE) COREDIR=. CORESTATIC=$(CORESTATIC)$(CORESTATIC_SUFFIX) $(MAKEEXTRA)
+	$(MAKE) -f makefile $(MAKEACTION) COREFILE=$(COREFILE) COREDIR=. CORESTATIC=$(CORESTATIC)$(CORESTATIC_SUFFIX) $(MAKEEXTRA) CMAKEFLAGS_EXTRA="$(CMAKEFLAGS_EXTRA)"

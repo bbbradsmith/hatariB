@@ -5,6 +5,7 @@
 # COREDIR = directory for core object output
 # CORESTATIC = output file for static library output
 # SO_SUFFIX = filename suffix for shared object (.dll, .so, .dylib)
+# CMAKEFLAGS_EXTRA = additional flags for cmake
 BD ?= build
 HBD ?= build
 ZLIB_BUILD ?= zlib_build
@@ -12,6 +13,7 @@ COREFILE ?= hatarib
 COREDIR ?= $(BD)
 CORESTATIC ?= $(COREDIR)/$(COREFILE).a
 SO_SUFFIX ?= auto
+CMAKEFLAGS_EXTRA ?=
 
 # enables debug symbols, CPU trace logging
 DEBUG ?= 0
@@ -54,7 +56,8 @@ CMAKEFLAGS += \
 	-DCMAKE_DISABLE_FIND_PACKAGE_PNG=1 \
 	-DCMAKE_DISABLE_FIND_PACKAGE_PortMidi=1 \
 	-DCMAKE_DISABLE_FIND_PACKAGE_CapsImage=1 \
-	-DCMAKE_POSITION_INDEPENDENT_CODE=ON
+	-DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+	$(CMAKEFLAGS_EXTRA)
 CMAKEBUILDFLAGS += $(MULTITHREAD)
 
 ifeq ($(DEBUG),1)
