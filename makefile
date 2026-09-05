@@ -37,7 +37,7 @@ AR ?= ar
 CFLAGS += \
 	-O3 $(WERROR) -fPIC \
 	-D__LIBRETRO__ -DSHORTHASH=\"$(SHORTHASH)\" \
-	-Ihatari/$(HBD) -I$(SDL2_INCLUDE)
+	-Ihatari/$(HBD) -I$(SDL2_INCLUDE) -I$(ZLIB_INCLUDE)
 LDFLAGS += \
 	-shared $(WERROR) \
 	-lm
