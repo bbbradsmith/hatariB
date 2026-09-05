@@ -208,6 +208,7 @@ libretro-build-psp:
     - .libretro-psp-static-retroarch-master
     - .core-defs
   before_script:
+    - !reference [.libretro-psp-static-retroarch-master, before_script]
     - git config --global --add safe.directory "$CI_PROJECT_DIR"
 
 # PlayStation Vita
@@ -216,6 +217,7 @@ libretro-build-vita:
     - .libretro-vita-static-retroarch-master
     - .core-defs
   before_script:
+    - !reference [.libretro-vita-static-retroarch-master, before_script]
     - git config --global --add safe.directory "$CI_PROJECT_DIR"
 
 # PlayStation2
@@ -224,6 +226,7 @@ libretro-build-ps2:
     - .libretro-ps2-static-retroarch-master
     - .core-defs
   before_script:
+    - !reference [.libretro-ps2-static-retroarch-master, before_script]
     - git config --global --add safe.directory "$CI_PROJECT_DIR"
     
 # PlayStation3
@@ -232,6 +235,7 @@ libretro-build-psl1ght:
     - .libretro-psl1ght-static-retroarch-master
     - .core-defs
   before_script:
+    - !reference [.libretro-psl1ght-static-retroarch-master, before_script]
     - git config --global --add safe.directory "$CI_PROJECT_DIR"
 
 # Nintendo 3DS
@@ -264,6 +268,7 @@ libretro-build-libnx-aarch64:
     - .libretro-libnx-static-retroarch-master
     - .core-defs
   before_script:
+    - !reference [.libretro-libnx-static-retroarch-master, before_script]
     - git config --global --add safe.directory "$CI_PROJECT_DIR"
 
 #################################### MISC ##################################
