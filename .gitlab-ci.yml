@@ -122,7 +122,7 @@ libretro-build-windows-x64:
     - .libretro-windows-x64-mingw-make-default
     - .core-defs
   before_script:
-    - !reference [.libretro-windows-x64-mingw-make-default, before_script]
+    - !reference [.libretro-windows-x64-mingw, before_script]
     - |
       CMAKE_VER=3.31.6
       curl -sSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz" | tar -xz -C /opt
@@ -134,7 +134,7 @@ libretro-build-windows-i686:
     - .libretro-windows-i686-mingw-make-default
     - .core-defs
   before_script:
-    - !reference [.libretro-windows-i686-mingw-make-default, before_script]
+    - !reference [.libretro-windows-i686-mingw, before_script]
     - |
       CMAKE_VER=3.31.6
       curl -sSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz" | tar -xz -C /opt
@@ -220,7 +220,7 @@ libretro-build-psp:
     - .libretro-psp-static-retroarch-master
     - .core-defs
   before_script:
-    - !reference [.libretro-psp-static-retroarch-master, before_script]
+    - !reference [.libretro-psp-static, before_script]
     - git config --global --add safe.directory "$CI_PROJECT_DIR"
 
 # PlayStation Vita
@@ -229,7 +229,7 @@ libretro-build-vita:
     - .libretro-vita-static-retroarch-master
     - .core-defs
   before_script:
-    - !reference [.libretro-vita-static-retroarch-master, before_script]
+    - !reference [.libretro-vita-static, before_script]
     - git config --global --add safe.directory "$CI_PROJECT_DIR"
 
 # PlayStation2
@@ -238,7 +238,7 @@ libretro-build-ps2:
     - .libretro-ps2-static-retroarch-master
     - .core-defs
   before_script:
-    - !reference [.libretro-ps2-static-retroarch-master, before_script]
+    - !reference [.libretro-ps2-static, before_script]
     - git config --global --add safe.directory "$CI_PROJECT_DIR"
     
 # PlayStation3
@@ -247,7 +247,7 @@ libretro-build-psl1ght:
     - .libretro-psl1ght-static-retroarch-master
     - .core-defs
   before_script:
-    - !reference [.libretro-psl1ght-static-retroarch-master, before_script]
+    - !reference [.libretro-psl1ght-static, before_script]
     - git config --global --add safe.directory "$CI_PROJECT_DIR"
 
 # Nintendo 3DS
@@ -256,7 +256,7 @@ libretro-build-ctr:
     - .libretro-ctr-static-retroarch-master
     - .core-defs
   before_script:
-    - !reference [.libretro-ctr-static-retroarch-master, before_script]
+    - !reference [.libretro-ctr-static, before_script]
     - |
       CMAKE_VER=3.31.6
       curl -sSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz" | tar -xz -C /opt
@@ -268,7 +268,7 @@ libretro-build-ngc:
     - .libretro-ngc-static-retroarch-master
     - .core-defs
   before_script:
-    - !reference [.libretro-ngc-static-retroarch-master, before_script]
+    - !reference [.libretro-ngc-static, before_script]
     - |
       CMAKE_VER=3.31.6
       curl -sSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz" | tar -xz -C /opt
@@ -280,7 +280,7 @@ libretro-build-wii:
     - .libretro-wii-static-retroarch-master
     - .core-defs
   before_script:
-    - !reference [.libretro-wii-static-retroarch-master, before_script]
+    - !reference [.libretro-wii-static, before_script]
     - |
       CMAKE_VER=3.31.6
       curl -sSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz" | tar -xz -C /opt
