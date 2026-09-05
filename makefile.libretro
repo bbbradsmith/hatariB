@@ -19,12 +19,16 @@ ifneq ($(ARCH),arm)                             # osx-x64
 else                                            # osx-arm64
 endif
 else ifeq ($(ANDROID_PLATFORM),android_arm)     # android-make: android-arm
+	MAKEEXTRA := "CMAKEFLAGS=-DCMAKE_TOOLCHAIN_FILE=$NDK_ROOT/build/cmake/android.toolchain.cmake"
 	COREFILE := $(CORENAME)_libretro_android
 else ifeq ($(ANDROID_PLATFORM),android_arm64)   # android-make: android-arm64
+	MAKEEXTRA := "CMAKEFLAGS=-DCMAKE_TOOLCHAIN_FILE=$NDK_ROOT/build/cmake/android.toolchain.cmake"
 	COREFILE := $(CORENAME)_libretro_android
 else ifeq ($(ANDROID_PLATFORM),android_x86)     # android-make: android-x86
+	MAKEEXTRA := "CMAKEFLAGS=-DCMAKE_TOOLCHAIN_FILE=$NDK_ROOT/build/cmake/android.toolchain.cmake"
 	COREFILE := $(CORENAME)_libretro_android
 else ifeq ($(ANDROID_PLATFORM),android_x86_64)  # android-make: android-x86_64
+	MAKEEXTRA := "CMAKEFLAGS=-DCMAKE_TOOLCHAIN_FILE=$NDK_ROOT/build/cmake/android.toolchain.cmake"
 	COREFILE := $(CORENAME)_libretro_android
 else ifeq ($(platform),ios-arm64)               # ios-arm64
 	COREFILE := $(CORENAME)_libretro_ios
