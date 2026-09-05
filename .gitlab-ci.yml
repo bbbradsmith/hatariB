@@ -1,5 +1,24 @@
 # DESCRIPTION: GitLab CI/CD for libRetro (NOT FOR GitLab-proper)
 
+# Notes:
+#
+# Some platforms have out-of-date versions of cmake.
+# These will fetch cmake 3.31.6 and place it on the path.
+#   windows-x64
+#   windows-i686
+#   ctr (3DS)
+#   ngc (GameCube)
+#   wii
+#
+# Some platforms require git safe directory permissions.
+#  psp
+#  vita
+#  ps2
+#  psl1ght (PS3)
+#  libnx-aarch64 (Switch)
+#
+# More info: https://github.com/bbbradsmith/hatariB/pull/81
+
 ##############################################################################
 ################################# BOILERPLATE ################################
 ##############################################################################
