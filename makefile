@@ -136,7 +136,7 @@ dump_directories:
 $(DUMP_HATARILIBS): dump_directories hatarilib
 	$(AR) x $(patsubst DUMP_%,%,$@) --output $(BD)/libs
 $(CORESTATIC): $(DUMP_HATARILIBS) $(OBJECTS)
-	$(AR) r $@ $(BD)/libs/*.o $(BD)/libs/*.obj $(OBJECTS)
+	$(AR) r $@ $(BD)/libs/*.* $(OBJECTS)
 static: directories $(CORESTATIC)
 
 $(BD)/core/%.o: core/%.c hatarilib
