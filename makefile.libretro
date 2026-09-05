@@ -1,30 +1,51 @@
 CORENAME ?= hatarib
-platform ?= platform
+platform ?= invalid
 COREFILE ?= $(CORENAME)_libretro
 CORESTATIC ?= $(CORENAME)_libretro_$(platform)
 CORESTATIC_SUFFIX ?= .a
 MAKEACTION ?= core
 
-# platforms requiring a static library build
-ifeq ($(platform),ps2)
+ifeq ($(platform),win64)                        # windows-x64-mingw
+else ifeq ($(platform),win32)                   # windows-i686-mingw
+else ifeq ($(platform),windows_msvc2010_x64)    # windows-x64-msvc10-msys2
+else ifeq ($(platform),windows_msvc2010_x86)    # windows-i686-msvc10-msys2
+else ifeq ($(platform),windows_msvc2005_x86)    # windows-i686-msvc05-msys2
+else ifeq ($(platform),unix)
+ifneq ($(ARCH),x86)                             # linux-x64, linux-aarch64
+else                                            # linux-i686
+endif
+else ifeq ($(platform),osx)
+ifneq ($(ARCH),arm)                             # osx-x64
+else                                            # osx-arm64
+endif
+else ifeq ($(ANDROID_PLATFORM),android_arm)     # android-make: android-arm
+else ifeq ($(ANDROID_PLATFORM),android_arm64)   # android-make: android-arm64
+else ifeq ($(ANDROID_PLATFORM),android_x86)     # android-make: android-x86
+else ifeq ($(ANDROID_PLATFORM),android_x86_64)  # android-make: android-x86_64
+else ifeq ($(platform),ios-arm64)               # ios-arm64
+else ifeq ($(platform),ios9)                    # ios9
+else ifeq ($(platform),ps2)                     # ps2-static
 	MAKEACTION := static
-else ifeq ($(platform),psl1ght)
+else ifeq ($(platform),psl1ght)                 # psl1ght-static
 	MAKEACTION := static
-else ifeq ($(platform),psp1)
+else ifeq ($(platform),psp1)                    # psp-static
 	MAKEACTION := static
-else ifeq ($(platform),vita)
+else ifeq ($(platform),vita)                    # vita-static
 	MAKEACTION := static
-else ifeq ($(platform),ctr)
+else ifeq ($(platform),ctr)                     # ctr-static
 	MAKEACTION := static
-else ifeq ($(platform),ngc)
+else ifeq ($(platform),ngc)                     # ngc-static
 	MAKEACTION := static
-else ifeq ($(platform),wii)
+else ifeq ($(platform),wii)                     # wii-static
 	MAKEACTION := static
-else ifeq ($(platform),wiiu)
+else ifeq ($(platform),wiiu)                    # wiiu-static
 	MAKEACTION := static
-else ifeq ($(platform),libnx)
+else ifeq ($(platform),libnx)                   # libnx-static
 	MAKEACTION := static
-else ifeq ($(platform),emscripten)
+else ifeq ($(platform),gcw0)                    # dingux-mips32
+else ifeq ($(platform),miyoo)                   # dingux-arm32
+else ifeq ($(platform),tvos-arm64)              # tvos-arm64
+else ifeq ($(platform),emscripten)              # emscripten-static
 	MAKEACTION := static
 	CORESTATIC_SUFFIX := .bc
 endif

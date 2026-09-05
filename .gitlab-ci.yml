@@ -57,7 +57,7 @@ include:
   ################################## CELLULAR ################################
   # Android
   - project: 'libretro-infrastructure/ci-templates'
-    file: '/android-jni.yml'
+    file: '/android-make.yml'
 
   # iOS
   - project: 'libretro-infrastructure/ci-templates'
@@ -323,10 +323,4 @@ libretro-build-miyoo-arm32:
 libretro-build-emscripten:
   extends:
     - .libretro-emscripten-static-retroarch-master
-    - .core-defs
-
-# webOS 32-bit
-libretro-build-webos-armv7a:
-  extends:
-    - .libretro-webos-armv7a-make-default
     - .core-defs
