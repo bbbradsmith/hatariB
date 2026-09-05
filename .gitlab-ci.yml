@@ -121,12 +121,24 @@ libretro-build-windows-x64:
   extends:
     - .libretro-windows-x64-mingw-make-default
     - .core-defs
-    
+  before_script:
+    - !reference [.libretro-windows-x64-mingw-make-default, before_script]
+    - |
+      CMAKE_VER=3.31.6
+      curl -sSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz" | tar -xz -C /opt
+      export PATH="/opt/cmake-${CMAKE_VER}-linux-x86_64/bin:$PATH"
+
 # Windows 32-bit
 libretro-build-windows-i686:
   extends:
     - .libretro-windows-i686-mingw-make-default
     - .core-defs
+  before_script:
+    - !reference [.libretro-windows-i686-mingw-make-default, before_script]
+    - |
+      CMAKE_VER=3.31.6
+      curl -sSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz" | tar -xz -C /opt
+      export PATH="/opt/cmake-${CMAKE_VER}-linux-x86_64/bin:$PATH"
 
 # Linux 64-bit
 libretro-build-linux-x64:
@@ -243,18 +255,36 @@ libretro-build-ctr:
   extends:
     - .libretro-ctr-static-retroarch-master
     - .core-defs
+  before_script:
+    - !reference [.libretro-ctr-static-retroarch-master, before_script]
+    - |
+      CMAKE_VER=3.31.6
+      curl -sSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz" | tar -xz -C /opt
+      export PATH="/opt/cmake-${CMAKE_VER}-linux-x86_64/bin:$PATH"
 
 # Nintendo GameCube
 libretro-build-ngc:
   extends:
     - .libretro-ngc-static-retroarch-master
     - .core-defs
+  before_script:
+    - !reference [.libretro-ngc-static-retroarch-master, before_script]
+    - |
+      CMAKE_VER=3.31.6
+      curl -sSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz" | tar -xz -C /opt
+      export PATH="/opt/cmake-${CMAKE_VER}-linux-x86_64/bin:$PATH"
 
 # Nintendo Wii
 libretro-build-wii:
   extends:
     - .libretro-wii-static-retroarch-master
     - .core-defs
+  before_script:
+    - !reference [.libretro-wii-static-retroarch-master, before_script]
+    - |
+      CMAKE_VER=3.31.6
+      curl -sSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz" | tar -xz -C /opt
+      export PATH="/opt/cmake-${CMAKE_VER}-linux-x86_64/bin:$PATH"
 
 # Nintendo WiiU
 libretro-build-wiiu:
