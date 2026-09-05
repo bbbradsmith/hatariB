@@ -380,7 +380,7 @@ Other code contributors to hatariB, this list may be incomplete:
 * [NTxC](https://github.com/NTxC) - Drivesound branch ([33](https://github.com/bbbradsmith/hatariB/issues/33), [34](https://github.com/bbbradsmith/hatariB/pull/34), [40](https://github.com/bbbradsmith/hatariB/pull/40), [branch](https://github.com/bbbradsmith/hatariB/tree/ntxc-drivesound)).
 * [kangaroomadman](https://github.com/kangaroomadman) - HAVE_CAPSIMAGE redefine check ([53](https://github.com/bbbradsmith/hatariB/pull/53)).
 * [cscd98](https://github.com/cscd98) - Fix for save-prevent logic ([73](https://github.com/bbbradsmith/hatariB/pull/73)).
-* [WizzardSK](https://github.com/WizzardSK) - Libretro build assistance ([81](https://github.com/bbbradsmith/hatariB/pull/81))
+* [WizzardSK](https://github.com/WizzardSK) - Libretro build assistance ([81](https://github.com/bbbradsmith/hatariB/pull/81)).
 
 It is difficult to keep track of all contributors who have helped in other ways, but I would like to thank anyone who has posted [issues](https://github.com/bbbradsmith/hatariB/issues), commented on [Atari-Forum](https://www.atari-forum.com/viewtopic.php?t=43008), [LibRetro Forum](https://forums.libretro.com/t/hatarib-atari-st-core/51029), or otherwise assisted me in improving this core.
 
