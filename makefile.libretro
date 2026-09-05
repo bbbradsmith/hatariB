@@ -7,9 +7,6 @@ MAKEACTION ?= core
 
 ifeq ($(platform),win64)                        # windows-x64-mingw
 else ifeq ($(platform),win32)                   # windows-i686-mingw
-else ifeq ($(platform),windows_msvc2010_x64)    # windows-x64-msvc10-msys2
-else ifeq ($(platform),windows_msvc2010_x86)    # windows-i686-msvc10-msys2
-else ifeq ($(platform),windows_msvc2005_x86)    # windows-i686-msvc05-msys2
 else ifeq ($(platform),unix)
 ifneq ($(ARCH),x86)                             # linux-x64, linux-aarch64
 else                                            # linux-i686
@@ -42,9 +39,6 @@ else ifeq ($(platform),wiiu)                    # wiiu-static
 	MAKEACTION := static
 else ifeq ($(platform),libnx)                   # libnx-static
 	MAKEACTION := static
-else ifeq ($(platform),gcw0)                    # dingux-mips32
-else ifeq ($(platform),miyoo)                   # dingux-arm32
-else ifeq ($(platform),tvos-arm64)              # tvos-arm64
 else ifeq ($(platform),emscripten)              # emscripten-static
 	MAKEACTION := static
 	CORESTATIC_SUFFIX := .bc
