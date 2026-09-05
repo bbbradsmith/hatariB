@@ -4,6 +4,7 @@
 # COREFILE = base filename for core object output
 # COREDIR = directory for core object output
 # CORESTATIC = output file for static library output
+# SO_SUFFIX = filename suffix for shared object (.dll, .so, .dylib)
 BD ?= build
 HBD ?= build
 ZLIB_BUILD ?= zlib_build

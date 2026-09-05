@@ -7,9 +7,9 @@ MAKEACTION ?= core
 MAKEEXTRA ?=
 
 ifeq ($(platform),win64)                        # windows-x64-mingw
-	MAKEEXTRA := "CMAKE_FLAGS=-DCMAKE_SYSTEM_NAME=Windows" SO_SUFFIX=.dll
+	MAKEEXTRA := "CMAKEFLAGS=-DCMAKE_SYSTEM_NAME=Windows" SO_SUFFIX=.dll
 else ifeq ($(platform),win32)                   # windows-i686-mingw
-	MAKEEXTRA := "CMAKE_FLAGS=-DCMAKE_SYSTEM_NAME=Windows" SO_SUFFIX=.dll
+	MAKEEXTRA := "CMAKEFLAGS=-DCMAKE_SYSTEM_NAME=Windows" SO_SUFFIX=.dll
 else ifeq ($(platform),unix)
 ifneq ($(ARCH),x86)                             # linux-x64, linux-aarch64
 else                                            # linux-i686
