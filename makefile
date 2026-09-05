@@ -10,6 +10,7 @@ ZLIB_BUILD ?= zlib_build
 COREFILE ?= hatarib
 COREDIR ?= $(BD)
 CORESTATIC ?= $(COREDIR)/$(COREFILE).a
+SO_SUFFIX ?= auto
 
 # enables debug symbols, CPU trace logging
 DEBUG ?= 0
@@ -72,14 +73,16 @@ endif
 	CMAKEBUILDFLAGS += --verbose
 endif
 
+ifeq ($(SO_SUFFIX),auto)
 ifeq ($(OS),Windows_NT)
-	SO_SUFFIX=.dll
+	SO_SUFFIX := .dll
 	LDFLAGS += -static-libgcc
 else ifeq ($(shell uname),Darwin)
-	SO_SUFFIX=.dylib
+	SO_SUFFIX := .dylib
 else
-	SO_SUFFIX=.so
+	SO_SUFFIX := .so
 	LDFLAGS += -static-libgcc
+endif
 endif
 
 CORE=$(COREDIR)/$(COREFILE)$(SO_SUFFIX)
