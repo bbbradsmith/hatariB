@@ -19,11 +19,19 @@ ifneq ($(ARCH),arm)                             # osx-x64
 else                                            # osx-arm64
 endif
 else ifeq ($(ANDROID_PLATFORM),android_arm)     # android-make: android-arm
+	COREFILE := $(CORENAME)_libretro_android
 else ifeq ($(ANDROID_PLATFORM),android_arm64)   # android-make: android-arm64
+	COREFILE := $(CORENAME)_libretro_android
 else ifeq ($(ANDROID_PLATFORM),android_x86)     # android-make: android-x86
+	COREFILE := $(CORENAME)_libretro_android
 else ifeq ($(ANDROID_PLATFORM),android_x86_64)  # android-make: android-x86_64
+	COREFILE := $(CORENAME)_libretro_android
 else ifeq ($(platform),ios-arm64)               # ios-arm64
+	COREFILE := $(CORENAME)_libretro_ios
 else ifeq ($(platform),ios9)                    # ios9
+	COREFILE := $(CORENAME)_libretro_ios
+else ifeq ($(platform),tvos-arm64)              # tvos-arm64
+	COREFILE := $(CORENAME)_libretro_tvos
 else ifeq ($(platform),ps2)                     # ps2-static
 	MAKEACTION := static
 else ifeq ($(platform),psl1ght)                 # psl1ght-static
