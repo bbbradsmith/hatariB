@@ -298,7 +298,7 @@ libretro-build-libnx-aarch64:
     - .libretro-libnx-static-retroarch-master
     - .core-defs
   before_script:
-    - !reference [.libretro-libnx-static-retroarch-master, before_script]
+    - !reference [.libretro-libnx-static, before_script]
     - git config --global --add safe.directory "$CI_PROJECT_DIR"
 
 #################################### MISC ##################################
