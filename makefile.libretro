@@ -64,12 +64,14 @@ else ifeq ($(platform),vita)                    # vita-static
 else ifeq ($(platform),wii)                     # wii-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/Wii.cmake
 	# false positive errors in cpu/readcpu.c and cpu/disasm.c
-	MAKEEXTRA := -Wno-format-overflow -Wno-char-subscripts
+	CFLAGS += -Wno-format-overflow -Wno-char-subscripts
+	MAKEEXTRA := CFLAGS="$(CFLAGS)"
 	ZLIBEXTRA := WERROR=
 	MAKEACTION := static
 else ifeq ($(platform),wiiu)                    # wiiu-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/WiiU.cmake
-	MAKEEXTRA := -Wno-format-overflow -Wno-char-subscripts
+	CFLAGS += -Wno-format-overflow -Wno-char-subscripts
+	MAKEEXTRA := CFLAGS="$(CFLAGS)"
 	ZLIBEXTRA := WERROR=
 	MAKEACTION := static
 else ifeq ($(platform),libnx)                   # libnx-static
