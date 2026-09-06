@@ -1,0 +1,51 @@
+name: Libretro Test Builds
+on:
+  workflow_dispatch:
+
+jobs:
+  android:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { platform: android-arm,    arch: 'ARM, EABI5' }
+          - { platform: android-arm64,  arch: 'ARM aarch64' }
+          - { platform: android-x86,    arch: 'Intel 80386' }
+          - { platform: android-x86_64, arch: 'x86-64' }
+    steps:
+      - uses: actions/checkout@v7
+        with: { submodules: recursive }
+      - name: build
+        env:
+          ANDROID_PLATFORM: ${{ matrix.platform }}
+        run: |
+          export NDK_ROOT="$ANDROID_NDK_LATEST_HOME"
+          echo "NDK_ROOT=$NDK_ROOT"
+          make -f makefile.libretro platform="$ANDROID_PLATFORM"
+      - name: the core is for the ABI the job asked for
+        run: |
+          file hatarib_libretro_android.so
+          file hatarib_libretro_android.so | grep -qi '${{ matrix.arch }}'
+  
+  devkitpro:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { platform: wiiu, image: 'devkitpro/devkitppc:latest', arch: PowerPC }
+          - { platform: wii,  image: 'devkitpro/devkitppc:latest', arch: PowerPC }
+    container: ${{ matrix.image }}
+    steps:
+      - uses: actions/checkout@v7
+        with: { submodules: recursive }
+      - name: build
+        run: |
+          cmake --version
+          make -f makefile.libretro platform=${{ matrix.platform }}
+      - name: the static core is for the target, not for the host
+        run: |
+          ar p hatarib_libretro_${{ matrix.platform }}.a $(ar t hatarib_libretro_${{ matrix.platform }}.a | head -n1) > /tmp/first.o
+          file /tmp/first.o
+          file /tmp/first.o | grep -qi '${{ matrix.arch }}'
