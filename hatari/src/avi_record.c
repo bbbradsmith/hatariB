@@ -99,6 +99,8 @@ const char AVIRecord_fileid[] = "Hatari avi_record.c";
 #include "video.h"
 #include "avi_record.h"
 
+#ifndef __LIBRETRO__
+
 /* after above that brings in config.h */
 #if HAVE_LIBPNG
 #include <png.h>
@@ -1529,3 +1531,16 @@ bool Avi_StopRecording_WithMsg(void)
 	Statusbar_Update(sdlscrn, true);
 	return Avi_StopRecording();
 }
+
+#else // __LIBRETRO__
+
+bool Avi_RecordVideoStream ( void ) { return false; }
+bool Avi_RecordAudioStream ( int16_t [][2] , int , int ) { return false; }
+bool Avi_AreWeRecording ( void ) { return false; }
+bool Avi_SetCompressionLevel(const char *) { return false; }
+bool Avi_StartRecording_WithConfig ( void ) { return false; }
+bool Avi_StopRecording ( void ) { return false; }
+bool Avi_StopRecording_WithMsg ( void ) { return false; }
+void Avi_SetSurface(SDL_Surface *) { return; }
+
+#endif

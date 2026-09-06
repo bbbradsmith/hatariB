@@ -371,6 +371,7 @@ bool File_Save(const char *pszFileName, const uint8_t *pAddress, size_t Size, bo
 /**
  * Return size of file, -1 if error
  */
+#ifndef __LIBRETRO__
 off_t File_Length(const char *pszFileName)
 {
 	FILE *hDiskFile;
@@ -412,6 +413,7 @@ off_t File_Length(const char *pszFileName)
 
 	return -1;
 }
+#endif
 
 
 /*-----------------------------------------------------------------------*/

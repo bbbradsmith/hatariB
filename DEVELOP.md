@@ -83,6 +83,8 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Disable all use of SDL audio system.
   * `Audio_SetOutputAudioFreq` calls `core_set_samplerate` to notify the core of the current samplerate.
   * Disable automatic lowpass-filter selection (see: sound.c).
+* **hatari/src/avi_record.c**
+  * Disable entire file, replace with empty implemation. (Removes unused direct filesystem access.)
 * **hatari/src/cart.c**
   * Use core's file system to load cartridge ROM.
 * **hatari/src/change.c**
@@ -122,6 +124,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
 * **hatari/src/include/file.h**
   * `File_QueryOverwrite` always returns true instead of checking a file. In all instances where this is used (savestates, floppy saves) we are using the core's file system and don't need to ensure this (usually writing to memory instead of a file when this is checked).
   * Provide extern access to core file system in header.
+  * Remove unused `File_Length` to prevent direct filesystem access.
 * **hatari/src/floppy.c**
 * **hatari/src/include/floppy.h**
   * `Floppy_IsWriteProtected` formerly checked the file on disk's write-protect state. This is not available from the Libretro virtual filesystem, so we cannot use this information. Assuming all disks are not write protected. Can use core options to write protect the drives manually, but we lack a per-disk-image setting. However, since we do not save back to the original floppy file, there is less of a need for this.
