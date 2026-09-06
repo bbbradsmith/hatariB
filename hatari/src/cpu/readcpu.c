@@ -324,7 +324,7 @@ out2:
 #ifndef __LIBRETRO__
 		while (opcstr[pos] && !_istspace(opcstr[pos])) {
 #else // suppress -Wchar-subscripts
-		while (opcstr[pos] && !_istspace((unsigned char)opcstr[pos])) {
+		while (opcstr[(unsigned char)pos] && !_istspace(opcstr[(unsigned char)pos])) {
 #endif
 			if (opcstr[pos] == '.') {
 				pos++;
@@ -361,7 +361,11 @@ out2:
 		mnemonic[mnp] = 0;
 
 		/* now, we have read the mnemonic and the size */
+#ifndef __LIBRETRO__
 		while (opcstr[pos] && _istspace(opcstr[pos]))
+#else // suppress -Wchar-subscripts
+		while (opcstr[(unsigned char)pos] && _istspace(opcstr[(unsigned char)pos]))
+#endif
 			pos++;
 
 		/* A goto a day keeps the D******a away. */
