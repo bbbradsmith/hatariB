@@ -324,7 +324,7 @@ out2:
 #ifndef __LIBRETRO__
 		while (opcstr[pos] && !_istspace(opcstr[pos])) {
 #else // suppress -Wchar-subscripts
-		while (opcstr[(unsigned char)pos] && !_istspace(opcstr[(unsigned char)pos])) {
+		while (opcstr[(int)pos] && !_istspace(opcstr[(int)pos])) {
 #endif
 			if (opcstr[pos] == '.') {
 				pos++;
@@ -364,7 +364,7 @@ out2:
 #ifndef __LIBRETRO__
 		while (opcstr[pos] && _istspace(opcstr[pos]))
 #else // suppress -Wchar-subscripts
-		while (opcstr[(unsigned char)pos] && _istspace(opcstr[(unsigned char)pos]))
+		while (opcstr[(int)pos] && _istspace(opcstr[(int)pos]))
 #endif
 			pos++;
 
