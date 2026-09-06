@@ -143,6 +143,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Provide `core_scandir_system` as a simplified replacement for `scandir` using what is available through the virtual file system.
   * Disable use of stdout/stderr as internal file handles (only needed for a TOS-less test mode).
   * Disable use of chmod (not available through virtual file system). The emulated TOS will not be able to modify file permissions directly.
+  * Disable use of `utime` to set file modification times if unavailable.
 * **hatari/src/hdc.c**
 * **hatari/src/includes/hdc.h**
   * Use core's file system to provide ACSI/SCSI image hard disk support.
