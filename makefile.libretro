@@ -48,19 +48,19 @@ else ifeq ($(platform),psp1)                    # psp-static
 else ifeq ($(platform),vita)                    # vita-static
 	MAKEACTION := static
 else ifeq ($(platform),ctr)                     # ctr-static
-	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEKVITPRO)/cmake/3DS.cmake
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/3DS.cmake
 	MAKEACTION := static
 else ifeq ($(platform),ngc)                     # ngc-static
-	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEKVITPRO)/cmake/GameCube.cmake
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/GameCube.cmake
 	MAKEACTION := static
 else ifeq ($(platform),wii)                     # wii-static
-	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEKVITPRO)/cmake/Wii.cmake
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/Wii.cmake
 	MAKEACTION := static
 else ifeq ($(platform),wiiu)                    # wiiu-static
-	#CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEKVITPRO)/cmake/WiiU.cmake
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/WiiU.cmake
 	MAKEACTION := static
 else ifeq ($(platform),libnx)                   # libnx-static
-	#CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEKVITPRO)/cmake/NintendoSwitch.cmake
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/NintendoSwitch.cmake
 	MAKEACTION := static
 else ifeq ($(platform),emscripten)              # emscripten-static
 	MAKEACTION := static
