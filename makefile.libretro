@@ -8,7 +8,7 @@ MAKEEXTRA ?=
 ZLIBEXTRA ?=
 CMAKEFLAGS_EXTRA ?=
 
-ANDROID_API ?= 24
+ANDROID_API ?= 21
 
 ifeq ($(platform),win64)                        # windows-x64-mingw
 	CMAKEFLAGS_EXTRA := -DCMAKE_SYSTEM_NAME=Windows
