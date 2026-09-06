@@ -272,8 +272,6 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Use `LOG_TRACE_PRINT` to direct traces to the log instead of the CPU system's separate log file.
   * Track and restore blitter's override of `set_x_func` so that leaving the frame loop while the blitter is active does not hang the blitter.
   * Drastic savestate restore time reduction by only running `init_table68k` if the CPU model has changed.
-* **hatari/src/cpu/readcpu.c**
-  * Suppress `-Wchar-subscripts` passing `char` to `_istspace`.
 * **hatari/src/debug/debugui.c**
   * Disable `SDL_SetRelativeMouseMode`
 * **hatari/src/debug/log.c**

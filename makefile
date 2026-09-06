@@ -13,6 +13,7 @@ COREFILE ?= hatarib
 COREDIR ?= $(BD)
 CORESTATIC ?= $(COREDIR)/$(COREFILE).a
 SO_SUFFIX ?= auto
+CFLAGS_EXTRA ?=
 CMAKEFLAGS_EXTRA ?=
 
 # enables debug symbols, CPU trace logging
@@ -41,7 +42,8 @@ AR ?= ar
 CFLAGS += \
 	-O3 $(WERROR) -fPIC \
 	-D__LIBRETRO__ -DSHORTHASH=\"$(SHORTHASH)\" \
-	-Ihatari/$(HBD) -I$(SDL2_INCLUDE) -I$(ZLIB_INCLUDE)
+	-Ihatari/$(HBD) -I$(SDL2_INCLUDE) -I$(ZLIB_INCLUDE) \
+	$(CFLAGS_EXTRA)
 LDFLAGS += \
 	-shared $(WERROR) \
 	-lm
