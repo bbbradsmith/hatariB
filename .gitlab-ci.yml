@@ -3,7 +3,8 @@
 # Notes:
 #
 # Some platforms have out-of-date versions of cmake.
-# These will fetch cmake 3.31.6 and place it on the path.
+# These will fetch cmake 3.31.6 and place it on the path. It goes to /tmp
+# rather than /opt: the console images do not run the job as root.
 #   windows-x64
 #   windows-i686
 #   ctr (3DS)
@@ -17,6 +18,10 @@
 #  psl1ght (PS3)
 #  libnx-aarch64 (Switch)
 #
+# Submodules are checked out by CI rather than by the makefile: the build
+# directory is shared between jobs and .git is not writable from the images
+# that run as a non-root user.
+#
 # More info: https://github.com/bbbradsmith/hatariB/pull/81
 
 ##############################################################################
@@ -29,6 +34,7 @@
     JNI_PATH: .
     CORENAME: hatarib
     MAKEFILE: makefile.libretro
+    GIT_SUBMODULE_STRATEGY: recursive
 
 # Inclusion templates, required for the build to work
 include:
@@ -144,8 +150,8 @@ libretro-build-windows-x64:
     - !reference [.libretro-windows-x64-mingw, before_script]
     - |
       CMAKE_VER=3.31.6
-      curl -sSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz" | tar -xz -C /opt
-      export PATH="/opt/cmake-${CMAKE_VER}-linux-x86_64/bin:$PATH"
+      curl -sSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz" | tar -xz -C /tmp
+      export PATH="/tmp/cmake-${CMAKE_VER}-linux-x86_64/bin:$PATH"
 
 # Windows 32-bit
 libretro-build-windows-i686:
@@ -156,8 +162,8 @@ libretro-build-windows-i686:
     - !reference [.libretro-windows-i686-mingw, before_script]
     - |
       CMAKE_VER=3.31.6
-      curl -sSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz" | tar -xz -C /opt
-      export PATH="/opt/cmake-${CMAKE_VER}-linux-x86_64/bin:$PATH"
+      curl -sSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz" | tar -xz -C /tmp
+      export PATH="/tmp/cmake-${CMAKE_VER}-linux-x86_64/bin:$PATH"
 
 # Linux 64-bit
 libretro-build-linux-x64:
@@ -278,8 +284,8 @@ libretro-build-ctr:
     - !reference [.libretro-ctr-static, before_script]
     - |
       CMAKE_VER=3.31.6
-      curl -sSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz" | tar -xz -C /opt
-      export PATH="/opt/cmake-${CMAKE_VER}-linux-x86_64/bin:$PATH"
+      curl -sSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz" | tar -xz -C /tmp
+      export PATH="/tmp/cmake-${CMAKE_VER}-linux-x86_64/bin:$PATH"
 
 # Nintendo GameCube
 libretro-build-ngc:
@@ -290,8 +296,8 @@ libretro-build-ngc:
     - !reference [.libretro-ngc-static, before_script]
     - |
       CMAKE_VER=3.31.6
-      curl -sSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz" | tar -xz -C /opt
-      export PATH="/opt/cmake-${CMAKE_VER}-linux-x86_64/bin:$PATH"
+      curl -sSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz" | tar -xz -C /tmp
+      export PATH="/tmp/cmake-${CMAKE_VER}-linux-x86_64/bin:$PATH"
 
 # Nintendo Wii
 libretro-build-wii:
@@ -302,8 +308,8 @@ libretro-build-wii:
     - !reference [.libretro-wii-static, before_script]
     - |
       CMAKE_VER=3.31.6
-      curl -sSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz" | tar -xz -C /opt
-      export PATH="/opt/cmake-${CMAKE_VER}-linux-x86_64/bin:$PATH"
+      curl -sSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz" | tar -xz -C /tmp
+      export PATH="/tmp/cmake-${CMAKE_VER}-linux-x86_64/bin:$PATH"
 
 # Nintendo WiiU
 libretro-build-wiiu:
