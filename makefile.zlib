@@ -1,9 +1,10 @@
 ZLIB_BUILD ?= zlib_build
 ZLIB_PREFIX = $(PWD)/$(ZLIB_BUILD)
+CFLAGS_EXTRA ?=
 CC ?= cc
 AR ?= ar
 RANLIB ?= ranlib
-CFLAGS += -fPIC
+CFLAGS += -fPIC $(CFLAGS_EXTRA)
 # -fPIC needed to link into a shared object
 
 default: $(ZLIB_BUILD)/lib/libz.a

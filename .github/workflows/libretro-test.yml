@@ -1,6 +1,5 @@
 name: Libretro Test Builds
 on:
-  push:
   workflow_dispatch:
 
 jobs:
@@ -24,7 +23,7 @@ jobs:
           export NDK_ROOT="$ANDROID_NDK_LATEST_HOME"
           echo "NDK_ROOT=$NDK_ROOT"
           make -f makefile.libretro platform="$ANDROID_PLATFORM"
-      - name: the core is for the ABI the job asked for
+      - name: verify core ABI target
         run: |
           file hatarib_libretro_android.so
           file hatarib_libretro_android.so | grep -qi '${{ matrix.arch }}'
@@ -45,7 +44,7 @@ jobs:
         run: |
           cmake --version
           make -f makefile.libretro platform=${{ matrix.platform }}
-      - name: the static core is for the target, not for the host
+      - name: verify core target
         run: |
           ar p hatarib_libretro_${{ matrix.platform }}.a $(ar t hatarib_libretro_${{ matrix.platform }}.a | head -n1) > /tmp/first.o
           file /tmp/first.o
