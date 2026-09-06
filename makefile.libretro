@@ -5,7 +5,10 @@ CORESTATIC ?= $(CORENAME)_libretro_$(platform)
 CORESTATIC_SUFFIX ?= .a
 MAKEACTION ?= core
 MAKEEXTRA ?=
+ZLIBEXTRA ?=
 CMAKEFLAGS_EXTRA ?=
+
+ANDROID_API ?= 24
 
 ifeq ($(platform),win64)                        # windows-x64-mingw
 	CMAKEFLAGS_EXTRA := -DCMAKE_SYSTEM_NAME=Windows
@@ -22,16 +25,32 @@ ifneq ($(ARCH),arm)                             # osx-x64
 else                                            # osx-arm64
 endif
 else ifeq ($(ANDROID_PLATFORM),android-arm)     # android-make: android-arm
-	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(NDK_ROOT)/build/cmake/android.toolchain.cmake
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(NDK_ROOT)/build/cmake/android.toolchain.cmake \
+		-DANDROID_ABI=armeabi-v7a -DANDROID_PLATFORM=android-$(ANDROID_API)
+	MAKEEXTRA := CC="$(ANDROID_NDK_LLVM)/bin/clang --target=armv7a-linux-androideabi$(ANDROID_API)" \
+		AR=$(ANDROID_NDK_LLVM)/bin/llvm-ar \
+		RANLIB=$(ANDROID_NDK_LLVM)/bin/llvm-ranlib
 	COREFILE := $(CORENAME)_libretro_android
 else ifeq ($(ANDROID_PLATFORM),android-arm64)   # android-make: android-arm64
-	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(NDK_ROOT)/build/cmake/android.toolchain.cmake
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(NDK_ROOT)/build/cmake/android.toolchain.cmake \
+		-DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-$(ANDROID_API)
+	MAKEEXTRA := CC="$(ANDROID_NDK_LLVM)/bin/clang --target=aarch64-linux-android$(ANDROID_API)" \
+		AR=$(ANDROID_NDK_LLVM)/bin/llvm-ar \
+		RANLIB=$(ANDROID_NDK_LLVM)/bin/llvm-ranlib
 	COREFILE := $(CORENAME)_libretro_android
 else ifeq ($(ANDROID_PLATFORM),android-x86)     # android-make: android-x86
-	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(NDK_ROOT)/build/cmake/android.toolchain.cmake
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(NDK_ROOT)/build/cmake/android.toolchain.cmake \
+		-DANDROID_ABI=x86 -DANDROID_PLATFORM=android-$(ANDROID_API)
+	MAKEEXTRA := CC="$(ANDROID_NDK_LLVM)/bin/clang --target=i686-linux-android$(ANDROID_API)" \
+		AR=$(ANDROID_NDK_LLVM)/bin/llvm-ar \
+		RANLIB=$(ANDROID_NDK_LLVM)/bin/llvm-ranlib
 	COREFILE := $(CORENAME)_libretro_android
 else ifeq ($(ANDROID_PLATFORM),android-x86_64)  # android-make: android-x86_64
-	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(NDK_ROOT)/build/cmake/android.toolchain.cmake
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(NDK_ROOT)/build/cmake/android.toolchain.cmake \
+		-DANDROID_ABI=x86_64 -DANDROID_PLATFORM=android-$(ANDROID_API)
+	MAKEEXTRA := CC="$(ANDROID_NDK_LLVM)/bin/clang --target=x86_64-linux-android$(ANDROID_API)" \
+		AR=$(ANDROID_NDK_LLVM)/bin/llvm-ar \
+		RANLIB=$(ANDROID_NDK_LLVM)/bin/llvm-ranlib
 	COREFILE := $(CORENAME)_libretro_android
 else ifeq ($(platform),ios-arm64)               # ios-arm64
 	COREFILE := $(CORENAME)_libretro_ios
@@ -55,9 +74,11 @@ else ifeq ($(platform),ngc)                     # ngc-static
 	MAKEACTION := static
 else ifeq ($(platform),wii)                     # wii-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/Wii.cmake
+	ZLIBEXTRA := WERROR=
 	MAKEACTION := static
 else ifeq ($(platform),wiiu)                    # wiiu-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/WiiU.cmake
+	ZLIBEXTRA := WERROR=
 	MAKEACTION := static
 else ifeq ($(platform),libnx)                   # libnx-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/NintendoSwitch.cmake
@@ -77,5 +98,5 @@ MAKEARGS = $(MAKEACTION) \
 	CMAKEFLAGS_EXTRA="$(CMAKEFLAGS_EXTRA)"
 
 libretro:
-	$(MAKE) -f makefile zlib
+	$(MAKE) -f makefile zlib $(MAKEEXTRA) $(ZLIBEXTRA)
 	$(MAKE) -f makefile $(MAKEARGS)
