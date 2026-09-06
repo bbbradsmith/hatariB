@@ -1,5 +1,6 @@
 name: Libretro Test Builds
 on:
+  push:
   workflow_dispatch:
 
 jobs:
