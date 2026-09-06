@@ -1534,13 +1534,14 @@ bool Avi_StopRecording_WithMsg(void)
 
 #else // __LIBRETRO__
 
+char AviRecordFile[FILENAME_MAX] = "";
 bool Avi_RecordVideoStream ( void ) { return false; }
-bool Avi_RecordAudioStream ( int16_t [][2] , int , int ) { return false; }
+bool Avi_RecordAudioStream ( int16_t pSamples[][2] , int SampleIndex , int SampleLength ) { (void)pSamples; (void)SampleIndex; (void)SampleLength; return false; }
 bool Avi_AreWeRecording ( void ) { return false; }
-bool Avi_SetCompressionLevel(const char *) { return false; }
+bool Avi_SetCompressionLevel(const char *str) { (void)str; return false; }
 bool Avi_StartRecording_WithConfig ( void ) { return false; }
 bool Avi_StopRecording ( void ) { return false; }
 bool Avi_StopRecording_WithMsg ( void ) { return false; }
-void Avi_SetSurface(SDL_Surface *) { return; }
+void Avi_SetSurface(SDL_Surface *surf) { (void)surf; }
 
 #endif
