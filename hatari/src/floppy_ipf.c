@@ -611,8 +611,13 @@ static char *IPF_FilenameFindTrackSide (char *FileName)
 		if ( strncasecmp ( ext , FileName + len , strlen ( ext ) ) == 0 )
 		{
 			p = FileName + len - 4;
+#ifndef __LIBRETRO__			
 			if ( isdigit( p[0] ) && isdigit( p[1] )
 			  && ( p[2] == '.' ) && isdigit( p[3] ) )
+#else // suppress -Wchar-subscripts
+			if ( isdigit( (unsigned char)p[0] ) && isdigit( (unsigned char)p[1] )
+			  && ( p[2] == '.' ) && isdigit( (unsigned char)p[3] ) )
+#endif
 				return p;
 		}
 

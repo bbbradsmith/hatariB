@@ -321,7 +321,11 @@ out2:
 			bitval[bitc] = bitval[bitC];
 
 		pos = 0;
+#ifndef __LIBRETRO__
 		while (opcstr[pos] && !_istspace(opcstr[pos])) {
+#else // suppress -Wchar-subscripts
+		while (opcstr[pos] && !_istspace((unsigned char)opcstr[pos])) {
+#endif
 			if (opcstr[pos] == '.') {
 				pos++;
 				unsized = 0;
