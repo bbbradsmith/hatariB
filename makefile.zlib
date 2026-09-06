@@ -1,5 +1,8 @@
 ZLIB_BUILD ?= zlib_build
 ZLIB_PREFIX = $(PWD)/$(ZLIB_BUILD)
+CC ?= cc
+AR ?= ar
+RANLIB ?= ranlib
 CFLAGS += -fPIC
 # -fPIC needed to link into a shared object
 
@@ -9,9 +12,14 @@ submodules:
 	git submodule init
 	git submodule update --depth 1
 
+# zlib's configure takes its compiler from the environment. It has to be the
+# same one the core is built with, or the static library it leaves behind is
+# for the host and the core does not link (android, and any other target
+# whose compiler is not the default cc).
 $(ZLIB_BUILD)/lib/libz.a: submodules
 	mkdir -p $(ZLIB_BUILD)
-	cd $(ZLIB_BUILD) && export CFLAGS="$(CFLAGS)" && ../zlib/configure --static --prefix=$(ZLIB_PREFIX)
+	cd $(ZLIB_BUILD) && export CFLAGS="$(CFLAGS)" CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" \
+		&& ../zlib/configure --static --prefix=$(ZLIB_PREFIX)
 	cd $(ZLIB_BUILD) && $(MAKE) static
 	cd $(ZLIB_BUILD) && $(MAKE) install
 

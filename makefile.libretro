@@ -7,6 +7,13 @@ MAKEACTION ?= core
 MAKEEXTRA ?=
 CMAKEFLAGS_EXTRA ?=
 
+# The android-make template hands us NDK_ROOT and ANDROID_NDK_LLVM but no
+# compiler. cmake gets one from the NDK toolchain file; the core's own
+# objects and the final link do not, and would fall back to the host gcc.
+ANDROID_NDK_LLVM ?= $(NDK_ROOT)/toolchains/llvm/prebuilt/linux-x86_64
+# fseeko/ftello, used by hatari's avi_record.c, arrive in API 24.
+ANDROID_API ?= 24
+
 ifeq ($(platform),win64)                        # windows-x64-mingw
 	CMAKEFLAGS_EXTRA := -DCMAKE_SYSTEM_NAME=Windows
 	MAKEEXTRA := SO_SUFFIX=.dll
@@ -22,17 +29,33 @@ ifneq ($(ARCH),arm)                             # osx-x64
 else                                            # osx-arm64
 endif
 else ifeq ($(ANDROID_PLATFORM),android-arm)     # android-make: android-arm
-	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(NDK_ROOT)/build/cmake/android.toolchain.cmake
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(NDK_ROOT)/build/cmake/android.toolchain.cmake \
+		-DANDROID_ABI=armeabi-v7a -DANDROID_PLATFORM=android-$(ANDROID_API)
 	COREFILE := $(CORENAME)_libretro_android
+	MAKEEXTRA := CC="$(ANDROID_NDK_LLVM)/bin/clang --target=armv7a-linux-androideabi$(ANDROID_API)" \
+		AR=$(ANDROID_NDK_LLVM)/bin/llvm-ar \
+		RANLIB=$(ANDROID_NDK_LLVM)/bin/llvm-ranlib
 else ifeq ($(ANDROID_PLATFORM),android-arm64)   # android-make: android-arm64
-	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(NDK_ROOT)/build/cmake/android.toolchain.cmake
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(NDK_ROOT)/build/cmake/android.toolchain.cmake \
+		-DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-$(ANDROID_API)
 	COREFILE := $(CORENAME)_libretro_android
+	MAKEEXTRA := CC="$(ANDROID_NDK_LLVM)/bin/clang --target=aarch64-linux-android$(ANDROID_API)" \
+		AR=$(ANDROID_NDK_LLVM)/bin/llvm-ar \
+		RANLIB=$(ANDROID_NDK_LLVM)/bin/llvm-ranlib
 else ifeq ($(ANDROID_PLATFORM),android-x86)     # android-make: android-x86
-	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(NDK_ROOT)/build/cmake/android.toolchain.cmake
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(NDK_ROOT)/build/cmake/android.toolchain.cmake \
+		-DANDROID_ABI=x86 -DANDROID_PLATFORM=android-$(ANDROID_API)
 	COREFILE := $(CORENAME)_libretro_android
+	MAKEEXTRA := CC="$(ANDROID_NDK_LLVM)/bin/clang --target=i686-linux-android$(ANDROID_API)" \
+		AR=$(ANDROID_NDK_LLVM)/bin/llvm-ar \
+		RANLIB=$(ANDROID_NDK_LLVM)/bin/llvm-ranlib
 else ifeq ($(ANDROID_PLATFORM),android-x86_64)  # android-make: android-x86_64
-	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(NDK_ROOT)/build/cmake/android.toolchain.cmake
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(NDK_ROOT)/build/cmake/android.toolchain.cmake \
+		-DANDROID_ABI=x86_64 -DANDROID_PLATFORM=android-$(ANDROID_API)
 	COREFILE := $(CORENAME)_libretro_android
+	MAKEEXTRA := CC="$(ANDROID_NDK_LLVM)/bin/clang --target=x86_64-linux-android$(ANDROID_API)" \
+		AR=$(ANDROID_NDK_LLVM)/bin/llvm-ar \
+		RANLIB=$(ANDROID_NDK_LLVM)/bin/llvm-ranlib
 else ifeq ($(platform),ios-arm64)               # ios-arm64
 	COREFILE := $(CORENAME)_libretro_ios
 else ifeq ($(platform),ios9)                    # ios9
@@ -48,19 +71,19 @@ else ifeq ($(platform),psp1)                    # psp-static
 else ifeq ($(platform),vita)                    # vita-static
 	MAKEACTION := static
 else ifeq ($(platform),ctr)                     # ctr-static
-	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEKVITPRO)/cmake/3DS.cmake
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/3DS.cmake
 	MAKEACTION := static
 else ifeq ($(platform),ngc)                     # ngc-static
-	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEKVITPRO)/cmake/GameCube.cmake
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/GameCube.cmake
 	MAKEACTION := static
 else ifeq ($(platform),wii)                     # wii-static
-	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEKVITPRO)/cmake/Wii.cmake
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/Wii.cmake
 	MAKEACTION := static
 else ifeq ($(platform),wiiu)                    # wiiu-static
-	#CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEKVITPRO)/cmake/WiiU.cmake
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/WiiU.cmake
 	MAKEACTION := static
 else ifeq ($(platform),libnx)                   # libnx-static
-	#CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEKVITPRO)/cmake/NintendoSwitch.cmake
+	#CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/NintendoSwitch.cmake
 	MAKEACTION := static
 else ifeq ($(platform),emscripten)              # emscripten-static
 	MAKEACTION := static
@@ -77,5 +100,5 @@ MAKEARGS = $(MAKEACTION) \
 	CMAKEFLAGS_EXTRA="$(CMAKEFLAGS_EXTRA)"
 
 libretro:
-	$(MAKE) -f makefile zlib
+	$(MAKE) -f makefile zlib $(MAKEEXTRA)
 	$(MAKE) -f makefile $(MAKEARGS)
