@@ -394,11 +394,7 @@ uaecptr ShowEA_disp(uaecptr *pcp, uaecptr base, TCHAR *buffer, const TCHAR *name
 			base += disp;
 		} else if ((dp & 0x30) == 0x30) { // BD SIZE = 3 (LONG)
 			disp = get_ilong_debug(pc);
-#ifndef __LIBRETRO__
 			if (buffer) {
-#else // suppress -Wformat-overflow
-			if (p) {
-#endif
 				_stprintf(p, disasm_lc_hex(_T("$%08X,")), disp);
 				p += _tcslen(p);
 			}

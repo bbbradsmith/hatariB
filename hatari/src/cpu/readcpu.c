@@ -321,11 +321,7 @@ out2:
 			bitval[bitc] = bitval[bitC];
 
 		pos = 0;
-#ifndef __LIBRETRO__
 		while (opcstr[pos] && !_istspace(opcstr[pos])) {
-#else // suppress -Wchar-subscripts
-		while (opcstr[(int)pos] && !_istspace(opcstr[(int)pos])) {
-#endif
 			if (opcstr[pos] == '.') {
 				pos++;
 				unsized = 0;
@@ -361,11 +357,7 @@ out2:
 		mnemonic[mnp] = 0;
 
 		/* now, we have read the mnemonic and the size */
-#ifndef __LIBRETRO__
 		while (opcstr[pos] && _istspace(opcstr[pos]))
-#else // suppress -Wchar-subscripts
-		while (opcstr[(int)pos] && _istspace(opcstr[(int)pos]))
-#endif
 			pos++;
 
 		/* A goto a day keeps the D******a away. */
