@@ -78,9 +78,13 @@ else ifeq ($(platform),ngc)                     # ngc-static
 	MAKEACTION := static
 else ifeq ($(platform),wii)                     # wii-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/Wii.cmake
+	# devkitPPC's gcc warns about hatari's own isspace()/isdigit() char
+	# subscripts and about one snprintf in the uae headers
+	MAKEEXTRA := WERROR=
 	MAKEACTION := static
 else ifeq ($(platform),wiiu)                    # wiiu-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/WiiU.cmake
+	MAKEEXTRA := WERROR=
 	MAKEACTION := static
 else ifeq ($(platform),libnx)                   # libnx-static
 	#CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/NintendoSwitch.cmake
