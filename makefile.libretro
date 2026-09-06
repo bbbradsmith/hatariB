@@ -58,19 +58,7 @@ else ifeq ($(platform),ios9)                    # ios9
 	COREFILE := $(CORENAME)_libretro_ios
 else ifeq ($(platform),tvos-arm64)              # tvos-arm64
 	COREFILE := $(CORENAME)_libretro_tvos
-else ifeq ($(platform),ps2)                     # ps2-static
-	MAKEACTION := static
-else ifeq ($(platform),psl1ght)                 # psl1ght-static
-	MAKEACTION := static
-else ifeq ($(platform),psp1)                    # psp-static
-	MAKEACTION := static
 else ifeq ($(platform),vita)                    # vita-static
-	MAKEACTION := static
-else ifeq ($(platform),ctr)                     # ctr-static
-	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/3DS.cmake
-	MAKEACTION := static
-else ifeq ($(platform),ngc)                     # ngc-static
-	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/GameCube.cmake
 	MAKEACTION := static
 else ifeq ($(platform),wii)                     # wii-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/Wii.cmake
@@ -83,9 +71,6 @@ else ifeq ($(platform),wiiu)                    # wiiu-static
 else ifeq ($(platform),libnx)                   # libnx-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/NintendoSwitch.cmake
 	MAKEACTION := static
-else ifeq ($(platform),emscripten)              # emscripten-static
-	MAKEACTION := static
-	CORESTATIC_SUFFIX := .bc
 endif
 
 .PHONY: default libretro

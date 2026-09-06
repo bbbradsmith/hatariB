@@ -6,8 +6,6 @@
 # These will fetch cmake 3.31.6 and place it on the path.
 #   windows-x64
 #   windows-i686
-#   ctr (3DS)
-#   ngc (GameCube)
 #   wii
 #
 # More info: https://github.com/bbbradsmith/hatariB/pull/81
@@ -70,29 +68,9 @@ include:
     file: '/ios9.yml'
 
   ################################## CONSOLES ################################
-  # PlayStation2
-  - project: 'libretro-infrastructure/ci-templates'
-    file: '/ps2-static.yml'
-    
-  # PlayStation3
-  - project: 'libretro-infrastructure/ci-templates'
-    file: '/psl1ght-static.yml'
-    
-  # PlayStation Portable
-  - project: 'libretro-infrastructure/ci-templates'
-    file: '/psp-static.yml'
-
   # PlayStation Vita
   - project: 'libretro-infrastructure/ci-templates'
     file: '/vita-static.yml'
-
-  # Nintendo 3DS
-  - project: 'libretro-infrastructure/ci-templates'
-    file: '/ctr-static.yml'
-
-  # Nintendo GameCube
-  - project: 'libretro-infrastructure/ci-templates'
-    file: '/ngc-static.yml'
 
   # Nintendo Wii
   - project: 'libretro-infrastructure/ci-templates'
@@ -111,10 +89,6 @@ include:
     file: '/tvos-arm64.yml'
 
   #################################### MISC ##################################
-  # Emscripten
-  - project: 'libretro-infrastructure/ci-templates'
-    file: '/emscripten-static.yml'
-
   # webOS 32-bit (LGTV)
   - project: 'libretro-infrastructure/ci-templates'
     file: '/webos-make.yml'
@@ -228,53 +202,11 @@ libretro-build-tvos-arm64:
     - .core-defs
 
 ################################### CONSOLES #################################
-# PlayStation Portable
-libretro-build-psp:
-  extends:
-    - .libretro-psp-static-retroarch-master
-    - .core-defs
-
 # PlayStation Vita
 libretro-build-vita:
   extends:
     - .libretro-vita-static-retroarch-master
     - .core-defs
-
-# PlayStation2
-libretro-build-ps2:
-  extends:
-    - .libretro-ps2-static-retroarch-master
-    - .core-defs
-    
-# PlayStation3
-libretro-build-psl1ght:
-  extends:
-    - .libretro-psl1ght-static-retroarch-master
-    - .core-defs
-
-# Nintendo 3DS
-libretro-build-ctr:
-  extends:
-    - .libretro-ctr-static-retroarch-master
-    - .core-defs
-  before_script:
-    - !reference [.libretro-ctr-static, before_script]
-    - |
-      CMAKE_VER=3.31.6
-      curl -sSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz" | tar -xz -C /tmp
-      export PATH="/tmp/cmake-${CMAKE_VER}-linux-x86_64/bin:$PATH"
-
-# Nintendo GameCube
-libretro-build-ngc:
-  extends:
-    - .libretro-ngc-static-retroarch-master
-    - .core-defs
-  before_script:
-    - !reference [.libretro-ngc-static, before_script]
-    - |
-      CMAKE_VER=3.31.6
-      curl -sSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz" | tar -xz -C /tmp
-      export PATH="/tmp/cmake-${CMAKE_VER}-linux-x86_64/bin:$PATH"
 
 # Nintendo Wii
 libretro-build-wii:
@@ -301,12 +233,6 @@ libretro-build-libnx-aarch64:
     - .core-defs
 
 #################################### MISC ##################################
-# Emscripten
-libretro-build-emscripten:
-  extends:
-    - .libretro-emscripten-static-retroarch-master
-    - .core-defs
-
 # webOS 32-bit
 libretro-build-webos-armv7a:
   extends:
