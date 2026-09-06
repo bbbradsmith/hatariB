@@ -8,9 +8,16 @@ CFLAGS += -fPIC
 
 default: $(ZLIB_BUILD)/lib/libz.a
 
+# The buildbot reuses one build directory for every job, and the console
+# images do not all run as the user that owns that checkout, so git cannot
+# write .git/modules there. Nothing needs writing when the submodule is
+# already in place - CI checks it out for us, see GIT_SUBMODULE_STRATEGY.
 submodules:
-	git submodule init
-	git submodule update --depth 1
+	@if [ -e zlib/configure ]; then \
+		echo "zlib submodule already checked out"; \
+	else \
+		git submodule init && git submodule update --depth 1; \
+	fi
 
 # zlib's configure takes its compiler from the environment. It has to be the
 # same one the core is built with, or the static library it leaves behind is
