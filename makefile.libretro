@@ -6,6 +6,7 @@ CORESTATIC_SUFFIX ?= .a
 MAKEACTION ?= core
 MAKEEXTRA ?=
 ZLIBEXTRA ?=
+CFLAGS ?=
 CMAKEFLAGS_EXTRA ?=
 
 ANDROID_NDK_LLVM ?= $(NDK_ROOT)/toolchains/llvm/prebuilt/linux-x86_64
@@ -70,6 +71,7 @@ else ifeq ($(platform),wii)                     # wii-static
 	MAKEACTION := static
 else ifeq ($(platform),wiiu)                    # wiiu-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/WiiU.cmake
+	# false positive errors in cpu/readcpu.c and cpu/disasm.c
 	CFLAGS += -Wno-format-overflow -Wno-char-subscripts
 	MAKEEXTRA := CFLAGS="$(CFLAGS)"
 	ZLIBEXTRA := WERROR=

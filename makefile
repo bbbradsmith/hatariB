@@ -38,6 +38,7 @@ ZLIB_LINK ?= $(ZLIB_LIB)
 
 CC ?= gcc
 AR ?= ar
+CFLAGS ?=
 CFLAGS += \
 	-O3 $(WERROR) -fPIC \
 	-D__LIBRETRO__ -DSHORTHASH=\"$(SHORTHASH)\" \
