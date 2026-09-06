@@ -9,7 +9,7 @@ ZLIBEXTRA ?=
 CMAKEFLAGS_EXTRA ?=
 
 ANDROID_NDK_LLVM ?= $(NDK_ROOT)/toolchains/llvm/prebuilt/linux-x86_64
-ANDROID_API ?= 24
+ANDROID_API ?= 21
 
 ifeq ($(platform),win64)                        # windows-x64-mingw
 	CMAKEFLAGS_EXTRA := -DCMAKE_SYSTEM_NAME=Windows
@@ -63,12 +63,13 @@ else ifeq ($(platform),vita)                    # vita-static
 	MAKEACTION := static
 else ifeq ($(platform),wii)                     # wii-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/Wii.cmake
-	MAKEXTRA := -Wno-format-overflow -Wno-char-subscripts
+	# false positive errors in cpu/readcpu.c and cpu/disasm.c
+	MAKEEXTRA := -Wno-format-overflow -Wno-char-subscripts
 	ZLIBEXTRA := WERROR=
 	MAKEACTION := static
 else ifeq ($(platform),wiiu)                    # wiiu-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/WiiU.cmake
-	MAKEXTRA := -Wno-format-overflow -Wno-char-subscripts
+	MAKEEXTRA := -Wno-format-overflow -Wno-char-subscripts
 	ZLIBEXTRA := WERROR=
 	MAKEACTION := static
 else ifeq ($(platform),libnx)                   # libnx-static
