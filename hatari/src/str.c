@@ -367,7 +367,8 @@ void Str_Init(void)
 #ifndef __LIBRETRO__
 	 setlocale(LC_ALL, "");
 #else
-	 setlocale(LC_CTYPE, "");
+	// interferes with libretro host, and only needed by debugcpu.c for parsing MemWrite command line, or printing memory dumps
+	// setlocale(LC_CTYPE, ""); may also be a valid alternative
 #endif
 #endif
 }
