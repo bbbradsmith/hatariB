@@ -1,5 +1,5 @@
 # Software
-display_name = "Atari - ST/STE/TT/Falcon (hatariB)"
+display_name = "Atari - ST/STE/TT/Falcon (hatariB - GitHub)"
 categories = "Emulator"
 authors = "Brad Smith|Hatari: Nicolas Pomarède et al."
 corename = "hatarib"
