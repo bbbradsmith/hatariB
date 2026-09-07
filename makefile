@@ -154,7 +154,7 @@ $(BD)/core/%.o: core/%.c hatarilib
 
 hatarilib: directories
 	(cd hatari/$(HBD) && export CFLAGS="$(CFLAGS)" && $(CMAKE) .. $(CMAKEFLAGS))
-	(cd hatari/$(HBD) && export CFLAGS="$(CFLAGS)" && $(CMAKE) --build . $(CMAKEBUILDFLAGS))
+	(cd hatari/$(HBD) && $(CMAKE) --build . $(CMAKEBUILDFLAGS))
 
 clean:
 	rm -f -r $(BD)
