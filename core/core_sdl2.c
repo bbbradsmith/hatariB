@@ -57,6 +57,10 @@ int SDL_FillRect(SDL_Surface *dst, const SDL_Rect *rect, Uint32 color)
         w = rect->w;
         h = rect->h;
     }
+    if (x < 0) { w += x; x = 0; }
+    if (y < 0) { h += y; y = 0; }
+    if ((x+w) > dst->w) { w -= ((x+w) - dst->w); }
+    if ((y+h) > dst->h) { h -= ((y+h) - dst->h); }
     if (w < 1 || h < 1) return 0;
     Uint32* p = ((Uint32*)dst->pixels) + (y * pitch) + x;
     for (; h; --h)
@@ -90,6 +94,10 @@ int SDL_UpperBlit(SDL_Surface *src, const SDL_Rect *srcrect, SDL_Surface *dst, S
         dx = dstrect->x;
         dy = dstrect->y;
     }
+    if (dx < 0) { sw += dx; dx = 0; }
+    if (dy < 0) { sh += dy; dy = 0; }
+    if ((dx+sw) > dst->w) { sw -= ((dx+sw) - dst->w); }
+    if ((dy+sh) > dst->h) { sh -= ((dy+sh) - dst->h); }
     if (sw < 1 || sh < 1) return 0;
 
     // dst is always assumed 32-bpp
