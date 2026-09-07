@@ -364,7 +364,11 @@ void Str_Init(void)
 	 * only for Windows, as Unix based OSes (are
 	 * assumed to) use UTF-8 based locales nowadays.
 	 */
-	setlocale(LC_ALL, "");
+#ifndef __LIBRETRO__
+	 setlocale(LC_ALL, "");
+#else
+	 setlocale(LC_CTYPE, "");
+#endif
 #endif
 }
 
