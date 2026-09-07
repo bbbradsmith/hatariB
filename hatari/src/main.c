@@ -92,6 +92,9 @@ static bool bAccurateDelays;              /* Host system has an accurate SDL_Del
 static bool bIgnoreNextMouseMotion = false;  /* Next mouse motion will be ignored (needed after SDL_WarpMouse) */
 static bool bAllowMouseWarp = true;       /* disabled when Hatari window loses mouse pointer / key focus */
 
+#ifndef __LIBRETRO__
+    #error __LIBRETRO__ must be defined, verify CFLAGS
+#endif
 
 /*-----------------------------------------------------------------------*/
 /**

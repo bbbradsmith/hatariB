@@ -172,6 +172,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Disable symbolic mapping sets for TOS region and use the old map. HatariB implements regional keyboards in its own code.
 * **hatari/src/main.c**
 * **hatari/src/includes/main.h**
+  * `__LIBRETRO__` canary to ensure the flags are set.
   * Disable `SDL_GetTicks` timer.
   * Disable SDL mouse state changes.
   * Disable dialog box prompt for quit.
