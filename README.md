@@ -297,6 +297,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
 
 ## History
 
+* hatariB v0.6 - Unstable pre-release.
 * [hatariB v0.5](https://github.com/bbbradsmith/hatariB/releases/tag/0.5) - 2026-09-02
   * Fixed on-screen keyboard corruption/crash when status bar is hidden. ([74](https://github.com/bbbradsmith/hatariB/issues/74))
   * Remove SDL2 dependency with custom re-implementation of needed functions.
