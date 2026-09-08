@@ -63,13 +63,10 @@ else ifeq ($(platform),tvos-arm64)              # tvos-arm64
 else ifeq ($(platform),vita)                    # vita-static
 	MAKEACTION := static
 else ifeq ($(platform),wii)                     # wii-static
-	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/Wii.cmake
 	MAKEACTION := static
 else ifeq ($(platform),wiiu)                    # wiiu-static
-	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/WiiU.cmake
 	MAKEACTION := static
 else ifeq ($(platform),libnx)                   # libnx-static
-	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/NintendoSwitch.cmake
 	MAKEACTION := static
 endif
 
