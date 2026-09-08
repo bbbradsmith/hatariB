@@ -61,12 +61,15 @@ else ifeq ($(platform),ios9)                    # ios9
 else ifeq ($(platform),tvos-arm64)              # tvos-arm64
 	COREFILE := $(CORENAME)_libretro_tvos
 else ifeq ($(platform),vita)                    # vita-static
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(VITASDK)/share/vita.toolchain.cmake
 	MAKEACTION := static
 else ifeq ($(platform),wii)                     # wii-static
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/wii.cmake
 	MAKEACTION := static
 else ifeq ($(platform),wiiu)                    # wiiu-static
 	MAKEACTION := static
 else ifeq ($(platform),libnx)                   # libnx-static
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/Switch.cmake
 	MAKEACTION := static
 endif
 
