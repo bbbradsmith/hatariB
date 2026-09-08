@@ -21,6 +21,8 @@ This is intended as an alternative or replacement for the older [Libretro Hatari
 
 **Bugs and Issues:** If you notice any problems or have feedback, please [create a Github issue](https://github.com/bbbradsmith/hatariB/issues). **Before creating an issue, please note:** except for user interface problems, issues are often caused by the underlying emulator Hatari. It would help *a lot* if you could first **test the problem in [Hatari's stand-alone emulator](https://hatari-emu.org/download.html)** to see if the problem exists there. If Hatari does the same thing as hatariB, the bug report should instead go directly to the [Hatari](https://hatari-emu.org/) project. [Atari-Forum's Hatari subforum](https://www.atari-forum.com/viewforum.php?f=51) might be the best place to ask about issues with Hatari.
 
+Also, check the [Hatari Compatibility List](https://www.hatari-emu.org/doc/compatibility.html). Some games require specific settings, or are known not to work perfectly with Hatari, so if you're having a problem with a game it might be mentioned there.
+
 **Emulator:** [Hatari 2.6.1](https://framagit.org/hatari/hatari/-/releases/v2.6.1) 2025-08-15
 
 **Development notes:** [DEVELOP.md](DEVELOP.md)
