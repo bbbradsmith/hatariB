@@ -170,6 +170,8 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Disable using Num Lock to remap Numpad. (ST has no Num Lock. Numpad is Numpad.)
   * Disable use of `SDL_GetKeyFromName`/`SDL_GetKeyName`, only needed by configuration GUI.
   * Disable symbolic mapping sets for TOS region and use the old map. HatariB implements regional keyboards in its own code.
+* **hatari/src/lilo.c**
+  * Suppress warning case for signed-unsigned integer comparison.
 * **hatari/src/main.c**
 * **hatari/src/includes/main.h**
   * `__LIBRETRO__` canary to ensure the flags are set.

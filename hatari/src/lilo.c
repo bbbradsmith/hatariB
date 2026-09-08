@@ -470,7 +470,11 @@ static bool setup_kernel(void *kernel, Elf32_Addr *kernel_offset,
 	/* calculate the total required amount of memory */
 	Dprintf(("LILO: kexec_elf->e_phnum = 0x%08x\n", be_swap16(kexec_elf->e_phnum)));
 
+#ifndef __LIBRETRO__
 	for (i = 0; i < be_swap16(kexec_elf->e_phnum); i++) {
+#else
+	for (i = 0; i < (int)be_swap16(kexec_elf->e_phnum); i++) { // suppress sign-compare warning
+#endif
 		Dprintf(("LILO: kernel_phdrs[%d].p_vaddr  = 0x%08x\n", i, be_swap32(kernel_phdrs[i].p_vaddr)));
 		Dprintf(("LILO: kernel_phdrs[%d].p_offset = 0x%08x\n", i, be_swap32(kernel_phdrs[i].p_offset)));
 		Dprintf(("LILO: kernel_phdrs[%d].p_filesz = 0x%08x\n", i, be_swap32(kernel_phdrs[i].p_filesz)));
