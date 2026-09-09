@@ -62,6 +62,8 @@ else ifeq ($(platform),tvos-arm64)              # tvos-arm64
 	COREFILE := $(CORENAME)_libretro_tvos
 else ifeq ($(platform),vita)                    # vita-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(VITASDK)/share/vita.toolchain.cmake
+	# readcpu.c opcstr[pos] (char-subscripts)
+	CFLAGS_EXTRA := -Wno-char-subscripts
 	MAKEACTION := static
 else ifeq ($(platform),wii)                     # wii-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/wii.cmake
@@ -70,13 +72,17 @@ else ifeq ($(platform),wiiu)                    # wiiu-static
 	# libretro WiiU does not appear to have a toolchain file, settings from libretro-wiiu-static-cmake
 	CMAKEFLAGS_EXTRA :=  -DCMAKE_SYSTEM_PROCESSOR=powerpc -DCMAKE_SYSTEM_NAME=Generic \
 		-DCMAKE_CROSSCOMPILING=ON -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY -DCMAKE_POSITION_INDEPENDENT_CODE=OFF
-	CFLAGS_EXTRA := -mcpu=750 -meabi -mhard-float
+	# readcpu.c opcstr[pos] (char-subscripts)
+	CFLAGS_EXTRA := -mcpu=750 -meabi -mhard-float \
+		-Wno-char-subscripts
 	MAKE_EXTRA := CC="${DEVKITPPC}/bin/powerpc-eabi-gcc" \
 		AR="${DEVKITPPC}/bin/powerpc-eabi-ar" \
 		RANLIB="${DEVKITPPC}/bin/powerpc-eabi-ranlib"
 	MAKEACTION := static
 else ifeq ($(platform),libnx)                   # libnx-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/Switch.cmake
+	# readcpu.c opcstr[pos] (char-subscripts)
+	CFLAGS_EXTRA := -Wno-char-subscripts
 	MAKEACTION := static
 endif
 
