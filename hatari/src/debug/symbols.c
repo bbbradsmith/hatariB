@@ -54,6 +54,12 @@ const char Symbols_fileid[] = "Hatari symbols.c";
 #define MAX_SYM_SIZE 1024
 #define MAX_SYM_SIZE_S "1024"
 
+#ifdef __LIBRETRO__
+#ifndef PATH_MAX
+#define PATH_MAX 256
+#endif
+#endif
+
 /* TODO: add symbol name/address file names to configuration? */
 static symbol_list_t *CpuSymbolsList;
 static symbol_list_t *DspSymbolsList;

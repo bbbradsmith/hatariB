@@ -284,6 +284,8 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Disable log to stderr.
   * Redirect alert dialogs instead to a Libretro onscreen notification.
   * Send trace logs to Libretro log.
+* **hatari/src/debug/symbols.c**
+  * Add fallback definition for 'PATH_MAX'.
 * **hatari/src/falcon/crossbar.c**
   * Removed `Crossbar_Recalculate_Clocks_Cycles()` from savestate restore because it seemed to be unnecessary and caused state divergence.
 * **hatari/src/falcon/microphone.c**
