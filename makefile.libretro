@@ -67,6 +67,8 @@ else ifeq ($(platform),vita)                    # vita-static
 	MAKEACTION := static
 else ifeq ($(platform),wii)                     # wii-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/wii.cmake
+	# readcpu.c opcstr[pos] (char-subscripts)
+	CFLAGS_EXTRA := -Wno-char-subscripts
 	MAKE_EXTRA := CC="${DEVKITPPC}/bin/powerpc-eabi-gcc" \
 		AR="${DEVKITPPC}/bin/powerpc-eabi-ar" \
 		RANLIB="${DEVKITPPC}/bin/powerpc-eabi-ranlib"
