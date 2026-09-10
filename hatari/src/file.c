@@ -741,6 +741,7 @@ FILE *File_Close(FILE *fp)
 }
 
 
+#ifndef __LIBRETRO__
 /*-----------------------------------------------------------------------*/
 /**
  * Internal lock function for File_Lock() / File_UnLock().
@@ -789,6 +790,7 @@ void File_UnLock(FILE *fp)
 {
 	lock_operation(fp, DO_UNLOCK);
 }
+#endif
 
 
 /*-----------------------------------------------------------------------*/

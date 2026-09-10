@@ -8,8 +8,13 @@
 #   windows-i686
 #   wii
 #
-# More info: https://github.com/bbbradsmith/hatariB/pull/81
-# More info: https://github.com/bbbradsmith/hatariB/pull/84
+# Wii's cmake toolchain also requires $DEVKITPPC/bin on path:
+#   https://git.libretro.com/libretro-infrastructure/ci-templates/-/blob/master/wii-static-cmake.yml
+#
+# More info:
+#   https://github.com/bbbradsmith/hatariB/pull/81
+#   https://github.com/bbbradsmith/hatariB/pull/84
+#   https://github.com/bbbradsmith/hatariB/pull/86
 
 ##############################################################################
 ################################# BOILERPLATE ################################
@@ -219,6 +224,7 @@ libretro-build-wii:
       CMAKE_VER=3.31.6
       curl -sSL "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VER}/cmake-${CMAKE_VER}-linux-x86_64.tar.gz" | tar -xz -C /tmp
       export PATH="/tmp/cmake-${CMAKE_VER}-linux-x86_64/bin:$PATH"
+      export PATH=$PATH:$DEVKITPPC/bin
 
 # Nintendo WiiU
 libretro-build-wiiu:
