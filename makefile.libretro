@@ -64,9 +64,24 @@ else ifeq ($(platform),vita)                    # vita-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(VITASDK)/share/vita.toolchain.cmake
 	# readcpu.c opcstr[pos] (char-subscripts)
 	CFLAGS_EXTRA := -Wno-char-subscripts
+	# The toolchain file only reaches the CMake half of the build; the core's
+	# own objects and zlib go through this makefile, and without a compiler
+	# they come out x86 - which the link only notices as "file format not
+	# recognized" when RetroArch pulls the archive in.
+	MAKE_EXTRA := CC="$(VITASDK)/bin/arm-vita-eabi-gcc" \
+		AR="$(VITASDK)/bin/arm-vita-eabi-ar" \
+		RANLIB="$(VITASDK)/bin/arm-vita-eabi-ranlib"
 	MAKEACTION := static
 else ifeq ($(platform),wii)                     # wii-static
-	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/wii.cmake
+	# -DHAVE_FLOCK= for the same reason as wiiu below: newlib has no flock,
+	# but a toolchain that cannot link a plain test executable leaves CMake
+	# checking the declaration only, and hatari's file.c then calls it.
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/wii.cmake -DHAVE_FLOCK=
+	# That toolchain file names the compiler without a path, so CMake's own
+	# compiler check fails ("is not a full path and was not found in the PATH")
+	# unless devkitPPC's bin is on PATH. Passing CC below is not enough: the
+	# toolchain file is read again for every check and sets its own value.
+	export PATH := $(DEVKITPPC)/bin:$(PATH)
 	# readcpu.c opcstr[pos] (char-subscripts)
 	CFLAGS_EXTRA := -Wno-char-subscripts
 	MAKE_EXTRA := CC="${DEVKITPPC}/bin/powerpc-eabi-gcc" \
@@ -76,7 +91,12 @@ else ifeq ($(platform),wii)                     # wii-static
 else ifeq ($(platform),wiiu)                    # wiiu-static
 	# libretro WiiU does not appear to have a toolchain file, settings from libretro-wiiu-static-cmake
 	CMAKEFLAGS_EXTRA :=  -DCMAKE_SYSTEM_PROCESSOR=powerpc -DCMAKE_SYSTEM_NAME=Generic \
-		-DCMAKE_CROSSCOMPILING=ON -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY -DCMAKE_POSITION_INDEPENDENT_CODE=OFF
+		-DCMAKE_CROSSCOMPILING=ON -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY -DCMAKE_POSITION_INDEPENDENT_CODE=OFF \
+		-DHAVE_FLOCK=
+	# TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY means CMake's feature checks
+	# compile but never link, so check_symbol_exists(flock) finds newlib's
+	# declaration and says yes; hatari's file.c then calls a function that is
+	# not in the library, and RetroArch's link is where it surfaces.
 	# readcpu.c opcstr[pos] (char-subscripts)
 	CFLAGS_EXTRA := -mcpu=750 -meabi -mhard-float \
 		-Wno-char-subscripts
@@ -88,6 +108,12 @@ else ifeq ($(platform),libnx)                   # libnx-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/Switch.cmake
 	# readcpu.c opcstr[pos] (char-subscripts)
 	CFLAGS_EXTRA := -Wno-char-subscripts
+	# As with vita: the toolchain file covers the CMake half only, so name the
+	# compiler for the core's own objects and for zlib as well, or the archive
+	# comes out x86 and the link says "Relocations in generic ELF (EM: 62)".
+	MAKE_EXTRA := CC="$(DEVKITPRO)/devkitA64/bin/aarch64-none-elf-gcc" \
+		AR="$(DEVKITPRO)/devkitA64/bin/aarch64-none-elf-ar" \
+		RANLIB="$(DEVKITPRO)/devkitA64/bin/aarch64-none-elf-ranlib"
 	MAKEACTION := static
 endif
 
