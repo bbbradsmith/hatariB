@@ -267,6 +267,8 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * `PendingCyclesOver` unread variable warning.
 * **hatari/src/zip.c**
   * Disable use of `unzOpen` which was modified (see: unzip.c) and not needed by this core.
+* **hatari/src/cpu/fpp_native.c**
+  * Added option to disable `USE_HOST_ROUNDING`, not supported by libretro Wii build.
 * **hatari/src/cpu/hatari-glue.c**
   * Added `core_save_state`, `core_restore_state` and `core_flush_audio` to facilitate seamless savestates.
 * **hatari/src/cpu/newcpu.c**
