@@ -22,11 +22,7 @@
 #include "hatari-glue.h"
 #endif
 
-#if !defined(__LIBRETRO__) || !defined(__LIBRETRO__NO_HOST_ROUNDING)
 #define USE_HOST_ROUNDING 1
-#else
-#define USE_HOST_ROUNDING 0
-#endif
 #define SOFTFLOAT_CONVERSIONS 1
 
 #include "options_cpu.h"

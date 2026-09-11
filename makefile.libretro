@@ -72,8 +72,7 @@ else ifeq ($(platform),vita)                    # vita-static
 else ifeq ($(platform),wii)                     # wii-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/wii.cmake
 	# readcpu.c opcstr[pos] (char-subscripts)
-	# fenv.h seems to lack rounding defines (FE_TONEAREST, et.) used in fpp_native.c
-	CFLAGS_EXTRA := -D__LIBRETRO__NO_HOST_ROUNDING \
+	CFLAGS_EXTRA := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float \
 		-Wno-char-subscripts
 	MAKE_EXTRA := CC="powerpc-eabi-gcc" \
 		AR="powerpc-eabi-ar" \
