@@ -4,8 +4,9 @@ CFLAGS_EXTRA ?=
 CC ?= cc
 AR ?= ar
 RANLIB ?= ranlib
-CFLAGS += -fPIC $(CFLAGS_EXTRA)
 # -fPIC needed to link into a shared object
+FPIC_FLAG ?= -fPIC
+CFLAGS += $(FPIC_FLAG) $(CFLAGS_EXTRA)
 
 default: $(ZLIB_BUILD)/lib/libz.a
 

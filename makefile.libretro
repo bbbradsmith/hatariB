@@ -66,7 +66,8 @@ else ifeq ($(platform),vita)                    # vita-static
 	CFLAGS_EXTRA := -Wno-char-subscripts
 	MAKE_EXTRA := CC="$(VITASDK)/bin/arm-vita-eabi-gcc" \
 		AR="$(VITASDK)/bin/arm-vita-eabi-ar" \
-		RANLIB="$(VITASDK)/bin/arm-vita-eabi-ranlib"
+		RANLIB="$(VITASDK)/bin/arm-vita-eabi-ranlib" \
+		FPIC_FLAG=""
 	MAKEACTION := static
 else ifeq ($(platform),wii)                     # wii-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/wii.cmake
@@ -74,7 +75,8 @@ else ifeq ($(platform),wii)                     # wii-static
 	CFLAGS_EXTRA := -Wno-char-subscripts
 	MAKE_EXTRA := CC="powerpc-eabi-gcc" \
 		AR="powerpc-eabi-ar" \
-		RANLIB="powerpc-eabi-ranlib"
+		RANLIB="powerpc-eabi-ranlib" \
+		FPIC_FLAG=""
 	MAKEACTION := static
 else ifeq ($(platform),wiiu)                    # wiiu-static
 	# libretro WiiU does not appear to have a toolchain file, settings from libretro-wiiu-static-cmake
@@ -85,7 +87,8 @@ else ifeq ($(platform),wiiu)                    # wiiu-static
 		-Wno-char-subscripts
 	MAKE_EXTRA := CC="${DEVKITPPC}/bin/powerpc-eabi-gcc" \
 		AR="${DEVKITPPC}/bin/powerpc-eabi-ar" \
-		RANLIB="${DEVKITPPC}/bin/powerpc-eabi-ranlib"
+		RANLIB="${DEVKITPPC}/bin/powerpc-eabi-ranlib" \
+		FPIC_FLAG=""
 	MAKEACTION := static
 else ifeq ($(platform),libnx)                   # libnx-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/Switch.cmake
@@ -93,7 +96,8 @@ else ifeq ($(platform),libnx)                   # libnx-static
 	CFLAGS_EXTRA := -Wno-char-subscripts
 	MAKE_EXTRA := CC="$(DEVKITPRO)/devkitA64/bin/aarch64-none-elf-gcc" \
 		AR="$(DEVKITPRO)/devkitA64/bin/aarch64-none-elf-ar" \
-		RANLIB="$(DEVKITPRO)/devkitA64/bin/aarch64-none-elf-ranlib"
+		RANLIB="$(DEVKITPRO)/devkitA64/bin/aarch64-none-elf-ranlib" \
+		FPIC_FLAG=""
 	MAKEACTION := static
 endif
 

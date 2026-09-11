@@ -15,6 +15,7 @@ CORESTATIC ?= $(COREDIR)/$(COREFILE).a
 SO_SUFFIX ?= auto
 CFLAGS_EXTRA ?=
 CMAKEFLAGS_EXTRA ?=
+FPIC_FLAG ?= -fPIC
 
 # enables debug symbols, CPU trace logging
 DEBUG ?= 0
@@ -40,7 +41,7 @@ ZLIB_LINK ?= $(ZLIB_LIB)
 CC ?= gcc
 AR ?= ar
 CFLAGS += \
-	-O3 $(WERROR) -fPIC \
+	-O3 $(WERROR) $(FPIC_FLAG) \
 	-D__LIBRETRO__ -DSHORTHASH=\"$(SHORTHASH)\" \
 	-Ihatari/$(HBD) -I$(SDL2_INCLUDE) -I$(ZLIB_INCLUDE) \
 	$(CFLAGS_EXTRA)
