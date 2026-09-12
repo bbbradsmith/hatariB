@@ -53,7 +53,7 @@ manual_configure: zlib/configure
 		&& ../zlib/configure --static --prefix=$(ZLIB_PREFIX)
 
 $(ZLIB_BUILD)/%.o: zlib/%.c manual_configure
-	$(CC) -o $@ $(CFLAGS) -I$(ZLIB_BUILD)/ -include zconf.h -c $<
+	$(CC) $(CFLAGS) -I$(ZLIB_BUILD)/ -include zconf.h -c -o $@ $<
 
 manual: $(MANUAL_OBJECTS)
 	cd $(ZLIB_BUILD) && $(MAKE) static
