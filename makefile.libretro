@@ -104,7 +104,7 @@ else ifeq ($(platform),libnx)                   # libnx-static
 	MAKE_EXTRA := CC="$(DEVKITPRO)/devkitA64/bin/aarch64-none-elf-gcc" \
 		AR="$(DEVKITPRO)/devkitA64/bin/aarch64-none-elf-ar" \
 		RANLIB="$(DEVKITPRO)/devkitA64/bin/aarch64-none-elf-ranlib" \
-		FPIC_FLAG=""
+		FPIC_FLAG=-fPIE
 	MAKE_ACTION := static
 	ZLIB_MAKE_ACTION := manual
 endif
