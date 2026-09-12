@@ -3,9 +3,10 @@ platform ?= invalid
 COREFILE ?= $(CORENAME)_libretro
 CORESTATIC ?= $(CORENAME)_libretro_$(platform)
 CORESTATIC_SUFFIX ?= .a
-MAKEACTION ?= core
+MAKE_ACTION ?= core
 MAKE_EXTRA ?=
 ZLIB_EXTRA ?=
+ZLIB_MAKE_ACTION ?= default
 CFLAGS_EXTRA ?=
 CMAKEFLAGS_EXTRA ?=
 
@@ -68,7 +69,8 @@ else ifeq ($(platform),vita)                    # vita-static
 		AR="$(VITASDK)/bin/arm-vita-eabi-ar" \
 		RANLIB="$(VITASDK)/bin/arm-vita-eabi-ranlib" \
 		FPIC_FLAG=""
-	MAKEACTION := static
+	MAKE_ACTION := static
+	ZLIB_MAKE_ACTION := manual
 else ifeq ($(platform),wii)                     # wii-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/wii.cmake
 	# readcpu.c opcstr[pos] (char-subscripts)
@@ -78,7 +80,8 @@ else ifeq ($(platform),wii)                     # wii-static
 		AR="powerpc-eabi-ar" \
 		RANLIB="powerpc-eabi-ranlib" \
 		FPIC_FLAG=""
-	MAKEACTION := static
+	MAKE_ACTION := static
+	ZLIB_MAKE_ACTION := manual
 else ifeq ($(platform),wiiu)                    # wiiu-static
 	# libretro WiiU does not appear to have a toolchain file, settings from libretro-wiiu-static-cmake
 	CMAKEFLAGS_EXTRA :=  -DCMAKE_SYSTEM_PROCESSOR=powerpc -DCMAKE_SYSTEM_NAME=Generic \
@@ -90,7 +93,8 @@ else ifeq ($(platform),wiiu)                    # wiiu-static
 		AR="${DEVKITPPC}/bin/powerpc-eabi-ar" \
 		RANLIB="${DEVKITPPC}/bin/powerpc-eabi-ranlib" \
 		FPIC_FLAG=""
-	MAKEACTION := static
+	MAKE_ACTION := static
+	ZLIB_MAKE_ACTION := manual
 else ifeq ($(platform),libnx)                   # libnx-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/Switch.cmake
 	# readcpu.c opcstr[pos] (char-subscripts)
@@ -99,19 +103,26 @@ else ifeq ($(platform),libnx)                   # libnx-static
 		AR="$(DEVKITPRO)/devkitA64/bin/aarch64-none-elf-ar" \
 		RANLIB="$(DEVKITPRO)/devkitA64/bin/aarch64-none-elf-ranlib" \
 		FPIC_FLAG=""
-	MAKEACTION := static
+	MAKE_ACTION := static
+	ZLIB_MAKE_ACTION := manual
 endif
 
 .PHONY: default libretro
 
 default: libretro
 
-MAKEARGS = $(MAKEACTION) \
+ZLIB_ARGS = $(ZLIB_MAKE_ACTION) \
+	$(MAKE_EXTRA) \
+	CFLAGS_EXTRA="$(CFLAGS_EXTRA)" \
+	$(ZLIB_EXTRA) \
+	ZLIB_CONFIGURE_EXTRA="$(ZLIB_CONFIGURE_EXTRA)"
+
+MAKE_ARGS = $(MAKE_ACTION) \
 	COREFILE=$(COREFILE) COREDIR=. CORESTATIC=$(CORESTATIC)$(CORESTATIC_SUFFIX) \
 	$(MAKE_EXTRA) \
 	CFLAGS_EXTRA="$(CFLAGS_EXTRA)" \
 	CMAKEFLAGS_EXTRA="$(CMAKEFLAGS_EXTRA)"
 
 libretro:
-	$(MAKE) -f makefile zlib $(MAKE_EXTRA) CFLAGS_EXTRA="$(CFLAGS_EXTRA)" $(ZLIB_EXTRA)
-	$(MAKE) -f makefile $(MAKEARGS)
+	$(MAKE) -f makefile.zlib $(ZLIB_ARGS)
+	$(MAKE) -f makefile $(MAKE_ARGS)

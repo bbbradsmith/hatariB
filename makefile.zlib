@@ -6,9 +6,14 @@ AR ?= ar
 RANLIB ?= ranlib
 # -fPIC needed to link into a shared object
 FPIC_FLAG ?= -fPIC
-CFLAGS += $(FPIC_FLAG) $(CFLAGS_EXTRA)
+CFLAGS += -O3 $(FPIC_FLAG) $(CFLAGS_EXTRA)
 
 default: $(ZLIB_BUILD)/lib/libz.a
+
+phony: clean manual manual_configure
+
+clean:
+	rm -f -r $(ZLIB_BUILD)
 
 zlib/configure:
 	git submodule init
@@ -21,5 +26,35 @@ $(ZLIB_BUILD)/lib/libz.a: zlib/configure
 	cd $(ZLIB_BUILD) && $(MAKE) static
 	cd $(ZLIB_BUILD) && $(MAKE) install
 
-clean:
-	rm -f -r $(ZLIB_BUILD)
+# Manual static build forces CFLAGS as desired
+# (seems to be the only way to drop -fPIC)
+
+MANUAL_SOURCES = \
+	zlib/adler32.c \
+	zlib/compress.c \
+	zlib/crc32.c \
+	zlib/deflate.c \
+	zlib/gzclose.c \
+	zlib/gzlib.c \
+	zlib/gzread.c \
+	zlib/gzwrite.c \
+	zlib/infback.c \
+	zlib/inffast.c \
+	zlib/inflate.c \
+	zlib/inftrees.c \
+	zlib/trees.c \
+	zlib/uncompr.c \
+	zlib/zutil.c
+MANUAL_OBJECTS = $(subst zlib/,$(ZLIB_BUILD)/,$(MANUAL_SOURCES:%.c=%.o))
+
+manual_configure: zlib/configure
+	mkdir -p $(ZLIB_BUILD)
+	cd $(ZLIB_BUILD) && export CFLAGS="$(CFLAGS)" CC="$(CC)" AR="$(AR)" RANLIB="$(RANLIB)" \
+		&& ../zlib/configure --static --prefix=$(ZLIB_PREFIX)
+
+$(ZLIB_BUILD)/%.o: zlib/%.c manual_configure
+	$(CC) -o $@ $(CFLAGS) -I$(ZLIB_BUILD)/ -include zconf.h -c $<
+
+manual: $(MANUAL_OBJECTS)
+	cd $(ZLIB_BUILD) && $(MAKE) static
+	cd $(ZLIB_BUILD) && $(MAKE) install
