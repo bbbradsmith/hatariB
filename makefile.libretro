@@ -63,7 +63,7 @@ else ifeq ($(platform),tvos-arm64)              # tvos-arm64
 	COREFILE := $(CORENAME)_libretro_tvos
 else ifeq ($(platform),vita)                    # vita-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(VITASDK)/share/vita.toolchain.cmake
-	# readcpu.c opcstr[pos] (char-subscripts)
+	# readcpu.c opcstr[pos] (-Wno-char-subscripts)
 	CFLAGS_EXTRA := -Wno-char-subscripts
 	MAKE_EXTRA := CC="$(VITASDK)/bin/arm-vita-eabi-gcc" \
 		AR="$(VITASDK)/bin/arm-vita-eabi-ar" \
@@ -73,7 +73,7 @@ else ifeq ($(platform),vita)                    # vita-static
 	ZLIB_MAKE_ACTION := manual
 else ifeq ($(platform),wii)                     # wii-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/wii.cmake
-	# readcpu.c opcstr[pos] (char-subscripts)
+	# readcpu.c opcstr[pos] (-Wno-char-subscripts)
 	CFLAGS_EXTRA := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float \
 		-Wno-char-subscripts
 	MAKE_EXTRA := CC="powerpc-eabi-gcc" \
@@ -86,8 +86,10 @@ else ifeq ($(platform),wiiu)                    # wiiu-static
 	# libretro WiiU does not appear to have a toolchain file, settings from libretro-wiiu-static-cmake
 	CMAKEFLAGS_EXTRA :=  -DCMAKE_SYSTEM_PROCESSOR=powerpc -DCMAKE_SYSTEM_NAME=Generic \
 		-DCMAKE_CROSSCOMPILING=ON -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY -DCMAKE_POSITION_INDEPENDENT_CODE=OFF
-	# readcpu.c opcstr[pos] (char-subscripts)
+	# readcpu.c opcstr[pos] (-Wno-char-subscripts)
+	# fenv.h seems to lack rounding defines FE_TONEAREST, etc. used in fpp_native.c (-D__LIBRETRO__NO_HOST_ROUNDING)
 	CFLAGS_EXTRA := -mcpu=750 -meabi -mhard-float \
+		-D__LIBRETRO__NO_HOST_ROUNDING \
 		-Wno-char-subscripts
 	MAKE_EXTRA := CC="${DEVKITPPC}/bin/powerpc-eabi-gcc" \
 		AR="${DEVKITPPC}/bin/powerpc-eabi-ar" \
@@ -97,7 +99,7 @@ else ifeq ($(platform),wiiu)                    # wiiu-static
 	ZLIB_MAKE_ACTION := manual
 else ifeq ($(platform),libnx)                   # libnx-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/Switch.cmake
-	# readcpu.c opcstr[pos] (char-subscripts)
+	# readcpu.c opcstr[pos] (-Wno-char-subscripts)
 	CFLAGS_EXTRA := -Wno-char-subscripts
 	MAKE_EXTRA := CC="$(DEVKITPRO)/devkitA64/bin/aarch64-none-elf-gcc" \
 		AR="$(DEVKITPRO)/devkitA64/bin/aarch64-none-elf-ar" \
