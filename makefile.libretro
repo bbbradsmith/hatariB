@@ -71,6 +71,14 @@ else ifeq ($(platform),vita)                    # vita-static
 	MAKE_EXTRA := CC="$(VITASDK)/bin/arm-vita-eabi-gcc" \
 		AR="$(VITASDK)/bin/arm-vita-eabi-ar" \
 		RANLIB="$(VITASDK)/bin/arm-vita-eabi-ranlib"
+	# zlib's own makefile adds -fPIC because a shared core needs it. This core
+	# is static, and on the Vita -fPIC produces R_ARM_GOT_BREL relocations that
+	# vita-elf-create cannot represent: the core and hatari build, the archive
+	# is fine, and RetroArch's link then ends with "Invalid relocation type
+	# 25!". Nothing else here is built PIC - the CMake half has
+	# POSITION_INDEPENDENT_CODE=OFF and the core's own objects never had it -
+	# so zlib was the only source of them.
+	ZLIB_EXTRA := ZLIB_FPIC=
 	MAKEACTION := static
 else ifeq ($(platform),wii)                     # wii-static
 	# -DHAVE_FLOCK= for the same reason as wiiu below: newlib has no flock,
@@ -107,7 +115,15 @@ else ifeq ($(platform),wiiu)                    # wiiu-static
 else ifeq ($(platform),libnx)                   # libnx-static
 	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/cmake/Switch.cmake
 	# readcpu.c opcstr[pos] (char-subscripts)
-	CFLAGS_EXTRA := -Wno-char-subscripts
+	#
+	# -fPIE because everything on the Switch is: devkitA64's switch_rules puts
+	# it in ARCH for exactly this reason. Without it these objects carry
+	# absolute relocations, and RetroArch's final link - which is a PIE - has
+	# to place them in .text, which the linker refuses with "read-only segment
+	# has dynamic relocations". The core and hatari build cleanly and the
+	# archive is produced; only that last link fails. This reaches both halves,
+	# since CFLAGS_EXTRA is part of CMAKE_C_FLAGS as well.
+	CFLAGS_EXTRA := -Wno-char-subscripts -fPIE
 	# As with vita: the toolchain file covers the CMake half only, so name the
 	# compiler for the core's own objects and for zlib as well, or the archive
 	# comes out x86 and the link says "Relocations in generic ELF (EM: 62)".

@@ -22,7 +22,21 @@
 #include "hatari-glue.h"
 #endif
 
+/* The host rounding path calls fesetround with the four C99 rounding modes.
+ * devkitPPC's newlib has a <fenv.h> that declares fesetround but defines none
+ * of those modes, so on the Wii this does not compile:
+ *
+ *   error: 'FE_TONEAREST' undeclared (first use in this function)
+ *
+ * Deciding from the modes themselves rather than from a platform name keeps
+ * this right for any other libc with the same gap. The USE_HOST_ROUNDING == 0
+ * path below is complete - it rounds with floor, ceil and round instead. */
+#if defined(FE_TONEAREST) && defined(FE_TOWARDZERO) && \
+	defined(FE_DOWNWARD) && defined(FE_UPWARD)
 #define USE_HOST_ROUNDING 1
+#else
+#define USE_HOST_ROUNDING 0
+#endif
 #define SOFTFLOAT_CONVERSIONS 1
 
 #include "options_cpu.h"

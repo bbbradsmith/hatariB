@@ -4,8 +4,13 @@ CFLAGS_EXTRA ?=
 CC ?= cc
 AR ?= ar
 RANLIB ?= ranlib
-CFLAGS += -fPIC $(CFLAGS_EXTRA)
-# -fPIC needed to link into a shared object
+# -fPIC needed to link into a shared object. A static console core is not one:
+# it becomes a .a that RetroArch links into its own executable, and there -fPIC
+# is at best unnecessary and at worst fatal. On the Vita it is fatal - it makes
+# gcc emit R_ARM_GOT_BREL, and vita-elf-create refuses the result with
+# "Invalid relocation type 25!". Platforms that need it off set ZLIB_FPIC= .
+ZLIB_FPIC ?= -fPIC
+CFLAGS += $(ZLIB_FPIC) $(CFLAGS_EXTRA)
 
 default: $(ZLIB_BUILD)/lib/libz.a
 
