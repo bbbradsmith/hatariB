@@ -62,7 +62,8 @@ else ifeq ($(platform),ios9)                    # ios9
 else ifeq ($(platform),tvos-arm64)              # tvos-arm64
 	COREFILE := $(CORENAME)_libretro_tvos
 else ifeq ($(platform),vita)                    # vita-static
-	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(VITASDK)/share/vita.toolchain.cmake
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(VITASDK)/share/vita.toolchain.cmake \
+		-DCMAKE_POSITION_INDEPENDENT_CODE=OFF
 	# readcpu.c opcstr[pos] (-Wno-char-subscripts)
 	CFLAGS_EXTRA := -Wno-char-subscripts
 	MAKE_EXTRA := CC="$(VITASDK)/bin/arm-vita-eabi-gcc" \
@@ -72,7 +73,8 @@ else ifeq ($(platform),vita)                    # vita-static
 	MAKE_ACTION := static
 	ZLIB_MAKE_ACTION := manual
 else ifeq ($(platform),wii)                     # wii-static
-	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/wii.cmake
+	CMAKEFLAGS_EXTRA := -DCMAKE_TOOLCHAIN_FILE=$(DEVKITPRO)/wii.cmake \
+		-DCMAKE_POSITION_INDEPENDENT_CODE=OFF
 	# readcpu.c opcstr[pos] (-Wno-char-subscripts)
 	# fenv.h seems to lack rounding defines FE_TONEAREST, etc. used in fpp_native.c (-D__LIBRETRO__NO_HOST_ROUNDING)
 	CFLAGS_EXTRA := -DGEKKO -DHW_RVL -mrvl -mcpu=750 -meabi -mhard-float \
@@ -87,7 +89,8 @@ else ifeq ($(platform),wii)                     # wii-static
 else ifeq ($(platform),wiiu)                    # wiiu-static
 	# libretro WiiU does not appear to have a toolchain file, settings from libretro-wiiu-static-cmake
 	CMAKEFLAGS_EXTRA :=  -DCMAKE_SYSTEM_PROCESSOR=powerpc -DCMAKE_SYSTEM_NAME=Generic \
-		-DCMAKE_CROSSCOMPILING=ON -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY -DCMAKE_POSITION_INDEPENDENT_CODE=OFF
+		-DCMAKE_CROSSCOMPILING=ON -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
+		-DCMAKE_POSITION_INDEPENDENT_CODE=OFF
 	# readcpu.c opcstr[pos] (-Wno-char-subscripts)
 	CFLAGS_EXTRA := -mcpu=750 -meabi -mhard-float \
 		-Wno-char-subscripts
