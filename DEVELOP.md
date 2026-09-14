@@ -126,6 +126,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
   * Provide extern access to core file system in header.
   * Remove unused `File_Length` to prevent direct filesystem access.
   * Remove unused `lock_operation`/`File_Lock`/`FileUnLock` to prevent direct filesystem access and unsupported use of `flock`.
+  * Disabled `File_InputAvailable`, only needed by unsupported RS232 implementation.
 * **hatari/src/floppy.c**
 * **hatari/src/include/floppy.h**
   * `Floppy_IsWriteProtected` formerly checked the file on disk's write-protect state. This is not available from the Libretro virtual filesystem, so we cannot use this information. Assuming all disks are not write protected. Can use core options to write protect the drives manually, but we lack a per-disk-image setting. However, since we do not save back to the original floppy file, there is less of a need for this.

@@ -799,6 +799,7 @@ void File_UnLock(FILE *fp)
  */
 bool File_InputAvailable(FILE *fp)
 {
+#ifndef __LIBRETRO__
 #if HAVE_SELECT
 	fd_set rfds;
 	struct timeval tv;
@@ -821,6 +822,7 @@ bool File_InputAvailable(FILE *fp)
 
 	if (ret > 0)
 		return true;    /* Data available */
+#endif
 #endif
 
 	return false;
