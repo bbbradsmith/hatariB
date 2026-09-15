@@ -299,7 +299,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
 
 ## History
 
-* [hatariB v1.0](https://github.com/bbbradsmith/hatariB/releases/tag/0.5) - 2026-09-15
+* [hatariB v1.0](https://github.com/bbbradsmith/hatariB/releases/tag/1.0) - 2026-09-15
   * Fixed snow pause screen crash (introduced in v0.5 when removing SDL2).
   * Fixed `setlocale` problem breaking shader parsing on libretro builds. ([83](https://github.com/bbbradsmith/hatariB/issues/83#issuecomment-5574047800))
   * Libretro CI builds (Windows, MacOS, Linux, IOS, WebOS, Vita, Switch, Wii, WiiU).
