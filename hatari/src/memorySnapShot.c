@@ -443,6 +443,8 @@ void MemorySnapShot_Capture_Do(void)
 		ScreenConv_MemorySnapShot_Capture(true);
 	LIBRETRO_DEBUG_SNAPSHOT("SCC");
 		SCC_MemorySnapShot_Capture(true);
+	LIBRETRO_DEBUG_SNAPSHOT("SCU");
+		SCU_MemorySnapShot_Capture(true);
 
 	LIBRETRO_DEBUG_SNAPSHOT("End Marker");
 		/* end marker */
@@ -565,6 +567,8 @@ void MemorySnapShot_Restore_Do(void)
 		ScreenConv_MemorySnapShot_Capture(false);
 	LIBRETRO_DEBUG_SNAPSHOT("SCC");
 		SCC_MemorySnapShot_Capture(false);
+	LIBRETRO_DEBUG_SNAPSHOT("SCU");
+		SCU_MemorySnapShot_Capture(false);
 
 		/* version string check catches release-to-release
 		 * state changes, bCaptureError catches too short
