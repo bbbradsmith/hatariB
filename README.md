@@ -242,8 +242,8 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * The `#AUTO` and `#RES` M3U file features can only be used with TOS version 1.04 or higher, or EMUTOS.
   * Recommendations:
     * **TOS 1.00** for best compatibility with preserved Atari ST floppy disk games. There are a small minority of games that only run on 1.00, and an even smaller minority that don't run on 1.00. **European TOS** is generally recommended, since more games were released for 50hz regions than 60hz, though a lot of games will set the ST to their intended framerate anyway, so it usually doesn't matter.
-	* **TOS 1.04** for ST games from a hard disk image. 1.04 has much better support for hard disks, and games that were patched for hard disk would normally have any incompatibilities with later TOS patched at the same time.
-	* **EmuTOS 1024k** for productivity. It has built-in hard disk drivers, and a lot of features that make dealing with the desktop environment a little easier. It is compatible with most games, too, but not as much as the original TOS versions are.
+    * **TOS 1.04** for ST games from a hard disk image. 1.04 has much better support for hard disks, and games that were patched for hard disk would normally have any incompatibilities with later TOS patched at the same time.
+    * **EmuTOS 1024k** for productivity. It has built-in hard disk drivers, and a lot of features that make dealing with the desktop environment a little easier. It is compatible with most games, too, but not as much as the original TOS versions are.
 ### On-Screen Keyboard
   * An on-screen keyboard can be used to simulate using the Atari's keyboard from your gamepad.
   * Press *L1* to raise the on-screen keyboard, select a key with the d-pad, and press *L1* again to press the key. Press *R1* to close the keyboard.
