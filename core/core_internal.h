@@ -161,6 +161,7 @@ extern bool core_host_keyboard;
 extern bool core_host_mouse;
 extern int core_autofire;
 extern int core_stick_threshold;
+extern int core_mouse_host_speed;
 extern int core_mouse_speed;
 extern int core_mouse_dead;
 extern uint8_t retrok_down[RETROK_LAST];

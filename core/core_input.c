@@ -102,6 +102,7 @@ bool core_host_keyboard = true;
 bool core_host_mouse = true;
 int core_autofire = 6;
 int core_stick_threshold = 30; // percentage of stick to digital joystick direction threshold
+int core_mouse_host_speed = 6; // 1-20 speed factor
 int core_mouse_speed = 6; // 1-20 speed factor
 int core_mouse_dead = 5; // percentage of stick deadzone
 
@@ -863,8 +864,8 @@ void core_input_update(void)
 			int pm_y  = input_state_cb(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y);
 			vm_l |= pm_l;
 			vm_r |= pm_r;
-			vm_rx += pm_x * MOUSE_PRECISION;
-			vm_ry += pm_y * MOUSE_PRECISION;
+			vm_rx += (pm_x * core_mouse_host_speed * MOUSE_PRECISION) / 6;
+			vm_ry += (pm_y * core_mouse_host_speed * MOUSE_PRECISION) / 6;
 			#if CORE_DEBUG
 			if (core_input_debug && (pm_l || pm_r || pm_x || pm_y))
 				core_info_printf("M %c%c %3d %3d\n",

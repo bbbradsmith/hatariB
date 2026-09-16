@@ -348,6 +348,24 @@ static struct retro_core_option_v2_definition CORE_OPTION_DEF[] = {
 		}, "30"
 	},
 	{
+		"hatarib_mouse_host_speed", "Mouse Host Sensitivity", NULL,
+		"Speed of the mouse when controlled by the host device mouse.",
+		NULL, "input",
+		{
+			{"2","1"},
+			{"3","2"},
+			{"4","3"},
+			{"5","4"},
+			{"6","5"}, // 6 is neutral, using same curve as Mouse Stick Speed below
+			{"7","6"},
+			{"8","7"},
+			{"10","8"},
+			{"12","9"},
+			{"14","10"},
+			{NULL,NULL},
+		}, "6"
+	},
+	{
 		"hatarib_mouse_speed", "Mouse Stick Speed", NULL,
 		"Speed of the mouse when controlled by the analog sticks.",
 		NULL, "input",
@@ -1176,6 +1194,7 @@ void core_config_read_newparam()
 	CFG_INT("hatarib_host_keyboard") core_host_keyboard = vi;
 	CFG_INT("hatarib_autofire") core_autofire = vi;
 	CFG_INT("hatarib_stick_threshold") core_stick_threshold = vi;
+	CFG_INT("hatarib_mouse_host_speed") core_mouse_host_speed = vi;
 	CFG_INT("hatarib_mouse_speed") core_mouse_speed = vi;
 	CFG_INT("hatarib_mouse_deadzone") core_mouse_dead = vi;
 	CFG_INT("hatarib_osk_layout") core_osk_layout = vi;

@@ -301,6 +301,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
 * **hatariB v1.1** - Unstable pre-release.
   * Fixed MegaSTE savestate problem ([89](https://github.com/bbbradsmith/hatariB/issues/89)).
   * Fixed TT stavestate video resize problem ([63](https://github.com/bbbradsmith/hatariB/issues/63)).
+  * New *Mouse Host Sensitivity* option to adjust speed of host mouse.
 * [hatariB v1.0](https://github.com/bbbradsmith/hatariB/releases/tag/1.0) - 2026-09-15
   * Fixed snow pause screen crash (introduced in v0.5 when removing SDL2).
   * Fixed `setlocale` problem ([83](https://github.com/bbbradsmith/hatariB/issues/83#issuecomment-5574047800)).
