@@ -544,6 +544,10 @@ int	TimerBEventCountCycleStart = -1;	/* value of Cycles_GetCounterOnWriteAccess 
 
 static int	BlankLines = 0;			/* Number of empty line with no signal (by switching hi/lo near cycles 500) */
 
+#ifdef __LIBRETRO__
+static int nPrevTTRes = -1;
+#endif
+
 
 typedef struct
 {
@@ -808,6 +812,10 @@ void Video_MemorySnapShot_Capture(bool bSave)
  */
 void Video_Reset(void)
 {
+#ifdef __LIBRETRO__
+	nPrevTTRes = -1;
+#endif
+
 	/* NOTE! Must reset all of these register type things here!!!! */
 	Video_Reset_Glue();
 
@@ -4749,7 +4757,9 @@ static void Video_UpdateTTPalette(int bpp)
  */
 bool Video_RenderTTScreen(void)
 {
+#ifndef __LIBRETRO__
 	static int nPrevTTRes = -1;
+#endif
 	int width, height, bpp;
 
 	Video_GetTTRes(&width, &height, &bpp);

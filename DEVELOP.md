@@ -266,6 +266,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
 * **hatari/src/video.c**
   * `Video_ResetShifterTimings` relays current framerate to `core_set_fps`.
   * `PendingCyclesOver` unread variable warning.
+  * `nPrevTTRes` static variable needs to be global and resettable to survive savestates (this bug affects Hatari 2.6.1, see: [63](https://github.com/bbbradsmith/hatariB/issues/63)).
 * **hatari/src/zip.c**
   * Disable use of `unzOpen` which was modified (see: unzip.c) and not needed by this core.
 * **hatari/src/cpu/fpp_native.c**
