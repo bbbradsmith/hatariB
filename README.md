@@ -256,7 +256,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * The [MUNT MT-32 Emulator](url=https://sourceforge.net/projects/munt/) is recommended. It can install on your system as a MIDI device, which you can use with MT-32 supporting Atari ST games.
 ### Accuracy
   * Some of the default core options are chosen to favour faster load times, but these can be adjusted:
-    * *System > Fast Floppy* gives artificially faster disk access, on by default.
+    * *System > Fast Floppy* gives artificially faster disk access, on by default. (A few games appear to have copy protection that tests the drive speed, which may need this option turned off.)
     * *System > Patch TOS for Fast Boot* modifies known TOS images to boot faster, on by default.
   * Other accuracy options might be adjusted for lower CPU usage:
     * *System > CPU Prefetch Emulation* - Emulates memory prefetch, needed for some games. On by default.
@@ -287,7 +287,6 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * [Host keyboard remapping](https://github.com/bbbradsmith/hatariB/issues/21)
   * [Falcon microphone](https://github.com/bbbradsmith/hatariB/issues/20)
 ### Quirks
-  * Using EmuTOS, if a game program is not auto-run, it can't read the TOS `DESKTOP.INF` which normally sets the correct resolution and opens a window with the intended program ready to double-click on. If there disk is writable you can set up the resolution/window yourself then go to `Options > Save Desktop` to save `EMUDESK.INF` which will remember the equivalent settings for EmuTOS. Alternatively, you might be able to create an [M3U file with #AUTO](#M3U-Playlists-and-Auto-Run) to automatically start the program.
   * If the on-screen keyboard confirm/cancel buttons aren't mapped to dedicated buttons, you might end up suddenly holding the underlying button when the keyboard closes. (Inputs from buttons mapped to the on-screen keyboard are suppressed while it remains open.)
   * Though the on-screen keyboard is available in [several language layouts](https://tho-otto.de/keyboards/), for your physical keyboard there aren't any direct configuration options, currently. RetroArch ignores the OS keyboard layout, and [all keys report as-if in US layout](https://github.com/libretro/RetroArch/issues/13838) (e.g. German Z reports as RETROK_y). Because of this, if you pick a TOS that matches your keyboard language, the mappings are likely to be mostly compatible. Otherwise, if you need finer control of the mapping, RetroArch's *Input* settings can be used to remap individual keys.
   * The *Floppy Disk List* pause screen can only display a limited subset of unicode characters, due to Hatari's UI font. They can still be viewed through RetroArch's *Disk Control* menu when the selected drive is ejected.
