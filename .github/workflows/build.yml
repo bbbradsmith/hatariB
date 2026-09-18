@@ -337,8 +337,6 @@ jobs:
           distribution: 'temurin'
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
-        with: # https://github.com/android-actions/setup-android/issues/537
-          packages: 'platform-tools'
       - name: Submodule Cache Key
         run: |
           echo "ZLIBHASH=$(git submodule status zlib | tr -d '[:blank:]')" >> $GITHUB_ENV
@@ -396,8 +394,6 @@ jobs:
           distribution: 'temurin'
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
-        with: # https://github.com/android-actions/setup-android/issues/537
-          packages: 'platform-tools'
       - name: Submodule Cache Key
         run: |
           echo "ZLIBHASH=$(git submodule status zlib | tr -d '[:blank:]')" >> $GITHUB_ENV
