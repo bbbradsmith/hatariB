@@ -12,8 +12,10 @@ A [Libretro](https://www.libretro.com/) core integrating the [Hatari](https://ww
   * **[hatariB v1.0](https://github.com/bbbradsmith/hatariB/releases/tag/1.0)** - 2026-09-15
 * Unstable Build:
   * [Download](https://nightly.link/bbbradsmith/hatariB/workflows/build/main)
+  * [Libretro Nightly](https://buildbot.libretro.com/nightly/)
 * Recent Builds:
   * [Github Actions](https://github.com/bbbradsmith/hatariB/actions)
+  * [Libretro Pipeline](https://git.libretro.com/libretro/hatarib/-/pipelines)
 
 Other platforms may be possible. See [Manual Build](#Manual-Build) below.
 
