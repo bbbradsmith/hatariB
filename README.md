@@ -64,7 +64,15 @@ On Windows, if using RetroArch's portable *Download* version instead of the inst
 
 Depending on the platform, you may also need to add executable permission to the core file (e.g. `chmod +x hatarib.so`). See below for [MacOS instructions](#MacOS).
 
-For *IPF* and *CTR* floppy disk image support, you will also need to provide the **capsimg 5.1** support library, originally created by the [Software Preservation Society](http://www.softpres.org/download). This library will be a file named `capsimg.dll` or `capsimg.so`, depending on your platform. On Windows this DLL should be placed in your RetroArch installation folder next to `retroarch.exe`. On other platforms it must be installed [in your search path for dlopen](https://linux.die.net/man/8/ldconfig), so if it isn't found next to the SO, maybe try `/usr/lib`? An up to date version of capsimg for many platforms can be downloaded here:
+For *IPF* and *CTR* floppy disk image support, you will also need to provide the **capsimg 5.1** support library, originally created by the [Software Preservation Society](http://www.softpres.org/download). This library will be a file named `capsimg.dll` or `capsimg.so`, depending on your platform. This library can be located in a few different locations:
+  * *Windows*: In the RetroArch installation folder next to `retroarch.exe`.
+  * *Non-Windows*: [In your search path for dlopen](https://linux.die.net/man/8/ldconfig), which may include the same folder as the hatarib core, `/usr/lib`, or other locations.
+  * *Retro system folder*: On some platforms it can be placed in the retro `system/` folder, as some users of [PUAE](https://github.com/libretro/libretro-uae#ipf-support) prefer.
+  * *Android*: Normally it requires root access to place on the executable or dlopen path. You could accomplish this by adding it to the RetroArch APK before install. As with [PUAE](https://github.com/libretro/libretro-uae), there is a workaround to get it into the protected retro cores folder:
+    * Place `capsimg.so` in your retro downloads folder.
+    * Go to *Load Core* > *Install or Restore a Core* and "install" `capsimg.so`.
+
+ An up to date version of capsimg for many platforms can be downloaded here:
 * [capsimg 5.1 binaries](https://github.com/rsn8887/capsimg/releases)
 
 If you have trouble getting the builds to work, you can turn on logging under *Settings > Logging*. Log output to a file, restart RetoArch, then try to start the core. After it fails, close RetroArch and find the log. There should hopefully be an error message near the bottom of the log, which might help if we're not unlucky.
@@ -82,7 +90,7 @@ Installing for MacOS requires a different method for giving permission:
 Once the file is un-quarantined, and given permission to execute, you can copy it to your RetroArch cores folder.
 * On MacOS the cores and info folders are usually at: `Users/[username]/Library/Application Support/RetroArch`.
 
-The `capsimg.so` for IPF support can be placed next to the `hatarib.dylib` file, but it must also be given permission in the same way.
+The `capsimg.so` for IPF support can be placed in the `system/` folder, but it must also be given permission in the same way.
 
 ### Android
 
@@ -92,7 +100,6 @@ You can use this core with the [latest RetroArch APK](https://www.retroarch.com/
 * The included `hatarib.info` file allows the core to be associated with content files, but it can be inconvenient to add this to your RetroArch setup. The easiest alternative is to rename the core to `hatari_libretro.so` before installing so that it will instead use the existing info file belonging to the [other Hatari core](https://github.com/libretro/hatari).
 * If you want to be more thorough, use the *Directory* settings to relocate *Core Info* to a folder that you can access and place it there. However, I've found that *Update Core Info Files* in the *Online Updater* doesn't work with a custom directory, so I had to manually download and place the info files for other cores there. If you rename the RetroArch APK to be a zip file, you can open it up and find the info files there inside the contained assets folder.
 * To delete the core, you can go to *Core > Manage Cores* in the settings.
-* It is not yet verified whether IPF files can be made to work by installing `capsimg.so`. I believe the way to do this would be to build your own RetroArch APK from source code, and include it in the `lib` folder inside, but I have not attempted this. It might also be possible to do this after install with a rooted device. Please let me know if you've tried it.
 * I would recommend disabling *Input > Host Mouse Enabled* in the core options, as using a touchscreen overlay gamepad will also generate host mouse inputs at the same time. *Retropad 1 > Left Analog Stick* can be set to *Mouse* to allow mouse control that way instead.
 
 ### Manual Build
@@ -303,6 +310,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Fixed MegaSTE savestate problem ([89](https://github.com/bbbradsmith/hatariB/issues/89)).
   * Fixed TT stavestate video resize problem ([63](https://github.com/bbbradsmith/hatariB/issues/63)).
   * New *Mouse Host Sensitivity* option to adjust speed of host mouse.
+  * Search for CapsImg (IPF) libraries in retro system folder, and android core folders to match PUAE's approach.
 * [hatariB v1.0](https://github.com/bbbradsmith/hatariB/releases/tag/1.0) - 2026-09-15
   * Fixed snow pause screen crash (introduced in v0.5 when removing SDL2).
   * Fixed `setlocale` problem ([83](https://github.com/bbbradsmith/hatariB/issues/83#issuecomment-5574047800)).
