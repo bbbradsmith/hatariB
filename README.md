@@ -90,7 +90,7 @@ Installing for MacOS requires a different method for giving permission:
 Once the file is un-quarantined, and given permission to execute, you can copy it to your RetroArch cores folder.
 * On MacOS the cores and info folders are usually at: `Users/[username]/Library/Application Support/RetroArch`.
 
-The `capsimg.so` for IPF support can be placed next to the `hatarib.dylib` file, but it must also be given permission in the same way.
+The `capsimg.so` for IPF support can be placed in the `system/` folder, but it must also be given permission in the same way.
 
 ### Android
 
