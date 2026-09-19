@@ -715,11 +715,11 @@ static SO_HANDLE core_ipf_load_fallback(void)
 
 #ifdef __ANDROID__
 	// for android try cores directories
-	result = core_dlopen(core_file_temp_abs_path("/data/user/0/com.retroarch/cores", CAPS_SONAME));
+	result = core_dlopen(core_file_temp_abs_path("/data/user/0/com.retroarch/cores/", CAPS_SONAME));
 	if (result) return result;
-	result = core_dlopen(core_file_temp_abs_path("/data/user/0/com.retroarch.aarch64/cores", CAPS_SONAME));
+	result = core_dlopen(core_file_temp_abs_path("/data/user/0/com.retroarch.aarch64/cores/", CAPS_SONAME));
 	if (result) return result;
-	result = core_dlopen(core_file_temp_abs_path("/data/user/0/com.retroarch.ra32/cores", CAPS_SONAME));
+	result = core_dlopen(core_file_temp_abs_path("/data/user/0/com.retroarch.ra32/cores/", CAPS_SONAME));
 	if (result) return result;
 #endif
 
