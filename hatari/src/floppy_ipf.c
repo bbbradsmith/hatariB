@@ -692,7 +692,7 @@ static SO_HANDLE core_dlopen(const char* path)
 	result = LoadLibrary(path);
 #else
 #ifdef HAVE_DLOPEN
-	SO_HANDLE result = dlopen(path, RTLD_NOW);
+	result = dlopen(path, RTLD_NOW);
 	if (!result) core_error_printf("%s\n",dlerror());
 #else
 	result = NULL;
