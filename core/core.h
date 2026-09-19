@@ -76,6 +76,10 @@ extern int core_poll_joy_fire(int port);
 extern int core_poll_joy_stick(int port);
 extern uint16_t core_input_mod_state(void);
 
+// file path utilities (use the result before doing any other core file access)
+extern const char* core_file_temp_system_path(const char* filename);
+extern const char* core_file_temp_abs_path(const char* path, const char* file);
+
 // in-memory savestate
 extern void core_snapshot_open(void);
 extern void core_snapshot_close(void);

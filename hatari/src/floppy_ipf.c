@@ -684,6 +684,48 @@ bool IPF_WriteDisk(int Drive, const char *pszFileName, uint8_t *pBuffer, int Ima
 
 #ifdef __LIBRETRO__
 
+static SO_HANDLE core_dlopen(const char* path)
+{
+	SO_HANDLE result;
+	core_debug_printf("Library search: %s\n",path);
+#ifdef WIN32
+	result = LoadLibrary(path);
+#else
+#ifdef HAVE_DLOPEN
+	SO_HANDLE result = dlopen(path, RTLD_NOW);
+	if (!result) core_error_printf("%s\n",dlerror());
+#else
+	result = NULL;
+	core_error_printf("dlopen unavailable\n");
+#endif
+#endif
+	if (result) core_info_printf("Library opened: %s\n",path);
+	return result;
+}
+
+// fallback locations for capsimg if not found in the default location, based on PUAE:
+// https://github.com/libretro/libretro-uae/blob/master/sources/src/caps/caps.c
+static SO_HANDLE core_ipf_load_fallback(void)
+{
+	SO_HANDLE result;
+
+	// try retroarch system directory
+	result = core_dlopen(core_file_temp_system_path(CAPS_SONAME));
+	if (result) return result;
+
+#ifdef __ANDROID__
+	// for android try cores directories
+	result = core_dlopen(core_file_temp_abs_path("/data/user/0/com.retroarch/cores", CAPS_SONAME);
+	if (result) return result;
+	result = core_dlopen(core_file_temp_abs_path("/data/user/0/com.retroarch.aarch64/cores", CAPS_SONAME);
+	if (result) return result;
+	result = core_dlopen(core_file_temp_abs_path("/data/user/0/com.retroarch.ra32/cores", CAPS_SONAME);
+	if (result) return result;
+#endif
+
+	return NULL;
+}
+
 // core_ipf_load loads the capsimg.dll if available, or just returns quickly if already loaded
 //   capsHandle -> not NULL if capsimage has been loaded
 //   capsValid -> true if capsimage is loaded, and all functions found
@@ -697,16 +739,8 @@ static bool core_ipf_load(void)
 	}
 	capsValid = false;
 	capsInitialized = false;
-#ifdef WIN32
-	capsHandle = LoadLibrary(CAPS_SONAME);
-#else
-#ifdef HAVE_DLOPEN
-	capsHandle = dlopen(CAPS_SONAME, RTLD_NOW);
-	if (!capsHandle) core_error_printf("%s\n",dlerror());
-#else
-	core_error_printf("dlopen unavailable\n");
-#endif
-#endif
+	capsHandle = core_dlopen(CAPS_SONAME); // try working directory and global libraries first
+	if (capsHandle == NULL) capsHandle = core_ipf_load_fallback(); // fallback locations
 	if (capsHandle == NULL)
 	{
 		core_error_printf(CAPS_SONAME " could not be loaded.\n");

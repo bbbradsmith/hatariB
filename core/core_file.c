@@ -879,3 +879,17 @@ const char* core_file_system_dirlabel(int index)
 	if (index >= sf_dir_count) return "";
 	return sf_dirlabel[index];
 }
+
+//
+// Path utilities
+//
+
+const char* core_file_temp_system_path(const char* filename)
+{
+	return temp_fn2(system_path, filename);
+}
+
+const char* core_file_temp_abs_path(const char* path, const char* filename)
+{
+	return temp_fn2(path, filename);
+}
