@@ -637,6 +637,11 @@ static uint8_t	FDC_ReadAddress_ST ( uint8_t Drive , uint8_t Track , uint8_t Sect
 static uint8_t	FDC_ReadTrack_ST ( uint8_t Drive , uint8_t Track , uint8_t Side );
 static uint8_t	FDC_WriteTrack_ST ( uint8_t Drive , uint8_t Track , uint8_t Side , int TrackSize );
 
+#ifdef __LIBRETRO__
+// some STX games fail to boot if fast floppy is used, suppress it for the first few seconds
+const int BOOT_NO_FAST_FLOPPY_WAIT = FDC_CLOCK_STANDARD * 4;
+static int boot_no_fast_floppy = BOOT_NO_FAST_FLOPPY_WAIT;
+#endif
 
 /*-----------------------------------------------------------------------*/
 /**
@@ -661,6 +666,8 @@ void	FDC_MemorySnapShot_Capture(bool bSave)
 			restore_DiskChange_signal[i] = FDC_DRIVES[i].DiskChange_signal;
 		}
 	}
+
+	MemorySnapShot_Store(&boot_no_fast_floppy, sizeof(boot_no_fast_floppy));
 #endif
 }
 
@@ -820,6 +827,16 @@ static void	FDC_StartTimer_FdcCycles ( int FdcCycles , int InternalCycleOffset )
 {
 //fprintf ( stderr , "fdc start timer %d cycles\n" , FdcCycles );
 
+#ifdef __LIBRETRO__
+	// suppress fast-floppy immediately after boot for STX
+	if (
+		EmulationDrives[ FDC.DriveSelSignal ].ImageType == FLOPPY_IMAGE_TYPE_STX &&
+		boot_no_fast_floppy > 0)
+	{
+		boot_no_fast_floppy -= FdcCycles;
+	}
+	else
+#endif
 	if ( ( ConfigureParams.DiskImage.FastFloppy ) && ( FdcCycles > FDC_FAST_FDC_FACTOR ) )
 		FdcCycles /= FDC_FAST_FDC_FACTOR;
 
@@ -954,6 +971,10 @@ void FDC_Reset ( bool bCold )
 
 	/* Also reset IPF emulation */
 	IPF_Reset( bCold );
+
+#ifdef __LIBRETRO__
+	boot_no_fast_floppy = BOOT_NO_FAST_FLOPPY_WAIT;
+#endif
 }
 
 
