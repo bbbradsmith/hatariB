@@ -311,7 +311,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
   * Fixed TT stavestate video resize problem ([63](https://github.com/bbbradsmith/hatariB/issues/63)).
   * New *Mouse Host Sensitivity* option to adjust speed of host mouse.
   * Search for CapsImg (IPF) libraries in retro system folder, and android core folders to match PUAE's approach.
-  * Suppress *Fast Floppy* setting for STX games during boot to prevent crash with some games ([92](https://github.com/bbbradsmith/hatariB/issues/92)).
+  * Suppress *Fast Floppy* setting for STX for sectors with read errors, prevents crash with some games ([92](https://github.com/bbbradsmith/hatariB/issues/92)).
 * [hatariB v1.0](https://github.com/bbbradsmith/hatariB/releases/tag/1.0) - 2026-09-15
   * Fixed snow pause screen crash (introduced in v0.5 when removing SDL2).
   * Fixed `setlocale` problem ([83](https://github.com/bbbradsmith/hatariB/issues/83#issuecomment-5574047800)).

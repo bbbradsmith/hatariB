@@ -120,7 +120,7 @@ Otherwise there are minor changes to the CMake build files, each marked with a c
 * **hatari/src/fdc.c**
 * **hatari/src/include/fdc.h**
   * Add `FDC_FloppyInsertRestore` to re-apply pulse index timing and disk change signal after savestate.
-  * Suppress Fast Floppy effect for first 4 seconds when booting STX games ([92](https://github.com/bbbradsmith/hatariB/issues/92)).
+  * Suppress Fast Floppy effect for STX sectors with a read error status, fixes some copy protected games ([92](https://github.com/bbbradsmith/hatariB/issues/92)).
 * **hatari/src/file.c**
 * **hatari/src/include/file.h**
   * `File_QueryOverwrite` always returns true instead of checking a file. In all instances where this is used (savestates, floppy saves) we are using the core's file system and don't need to ensure this (usually writing to memory instead of a file when this is checked).

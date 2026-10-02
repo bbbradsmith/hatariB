@@ -638,9 +638,8 @@ static uint8_t	FDC_ReadTrack_ST ( uint8_t Drive , uint8_t Track , uint8_t Side )
 static uint8_t	FDC_WriteTrack_ST ( uint8_t Drive , uint8_t Track , uint8_t Side , int TrackSize );
 
 #ifdef __LIBRETRO__
-// some STX games fail to boot if fast floppy is used, suppress it for the first few seconds
-const int BOOT_NO_FAST_FLOPPY_WAIT = FDC_CLOCK_STANDARD * 4;
-static int boot_no_fast_floppy = BOOT_NO_FAST_FLOPPY_WAIT;
+// STX fast floppy is invalid in cases with intentional error signals
+static int fast_floppy_skip = 0;
 #endif
 
 /*-----------------------------------------------------------------------*/
@@ -667,7 +666,7 @@ void	FDC_MemorySnapShot_Capture(bool bSave)
 		}
 	}
 
-	MemorySnapShot_Store(&boot_no_fast_floppy, sizeof(boot_no_fast_floppy));
+	MemorySnapShot_Store(&fast_floppy_skip, sizeof(fast_floppy_skip));
 #endif
 }
 
@@ -828,14 +827,7 @@ static void	FDC_StartTimer_FdcCycles ( int FdcCycles , int InternalCycleOffset )
 //fprintf ( stderr , "fdc start timer %d cycles\n" , FdcCycles );
 
 #ifdef __LIBRETRO__
-	// suppress fast-floppy immediately after boot for STX
-	if (
-		EmulationDrives[ FDC.DriveSelSignal ].ImageType == FLOPPY_IMAGE_TYPE_STX &&
-		boot_no_fast_floppy > 0)
-	{
-		boot_no_fast_floppy -= FdcCycles;
-	}
-	else
+	if (!fast_floppy_skip)
 #endif
 	if ( ( ConfigureParams.DiskImage.FastFloppy ) && ( FdcCycles > FDC_FAST_FDC_FACTOR ) )
 		FdcCycles /= FDC_FAST_FDC_FACTOR;
@@ -973,7 +965,7 @@ void FDC_Reset ( bool bCold )
 	IPF_Reset( bCold );
 
 #ifdef __LIBRETRO__
-	boot_no_fast_floppy = BOOT_NO_FAST_FLOPPY_WAIT;
+	fast_floppy_skip = 0;
 #endif
 }
 
@@ -2822,6 +2814,14 @@ static int FDC_UpdateReadSectorsCmd ( void )
 		else
 			FDC.Status_Temp = FDC_ReadSector_ST ( FDC.DriveSelSignal , FDC_DRIVES[ FDC.DriveSelSignal ].HeadTrack ,
 				FDC.SR , FDC.SideSignal , &SectorSize );
+
+#ifdef __LIBRETRO__
+		// disable speedup for STX error cases
+		if ( EmulationDrives[ FDC.DriveSelSignal ].ImageType == FLOPPY_IMAGE_TYPE_STX && (FDC.Status_Temp != 0))
+		{
+			fast_floppy_skip = (FDC.Status_Temp == 0) ? 0 : 1;
+		}
+#endif
 
 		if ( FDC.Status_Temp & FDC_STR_BIT_RNF )		/* Sector FDC.SR was not found */
 		{
