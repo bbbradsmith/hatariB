@@ -2821,6 +2821,10 @@ static int FDC_UpdateReadSectorsCmd ( void )
 		{
 			fast_floppy_skip = (FDC.Status_Temp == 0) ? 0 : 1;
 		}
+		else
+		{
+			fast_floppy_skip = 0;
+		}
 #endif
 
 		if ( FDC.Status_Temp & FDC_STR_BIT_RNF )		/* Sector FDC.SR was not found */
