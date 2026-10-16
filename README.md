@@ -9,7 +9,7 @@ A [Libretro](https://www.libretro.com/) core integrating the [Hatari](https://ww
   * Raspberry Pi OS 64-bit, 32-bit
   * Android 64-bit, 32-bit
 * Current Release:
-  * **[hatariB v1.0](https://github.com/bbbradsmith/hatariB/releases/tag/1.0)** - 2026-09-15
+  * **[hatariB v1.1](https://github.com/bbbradsmith/hatariB/releases/tag/1.1)** - 2026-10-15
 * Unstable Build:
   * [Download](https://nightly.link/bbbradsmith/hatariB/workflows/build/main)
   * [Libretro Nightly](https://buildbot.libretro.com/nightly/)
@@ -306,7 +306,7 @@ See [DEVELOP.md](DEVELOP.md) for more details.
 
 ## History
 
-* **hatariB v1.1** - Unstable pre-release.
+* [hatariB v1.1](https://github.com/bbbradsmith/hatariB/releases/tag/1.1) - 2026-10-15
   * Fixed MegaSTE savestate problem ([89](https://github.com/bbbradsmith/hatariB/issues/89)).
   * Fixed TT stavestate video resize problem ([63](https://github.com/bbbradsmith/hatariB/issues/63)).
   * New *Mouse Host Sensitivity* option to adjust speed of host mouse.
