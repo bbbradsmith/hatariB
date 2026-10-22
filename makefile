@@ -92,10 +92,13 @@ else ifeq ($(shell uname),Darwin)
 else
 	SO_SUFFIX := .so
 	LDFLAGS += -static-libgcc
-	# export only RETRO_API so the frontend's libraries (e.g. SDL) can't replace ours
-	# (empty DECLSPEC: the SDL2 headers would mark our SDL_* functions visible)
-	CFLAGS += -fvisibility=hidden -DDECLSPEC=
 endif
+endif
+
+ifeq ($(SO_SUFFIX),.so)
+	# Require explicit external exports (RETRO_API), suppress internal exports from being visible
+	# DECLSPEC= suppresses the SDL2 headers from exporting their API (hatariB uses an internal substitute for SDL2)
+	CFLAGS += -fvisibility=hidden -DDECLSPEC=
 endif
 
 CORE=$(COREDIR)/$(COREFILE)$(SO_SUFFIX)

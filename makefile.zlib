@@ -7,7 +7,8 @@ RANLIB ?= ranlib
 # -fPIC needed to link into a shared object
 FPIC_FLAG ?= -fPIC
 CFLAGS += -O3 $(FPIC_FLAG) $(CFLAGS_EXTRA)
-# hidden on .so platforms like the core, so the frontend's zlib can't replace ours
+
+# for .so builds: suppress external exports to avoid conflict with another hosted zlib
 ifneq ($(OS),Windows_NT)
 ifneq ($(shell uname),Darwin)
 	CFLAGS += -fvisibility=hidden

@@ -32,7 +32,7 @@ jobs:
         with:
           path: |
             zlib_build
-          key: sub-win64-${{ env.ZLIBHASH }}-${{ hashFiles('makefile.zlib') }}
+          key: sub-win64-${{ env.ZLIBHASH }}
       - name: Build zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
         shell: msys2 {0}
@@ -78,7 +78,7 @@ jobs:
         with:
           path: |
             zlib_build
-          key: sub-win32-${{ env.ZLIBHASH }}-${{ hashFiles('makefile.zlib') }}
+          key: sub-win32-${{ env.ZLIBHASH }}
       - name: Build zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
         shell: msys2 {0}
@@ -122,7 +122,7 @@ jobs:
         with:
           path: |
             zlib_build
-          key: sub-ubuntu-${{ env.ZLIBHASH }}-${{ hashFiles('makefile.zlib') }}
+          key: sub-ubuntu-${{ env.ZLIBHASH }}
       - name: Build zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
         run: |
@@ -160,7 +160,7 @@ jobs:
           path: |
             zlib_build_arm
             zlib_build_intel
-          key: sub-macos-${{ env.ZLIBHASH }}-${{ hashFiles('makefile.zlib') }}
+          key: sub-macos-${{ env.ZLIBHASH }}
       - name: Build zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
         run: |
@@ -245,7 +245,7 @@ jobs:
         with:
           path: |
             zlib_build
-          key: sub-rpi64-${{ env.ZLIBHASH }}-${{ hashFiles('makefile.zlib') }}
+          key: sub-rpi64-${{ env.ZLIBHASH }}
       - name: Build zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
         run: |
@@ -293,7 +293,7 @@ jobs:
         with:
           path: |
             zlib_build
-          key: sub-rpi32-${{ env.ZLIBHASH }}-${{ hashFiles('makefile.zlib') }}
+          key: sub-rpi32-${{ env.ZLIBHASH }}
       - name: Build zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
         run: |
@@ -346,7 +346,7 @@ jobs:
         with:
           path: |
             zlib_build
-          key: sub-android64-${{ env.ZLIBHASH }}-${{ hashFiles('makefile.zlib') }}
+          key: sub-android64-${{ env.ZLIBHASH }}
       - name: Build zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
         run: |
@@ -403,7 +403,7 @@ jobs:
         with:
           path: |
             zlib_build
-          key: sub-android32-${{ env.ZLIBHASH }}-${{ hashFiles('makefile.zlib') }}
+          key: sub-android32-${{ env.ZLIBHASH }}
       - name: Build zlib
         if: steps.cache-sub.outputs.cache-hit != 'true'
         run: |
