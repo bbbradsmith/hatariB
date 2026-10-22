@@ -95,6 +95,12 @@ else
 endif
 endif
 
+ifeq ($(SO_SUFFIX),.so)
+	# Require explicit external exports (RETRO_API), suppress internal exports from being visible
+	# DECLSPEC= suppresses the SDL2 headers from exporting their API (hatariB uses an internal substitute for SDL2)
+	CFLAGS += -fvisibility=hidden -DDECLSPEC=
+endif
+
 CORE=$(COREDIR)/$(COREFILE)$(SO_SUFFIX)
 SOURCES = \
 	core/core.c \

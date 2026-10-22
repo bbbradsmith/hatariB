@@ -400,6 +400,7 @@ Other code contributors to hatariB, this list may be incomplete:
 * [kangaroomadman](https://github.com/kangaroomadman) - HAVE_CAPSIMAGE redefine check ([53](https://github.com/bbbradsmith/hatariB/pull/53)).
 * [cscd98](https://github.com/cscd98) - Fix for save-prevent logic ([73](https://github.com/bbbradsmith/hatariB/pull/73)).
 * [WizzardSK](https://github.com/WizzardSK) - Libretro build assistance ([81](https://github.com/bbbradsmith/hatariB/pull/81), [84](https://github.com/bbbradsmith/hatariB/pull/84), [86](https://github.com/bbbradsmith/hatariB/pull/86), [87](https://github.com/bbbradsmith/hatariB/pull/87)), setlocale fix ([83](https://github.com/bbbradsmith/hatariB/issues/83#issuecomment-5574047800)).
+* [Davey-Hughes](https://github.com/Davey-Hughes) - Fixing unnecessary external exports for shared-object builds ([93](https://github.com/bbbradsmith/hatariB/pull/93)).
 
 It is difficult to keep track of all contributors who have helped in other ways, but I would like to thank anyone who has posted [issues](https://github.com/bbbradsmith/hatariB/issues), commented on [Atari-Forum](https://www.atari-forum.com/viewtopic.php?t=43008), [LibRetro Forum](https://forums.libretro.com/t/hatarib-atari-st-core/51029), or otherwise assisted me in improving this core.
 
